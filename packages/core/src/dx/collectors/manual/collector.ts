@@ -37,7 +37,7 @@ export const manualDescriptor: ModuleDescriptor = {
     {
       code: "open-intervals-censored",
       message:
-        "A start/wait-start without its close stays open-ended (censored); the recorder never assumes it ended now.",
+        "A start/wait-start without its close stays open-ended (censored); dft never assumes it ended now.",
     },
     {
       code: "no-automatic-waiting",

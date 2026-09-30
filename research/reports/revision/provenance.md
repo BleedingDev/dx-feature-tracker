@@ -1,6 +1,6 @@
 # No-Enterprise AI provenance: Cursor, Git AI, Entire, snapshots
 
-Research date: 2026-09-30. Scope: separate DX Flight Recorder, optional upstream adapters. Evidence gathered from official docs, GitHub APIs and pinned source; no installation, clone, execution of collectors, or personal data inspection.
+Research date: 2026-09-30. Scope: separate dx-feature-tracker, optional upstream adapters. Evidence gathered from official docs, GitHub APIs and pinned source; no installation, clone, execution of collectors, or personal data inspection.
 
 ## Verdict
 

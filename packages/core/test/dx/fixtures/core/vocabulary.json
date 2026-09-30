@@ -25,7 +25,7 @@
     "model": "redacted-model",
     "observedAt": "2026-09-30T12:00:00.000Z",
     "evidenceRefPrefix": "fixture://core/",
-    "syntheticSecretCanary": "DXFR_SYNTHETIC_SECRET_CANARY_7f3a9c"
+    "syntheticSecretCanary": "DFT_SYNTHETIC_SECRET_CANARY_7f3a9c"
   },
   "rules": [
     "Every event origin is fixture; fixtures never masquerade as live or imported.",

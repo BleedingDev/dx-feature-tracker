@@ -64,7 +64,7 @@ export const cursorSdkDescriptor: ModuleDescriptor = {
   owner: "B44",
   readiness: "disabled",
   requiredInputs: [
-    `user-selected JSONL flight record (${FLIGHT_RECORD_SCHEMA}) written by the caller's own @cursor/sdk instrumentation, one tagged record per line`,
+    `user-selected JSONL run record (${FLIGHT_RECORD_SCHEMA}) written by the caller's own @cursor/sdk instrumentation, one tagged record per line`,
   ],
   supportedFields: [
     "context.branch",
@@ -398,7 +398,7 @@ export const parseCursorSdkFlightRecord = (
       if (wanted !== null && wanted !== outcome.record.flight.branch) {
         sink.gaps.push({
           code: "flight-tag-other-branch",
-          message: `line ${outcome.record.line}: tagged ${outcome.record.flight.branch}, selected flight is ${wanted}; skipped`,
+          message: `line ${outcome.record.line}: tagged ${outcome.record.flight.branch}, selected branch is ${wanted}; skipped`,
         });
       } else {
         records.push(outcome.record);
@@ -486,7 +486,7 @@ export const cursorSdkCollector: DxCollector<FileSystem.FileSystem> = {
         return yield* new InvalidInput({
           field: "input",
           message:
-            "cursor-sdk reads only an explicitly selected flight-record JSONL file (--input); it never runs the SDK or calls Cursor APIs",
+            "cursor-sdk reads only an explicitly selected run record JSONL file (--input); it never runs the SDK or calls Cursor APIs",
         });
       }
 
@@ -497,7 +497,7 @@ export const cursorSdkCollector: DxCollector<FileSystem.FileSystem> = {
           () =>
             new SourceUnavailable({
               adapterId: CURSOR_SDK_ADAPTER_ID,
-              message: "selected cursor-sdk flight record is not readable",
+              message: "selected cursor-sdk run record is not readable",
             })
         )
       );

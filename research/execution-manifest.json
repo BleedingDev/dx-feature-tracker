@@ -1,5 +1,5 @@
 {
-  "product": "DX Flight Recorder",
+  "product": "dx-feature-tracker",
   "stack": "Ratstack",
   "deadline_minutes": 240,
   "configured_max_threads": 50,

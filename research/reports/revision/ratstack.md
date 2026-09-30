@@ -1,4 +1,4 @@
-# Ratstack: verified local architecture for standalone DX Flight Recorder
+# Ratstack: verified local architecture for standalone dx-feature-tracker
 
 Research date: 2026-09-30. Source snapshot: `joelhooks/rat-stack` main commit `753c7b07dcc516037dd1d455a8766bf112084844` (commit authored 2026-09-28). Read-only public HTTP/API research; no clone, install, execution of upstream code, or access to private local telemetry. Runtime claims below are unverified until the scaffold boot gate runs.
 
@@ -29,7 +29,7 @@ Sources: [root manifest](https://github.com/joelhooks/rat-stack/blob/753c7b07dcc
 
 `defineContract(name, options)` accepts an Effect Struct input, plain output and failure schemas, description, optional approval, annotations and HTTP metadata. Plain schemas require no encoding/decoding services. Defaults for readOnly/destructive/idempotent/openWorld are false. Set truthful annotations deliberately; read-only analyze/explain should not silently run collection as a side effect.
 
-`implement(contract, handler)` creates the capability, consults `CallWatch`, adds the contract's approval gate and surrounds the handler with recording. CallWatch is a Context.Reference with a pass-through default. It observes **your capabilities**, not all Cursor activity. Reusing Ratstack devtools alone does not deliver a DX flight recorder.
+`implement(contract, handler)` creates the capability, consults `CallWatch`, adds the contract's approval gate and surrounds the handler with recording. CallWatch is a Context.Reference with a pass-through default. It observes **your capabilities**, not all Cursor activity. Reusing Ratstack devtools alone does not deliver a dx-feature-tracker.
 
 `toCommand(capability, options)` derives flags and positional arguments from input fields. `render` enables a human-readable renderer plus reserved `--json`; approval reserves `--yes`. Do not define input fields named `json` or `yes` when those options apply. It decodes input and encodes output with the contract schemas, so renderers should consume structured reports rather than compute metrics again.
 

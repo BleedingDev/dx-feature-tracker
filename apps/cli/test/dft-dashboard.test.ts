@@ -176,18 +176,39 @@ afterEach(() => {
   }
 });
 
+const ENTERPRISE_FOOTER =
+  /<p class="enterprise">Want it for your whole company\?.*?<\/p>/u;
+
 describe("dft dashboard", () => {
   it("renders one balanced, self-contained HTML page", () => {
     const html = renderDashboard(fixture, { timeZone: "UTC" });
 
     expect(html.startsWith("<!doctype html>")).toBe(true);
     expect(unbalancedTags(html.replace("<!doctype html>", ""))).toEqual([]);
-    expect(html).not.toMatch(
+    expect(html.replace(ENTERPRISE_FOOTER, "")).not.toMatch(
       /https?:|\/\/[a-z]|<[^>]+\s(?:src|href|action)=/iu
     );
     expect(html).toContain("default-src 'none'");
     expect(html).toContain("prefers-color-scheme:dark");
     expect(html).toContain("Generated Sep 30, 2026, 14:00 · dft 9.9.9");
+  });
+
+  it("links the enterprise offer once, in the footer, opening a new tab", () => {
+    const html = renderDashboard(fixture, { timeZone: "UTC" });
+
+    const footer = html.slice(
+      html.indexOf("<footer>"),
+      html.indexOf("</footer>")
+    );
+
+    expect(html.match(/whole company/gu)).toHaveLength(1);
+    expect(footer).toMatch(ENTERPRISE_FOOTER);
+    expect(footer).toContain(
+      '<a href="https://www.linkedin.com/in/bleedingdev/" target="_blank" rel="noopener">LinkedIn</a>'
+    );
+    expect(footer).toContain(
+      '<a href="mailto:petr.glaser@bleeding.dev" target="_blank" rel="noopener">email</a>'
+    );
   });
 
   it("shows totals, human numbers and the account row", () => {
@@ -199,7 +220,7 @@ describe("dft dashboard", () => {
     );
     expect(html).toContain("<dd>3.7M</dd>");
     expect(html).toContain("<dd>3h 24m</dd>");
-    expect(html).toContain("Sep 12 – Sep 30");
+    expect(html).toContain("Sep 12 to Sep 30");
     expect(html).toContain("Not linked to a branch:</strong> $3.53 billed");
     expect(html).toContain("grok-4.7 high ×2");
     expect(html).toContain('<span class="tag">subagent</span> Subagent job');

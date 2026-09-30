@@ -1,6 +1,6 @@
-> Historical first-pass report. Product recommendations and access conclusions are superseded by [the revised synthesis](../../synthesis.md) and the reports/revision/ evidence. DX Flight Recorder is standalone or two-person/24-hour plan applies. Original source evidence remains below.
+> Historical first-pass report. Product recommendations and access conclusions are superseded by [the revised synthesis](../../synthesis.md) and the reports/revision/ evidence. dx-feature-tracker is standalone or two-person/24-hour plan applies. Original source evidence remains below.
 
-# DX flight recorder ecosystem and measurement research
+# dx-feature-tracker ecosystem and measurement research
 
 Date: 2026-09-30. Scope: commercial analogues, productivity frameworks, attribution and adoption. Confidence: high for documented capabilities, medium for comparison and design inference. No installations, account trials, or product benchmark were performed. This report is a broad decision-oriented comparison, not an exhaustive inventory of every DX tool.
 

@@ -1,4 +1,4 @@
-# DX Flight Recorder plan review: findings, corrections and a phase matrix
+# dx-feature-tracker plan review: findings, corrections and a phase matrix
 
 ## Bottom line
 

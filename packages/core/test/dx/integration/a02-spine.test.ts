@@ -20,7 +20,7 @@ import {
   runCursorHook,
 } from "../../../src/dx/registry/runtime.js";
 
-const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "dxfr-a02-"));
+const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "dft-a02-"));
 
 const previousDftHome = process.env.DFT_HOME;
 

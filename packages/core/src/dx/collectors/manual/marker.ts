@@ -150,7 +150,7 @@ export const buildMarkerEvent = Effect.fn("Manual.buildMarkerEvent")(
     if (rawFlight !== null && rawFlight.length > MAX_FLIGHT_CHARS) {
       return yield* invalid(
         "flight",
-        `flight exceeds ${MAX_FLIGHT_CHARS} characters`
+        `feature name exceeds ${MAX_FLIGHT_CHARS} characters`
       );
     }
 
@@ -159,7 +159,7 @@ export const buildMarkerEvent = Effect.fn("Manual.buildMarkerEvent")(
     if (flightId === null) {
       return yield* invalid(
         "flight",
-        "no flight: pass a flight or run inside a Git branch"
+        "no feature: pass a feature name or run inside a Git branch"
       );
     }
 
@@ -180,7 +180,7 @@ export const buildMarkerEvent = Effect.fn("Manual.buildMarkerEvent")(
         method: timeMethod,
         note:
           timeMethod === "observed"
-            ? "recorder clock at the moment the marker command ran"
+            ? "dft clock at the moment the marker command ran"
             : "time written in an imported marker log",
         rawName: "at",
         unit: "iso8601",

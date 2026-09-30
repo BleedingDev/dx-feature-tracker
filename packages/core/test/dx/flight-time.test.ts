@@ -32,7 +32,7 @@ import { allMetrics } from "../../src/dx/registry/registry.js";
 
 const fixtures = path.join(import.meta.dirname, "fixtures");
 
-const scratch = mkdtempSync(path.join(tmpdir(), "dxfr-flight-time-"));
+const scratch = mkdtempSync(path.join(tmpdir(), "dft-flight-time-"));
 
 afterAll(() => {
   rmSync(scratch, { force: true, recursive: true });

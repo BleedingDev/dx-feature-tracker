@@ -1,4 +1,4 @@
-# DX Flight Recorder: Cursor-first walkthrough
+# dx-feature-tracker: Cursor-first walkthrough
 
 Standalone Ratstack product. Four-hour execution deadline. All product implementation and runtime proof are pending. This view explains the validated plan, not a shipped application.
 
@@ -74,7 +74,7 @@ A source receipt records version, input hash/local reference, record count, supp
 ```text
 1. State the problem
    "Cursor helps developers write code.
-    DX Flight Recorder shows how their development actually went."
+    dx-feature-tracker shows how their development actually went."
 
 2. Show capture in Cursor
    branch -> small AI edit -> observed tool/test action -> event receipt

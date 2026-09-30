@@ -2,7 +2,10 @@ import type {
   FlightHistoryRow,
   HistoryMeasure,
   SyncReport,
+  SyncStep,
 } from "@rat-stack/core/dx";
+
+export const UNASSIGNED_LABEL = "unassigned";
 
 interface ModelTurnLike {
   readonly effort: string | null;
@@ -254,6 +257,19 @@ export const sourceLabel = (id: string): string => {
   return SOURCE_LABELS.get(bare) ?? bare;
 };
 
+export const sourceNote = (step: SyncStep): string => {
+  if (step.status !== "synced") {
+    return (
+      SKIP_PHRASES.get(step.source.replace(/^collector[./]/u, "")) ??
+      shortReason(step.reason ?? "not available")
+    );
+  }
+
+  return step.inserted === 0 || step.inserted === null
+    ? plural(step.duplicates ?? 0, "event")
+    : `${plural((step.duplicates ?? 0) + step.inserted, "event")} (${formatCount(step.inserted)} new)`;
+};
+
 const syncTotals = (report: SyncReport) => {
   const synced = report.steps.filter((step) => step.status === "synced");
 
@@ -312,25 +328,17 @@ export const statusText = (
     return [head, "", "Sources not checked (--no-sync)."].join("\n");
   }
 
-  const branch = sync.context.branch ?? "(no branch)";
+  const branch = sync.context.branch ?? "detached HEAD";
 
-  const rows = sync.steps.map((step) =>
-    step.status === "synced"
-      ? ([
-          "✓",
-          sourceLabel(step.source),
-          step.inserted === 0 || step.inserted === null
-            ? plural(step.duplicates ?? 0, "event")
-            : `${plural((step.duplicates ?? 0) + step.inserted, "event")} (${formatCount(step.inserted)} new)`,
-        ] as const)
-      : ([
-          "–",
-          sourceLabel(step.source),
-          options.verbose
-            ? (step.reason ?? "not available")
-            : (SKIP_PHRASES.get(step.source.replace(/^collector[./]/u, "")) ??
-              shortReason(step.reason ?? "not available")),
-        ] as const)
+  const rows = sync.steps.map(
+    (step) =>
+      [
+        step.status === "synced" ? "✓" : "–",
+        sourceLabel(step.source),
+        step.status !== "synced" && options.verbose
+          ? (step.reason ?? "not available")
+          : sourceNote(step),
+      ] as const
   );
 
   const width = Math.max(...rows.map(([, label]) => label.length));
@@ -1058,7 +1066,7 @@ const historyRowCells = (
   now: number,
   options: { readonly showRepo: boolean; readonly showWorktree: boolean }
 ): readonly string[] => [
-  `${options.showRepo && row.repoCommonDir !== null ? `${repoName(row.repoCommonDir)}:` : ""}${row.branch ?? "(no branch)"}`,
+  `${options.showRepo && row.repoCommonDir !== null ? `${repoName(row.repoCommonDir)}:` : ""}${row.branch ?? UNASSIGNED_LABEL}`,
   ...(options.showWorktree ? [worktreeFolder(row)] : []),
   row.status.value === "unknown" ? DASH : row.status.value,
   formatAgo(row.lastActivityAt, now),
@@ -1084,8 +1092,24 @@ const accountLine = (row: FlightHistoryRow, now: number): string => {
     `last active ${formatAgo(row.lastActivityAt, now)}`,
   ]);
 
-  return `Cursor account, not tied to a branch: ${parts}`;
+  return `Cursor account, not linked to a branch: ${parts}`;
 };
+
+const unassignedHint = (
+  rows: readonly FlightHistoryRow[],
+  verbose: boolean
+): readonly string[] =>
+  rows.length === 0
+    ? []
+    : [
+        "",
+        `${UNASSIGNED_LABEL}: repo activity that could not be matched to a branch.`,
+        ...(verbose
+          ? [
+              "  Why: the events were recorded while HEAD was detached with no branch checked out before or after it in the HEAD reflog, the reflog entry has expired, or a hook could not resolve its worktree.",
+            ]
+          : []),
+      ];
 
 export const historyText = (
   rows: readonly FlightHistoryRow[],
@@ -1103,8 +1127,12 @@ export const historyText = (
     return "No branches with activity in this window.";
   }
 
-  const branches = visible.filter((row) => row.repoCommonDir !== null);
+  const branches = visible
+    .filter((row) => row.repoCommonDir !== null)
+    .toSorted((a, b) => Number(a.branch === null) - Number(b.branch === null));
+
   const account = visible.filter((row) => row.repoCommonDir === null);
+  const unassigned = branches.filter((row) => row.branch === null);
 
   const showWorktree = branches.some((row) => linkedWorktree(row) !== null);
   const shift = showWorktree ? 1 : 0;
@@ -1143,6 +1171,7 @@ export const historyText = (
     ...(account.length === 0
       ? []
       : ["", ...account.map((row) => accountLine(row, options.now))]),
+    ...unassignedHint(unassigned, options.verbose),
     ...(hasMoney
       ? [
           "",
@@ -1225,7 +1254,7 @@ export const onelineText = (label: string, facts: LineFacts | null): string => {
 const rowName = (row: FlightHistoryRow, showRepo: boolean): string =>
   row.repoCommonDir === null
     ? "Cursor account"
-    : `${showRepo ? `${repoName(row.repoCommonDir)}:` : ""}${row.branch ?? "(no branch)"}`;
+    : `${showRepo ? `${repoName(row.repoCommonDir)}:` : ""}${row.branch ?? UNASSIGNED_LABEL}`;
 
 export const branchOneline = (
   branch: string,
@@ -1278,3 +1307,22 @@ export const ledgerValues = (row: FlightHistoryRow): readonly number[] =>
     row.money.estimatedSource,
     row.money.estimatedPriceTable,
   ].flatMap((measure) => (measure.value === null ? [] : [measure.value]));
+
+export const ENTERPRISE_LINKEDIN = "https://www.linkedin.com/in/bleedingdev/";
+
+export const ENTERPRISE_EMAIL = "petr.glaser@bleeding.dev";
+
+export const ENTERPRISE_PITCH =
+  "Want it for your whole company? All repos, all features, all people.";
+
+export const enterpriseLine = (color = false): string => {
+  const text = `${ENTERPRISE_PITCH} Write me: LinkedIn ${ENTERPRISE_LINKEDIN} or email ${ENTERPRISE_EMAIL}`;
+
+  return color ? `\u001B[2m${text}\u001B[22m` : text;
+};
+
+export const withEnterpriseLine = (text: string, color = false): string =>
+  `${text}\n\n${enterpriseLine(color)}`;
+
+export const enterpriseHtml = (): string =>
+  `${ENTERPRISE_PITCH} Write me: <a href="${ENTERPRISE_LINKEDIN}" target="_blank" rel="noopener">LinkedIn</a> or <a href="mailto:${ENTERPRISE_EMAIL}" target="_blank" rel="noopener">email</a>`;

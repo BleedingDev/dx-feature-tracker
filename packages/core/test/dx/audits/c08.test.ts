@@ -91,7 +91,7 @@ const structured = (frame: Frame | undefined) =>
 
 const check = <A>(assertions: (value: A) => void) => Effect.map(assertions);
 
-const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "dxfr-c08-"));
+const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "dft-c08-"));
 
 afterAll(() => {
   fs.rmSync(scratch, { force: true, recursive: true });

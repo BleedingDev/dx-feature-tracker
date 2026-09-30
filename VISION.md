@@ -1,10 +1,10 @@
-# Vision: DX Flight Recorder
+# Vision: dx-feature-tracker
 
-The DX Flight Recorder records what actually happened while a developer and their AI agents built a feature, then explains it with evidence. It answers "where did the time, tokens and feedback loops go on this flight?" without guessing.
+dx-feature-tracker (AI Engineering Cost Tracker) records what actually happened while a developer and their AI agents built a feature, then explains it with evidence. It answers "where did the time, tokens and feedback loops go on this branch?" without guessing.
 
 ## What it is
 
-- A local recorder: source adapters turn explicitly selected inputs (Git history, Cursor agent hooks and local data, usage exports, command/test runs, GitHub Actions and PR evidence) into validated, versioned evidence events.
+- A local tracker: source adapters turn explicitly selected inputs (Git history, Cursor agent hooks and local data, usage exports, command/test runs, GitHub Actions and PR evidence) into validated, versioned evidence events.
 - An idempotent local event store (`node:sqlite`) with immutable report snapshots.
 - Deterministic correlation, pure metrics and structured reports, served through one Ratstack capability contract per operation (`dx_status`, `dx_collect`, `dx_mark`, `dx_analyze`, `dx_explain`, `dx_evidence`) and projected to both the CLI and a stdio MCP server that Cursor can call.
 

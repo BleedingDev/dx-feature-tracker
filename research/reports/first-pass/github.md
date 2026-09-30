@@ -1,6 +1,6 @@
-> Historical first-pass report. Product recommendations and access conclusions are superseded by [the revised synthesis](../../synthesis.md) and the reports/revision/ evidence. DX Flight Recorder is standalone or two-person/24-hour plan applies. Original source evidence remains below.
+> Historical first-pass report. Product recommendations and access conclusions are superseded by [the revised synthesis](../../synthesis.md) and the reports/revision/ evidence. dx-feature-tracker is standalone or two-person/24-hour plan applies. Original source evidence remains below.
 
-# Git, GitHub Actions, and PR correlation for Biomem DX Flight Recorder
+# Git, GitHub Actions, and PR correlation for Biomem dx-feature-tracker
 
 Research date: 2026-09-30. Confidence: high for documented interfaces, medium for proposed derived metrics, low for human-time and causal claims. Scope: official Git/GitHub docs, no repository mutation or installs. Read key API pages beyond search snippets; the OSS agent owns GitHub repository chronology and package research.
 

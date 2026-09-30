@@ -1,6 +1,6 @@
 # Four-hour parallel execution contract
 
-This is a proposed execution design for a separate DX Flight Recorder using Ratstack. The four-hour deadline is fixed by the user. Agent capacity is at most 49 workers plus the root under a `max_threads=50` configuration, even if the runtime reports 51 slots. There is no assumption about the number of humans. The assignments below are bounded deliverables, not estimates of worker speed. This report does not authorize implementation.
+This is a proposed execution design for a separate dx-feature-tracker using Ratstack. The four-hour deadline is fixed by the user. Agent capacity is at most 49 workers plus the root under a `max_threads=50` configuration, even if the runtime reports 51 slots. There is no assumption about the number of humans. The assignments below are bounded deliverables, not estimates of worker speed. This report does not authorize implementation.
 
 ## Ruthless scope decision
 

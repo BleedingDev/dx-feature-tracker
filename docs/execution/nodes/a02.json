@@ -39,7 +39,7 @@
   ],
   "env": {
    "DX_STORE": "live store path override",
-   "DX_REPLAY": "1 = replay store (~/.dx-flight-recorder/replay.sqlite unless DX_STORE... note: DX_STORE is ignored in replay mode by B01 resolveStorePath)",
+   "DX_REPLAY": "1 = replay store (~/.dft/replay.db unless DX_STORE... note: DX_STORE is ignored in replay mode by B01 resolveStorePath)",
    "DX_REPO": "default repo for MCP/CLI calls (else cwd)"
   }
  },

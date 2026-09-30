@@ -50,7 +50,7 @@
     "mcp.json mcpServers.rat-stack {command,args,env.DX_REPO,env.DX_STORE?}",
     "hooks.json recorder hook on 11 events",
     ".cursor/skills/dx-analyze, dx-explain",
-    ".git/info/exclude .dx-flight-recorder/",
+    ".git/info/exclude (old in-repo spool folder)",
     "ownership manifest + per-file backups",
     "uninstall of owned entries only"
   ],

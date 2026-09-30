@@ -12,16 +12,13 @@ import {
   buildRegistry,
   contextForRepo,
   defaultCostOptions,
-  defaultPriceProvider,
   dxStoreLayer,
-  loadUserPriceTable,
   makeDxCapabilities,
   metricsWithCost,
   resolveDftHome,
   resolveDftStore,
   resolveSince,
   runCursorHook,
-  selectPriceTable,
 } from "@rat-stack/core/dx";
 import type { FlightHistoryRow, SyncReport } from "@rat-stack/core/dx";
 import { Console, Data, DateTime, Effect, Layer, Option } from "effect";
@@ -39,10 +36,12 @@ import {
   installWorktree,
   otherWorktrees,
 } from "./dft-install.js";
+import { DEFAULT_DASHBOARD_PORT, runLiveDashboard } from "./dft-live.js";
 import {
   analyzeText,
   branchOneline,
   chatsText,
+  enterpriseLine,
   explainText,
   formatUsd,
   historyOneline,
@@ -54,8 +53,14 @@ import {
   statusText,
   syncNote,
   syncText,
+  withEnterpriseLine,
 } from "./dft-render.js";
 import type { AnalyzeExtras } from "./dft-render.js";
+import {
+  capabilitiesFor,
+  capabilityAt as capabilitiesOf,
+  costOptionsFor,
+} from "./dft-session.js";
 import { mcpServer } from "./surfaces.js";
 import { VERSION } from "./version.js";
 
@@ -149,37 +154,13 @@ export const dftPaths = (flags: Pick<ReportFlags, "db" | "repo">) => {
 const dftSession = (flags: ReportFlags) =>
   Effect.gen(function* session() {
     const paths = dftPaths(flags);
-    const userTable = yield* loadUserPriceTable(paths.dftHome);
-    const selection = selectPriceTable(userTable);
-
-    if (selection.warning !== null) {
-      yield* Console.error(selection.warning);
-    }
-
-    const costOptions =
-      userTable.kind === "loaded"
-        ? defaultCostOptions(userTable)
-        : yield* defaultPriceProvider(paths.home).pipe(
-            Effect.tap((provider) =>
-              Console.error(provider.warnings.join("\n")).pipe(
-                Effect.when(Effect.succeed(provider.warnings.length > 0))
-              )
-            ),
-            Effect.map((provider) => ({
-              priceTable: provider.table,
-              subscription: null,
-            }))
-          );
-
+    const costOptions = yield* costOptionsFor(paths.dftHome, paths.home);
     const now = yield* DateTime.now;
     const from = yield* resolveSince(flags.since, DateTime.toEpochMillis(now));
-    const registry = buildRegistry(allCollectors, metricsWithCost(costOptions));
 
-    const capabilities = makeDxCapabilities({
-      collectors: allCollectors,
+    const capabilities = capabilitiesFor({
       costOptions,
-      defaultRepo: paths.repo,
-      registry,
+      repo: paths.repo,
       selector: {
         allRepos: flags.allRepos,
         branch: flags.branch ?? null,
@@ -188,7 +169,7 @@ const dftSession = (flags: ReportFlags) =>
       storePath: paths.store.path,
     });
 
-    return { capabilities, paths };
+    return { capabilities, costOptions, paths };
   });
 
 type Session = Effect.Success<ReturnType<typeof dftSession>>;
@@ -216,6 +197,9 @@ const syncStep = (flags: ReportFlags, session: Session, quiet = false) =>
 
     return report;
   });
+
+const stdoutColor = (): boolean =>
+  process.stdout.isTTY && process.env.NO_COLOR === undefined;
 
 const printOutput = (
   flags: Pick<ReportFlags, "json">,
@@ -290,12 +274,7 @@ const onelineCommand = <A, E, R, J = A>(
     runReport(name, flags, run, view)
   ).pipe(Command.withDescription(description));
 
-const capabilityAt = (session: Session) => {
-  const [status, analyze, explain, evidence, collect, mark, history, chats] =
-    session.capabilities;
-
-  return { analyze, chats, collect, evidence, explain, history, mark, status };
-};
+const capabilityAt = (session: Session) => capabilitiesOf(session.capabilities);
 
 const statusCommand = reportCommand(
   "status",
@@ -519,11 +498,14 @@ const historyCommand = onelineCommand(
         ? historyOneline(output.history.rows, {
             allRepos: output.history.allRepos,
           })
-        : historyText(output.history.rows, {
-            allRepos: output.history.allRepos,
-            now: context.now,
-            verbose: context.verbose,
-          }),
+        : withEnterpriseLine(
+            historyText(output.history.rows, {
+              allRepos: output.history.allRepos,
+              now: context.now,
+              verbose: context.verbose,
+            }),
+            stdoutColor()
+          ),
   }
 ).pipe(
   Command.withShortDescription("Cost of every branch, one row each"),
@@ -545,24 +527,57 @@ const historyCommand = onelineCommand(
 );
 
 const dashboardFlags = {
-  allRepos: reportFlags.allRepos,
-  db: reportFlags.db,
-  json: booleanFlag("json", "Print where the file was saved as JSON"),
-  noOpen: booleanFlag(
-    "no-open",
-    "Save the file but don't open it in the browser"
+  allRepos: booleanFlag(
+    "all-repos",
+    "Show every repo dft has seen, not just the tracked ones (with --one-time: not just this one)"
   ),
-  noSync: reportFlags.noSync,
+  db: reportFlags.db,
+  json: booleanFlag(
+    "json",
+    "With --one-time: print where the file was saved as JSON"
+  ),
+  noOpen: booleanFlag("no-open", "Don't open the page in the browser"),
+  noSync: booleanFlag(
+    "no-sync",
+    "With --one-time: don't import new data first; use what is already stored"
+  ),
+  oneTime: booleanFlag(
+    "one-time",
+    "Save a static page once and exit instead of running the live dashboard"
+  ),
   out: optionalString(
     "out",
-    "Where to save the page; defaults to ~/.dft/dashboard.html (or $DFT_HOME/dashboard.html)"
+    "With --one-time: where to save the page; defaults to ~/.dft/dashboard.html (or $DFT_HOME/dashboard.html)"
+  ),
+  port: Flag.Int("port").pipe(
+    Flag.withDefault(DEFAULT_DASHBOARD_PORT),
+    Flag.withDescription(
+      `Port for the live dashboard on 127.0.0.1 (default ${String(DEFAULT_DASHBOARD_PORT)})`
+    )
   ),
   repo: reportFlags.repo,
-  since: reportFlags.since,
+  since: optionalString(
+    "since",
+    "Time range to start with: 7d or 30d (with --one-time, any range like 24h or 2026-09-01)"
+  ),
   verbose: reportFlags.verbose,
 };
 
-const dashboardCommand = Command.make("dashboard", dashboardFlags, (flags) =>
+interface DashboardCommandFlags {
+  readonly allRepos: boolean;
+  readonly db: string | undefined;
+  readonly json: boolean;
+  readonly noOpen: boolean;
+  readonly noSync: boolean;
+  readonly oneTime: boolean;
+  readonly out: string | undefined;
+  readonly port: number;
+  readonly repo: string | undefined;
+  readonly since: string | undefined;
+  readonly verbose: boolean;
+}
+
+const oneTimeDashboard = (flags: DashboardCommandFlags) =>
   runReport(
     "dashboard",
     { ...flags, branch: undefined },
@@ -579,23 +594,52 @@ const dashboardCommand = Command.make("dashboard", dashboardFlags, (flags) =>
         { chats: branchChats, history: capabilityAt(session).history.handler }
       ),
     { render: (output) => dashboardText(output) }
-  )
+  );
+
+const liveDashboard = (flags: DashboardCommandFlags) =>
+  Effect.gen(function* live() {
+    const paths = dftPaths(flags);
+    const costOptions = yield* costOptionsFor(paths.dftHome, paths.home);
+
+    return yield* runLiveDashboard({
+      allRepos: flags.allRepos,
+      costOptions,
+      open: !flags.noOpen,
+      paths,
+      port: flags.port,
+      since: flags.since,
+    });
+  });
+
+const dashboardCommand = Command.make("dashboard", dashboardFlags, (flags) =>
+  Effect.gen(function* dashboard() {
+    if (flags.oneTime) {
+      return yield* oneTimeDashboard(flags);
+    }
+
+    return yield* liveDashboard(flags);
+  })
 ).pipe(
   Command.withDescription(
-    "Save a simple web page with the cost of every branch and open it in your browser. Click a branch to see its chats. The page is one local file and loads nothing from the internet. This repo only unless --all-repos."
+    "Run a live dashboard on http://127.0.0.1:7420 that keeps syncing and updates as you work. It tracks this repo, opens your browser and runs until Ctrl+C. It only listens on this computer and loads nothing from the internet. Add --one-time to save a static page once and exit."
   ),
-  Command.withShortDescription("Cost of every branch as a web page"),
+  Command.withShortDescription("Live cost dashboard in your browser"),
   Command.withExamples([
     {
       command: "dft dashboard",
-      description: "This repo, opened in the browser",
+      description:
+        "Live dashboard for the tracked repos, opened in the browser",
     },
     {
-      command: "dft dashboard --all-repos --since 30d",
-      description: "Every repo, last 30 days",
+      command: "dft dashboard --port 8080 --no-open",
+      description: "Another port, without opening the browser",
     },
     {
-      command: "dft dashboard --out costs.html --no-open",
+      command: "dft dashboard --one-time --all-repos --since 30d",
+      description: "Save a static page for every repo, last 30 days",
+    },
+    {
+      command: "dft dashboard --one-time --out costs.html --no-open",
       description: "Save to a file of your choice without opening it",
     },
   ])
@@ -870,7 +914,7 @@ const installCommand = Command.make(
         installChecks(worktree, homedir(), process.platform, process.version)
       );
 
-      yield* Console.log(installText(result, checks, homedir()));
+      yield* Console.log(installText(result, checks, homedir(), stdoutColor()));
     })
 ).pipe(
   Command.withDescription(
@@ -1004,4 +1048,15 @@ export const dftCommand = Command.make("dft").pipe(
   ])
 );
 
-export const runDft = Command.runWith(dftCommand, { version: VERSION });
+const runCommand = Command.runWith(dftCommand, { version: VERSION });
+
+export const isTopLevelHelp = (args: readonly string[]): boolean =>
+  args.length === 0 ||
+  (args.length === 1 && (args[0] === "--help" || args[0] === "-h"));
+
+export const runDft = (args: readonly string[]) =>
+  isTopLevelHelp(args)
+    ? runCommand(args).pipe(
+        Effect.ensuring(Console.log(`\n${enterpriseLine(stdoutColor())}`))
+      )
+    : runCommand(args);

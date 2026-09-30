@@ -1,8 +1,8 @@
 # Agent instructions
 
-## DX Flight Recorder (this repository)
+## dx-feature-tracker (this repository)
 
-This repository is the standalone **DX Flight Recorder**, scaffolded from Ratstack `joelhooks/rat-stack@753c7b07dcc516037dd1d455a8766bf112084844`. Recorder rules below override the upstream Ratstack text that follows it wherever they conflict.
+This repository is the standalone **dx-feature-tracker** (CLI `dft`, "AI Engineering Cost Tracker"), scaffolded from Ratstack `joelhooks/rat-stack@753c7b07dcc516037dd1d455a8766bf112084844`. The dx-feature-tracker rules below override the upstream Ratstack text that follows it wherever they conflict.
 
 - **Workspace:** `apps/cli`, `packages/core`, `packages/capability`, `packages/devtools`. Upstream `apps/web`, `apps/infra`, `apps/mischief`, `packages/auth`, `packages/database`, `packages/lore` are **not** in this tree; ignore upstream references to them. No cloud deployment, auth, web dashboard or code-mode sandbox.
 - **Product code** lives in `packages/core/src/dx/` and is exported only as `@rat-stack/core/dx` (barrel `packages/core/src/dx/index.ts`, owned by the integration owner). Tests live in `packages/core/test/dx/<id>.test.ts`, fixtures in `packages/core/test/dx/fixtures/<id>/`.

@@ -190,7 +190,7 @@ const registerStarts = (
     if (explicit.has(flightId)) {
       ignored.push({
         eventId: event.eventId,
-        reason: "duplicate start: flight start time and base are frozen",
+        reason: "duplicate start: feature start time and base are frozen",
       });
       continue;
     }
@@ -258,8 +258,8 @@ const registerStops = (
         eventId: event.eventId,
         reason:
           candidates.length === 0
-            ? "stop marker matches no open explicit flight"
-            : "stop marker matches several open flights",
+            ? "stop marker matches no open explicit feature"
+            : "stop marker matches several open features",
       });
       continue;
     }

@@ -18,7 +18,9 @@ export const INSTALL_SCHEMA = "dx-install/v1" as const;
 
 export const MCP_SERVER_NAME = "rat-stack" as const;
 
-export const MANIFEST_FILE = "dx-flight-recorder.install.json" as const;
+export const MANIFEST_FILE = "dx-feature-tracker.install.json" as const;
+
+export const LEGACY_MANIFEST_FILE = "dx-flight-recorder.install.json" as const;
 
 export const SPOOL_IGNORE_LINE = ".dx-flight-recorder/" as const;
 
@@ -190,10 +192,18 @@ const gitExcludeFor = (target: string): string | null => {
 const manifestPath = (configRoot: string): string =>
   path.join(configRoot, MANIFEST_FILE);
 
-export const readManifest = (configRoot: string): InstallManifest | null => {
-  const file = manifestPath(configRoot);
+const legacyManifestPath = (configRoot: string): string =>
+  path.join(configRoot, LEGACY_MANIFEST_FILE);
 
-  if (!existsSync(file)) {
+const existingManifestPath = (configRoot: string): string | null =>
+  [manifestPath(configRoot), legacyManifestPath(configRoot)].find((file) =>
+    existsSync(file)
+  ) ?? null;
+
+export const readManifest = (configRoot: string): InstallManifest | null => {
+  const file = existingManifestPath(configRoot);
+
+  if (file === null) {
     return null;
   }
 
@@ -282,7 +292,7 @@ const installSkill = (
 
   if (foreign) {
     throw new InstallError(
-      `${dest} exists and was not installed by the recorder; refusing to overwrite it`
+      `${dest} exists and was not installed by dx-feature-tracker; refusing to overwrite it`
     );
   }
 
@@ -358,7 +368,7 @@ const installHooks = (
 const installExclude = (exclude: string | null, journal: Journal): void => {
   if (exclude === null) {
     journal.notes.push(
-      `no .git dir in the target; add ${SPOOL_IGNORE_LINE} to your ignore rules so the hook spool is never committed`
+      `no .git dir in the target; add the old folder ${SPOOL_IGNORE_LINE} to your ignore rules if it exists, so it is never committed`
     );
 
     return;
@@ -429,6 +439,7 @@ export const install = (options: InstallOptions): ActionResult => {
   };
 
   writeJson(manifestPath(configRoot), manifest);
+  rmSync(legacyManifestPath(configRoot), { force: true });
 
   return {
     backups: journal.backups,
@@ -588,9 +599,10 @@ export const uninstall = (options: UninstallOptions): ActionResult => {
     uninstallExclude(manifest.gitExclude, journal);
   }
 
-  rmSync(manifestPath(configRoot));
+  rmSync(manifestPath(configRoot), { force: true });
+  rmSync(legacyManifestPath(configRoot), { force: true });
   journal.notes.push(
-    "hook spool (.dx-flight-recorder/) and the event store are user data and were kept"
+    "hook spool and the event store are user data and were kept"
   );
 
   return {
@@ -606,7 +618,7 @@ const HELP = `Usage: node scripts/dx-install.ts <install|uninstall|status> --tar
   --config-root <dir>  Override the Cursor config dir (default <target>/.cursor).
   --no-hooks           Install MCP + skills only (v0); skip project hooks.
   --store <file>       Pass DX_STORE to the MCP server.
-  --cli <file>         Built recorder CLI (default <recorder>/apps/cli/dist/cli.js).
+  --cli <file>         Built dft CLI (default <repo>/apps/cli/dist/cli.js).
   --node <file>        Node binary for commands (default: this node).
 
 Never edits ~/.cursor. Every modified file is backed up next to itself.`;
@@ -635,7 +647,7 @@ const runInstall = (
 
   if (!existsSync(cliPath)) {
     throw new InstallError(
-      `recorder CLI not built at ${cliPath}; run \`pnpm exec turbo run build\` first`
+      `dft CLI not built at ${cliPath}; run \`pnpm exec turbo run build\` first`
     );
   }
 

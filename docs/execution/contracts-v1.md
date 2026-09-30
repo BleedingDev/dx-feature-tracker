@@ -1,4 +1,4 @@
-# DX Flight Recorder contracts v1 (A03, frozen)
+# dx-feature-tracker contracts v1 (A03, frozen)
 
 Status: FROZEN at interface checkpoint. Owner: A03 contract steward. Version tag `dx.contracts.v1`.
 Changes after freeze: additive optional fields only, via A03; breaking changes need a v2 tag and gate approval.
@@ -155,5 +155,5 @@ Input fields must not be named `json` or `yes` (Ratstack CLI reserves them).
 ### CLI parameters (frozen)
 
 `--source <adapterId>`, `--input <path|ref>`, `--repo <path>`, `--flight <flightId>`, `--store <dbPath>`
-(default `$DX_STORE` or `~/.dx-flight-recorder/events.sqlite`), `--replay` (use separate replay store), `--snapshot-id`, `--as-of`.
+(default `$DX_STORE` or `~/.dft/dft.db`), `--replay` (use separate replay store), `--snapshot-id`, `--as-of`.
 Live and replay stores are separate files; never merged silently.

@@ -54,7 +54,7 @@ const CONTENT_MARKERS = [
   "exfil.invalid",
 ] as const;
 
-const scratch = mkdtempSync(path.join(os.tmpdir(), "dxfr-c10-"));
+const scratch = mkdtempSync(path.join(os.tmpdir(), "dft-c10-"));
 
 const ROOT = path.join(scratch, "repo");
 

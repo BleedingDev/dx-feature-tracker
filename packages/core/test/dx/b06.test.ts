@@ -68,7 +68,7 @@ const RowsSchema = Schema.Record(
   Schema.Array(Schema.Record(Schema.String, CellSchema))
 );
 
-const tempRoot = mkdtempSync(path.join(os.tmpdir(), "dxfr-b06-"));
+const tempRoot = mkdtempSync(path.join(os.tmpdir(), "dft-b06-"));
 
 afterAll(() => {
   rmSync(tempRoot, { force: true, recursive: true });

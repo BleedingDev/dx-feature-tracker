@@ -9,6 +9,7 @@ import { Data, DateTime, Effect, Option } from "effect";
 
 import {
   collapseTurns,
+  enterpriseHtml,
   formatAgo,
   formatCount,
   formatDuration,
@@ -81,7 +82,7 @@ export interface RenderDashboardOptions {
   readonly timeZone?: string;
 }
 
-const DASH = "—";
+const DASH = "-";
 
 const ESCAPES = new Map([
   ['"', "&quot;"],
@@ -117,6 +118,9 @@ export const rowTokens = (row: FlightHistoryRow): number | null => {
   return values.length === 0 ? null : values.reduce((sum, n) => sum + n, 0);
 };
 
+export const rowCursorFigure = (row: FlightHistoryRow): number | null =>
+  measure(row.money.metered);
+
 export const rowBilled = (row: FlightHistoryRow): number | null =>
   measure(row.money.billed) ?? measure(row.money.metered);
 
@@ -131,7 +135,7 @@ const sumOrNull = (values: readonly (number | null)[]): number | null => {
     : present.reduce((sum, value) => sum + value, 0);
 };
 
-const repoName = (commonDir: string | null): string => {
+export const repoName = (commonDir: string | null): string => {
   if (commonDir === null) {
     return DASH;
   }
@@ -142,7 +146,7 @@ const repoName = (commonDir: string | null): string => {
   return (last === ".git" ? parts.at(-2) : last) ?? commonDir;
 };
 
-const baseName = (file: string): string =>
+export const baseName = (file: string): string =>
   file.split(/[/\\]/u).findLast((part) => part !== "") ?? file;
 
 const dateFormat = (
@@ -195,7 +199,7 @@ const rangeText = (
   const from = dayText(first, timeZone);
   const to = dayText(last, timeZone);
 
-  return from === to ? from : `${from} – ${to}`;
+  return from === to ? from : `${from} to ${to}`;
 };
 
 interface Totals {
@@ -281,7 +285,7 @@ const chatTitle = (chat: DashboardChat, titles: boolean): string =>
     ? chat.title.value
     : `chat ${chat.sessionId.slice(0, 8)}`;
 
-const chatList = (
+export const chatList = (
   report: DashboardChats,
   branch: string,
   titles: boolean
@@ -428,7 +432,7 @@ const branchRows = (
   max: number
 ): string => {
   const { row } = branch;
-  const name = row.branch ?? "(no branch)";
+  const name = row.branch ?? "unassigned";
   const repo = repoName(row.repoCommonDir);
 
   const last =
@@ -567,6 +571,7 @@ ul.chats li{padding:6px 0}
 .legend{display:inline-flex;gap:12px;align-items:center}
 .legend i{display:inline-block;width:14px;height:5px;border-radius:3px;margin-right:4px;vertical-align:middle}
 footer{margin-top:20px;color:var(--muted);font-size:12px;display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:space-between}
+.enterprise{flex-basis:100%;margin:0;color:var(--muted);opacity:.8}
 `;
 
 const SCRIPT = `
@@ -643,6 +648,7 @@ export const renderDashboard = (
     "<footer>",
     `<span>Billed is what Cursor charged. Estimate is list price for the tokens. They are shown apart, never added. <span class="legend"><span><i style="background:var(--billed)"></i>billed</span><span><i style="background:var(--estimate)"></i>estimate</span></span></span>`,
     `<span>Generated ${escapeHtml(stampText(data.generatedAt, options.timeZone))} · dft ${escapeHtml(data.version)}</span>`,
+    `<p class="enterprise">${enterpriseHtml()}</p>`,
     "</footer>",
     "</main>",
     `<script>${SCRIPT}</script>`,
@@ -704,14 +710,7 @@ const withSince = <A extends object>(
   since: string | undefined
 ): A & { since?: string } => (since === undefined ? base : { ...base, since });
 
-const repoPathFor = (
-  row: FlightHistoryRow,
-  options: DashboardOptions
-): string | null => {
-  if (options.scope === "repo") {
-    return options.repo;
-  }
-
+export const repoPathOf = (row: FlightHistoryRow): string | null => {
   const fromCommon =
     row.repoCommonDir !== null && baseName(row.repoCommonDir) === ".git"
       ? [path.dirname(row.repoCommonDir)]
@@ -725,6 +724,11 @@ const repoPathFor = (
 
   return candidates.find((candidate) => existsSync(candidate)) ?? null;
 };
+
+const repoPathFor = (
+  row: FlightHistoryRow,
+  options: DashboardOptions
+): string | null => (options.scope === "repo" ? options.repo : repoPathOf(row));
 
 const loadChats = <CE, CR>(
   row: FlightHistoryRow,
@@ -759,7 +763,7 @@ const openerFor = (platform: NodeJS.Platform): string | null => {
   return platform === "linux" ? "xdg-open" : null;
 };
 
-const openInBrowser = (file: string, platform: NodeJS.Platform) =>
+export const openInBrowser = (file: string, platform: NodeJS.Platform) =>
   Effect.sync(() => {
     const command = openerFor(platform);
 

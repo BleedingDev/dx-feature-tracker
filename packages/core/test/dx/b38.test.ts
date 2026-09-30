@@ -44,7 +44,7 @@ const BATCH = path.join(FIXTURE_DIR, "branch-flight.batch.json");
 
 const LATE_BATCH = path.join(FIXTURE_DIR, "branch-flight-late.batch.json");
 
-const scratchRoot = fs.mkdtempSync(path.join(os.tmpdir(), "dxfr-b38-"));
+const scratchRoot = fs.mkdtempSync(path.join(os.tmpdir(), "dft-b38-"));
 
 afterAll(() => {
   fs.rmSync(scratchRoot, { force: true, recursive: true });

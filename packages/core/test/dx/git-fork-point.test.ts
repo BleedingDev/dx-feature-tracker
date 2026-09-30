@@ -25,7 +25,7 @@ afterAll(() => {
 });
 
 const newRoot = () => {
-  const root = mkdtempSync(path.join(tmpdir(), "dxfr-fork-"));
+  const root = mkdtempSync(path.join(tmpdir(), "dft-fork-"));
 
   roots.push(root);
 
@@ -37,9 +37,9 @@ const gitIn = (cwd: string, ...args: readonly string[]) =>
     "git",
     [
       "-c",
-      "user.name=dxfr",
+      "user.name=dft",
       "-c",
-      "user.email=dxfr@example.invalid",
+      "user.email=dft@example.invalid",
       "-c",
       "commit.gpgsign=false",
       "-c",

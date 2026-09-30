@@ -1,6 +1,6 @@
-> Historical first-pass report. Product recommendations and access conclusions are superseded by [the revised synthesis](../../synthesis.md) and the reports/revision/ evidence. DX Flight Recorder is standalone or two-person/24-hour plan applies. Original source evidence remains below.
+> Historical first-pass report. Product recommendations and access conclusions are superseded by [the revised synthesis](../../synthesis.md) and the reports/revision/ evidence. dx-feature-tracker is standalone or two-person/24-hour plan applies. Original source evidence remains below.
 
-# OSS comparables for Biomem DX Flight Recorder
+# OSS comparables for Biomem dx-feature-tracker
 
 Research date: 2026-09-30. Confidence: high for the explicitly documented capabilities and API snapshots; medium for integration-effort estimates; no installed integrations were exercised. Scope: five deep comparables, plus transport and CI context. This is an evidence-backed family survey, not an exhaustive list of every repository.
 

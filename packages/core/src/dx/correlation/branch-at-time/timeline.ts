@@ -17,6 +17,7 @@ export interface HeadMove {
   readonly atMs: number;
   readonly branch: string | null;
   readonly detached: boolean;
+  readonly owner?: string;
 }
 
 export type EvidencePointSource = "branch-reflog" | "commit";
@@ -88,6 +89,7 @@ export const parseReflogLines = (text: string): readonly RawReflogEntry[] =>
 
 interface Transition {
   readonly from: string | null;
+  readonly returning?: boolean;
   readonly to: string | null;
 }
 
@@ -101,7 +103,7 @@ const transitionOf = (subject: string): Transition | null => {
   const returning = RETURNING.exec(subject)?.groups?.to;
 
   if (returning !== undefined) {
-    return { from: null, to: returning };
+    return { from: null, returning: true, to: returning };
   }
 
   const started = REBASE_START.exec(subject)?.groups?.to;
@@ -145,14 +147,14 @@ export const buildHeadMoves = (
       ? { branch: null, detached: false }
       : stateOf(initialName, branches);
 
-  const moves: HeadMove[] = [];
+  const moves: { move: HeadMove; returning: boolean }[] = [];
 
   for (const { atMs, transition } of transitions) {
     if (transition !== null) {
       state = stateOf(transition.to, branches);
     }
 
-    const last = moves.at(-1);
+    const last = moves.at(-1)?.move;
     const known = state.branch !== null || state.detached;
 
     if (
@@ -161,11 +163,33 @@ export const buildHeadMoves = (
         last.branch !== state.branch ||
         last.detached !== state.detached)
     ) {
-      moves.push({ atMs, ...state });
+      moves.push({
+        move: { atMs, ...state },
+        returning: transition?.returning === true,
+      });
     }
   }
 
-  return moves;
+  return moves.map(({ move }, index) => {
+    if (!move.detached) {
+      return move;
+    }
+
+    const next = moves[index + 1];
+
+    const before = moves.slice(0, index).findLast((m) => m.move.branch !== null)
+      ?.move.branch;
+
+    const after = moves.slice(index + 1).find((m) => m.move.branch !== null)
+      ?.move.branch;
+
+    const owner =
+      next?.returning === true && next.move.branch !== null
+        ? next.move.branch
+        : (before ?? after ?? null);
+
+    return owner === null ? move : { ...move, owner };
+  });
 };
 
 export const branchActivityPoints = (
@@ -199,6 +223,17 @@ const fromReflog = (
 
   if (move === undefined) {
     return null;
+  }
+
+  if (move.detached && move.owner !== undefined) {
+    return {
+      attribution: "provisional",
+      branch: move.owner,
+      confidence: 0.6,
+      detached: true,
+      method: "reflog",
+      reason: `HEAD reflog: detached since ${isoOf(move.atMs)} (rebase, bisect or commit checkout); attributed to ${move.owner}, the branch checked out around it`,
+    };
   }
 
   if (move.detached || move.branch === null) {

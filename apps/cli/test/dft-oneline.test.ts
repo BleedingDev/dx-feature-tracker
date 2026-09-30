@@ -186,3 +186,40 @@ describe("dft history worktree column", () => {
     expect(second).toMatch(/^main\s+app\s+open\s.*\$1\.00/u);
   });
 });
+
+describe("dft history unassigned and account rows", () => {
+  const now = Date.parse("2026-09-30T12:00:00.000Z");
+
+  const rows = [
+    {
+      ...row({ billed: 4, lastActivityAt: "2026-09-30T11:30:00.000Z" }),
+      branch: null,
+    },
+    row({ billed: 1, branch: "main" }),
+    row({ billed: 3, branch: "account", repoCommonDir: null }),
+  ];
+
+  it("shows one unassigned row last with a hint and keeps account usage off the table", () => {
+    const text = historyText(rows, { allRepos: true, now, verbose: false });
+    const lines = text.split("\n");
+
+    expect(text).not.toContain("(no branch)");
+    expect(lines[1]).toMatch(/^app:main\s/u);
+    expect(lines[2]).toMatch(/^app:unassigned\s/u);
+    expect(lines.filter((line) => line.includes("account:"))).toHaveLength(0);
+    expect(text).toContain("Cursor account, not linked to a branch:");
+    expect(text).toContain(
+      "unassigned: repo activity that could not be matched to a branch."
+    );
+    expect(text).not.toContain("Why:");
+  });
+
+  it("explains unassigned activity with --verbose", () => {
+    const text = historyText(rows, { allRepos: false, now, verbose: true });
+
+    expect(text).toContain(
+      "Why: the events were recorded while HEAD was detached"
+    );
+    expect(text).not.toContain("Cursor account");
+  });
+});

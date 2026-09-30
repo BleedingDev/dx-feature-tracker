@@ -235,7 +235,7 @@ const metricViolations = (r: MetricResult): string[] => {
   return out;
 };
 
-const tempRoot = mkdtempSync(path.join(os.tmpdir(), "dxfr-c01-"));
+const tempRoot = mkdtempSync(path.join(os.tmpdir(), "dft-c01-"));
 
 afterAll(() => {
   rmSync(tempRoot, { force: true, recursive: true });

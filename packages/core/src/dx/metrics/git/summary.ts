@@ -90,6 +90,12 @@ const decodeCommit = Schema.decodeUnknownOption(CommitPayloadSchema);
 
 const decodeWorktree = Schema.decodeUnknownOption(WorktreePayloadSchema);
 
+const RewriteKeySchema = Schema.Struct({
+  authoredAt: Schema.optional(Schema.NullOr(Schema.String)),
+});
+
+const decodeRewriteKey = Schema.decodeUnknownOption(RewriteKeySchema);
+
 const isGitHistory = (event: DxEventEnvelope): boolean =>
   event.adapterId === GIT_CHURN_SOURCE_ADAPTER_ID;
 
@@ -176,10 +182,35 @@ const latestWorktree = (
   return candidates.toSorted(newestFirst)[0]?.facts ?? null;
 };
 
+const rewriteKey = (
+  event: DxEventEnvelope,
+  facts: CommitFacts
+): string | null => {
+  if (facts.isMerge || !facts.numstatAvailable) {
+    return null;
+  }
+
+  const authoredAt = Option.match(decodeRewriteKey(event.payload), {
+    onNone: () => null,
+    onSome: (payload) => payload.authoredAt ?? null,
+  });
+
+  return authoredAt === null
+    ? null
+    : [
+        authoredAt,
+        facts.linesAdded,
+        facts.linesDeleted,
+        facts.binaryFiles,
+        ...facts.paths.toSorted(),
+      ].join("\u0000");
+};
+
 const dedupeCommits = (
   events: readonly DxEventEnvelope[]
 ): readonly CommitFacts[] => {
   const bySha = new Map<string, CommitFacts>();
+  const byRewrite = new Set<string>();
 
   for (const event of events) {
     if (event.kind !== "git.commit") {
@@ -188,9 +219,21 @@ const dedupeCommits = (
 
     const facts = commitFacts(event);
 
-    if (facts !== null && !bySha.has(facts.sha)) {
-      bySha.set(facts.sha, facts);
+    if (facts === null || bySha.has(facts.sha)) {
+      continue;
     }
+
+    const key = rewriteKey(event, facts);
+
+    if (key !== null && byRewrite.has(key)) {
+      continue;
+    }
+
+    if (key !== null) {
+      byRewrite.add(key);
+    }
+
+    bySha.set(facts.sha, facts);
   }
 
   return [...bySha.values()];

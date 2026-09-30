@@ -94,7 +94,7 @@ export const DxEvidenceOutput = Schema.Struct({
 
 export const dxStatusContract = defineContract("dx_status", {
   annotations: { idempotent: true, readOnly: true },
-  description: "Show DX recorder modules, store and contract version",
+  description: "Show dx-feature-tracker modules, store and contract version",
   failure: QueryFailureSchema,
   input: DxStatusInput,
   output: StatusReportSchema,
@@ -112,7 +112,7 @@ export const dxCollectContract = defineContract("dx_collect", {
 export const dxMarkContract = defineContract("dx_mark", {
   annotations: { readOnly: false },
   description:
-    "Write an explicit flight start/stop/wait marker or labelled claim",
+    "Write an explicit feature start/stop/wait marker or labelled claim",
   failure: MarkFailureSchema,
   input: DxMarkInput,
   output: DxMarkOutput,
@@ -121,7 +121,7 @@ export const dxMarkContract = defineContract("dx_mark", {
 export const dxAnalyzeContract = defineContract("dx_analyze", {
   annotations: { idempotent: true, readOnly: false },
   description:
-    "Analyze a flight from stored evidence; persists snapshot metadata only, never collects",
+    "Analyze a branch or feature from stored evidence; persists snapshot metadata only, never collects",
   failure: QueryFailureSchema,
   input: DxAnalyzeInput,
   output: AnalyzeReportSchema,
@@ -129,7 +129,7 @@ export const dxAnalyzeContract = defineContract("dx_analyze", {
 
 export const dxExplainContract = defineContract("dx_explain", {
   annotations: { idempotent: true, readOnly: true },
-  description: "Explain a flight as an evidence-linked timeline",
+  description: "Explain a branch or feature as an evidence-linked timeline",
   failure: QueryFailureSchema,
   input: DxExplainInput,
   output: ExplainTimelineSchema,

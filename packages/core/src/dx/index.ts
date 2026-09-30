@@ -138,3 +138,74 @@ export {
   closeOpenIntervalAt,
   intervalHelpers,
 } from "./metrics/intervals/intervals.js";
+
+export {
+  addRepo,
+  DEFAULT_LIVE_CONFIG,
+  listRepos,
+  readLiveConfig,
+  removeRepo,
+  resolveGitRepo,
+  setCursorUsageImport,
+  writeLiveConfig,
+} from "./live/config.js";
+
+export type {
+  GitRepo,
+  LiveConfig,
+  TrackResult,
+  UntrackResult,
+} from "./live/config.js";
+
+export {
+  LIVE_DEFAULTS,
+  startLiveEngine,
+  USAGE_INPUT,
+  USAGE_SOURCE,
+} from "./live/engine.js";
+
+export type {
+  LiveChange,
+  LiveChangeReason,
+  LiveEngine,
+  LiveEngineOptions,
+  LiveListener,
+  LiveRepoStatus,
+  LiveSignal,
+  LiveStatus,
+  LiveUsageStatus,
+} from "./live/engine.js";
+
+export {
+  backupsDir,
+  configPath,
+  isInsideHome,
+  LiveActionError,
+  liveHome,
+  spoolRoot,
+} from "./live/home.js";
+
+export type { LiveActionReason, LiveHome } from "./live/home.js";
+
+export {
+  deleteRepoData,
+  listBackups,
+  planDeleteRepoData,
+  planResetStore,
+  RESET_CONFIRM_TEXT,
+  resetStore,
+  restoreBackup,
+} from "./live/store-admin.js";
+
+export type {
+  BackupInfo,
+  BackupReason,
+  BranchRemoval,
+  DeleteRepoResult,
+  RemovalTotals,
+  RepoDataPlan,
+  RepoEventCount,
+  ResetPlan,
+  ResetResult,
+  RestoreResult,
+} from "./live/store-admin.js";

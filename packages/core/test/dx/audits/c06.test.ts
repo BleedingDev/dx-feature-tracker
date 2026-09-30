@@ -51,7 +51,7 @@ import {
 const fixture = (name: string): string =>
   fileURLToPath(new URL(`../fixtures/c06/${name}`, import.meta.url));
 
-const root = mkdtempSync(path.join(tmpdir(), "dxfr-c06-"));
+const root = mkdtempSync(path.join(tmpdir(), "dft-c06-"));
 
 afterAll(() => {
   rmSync(root, { force: true, recursive: true });

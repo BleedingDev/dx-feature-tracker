@@ -1,4 +1,4 @@
-// @effect-diagnostics nodeBuiltinImport:off -- dft install copies the recorder checkout's Cursor skills into the target project with synchronous node:fs reads.
+// @effect-diagnostics nodeBuiltinImport:off -- dft install copies the dx-feature-tracker checkout's Cursor skills into the target project with synchronous node:fs reads.
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
 

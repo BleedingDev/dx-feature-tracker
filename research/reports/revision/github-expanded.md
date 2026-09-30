@@ -1,6 +1,6 @@
 # GitHub telemetry: expanded collector map
 
-Date: 2026-09-30. Scope: separate DX Flight Recorder. Ratstack transport/storage decision belongs to the architecture lane. No private repository requests, user-token inspection or data downloads were made. Evidence is current official documentation, not empirically verified payloads. No enterprise API is necessary for the core collection below.
+Date: 2026-09-30. Scope: separate dx-feature-tracker. Ratstack transport/storage decision belongs to the architecture lane. No private repository requests, user-token inspection or data downloads were made. Evidence is current official documentation, not empirically verified payloads. No enterprise API is necessary for the core collection below.
 
 ## Decision
 

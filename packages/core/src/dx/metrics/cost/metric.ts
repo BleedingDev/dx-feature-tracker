@@ -59,7 +59,7 @@ export const sourceEstimateDefinition = definition(
 
 export const priceTableEstimateDefinition = definition(
   "dx.cost.list-price-estimate.price-table.usd",
-  "Recorder estimate: source-reported tokens times a selected versioned price table. Method discriminator price-table:<id>@<version> is in reason."
+  "dft estimate: source-reported tokens times a selected versioned price table. Method discriminator price-table:<id>@<version> is in reason."
 );
 
 export const subscriptionAllocationDefinition = definition(
@@ -340,8 +340,7 @@ const priceTableResult = (
       evidence: [],
       measurement: "unavailable",
       numerator: null,
-      reason:
-        "No versioned price table selected; the recorder ships no default prices.",
+      reason: "No versioned price table selected; dft ships no default prices.",
       value: null,
     });
   }
@@ -680,7 +679,7 @@ export const costDescriptor: ModuleDescriptor = {
     {
       code: "no-default-price-table",
       message:
-        "The recorder ships no built-in prices; price-table estimates need an explicitly selected versioned table and are otherwise unavailable.",
+        "dft ships no built-in prices; price-table estimates need an explicitly selected versioned table and are otherwise unavailable.",
     },
     {
       code: "charge-needs-billing-export",

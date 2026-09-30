@@ -36,7 +36,7 @@ const STREAM = path.join(
 
 const BRANCH = "feature/a07-live-demo";
 
-const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "dxfr-p1-prices-"));
+const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "dft-p1-prices-"));
 
 afterAll(() => {
   fs.rmSync(scratch, { force: true, recursive: true });

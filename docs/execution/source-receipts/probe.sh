@@ -10,7 +10,7 @@ R="$T/a09-demo"; mkdir -p "$R"; cd "$R"
 git init -q -b main; git config user.email a09@example.invalid; git config user.name a09-probe
 printf 'export const add = (a, b) => a + b;\n' > math.mjs
 printf '{"type":"module"}\n' > package.json
-printf '.dx-flight-recorder/\n.cursor/\n' > .gitignore
+printf '.cursor/\n' > .gitignore
 git add -A; git commit -qm "init"
 git checkout -qb feature/a09-cost-probe
 mkdir -p .cursor
@@ -38,7 +38,7 @@ echo "db_backup_exit $?" >> "$OUT/times.txt"
 mkdir -p "$T/scratch-db"
 run() { local name=$1; shift; "$@" > "$OUT/$name.out" 2> "$OUT/$name.err"; echo "$name $?" >> "$OUT/exits.txt"; }
 run collect-git $CLI dx collect --source collector.git-history --repo "$R" --input "$R"
-run collect-hooks $CLI dx collect --source collector.cursor-hooks --repo "$R" --input "$R/.dx-flight-recorder/cursor-hooks-spool"
+run collect-hooks $CLI dx collect --source collector.cursor-hooks --repo "$R" --input "$(ls -d "${DFT_HOME:-$HOME/.dft}"/spool/"$(basename "$R")"-*/cursor-hooks 2>/dev/null | head -1)"
 for f in "$T"/stream-*.jsonl; do b=$(basename $f .jsonl); run collect-cli-$b $CLI dx collect --source collector/cursor-cli --repo "$R" --input "$f"; done
 [ -f "$T"/transcript-copy.* ] && run collect-transcripts $CLI dx collect --source collector.cursor-transcripts --repo "$R" --input "$(ls "$T"/transcript-copy.*)"
 run collect-localdb $CLI dx collect --source cursor-local-db --repo "$R" --input "$T/ai-code-tracking.backup.db"
@@ -46,7 +46,7 @@ run collect-localdb $CLI dx collect --source cursor-local-db --repo "$R" --input
 run collect-test-operator $CLI dx collect --source collector/local-test --repo "$R" --input "$T/operator-junit.xml"
 run collect-gitobs $CLI dx collect --source collector.git-observation --repo "$R" --input "$R"
 # idempotence
-run recollect-hooks $CLI dx collect --source collector.cursor-hooks --repo "$R" --input "$R/.dx-flight-recorder/cursor-hooks-spool"
+run recollect-hooks $CLI dx collect --source collector.cursor-hooks --repo "$R" --input "$(ls -d "${DFT_HOME:-$HOME/.dft}"/spool/"$(basename "$R")"-*/cursor-hooks 2>/dev/null | head -1)"
 run recollect-cli $CLI dx collect --source collector/cursor-cli --repo "$R" --input "$(ls "$T"/stream-*.jsonl | tail -1)"
 cd "$R"
 run analyze1 $CLI dx analyze --repo "$R"
@@ -55,9 +55,9 @@ run explain $CLI dx explain --flight "$(git rev-parse --abbrev-ref HEAD)" --limi
 run explain-default env DX_REPO="$R" $CLI dx explain --limit 200
 run status $CLI dx status
 # hashes of inputs (no content)
-( cd "$T"; shasum -a 256 stream-*.jsonl operator-junit.xml ai-code-tracking.backup.db transcript-copy.* 2>/dev/null; wc -l stream-*.jsonl; ls "$R/.dx-flight-recorder/cursor-hooks-spool" | wc -l; [ -f "$R/test-results.xml" ] && shasum -a 256 "$R/test-results.xml"; git -C "$R" log --oneline | wc -l; git -C "$R" diff --shortstat main..HEAD ) > "$OUT/inputs.txt" 2>&1
+( cd "$T"; shasum -a 256 stream-*.jsonl operator-junit.xml ai-code-tracking.backup.db transcript-copy.* 2>/dev/null; wc -l stream-*.jsonl; ls "$(ls -d "${DFT_HOME:-$HOME/.dft}"/spool/"$(basename "$R")"-*/cursor-hooks 2>/dev/null | head -1)" | wc -l; [ -f "$R/test-results.xml" ] && shasum -a 256 "$R/test-results.xml"; git -C "$R" log --oneline | wc -l; git -C "$R" diff --shortstat main..HEAD ) > "$OUT/inputs.txt" 2>&1
 # stream event type counts (keys only)
 node -e 'const l=require("fs").readFileSync(process.argv[1],"utf8").split("\n").filter(Boolean);const c={};for(const x of l){try{const j=JSON.parse(x);const k=j.type+(j.subtype?":"+j.subtype:"");c[k]=(c[k]||0)+1;if(j.type==="result")c.resultKeys=Object.keys(j).join(",");if(j.usage)c.usageKeys=Object.keys(j.usage).join(",")}catch{c.bad=(c.bad||0)+1}}console.log(JSON.stringify(c))' "$(ls "$T"/stream-*.jsonl | tail -1)" > "$OUT/stream-shape.json"
 # spool event kinds
-node -e 'const fs=require("fs"),p=process.argv[1];const c={};for(const f of fs.readdirSync(p)){try{const j=JSON.parse(fs.readFileSync(p+"/"+f,"utf8"));const k=j.hookEventName||j.event||j.kind||"?";c[k]=(c[k]||0)+1}catch{}}console.log(JSON.stringify(c))' "$R/.dx-flight-recorder/cursor-hooks-spool" > "$OUT/spool-shape.json" 2>&1
+node -e 'const fs=require("fs"),p=process.argv[1];const c={};for(const f of fs.readdirSync(p)){try{const j=JSON.parse(fs.readFileSync(p+"/"+f,"utf8"));const k=j.hookEventName||j.event||j.kind||"?";c[k]=(c[k]||0)+1}catch{}}console.log(JSON.stringify(c))' "$(ls -d "${DFT_HOME:-$HOME/.dft}"/spool/"$(basename "$R")"-*/cursor-hooks 2>/dev/null | head -1)" > "$OUT/spool-shape.json" 2>&1
 cat "$T"/agent-*.err > "$OUT/agent.err.txt"

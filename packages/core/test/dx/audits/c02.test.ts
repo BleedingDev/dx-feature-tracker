@@ -62,7 +62,7 @@ const plan = Schema.decodeSync(Schema.fromJsonString(AuditPlanSchema))(
   readFixture("c02/replay-audit-plan.json")
 );
 
-const root = mkdtempSync(path.join(os.tmpdir(), "dxfr-c02-"));
+const root = mkdtempSync(path.join(os.tmpdir(), "dft-c02-"));
 
 afterAll(() => {
   rmSync(root, { force: true, recursive: true });

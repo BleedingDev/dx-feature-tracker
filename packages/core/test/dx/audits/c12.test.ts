@@ -43,7 +43,7 @@ const CORRUPT = [
   "wrong-shape.batch.json",
 ];
 
-const scratchRoot = fs.mkdtempSync(path.join(os.tmpdir(), "dxfr-c12-"));
+const scratchRoot = fs.mkdtempSync(path.join(os.tmpdir(), "dft-c12-"));
 
 afterAll(() => {
   fs.rmSync(scratchRoot, { force: true, recursive: true });

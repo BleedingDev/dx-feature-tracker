@@ -88,7 +88,7 @@ describe("cursor-extension collector (B09)", () => {
         "rejected-records"
       );
       expect(JSON.stringify(batch)).not.toContain(
-        "DXFR_SYNTHETIC_SECRET_CANARY_7f3a9c"
+        "DFT_SYNTHETIC_SECRET_CANARY_7f3a9c"
       );
       expect(JSON.stringify(batch.events)).not.toMatch(/tokens|cost|charge/u);
     })

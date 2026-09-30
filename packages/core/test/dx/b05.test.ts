@@ -34,7 +34,7 @@ import { EventIdSchema } from "../../src/dx/model/ids.js";
 
 const fixtureDir = path.join(import.meta.dirname, "fixtures", "b05");
 
-const scratchRoot = mkdtempSync(path.join(tmpdir(), "dxfr-b05-"));
+const scratchRoot = mkdtempSync(path.join(tmpdir(), "dft-b05-"));
 
 afterAll(() => {
   rmSync(scratchRoot, { force: true, recursive: true });

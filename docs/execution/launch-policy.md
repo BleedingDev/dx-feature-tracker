@@ -1,6 +1,6 @@
 # Launch policy (A05)
 
-Dependency-aware admission for the DX Flight Recorder build. Source of truth: `research/execution-manifest.json` (sha256 `edf6d82859a14264908703404829a285d66a5e014297004e762a4958b91b46ca`), `research/phase-gates.md`, `research/hackathon-execution.md`. Ownership: [ownership.md](ownership.md).
+Dependency-aware admission for dx-feature-tracker build. Source of truth: `research/execution-manifest.json` (sha256 `edf6d82859a14264908703404829a285d66a5e014297004e762a4958b91b46ca`), `research/phase-gates.md`, `research/hackathon-execution.md`. Ownership: [ownership.md](ownership.md).
 
 ## Capacity
 

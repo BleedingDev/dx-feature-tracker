@@ -72,7 +72,7 @@ export const gitHistoryDescriptor: ModuleDescriptor = {
     {
       code: "commit-time-rewritable",
       message:
-        "Author/committer dates are source-reported by git and rewritten by rebase/amend; they are not recorder observations.",
+        "Author/committer dates are source-reported by git and rewritten by rebase/amend; they are not dft observations.",
     },
     {
       code: "backfill-not-first-observed",
@@ -179,7 +179,7 @@ const sem = (
 ): FieldSemantics => ({ field, method, note, rawName, unit });
 
 const OBSERVED_AT_NOTE =
-  "observedAt is recorder collection time (backfill), never the commit creation time";
+  "observedAt is dft collection time (backfill), never the commit creation time";
 
 const COMMIT_SEMANTICS: readonly FieldSemantics[] = [
   sem(
@@ -605,7 +605,9 @@ const closest = (
       }
     }
 
-    const unique = [...bySha.values()];
+    const all = [...bySha.values()];
+    const beforeHead = all.filter((candidate) => candidate.sha !== headSha);
+    const unique = beforeHead.length > 0 ? beforeHead : all;
 
     if (unique.length <= 1) {
       return unique[0] ?? null;
@@ -625,6 +627,42 @@ const closest = (
     }
 
     return best?.base ?? null;
+  });
+
+const mergedIntoCandidates = (
+  git: Git,
+  base: { readonly ref: string; readonly sha: string },
+  headSha: string
+) =>
+  Effect.gen(function* merged() {
+    const listing = yield* optional(
+      git([
+        "rev-list",
+        "--first-parent",
+        "--ancestry-path",
+        "--merges",
+        "--reverse",
+        `${headSha}..${base.sha}`,
+      ])
+    );
+
+    const merge = (listing ?? "")
+      .split("\n")
+      .map((line) => line.trim())
+      .find((line) => SHA_LINE_PATTERN.test(line));
+
+    if (merge === undefined) {
+      return [];
+    }
+
+    const mainline = yield* resolveRef(git, `${merge}^1`);
+
+    const fork =
+      mainline === null ? null : yield* mergeBaseOf(git, mainline, headSha);
+
+    return fork === null || fork === headSha
+      ? []
+      : [{ method: "default" as const, ref: base.ref, sha: fork }];
   });
 
 export const resolveForkPoint = (
@@ -672,9 +710,14 @@ export const resolveForkPoint = (
         ? fromReflog
         : yield* ancestorBranchCandidates(git, branch, headSha);
 
+    const merged =
+      base !== null && defaultFork === headSha
+        ? yield* mergedIntoCandidates(git, base, headSha)
+        : [];
+
     return yield* closest(
       git,
-      fallback === null ? forks : [...forks, fallback],
+      [...forks, ...merged, ...(fallback === null ? [] : [fallback])],
       headSha
     );
   });
@@ -703,20 +746,25 @@ const readEnv = (git: Git, input: CollectInput, observedAt: string) =>
     );
 
     const versionText = yield* optional(git(["version"]));
-    const headSha = yield* optional(git(["rev-parse", "--verify", "HEAD"]));
+    const currentSha = yield* optional(git(["rev-parse", "--verify", "HEAD"]));
 
     const detectedBranch = yield* optional(
       git(["symbolic-ref", "--quiet", "--short", "HEAD"])
     );
 
     const branch = input.context.branch ?? detectedBranch;
+    const checkedOut = branch === detectedBranch;
+
+    const headSha = checkedOut
+      ? currentSha
+      : yield* resolveRef(git, `${LOCAL_HEADS}${branch ?? ""}`);
 
     const env: EnvelopeEnv = {
       acquisition: "git",
       context: {
         ...input.context,
         branch,
-        headSha: input.context.headSha ?? headSha,
+        headSha: checkedOut ? (input.context.headSha ?? headSha) : headSha,
         repoCommonDir: input.context.repoCommonDir ?? commonDir,
         worktreePath: input.context.worktreePath ?? topLevel,
       },
@@ -725,7 +773,7 @@ const readEnv = (git: Git, input: CollectInput, observedAt: string) =>
       sourceVersion: versionText?.replace(/^git version /u, "") ?? null,
     };
 
-    return { branch, env, headSha };
+    return { branch, checkedOut, env, headSha };
   });
 
 const collectCommits = (
@@ -857,7 +905,7 @@ export const collectGitHistory = (
 
     const git: Git = (args) => runner(cwd, args);
 
-    const { branch, env, headSha } = yield* readEnv(
+    const { branch, checkedOut, env, headSha } = yield* readEnv(
       git,
       input,
       options.observedAt ?? DateTime.formatIso(yield* DateTime.now)
@@ -889,7 +937,10 @@ export const collectGitHistory = (
 
     const commits = yield* collectCommits(git, headSha, base, branchKey);
     const drafts: EventDraft[] = [...commits.drafts];
-    const worktree = yield* collectWorktree(git, branchKey, headSha);
+
+    const worktree = checkedOut
+      ? yield* collectWorktree(git, branchKey, headSha)
+      : null;
 
     if (worktree !== null) {
       drafts.push(worktree);

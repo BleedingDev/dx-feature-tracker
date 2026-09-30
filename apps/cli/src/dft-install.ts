@@ -13,6 +13,7 @@ import { DatabaseSync } from "node:sqlite";
 
 import { Option, Result, Schema } from "effect";
 
+import { enterpriseLine } from "./dft-render.js";
 import { loadSkills, skillsSourceDir } from "./dft-skills.js";
 
 export const CURSOR_HOOK_EVENTS = [
@@ -181,7 +182,7 @@ export const installSkills = (
       {
         action: "unchanged",
         detail:
-          "target project is the recorder checkout; skills already in place",
+          "target project is the dx-feature-tracker checkout; skills already in place",
         path: source,
       },
     ];
@@ -667,7 +668,8 @@ const worktreeBlocks = (result: InstallResult): readonly string[] => {
 export const installText = (
   result: InstallResult,
   checks: InstallChecks,
-  home = ""
+  home = "",
+  color = false
 ): string => {
   const warnings = installWarnings(checks);
   const done: string[] = [];
@@ -754,7 +756,8 @@ export const installText = (
         (step, index) =>
           `  ${index + 1}. ${step.label.padEnd(width)}  ${step.text}`
       )
-    )
+    ),
+    enterpriseLine(color)
   );
 
   return blocks.join("\n\n");

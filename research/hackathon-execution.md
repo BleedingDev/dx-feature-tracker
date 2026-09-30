@@ -1,6 +1,6 @@
 # Four-hour execution with presentable stopping points
 
-DX Flight Recorder is a separate Ratstack tool. Four hours is a hard deadline, not a task estimate. No human team size is assumed. Implementation and every runtime gate remain pending.
+dx-feature-tracker is a separate Ratstack tool. Four hours is a hard deadline, not a task estimate. No human team size is assumed. Implementation and every runtime gate remain pending.
 
 ## Phases and validation
 
@@ -14,7 +14,7 @@ Read [phase gates](phase-gates.md) for exact deliverables, checks, receipts and 
 | G03 / P3 v2 | v1 plus individually validated optional extensions | Freeze actual passing enabled set; unsupported/nonpassing work disabled or quarantined without blocking v1 |
 | G04 / P4 release | Frozen tested release or explicit last-green verdict | Installer/restart/replay/claims rehearsal and final fence on the same artifact |
 
-P0 is a technical checkpoint. v0 can be presented as a labelled replay product. v1 is the target real flight recorder. v2 is optional source/metric breadth. A no-access CI result is degraded-live, not full live-core. No source values for cost/tokens/survival are invented. A phase gate cannot pass from graph dependencies or elapsed time alone.
+P0 is a technical checkpoint. v0 can be presented as a labelled replay product. v1 is the target real feature tracker. v2 is optional source/metric breadth. A no-access CI result is degraded-live, not full live-core. No source values for cost/tokens/survival are invented. A phase gate cannot pass from graph dependencies or elapsed time alone.
 
 At each candidate promotion run `pnpm turbo run check test build` through one queue, using A01-verified configuration. Preserve a named commit/digest and runnable artifact for every passed gate. Actual Cursor checks use the built executable and installed target configuration; a CLI or mock protocol test cannot substitute. Gate receipts record commands/results, versions, snapshot ID, enabled descriptors, source coverage and observable demo evidence. An unavailable Cursor operator leaves client validation pending. Stop at the highest passed artifact without claiming unverified extensions.
 

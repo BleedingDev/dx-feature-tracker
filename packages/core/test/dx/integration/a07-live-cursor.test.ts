@@ -38,7 +38,7 @@ const BRANCH = "feature/a07-live-demo";
 
 const REQUEST_ID = "6cae283f-4b57-4449-ba6f-33ed59ec5506";
 
-const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "dxfr-a07-"));
+const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "dft-a07-"));
 
 afterAll(() => {
   fs.rmSync(scratch, { force: true, recursive: true });

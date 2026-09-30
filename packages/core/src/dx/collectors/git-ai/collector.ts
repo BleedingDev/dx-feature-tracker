@@ -39,7 +39,7 @@ const SOURCE_GAPS: readonly SourceGap[] = [
   {
     code: "producer-not-installed",
     message:
-      "git-ai is not installed on this host (no `git ai`, no refs/notes/ai); only a user-selected export directory of <sha>.note and <sha>.stats.json files is read. The recorder never runs git-ai install/init and never fetches or pushes notes refs.",
+      "git-ai is not installed on this host (no `git ai`, no refs/notes/ai); only a user-selected export directory of <sha>.note and <sha>.stats.json files is read. dft never runs git-ai install/init and never fetches or pushes notes refs.",
   },
   {
     code: "stats-ratio-not-retention",
@@ -49,7 +49,7 @@ const SOURCE_GAPS: readonly SourceGap[] = [
   {
     code: "unattested-additions-unknown",
     message:
-      "Lines without an AI attestation are not proven human. git-ai human_additions is kept as a source-reported label; the recorder reports unattributedAdditions only when source categories reconcile, otherwise null.",
+      "Lines without an AI attestation are not proven human. git-ai human_additions is kept as a source-reported label; dft reports unattributedAdditions only when source categories reconcile, otherwise null.",
   },
   {
     code: "no-tokens-or-cost",

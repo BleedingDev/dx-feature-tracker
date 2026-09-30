@@ -166,48 +166,43 @@ describe("live engine", () => {
       })
   );
 
-  it.live(
-    "a hook note triggers a sync and a change event within 2 seconds",
-    () =>
-      withEngine((engine, changes) =>
-        Effect.gen(function* hookSync() {
-          expect(eventsFor(app)).toBeGreaterThan(0);
-          expect(eventsFor(other)).toBeGreaterThan(0);
+  it.live("a hook note triggers a sync and a change event within seconds", () =>
+    withEngine((engine, changes) =>
+      Effect.gen(function* hookSync() {
+        expect(eventsFor(app)).toBeGreaterThan(0);
+        expect(eventsFor(other)).toBeGreaterThan(0);
 
-          changes.length = 0;
+        changes.length = 0;
 
-          const started = yield* DateTime.now;
+        const started = yield* DateTime.now;
 
-          expect(hook("gen-1").outcome.state).toBe("spooled");
+        expect(hook("gen-1").outcome.state).toBe("spooled");
 
-          const seen = yield* eventually(
-            () => changes.some((change) => change.repo === app),
-            2000
-          );
+        const seen = yield* eventually(
+          () => changes.some((change) => change.repo === app),
+          10_000
+        );
 
-          const elapsed =
-            DateTime.toEpochMillis(yield* DateTime.now) -
-            DateTime.toEpochMillis(started);
+        const elapsed =
+          DateTime.toEpochMillis(yield* DateTime.now) -
+          DateTime.toEpochMillis(started);
 
-          expect(seen).toBe(true);
-          expect(elapsed).toBeLessThan(2000);
-          expect(changes).toContainEqual(
-            expect.objectContaining({
-              branches: ["main"],
-              inserted: 1,
-              reason: "sync",
-              repo: app,
-            })
-          );
+        expect(seen).toBe(true);
+        expect(elapsed).toBeLessThan(10_000);
+        expect(changes).toContainEqual(
+          expect.objectContaining({
+            branches: ["main"],
+            inserted: 1,
+            reason: "sync",
+            repo: app,
+          })
+        );
 
-          const status = yield* engine.status;
+        const status = yield* engine.status;
 
-          expect(status.repos.map((repo) => repo.name)).toEqual([
-            "app",
-            "other",
-          ]);
-        })
-      )
+        expect(status.repos.map((repo) => repo.name)).toEqual(["app", "other"]);
+      })
+    )
   );
 
   it.live("a sync that finds nothing new sends no change event", () =>
@@ -229,7 +224,7 @@ describe("live engine", () => {
 
         const synced = yield* eventuallyEffect(
           syncs.pipe(Effect.map((after) => after > before)),
-          2000
+          10_000
         );
 
         yield* Effect.sleep(300);
@@ -380,7 +375,7 @@ describe("live engine", () => {
         process.on("SIGUSR2", otherListener);
         yield* engine.ready;
         process.emit("SIGUSR2", "SIGUSR2");
-        yield* engine.stopped.pipe(Effect.timeout(2000));
+        yield* engine.stopped.pipe(Effect.timeout(10_000));
         yield* Effect.sleep(50);
 
         const status = yield* engine.status;

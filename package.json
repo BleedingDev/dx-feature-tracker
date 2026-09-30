@@ -1,8 +1,8 @@
 {
-  "name": "dx-flight-recorder",
+  "name": "dx-feature-tracker-workspace",
   "version": "0.1.0",
   "private": true,
-  "description": "DX Flight Recorder: local evidence-first developer-experience recorder built on Ratstack (Effect 4 capability contracts projected to CLI and stdio MCP).",
+  "description": "dx-feature-tracker (AI Engineering Cost Tracker): local evidence-first tracker of AI engineering cost per Git branch, built on Ratstack (Effect 4 capability contracts projected to CLI and stdio MCP).",
   "license": "MIT",
   "type": "module",
   "scripts": {

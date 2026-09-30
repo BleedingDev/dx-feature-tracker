@@ -192,7 +192,7 @@ const deps: DxHandlerDeps = {
   metrics: [inputTokensMetric, throwingMetric],
 };
 
-const root = mkdtempSync(path.join(os.tmpdir(), "dxfr-b39-"));
+const root = mkdtempSync(path.join(os.tmpdir(), "dft-b39-"));
 
 afterAll(() => {
   rmSync(root, { force: true, recursive: true });

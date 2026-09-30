@@ -20,7 +20,7 @@ import {
   emptyFlightContext,
 } from "../../src/dx/model/event.js";
 
-const CANARY = "DXFR_SYNTHETIC_SECRET_CANARY_7f3a9c";
+const CANARY = "DFT_SYNTHETIC_SECRET_CANARY_7f3a9c";
 
 const fixture = (name: string) =>
   Path.Path.pipe(
@@ -177,7 +177,7 @@ it.layer(NodeServices.layer)("B20 shell-command collector", (test) => {
         expect(none._tag).toBe("InvalidInput");
 
         const missing = yield* Effect.flip(
-          shellCommandCollector.collect(inputFor("/nonexistent/dxfr-b20.jsonl"))
+          shellCommandCollector.collect(inputFor("/nonexistent/dft-b20.jsonl"))
         );
 
         expect(missing._tag).toBe("SourceUnavailable");
@@ -215,7 +215,7 @@ it.layer(NodeServices.layer)("B20 shell-command collector", (test) => {
         expect(shellExitStatus(killed)).toBe(143);
 
         const missing = yield* captureCommand({
-          argv: ["dxfr-b20-no-such-binary"],
+          argv: ["dft-b20-no-such-binary"],
           context,
           cwd: directory,
           logPath,

@@ -1,4 +1,4 @@
-# DX Flight Recorder: standalone Ratstack product
+# dx-feature-tracker: standalone Ratstack product
 
 Revision date: 30 September 2026. User-authoritative direction: a separate tool, Ratstack, four hours, lean execution, native agents at high concurrency, and maximal credible telemetry without Enterprise access. There is no Biomem product, runtime, API, CLI, memory or promotion integration. The prior two-person/24-hour proposal and required Biomem memory loop are superseded. Original artifacts are preserved under `history/v1/`.
 
@@ -8,7 +8,7 @@ Build an independent local evidence recorder that correlates development activit
 
 The product should answer: "Which feedback loops repeated during this feature, what evidence supports that, and what should I test before my next push?" Its value is making fragmented evidence inspectable. A flight metaphor, chat interface, AI token counter or attribution percentage is not novel by itself. Existing [DX reports](https://docs.getdx.com/reports/ai-effectiveness/) and [LinearB MCP](https://linearb.io/platform/mcp-server) overlap substantially. Compete on self-serve local installation, no organization-admin dependency, source breadth and auditable per-flight calculations. Those are design targets; competitive exclusivity and demand are unproven.
 
-Pitch: "Cursor helps you write code. DX Flight Recorder shows how the feature actually developed, with evidence for what slowed its feedback down."
+Pitch: "Cursor helps you write code. dx-feature-tracker shows how the feature actually developed, with evidence for what slowed its feedback down."
 
 ## Correction that changes data collection
 

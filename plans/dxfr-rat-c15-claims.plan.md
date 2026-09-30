@@ -12,7 +12,7 @@ isProject: false
 
 ## Execution Notes
 
-Authoritative direction: separate DX Flight Recorder; Ratstack; four-hour execution deadline; no assumed human team size. Research: research/synthesis.md. Implementation contract: research/implementation-spec.md. Exact node/dependency manifest: research/execution-manifest.json. Execution root is a new explicitly selected recorder repository; paths below are proposed product files, not existing upstream symbols.
+Authoritative direction: separate dx-feature-tracker; Ratstack; four-hour execution deadline; no assumed human team size. Research: research/synthesis.md. Implementation contract: research/implementation-spec.md. Exact node/dependency manifest: research/execution-manifest.json. Execution root is a new explicitly selected recorder repository; paths below are proposed product files, not existing upstream symbols.
 
 Owner: native worker C15. Role: verification. Read the selected repo AGENTS.md and installed pinned Effect AGENTS.md. Reference SHA 753c7b07dcc516037dd1d455a8766bf112084844; A01 freezes actual pins/toolchain. Build/test against frozen canonical fixtures without waiting for a live producer. Adapters return normalized events and coverage; metrics consume immutable snapshots. Optional unsupported sources provide tested disabled descriptors and clear source gaps.
 
@@ -43,4 +43,4 @@ Authoritative owner/deliverable: native worker C15; Evidence-backed claims, prod
 
 ## Factory review correction
 
-Audit claims at each candidate promotion and final G04. Flight wall clock is not active work; CI feedback latency is not human waiting. Without B31 no estimated feature charge; account amount stays account-scoped. AI survival unavailable unless observed lineage/checkpoint gates pass. Pitch: Cursor helps developers write code. DX Flight Recorder shows how their development actually went.
+Audit claims at each candidate promotion and final G04. Flight wall clock is not active work; CI feedback latency is not human waiting. Without B31 no estimated feature charge; account amount stays account-scoped. AI survival unavailable unless observed lineage/checkpoint gates pass. Pitch: Cursor helps developers write code. dx-feature-tracker shows how their development actually went.

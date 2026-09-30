@@ -1,4 +1,4 @@
-Read-only adversarial plan review. Do not edit files, install dependencies, browse private data, or delegate. You are reviewing a prospective standalone DX Flight Recorder, NOT implementing it.
+Read-only adversarial plan review. Do not edit files, install dependencies, browse private data, or delegate. You are reviewing a prospective standalone dx-feature-tracker, NOT implementing it.
 
 User direction: separate tool, no Biomem ties, Ratstack, four-hour hard execution deadline, no assumed human team size, up to configured root+49 workers, lean massively parallel execution. User asks for clear stoppable phases, phase-specific validation and demonstrable outputs at each stopping point. No invented task duration estimates.
 

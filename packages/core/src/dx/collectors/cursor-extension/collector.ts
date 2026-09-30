@@ -62,7 +62,7 @@ const SOURCE_GAPS: readonly SourceGap[] = [
   {
     code: "producer-not-installed",
     message:
-      "No recorder VS Code/Cursor extension is shipped or installed on this host; only user-selected activity JSONL exports are read.",
+      "No dft VS Code/Cursor extension is shipped or installed on this host; only user-selected activity JSONL exports are read.",
   },
   {
     code: "no-ai-usage-via-extension-api",

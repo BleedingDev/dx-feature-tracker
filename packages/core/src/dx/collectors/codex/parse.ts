@@ -223,7 +223,7 @@ export const allocate = (
   if (context.worktreePath === null) {
     return {
       reason:
-        "No flight worktree selected; a Codex session is not assigned to any branch without one.",
+        "No branch worktree selected; a Codex session is not assigned to any branch without one.",
       state: "unassigned",
     };
   }
@@ -238,7 +238,7 @@ export const allocate = (
   if (!isWithin(cwd, context.worktreePath)) {
     return {
       reason:
-        "Codex working directory is outside the selected flight worktree.",
+        "Codex working directory is outside the selected branch worktree.",
       state: "unassigned",
     };
   }
@@ -249,14 +249,14 @@ export const allocate = (
     sessionBranch !== context.branch
   ) {
     return {
-      reason: `Codex session started on branch ${sessionBranch}, not the flight branch ${context.branch}.`,
+      reason: `Codex session started on branch ${sessionBranch}, not the selected branch ${context.branch}.`,
       state: "unassigned",
     };
   }
 
   return {
     reason:
-      "Codex working directory is inside the flight worktree, but Codex does not record the branch per turn, so a mid-session branch switch cannot be excluded.",
+      "Codex working directory is inside the selected branch worktree, but Codex does not record the branch per turn, so a mid-session branch switch cannot be excluded.",
     state: "provisional",
   };
 };

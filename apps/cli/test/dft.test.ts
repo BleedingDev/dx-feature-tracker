@@ -27,6 +27,7 @@ import {
   otherWorktrees,
   parseWorktreeList,
 } from "../src/dft-install.js";
+import { enterpriseLine } from "../src/dft-render.js";
 
 const created: string[] = [];
 
@@ -179,6 +180,10 @@ describe("dft install output", () => {
     expect(text).toMatch(/1\. Restart Cursor/u);
     expect(text).toMatch(/3\. dft analyze .*\/dx-analyze/u);
     expect(text).not.toContain("Check this");
+    expect(text.indexOf("whole company")).toBeGreaterThan(
+      text.indexOf("Next steps")
+    );
+    expect(text.endsWith(enterpriseLine())).toBe(true);
   });
 
   it("warns about missing git, Cursor, login and old Node", () => {

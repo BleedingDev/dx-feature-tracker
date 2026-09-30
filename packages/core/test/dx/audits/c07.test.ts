@@ -147,7 +147,7 @@ const project = (report: AnalyzeReport) => ({
     .toSorted(),
 });
 
-const tempRoot = mkdtempSync(path.join(os.tmpdir(), "dxfr-c07-"));
+const tempRoot = mkdtempSync(path.join(os.tmpdir(), "dft-c07-"));
 
 afterAll(() => {
   rmSync(tempRoot, { force: true, recursive: true });

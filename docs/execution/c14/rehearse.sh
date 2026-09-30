@@ -36,7 +36,7 @@ adversarial(){
   printf 'export const add = (a, b) => a + b;\nexport const mul = (a, b) => a * b;\n' > math.mjs; git add math.mjs && git commit -qm "add mul"; log "commit 1 exit $?"
   printf 'export const add = (a, b) => a + b;\nexport const mul = (a, b) => a * b;\nexport const div = (a, b) => a / b;\n' > math.mjs; git add math.mjs && git commit -qm "add div"; log "commit 2 exit $?"
   sed "s#__DEMO__#$DEMO#g" "$FX/cursor-stream.jsonl" > "$T/adv-stream.jsonl"
-  SPOOL="$DEMO/.dx-flight-recorder/cursor-hooks-spool"; log "spool files: $(ls "$SPOOL" 2>/dev/null | wc -l | tr -d ' ')"
+  SPOOL="$(ls -d "${DFT_HOME:-$HOME/.dft}"/spool/"$(basename "$DEMO")"-*/cursor-hooks 2>/dev/null | head -1)"; log "spool files: $(ls "$SPOOL" 2>/dev/null | wc -l | tr -d ' ')"
   cp -R "$SPOOL" "$T/adv-spool-copy" 2>/dev/null
   node "$CLI" dx collect --source collector.cursor-hooks --input "$SPOOL" --repo "$DEMO" > "$OUT/collect-hooks.json" 2>&1; log "collect cursor-hooks exit $?"
   node "$CLI" dx collect --source collector/cursor-cli --input "$T/adv-stream.jsonl" --repo "$DEMO" > "$OUT/collect-cursor-cli.json" 2>&1; log "collect cursor-cli exit $?"
@@ -108,8 +108,8 @@ live(){
   perl -e 'alarm 300; exec @ARGV' cursor-agent -p --trust --force --output-format stream-json --workspace "$DEMO" \
     "In this repo add mul(a,b) to math.mjs, create math.test.mjs using node:test and node:assert covering add and mul, then run: node --test --test-reporter=junit --test-reporter-destination=test-results.xml math.test.mjs . Do not commit." \
     > "$T/live-stream.jsonl" 2> "$OUT/cursor-agent.err"; log "cursor-agent exit $?"
-  git add -A -- . ':!.dx-flight-recorder' ':!.cursor' ':!test-results.xml' 2>/dev/null; git commit -qm "add mul + tests"; log "commit exit $?"
-  SPOOL="$DEMO/.dx-flight-recorder/cursor-hooks-spool"; log "spool files: $(ls "$SPOOL" 2>/dev/null | wc -l | tr -d ' ')"
+  git add -A -- . ':!.cursor' ':!test-results.xml' 2>/dev/null; git commit -qm "add mul + tests"; log "commit exit $?"
+  SPOOL="$(ls -d "${DFT_HOME:-$HOME/.dft}"/spool/"$(basename "$DEMO")"-*/cursor-hooks 2>/dev/null | head -1)"; log "spool files: $(ls "$SPOOL" 2>/dev/null | wc -l | tr -d ' ')"
   node "$CLI" dx collect --source collector.cursor-hooks --input "$SPOOL" --repo "$DEMO" > "$OUT/collect-hooks.json" 2>&1; log "collect cursor-hooks exit $?"
   node "$CLI" dx collect --source collector/cursor-cli --input "$T/live-stream.jsonl" --repo "$DEMO" > "$OUT/collect-cursor-cli.json" 2>&1; log "collect cursor-cli exit $?"
   if [ -f "$DEMO/test-results.xml" ]; then node "$CLI" dx collect --source collector/local-test --input "$DEMO/test-results.xml" --repo "$DEMO" > "$OUT/collect-local-test.json" 2>&1; log "collect local-test exit $?"; else log "no test-results.xml produced by the agent"; fi

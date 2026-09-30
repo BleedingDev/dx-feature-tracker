@@ -155,7 +155,7 @@ const dxHookCommand = Command.make("hook", {}, () =>
 
 const dxCommand = Command.make("dx").pipe(
   Command.withDescription(
-    "DX Flight Recorder: record and analyze local AI engineering cost per Git branch"
+    "dx-feature-tracker: record and analyze local AI engineering cost per Git branch"
   ),
   Command.withSubcommands([...dxCapabilityCommands, dxHookCommand])
 );

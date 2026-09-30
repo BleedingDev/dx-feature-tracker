@@ -22,7 +22,7 @@ It needs the built CLI (`apps/cli/dist/cli.js`). The script exits non-zero if an
 Demo commands for one branch (what the script runs):
 
 ```bash
-dx collect --source collector.cursor-hooks  --input <repo>/.dx-flight-recorder/cursor-hooks-spool --repo <repo>
+dx collect --source collector.cursor-hooks --repo <repo>
 dx collect --source collector/cursor-cli    --input <stream.jsonl> --repo <repo>
 dx collect --source collector/local-test    --input <junit.xml>    --repo <repo>
 dx collect --source collector.git-history   --input <repo> --repo <repo>

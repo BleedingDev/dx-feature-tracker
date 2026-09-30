@@ -352,9 +352,10 @@ describe("branch-at-time pure timeline", () => {
     };
 
     expect(branchAt(timeline, ms("2026-09-02T10:01:00+00:00"))).toMatchObject({
-      attribution: "unassigned",
-      branch: null,
+      attribution: "provisional",
+      branch: "topic",
       detached: true,
+      method: "reflog",
     });
     expect(branchAt(timeline, ms("2026-09-03T00:00:00+00:00")).branch).toBe(
       "topic"
@@ -380,5 +381,32 @@ describe("branch-at-time pure timeline", () => {
       method: "current",
     });
     expect(branchAt(bare, ms(MONTH_AGO)).method).toBe("unknown");
+  });
+
+  it("attributes a detached bisect to the branch checked out before it", () => {
+    const entries = parseReflogLines(
+      [
+        "HEAD@{2026-09-05T10:00:00+00:00}\u001Fcheckout: moving from topic to 0123456789abcdef0123456789abcdef01234567",
+        "HEAD@{2026-09-01T10:00:00+00:00}\u001Fcheckout: moving from main to topic",
+        "HEAD@{2026-08-31T09:00:00+00:00}\u001Fcommit (initial): subject",
+      ].join("\n")
+    );
+
+    const moves = buildHeadMoves(entries, new Set(["main", "topic"]), null);
+
+    const timeline: WorktreeTimeline = {
+      currentBranch: null,
+      currentSinceMs: null,
+      moves,
+      points: [],
+      reflogFromMs: moves[0]?.atMs ?? null,
+      worktree: "/fixture",
+    };
+
+    expect(branchAt(timeline, ms("2026-09-06T00:00:00+00:00"))).toMatchObject({
+      attribution: "provisional",
+      branch: "topic",
+      detached: true,
+    });
   });
 });

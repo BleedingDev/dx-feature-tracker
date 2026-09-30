@@ -33,12 +33,12 @@ export const flightCorrelationDescriptor: ModuleDescriptor = {
     {
       code: "implicit-flight-boundary",
       message:
-        "Without an explicit start marker, a branch flight is provisional and only splits on explicit flights or a changed branchCreatedAt.",
+        "Without an explicit start marker, a branch is provisional and only splits on explicit features or a changed branchCreatedAt.",
     },
     {
       code: "no-remote-identity",
       message:
-        "GitHub/PR numeric identities are out of scope; flights are keyed by local repository common dir and branch aliases.",
+        "GitHub/PR numeric identities are out of scope; features are keyed by local repository common dir and branch aliases.",
     },
   ],
   id: DescriptorIdSchema.make("correlation/flight"),
@@ -112,7 +112,7 @@ const correlateMarker = (
   );
 
   return flight === undefined
-    ? result(event, "unassigned", null, "marker not linked to a flight")
+    ? result(event, "unassigned", null, "marker not linked to a feature")
     : result(event, "strong", flight, `explicit ${event.kind} marker`);
 };
 
@@ -134,9 +134,9 @@ const correlateOne = (
           event,
           "provisional",
           null,
-          "event names a flight ID with no recorded start marker"
+          "event names a feature ID with no recorded start marker"
         )
-      : result(event, "strong", flight, "event carries explicit flight ID");
+      : result(event, "strong", flight, "event carries explicit feature ID");
   }
 
   if (isDetached(event)) {
@@ -165,7 +165,7 @@ const correlateOne = (
           event,
           "provisional",
           only,
-          "no timestamp; branch alias has exactly one flight"
+          "no timestamp; branch alias has exactly one feature"
         )
       : result(
           event,
@@ -186,7 +186,7 @@ const correlateOne = (
       event,
       "strong",
       single,
-      "inside explicit flight window on branch alias"
+      "inside explicit feature window on branch alias"
     );
   }
 
@@ -195,7 +195,7 @@ const correlateOne = (
       event,
       "unassigned",
       null,
-      "ambiguous: several explicit flights cover this branch alias and time"
+      "ambiguous: several explicit features cover this branch alias and time"
     );
   }
 
@@ -210,7 +210,7 @@ const correlateOne = (
       event,
       "provisional",
       implicit,
-      "implicit branch flight (no explicit start marker)"
+      "implicit branch feature (no explicit start marker)"
     );
   }
 
@@ -219,8 +219,8 @@ const correlateOne = (
     "unassigned",
     null,
     event.context.repoCommonDir === null
-      ? "no repository context and no explicit flight window"
-      : "outside every flight window for this branch alias"
+      ? "no repository context and no explicit feature window"
+      : "outside every feature window for this branch alias"
   );
 };
 

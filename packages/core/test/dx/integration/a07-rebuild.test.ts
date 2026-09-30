@@ -23,7 +23,7 @@ import {
 } from "../../../src/dx/registry/runtime.js";
 import { openSqliteEventStore } from "../../../src/dx/storage/sqlite-event-store.js";
 
-const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "dxfr-a07-"));
+const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "dft-a07-"));
 
 afterAll(() => {
   fs.rmSync(scratch, { force: true, recursive: true });

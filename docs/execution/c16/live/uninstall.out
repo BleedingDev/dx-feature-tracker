@@ -11,6 +11,6 @@
     "/private/var/folders/l5/j97t559s5ljgmjc_ylqn1jmh0000gn/T/c16-live.y7f16c8_/c17-demo/.git/info/exclude"
   ],
   "notes": [
-    "hook spool (.dx-flight-recorder/) and the event store are user data and were kept"
+    "hook spool and the event store are user data and were kept"
   ]
 }

@@ -22,7 +22,7 @@ export const DxHistoryInput = Schema.Struct({
   since: Schema.optional(
     Schema.String.annotate({
       description:
-        "Only flights with activity since this point: a duration such as 7d, 24h, 30m, 2w, or an ISO timestamp",
+        "Only branches with activity since this point: a duration such as 7d, 24h, 30m, 2w, or an ISO timestamp",
     })
   ),
 });
@@ -111,7 +111,7 @@ export type DxHistoryOutputType = typeof DxHistoryOutput.Type;
 export const dxHistoryContract = defineContract("dx_history", {
   annotations: { idempotent: true, readOnly: true },
   description:
-    "List feature flights (repo, branch) with activity, agent time, requests, tokens, commits and every money ledger shown separately",
+    "List feature branches (repo, branch) with activity, agent time, requests, tokens, commits and every money ledger shown separately",
   failure: QueryFailureSchema,
   input: DxHistoryInput,
   output: DxHistoryOutput,

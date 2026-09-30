@@ -1,6 +1,6 @@
 # Standalone Ratstack implementation contract
 
-Authoritative scope: separate DX Flight Recorder, Ratstack, four-hour execution deadline, agent-owned parallel lanes, no Enterprise requirement. This is a proposed build specification. No application code exists as a result of this planning session.
+Authoritative scope: separate dx-feature-tracker, Ratstack, four-hour execution deadline, agent-owned parallel lanes, no Enterprise requirement. This is a proposed build specification. No application code exists as a result of this planning session.
 
 ## Upstream and proposed files
 

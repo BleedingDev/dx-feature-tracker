@@ -30,7 +30,7 @@
       "route": "live prospective hooks",
       "state": "ready",
       "input": {
-        "kind": "spool dir <demo>/.dx-flight-recorder/cursor-hooks-spool",
+        "kind": "spool dir ~/.dft/spool/<demo worktree>/cursor-hooks",
         "files": 35
       },
       "command": "dx collect --source collector.cursor-hooks --repo <demo> --input <spool>",

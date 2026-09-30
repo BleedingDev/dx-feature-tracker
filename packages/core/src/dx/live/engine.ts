@@ -1,5 +1,5 @@
 // @effect-diagnostics nodeBuiltinImport:off -- The live engine watches git and hook spool folders, reads the store with its own SQLite connection and listens for process signals at the process boundary.
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
@@ -79,6 +79,7 @@ export const LIVE_DEFAULTS = {
   debounceMs: 500,
   maxBackoffMs: 60 * 60 * 1000,
   pollMs: 60 * 1000,
+  scanMs: 2000,
   usageIntervalMs: 5 * 60 * 1000,
 } as const;
 
@@ -91,6 +92,7 @@ export interface LiveEngineOptions {
   readonly home: string;
   readonly maxBackoffMs?: number;
   readonly pollMs?: number;
+  readonly scanMs?: number;
   readonly signals?: readonly LiveSignal[];
   readonly storePath?: string | null;
   readonly usageIntervalMs?: number;
@@ -325,6 +327,72 @@ const gitNameMatches =
 
 const notLock = (file: string): boolean => !file.endsWith(".lock");
 
+const listDir = (dir: string) => {
+  try {
+    return readdirSync(dir, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+};
+
+interface Fingerprint {
+  count: number;
+  mtime: number;
+  size: number;
+}
+
+const addFiles = (
+  totals: Fingerprint,
+  target: string,
+  accept: (file: string) => boolean
+): void => {
+  const info = statSync(target, { throwIfNoEntry: false });
+
+  if (info === undefined) {
+    return;
+  }
+
+  if (info.isDirectory()) {
+    for (const entry of listDir(target)) {
+      addFiles(totals, path.join(target, entry.name), accept);
+    }
+
+    return;
+  }
+
+  if (accept(target)) {
+    totals.count += 1;
+    totals.mtime += info.mtimeMs;
+    totals.size += info.size;
+  }
+};
+
+const fingerprint = (
+  targets: readonly (readonly [string, (file: string) => boolean])[]
+): string => {
+  const totals: Fingerprint = { count: 0, mtime: 0, size: 0 };
+
+  for (const [target, accept] of targets) {
+    addFiles(totals, target, accept);
+  }
+
+  return `${totals.count}:${totals.mtime}:${totals.size}`;
+};
+
+const everyFile = (): boolean => true;
+
+const gitFingerprint = (repo: GitRepo): string =>
+  fingerprint([
+    [path.join(repo.commonDir, "HEAD"), everyFile],
+    [path.join(repo.commonDir, "packed-refs"), everyFile],
+    [path.join(repo.commonDir, "refs"), notLock],
+    [path.join(repo.commonDir, "logs"), notLock],
+    [
+      path.join(repo.commonDir, "worktrees"),
+      (file) => notLock(file) && path.basename(file) === "HEAD",
+    ],
+  ]);
+
 export const startLiveEngine = (
   options: LiveEngineOptions
 ): Effect.Effect<
@@ -337,6 +405,7 @@ export const startLiveEngine = (
     const collectors = options.collectors ?? allCollectors;
     const debounceMs = options.debounceMs ?? LIVE_DEFAULTS.debounceMs;
     const pollMs = options.pollMs ?? LIVE_DEFAULTS.pollMs;
+    const scanMs = options.scanMs ?? LIVE_DEFAULTS.scanMs;
 
     const usageIntervalMs =
       options.usageIntervalMs ?? LIVE_DEFAULTS.usageIntervalMs;
@@ -683,6 +752,54 @@ export const startLiveEngine = (
         return root === null ? Effect.void : trigger(root);
       });
 
+    const scanned = new Map<string, string>();
+
+    const changedSinceScan = (key: string, next: string): boolean => {
+      const known = scanned.get(key);
+
+      scanned.set(key, next);
+
+      return known !== next;
+    };
+
+    const scanChanges = Effect.sync(() => {
+      const hits = new Set<string>();
+
+      for (const state of repos.values()) {
+        if (
+          changedSinceScan(`git:${state.repo.root}`, gitFingerprint(state.repo))
+        ) {
+          hits.add(state.repo.root);
+        }
+      }
+
+      const ids = listDir(spoolRoot(home))
+        .filter((entry) => entry.isDirectory())
+        .map((entry) => entry.name);
+
+      const live = new Set(ids.map((id) => `spool:${id}`));
+
+      for (const key of scanned.keys()) {
+        if (key.startsWith("spool:") && !live.has(key)) {
+          scanned.delete(key);
+        }
+      }
+
+      for (const id of ids) {
+        const next = fingerprint([[path.join(spoolRoot(home), id), everyFile]]);
+
+        if (changedSinceScan(`spool:${id}`, next)) {
+          const root = repoForSpool(id);
+
+          if (root !== null) {
+            hits.add(root);
+          }
+        }
+      }
+
+      return hits;
+    });
+
     const track = (repo: GitRepo) =>
       Effect.gen(function* trackRepo() {
         if (repos.has(repo.root)) {
@@ -715,6 +832,7 @@ export const startLiveEngine = (
           }
         }
 
+        scanned.delete(`git:${root}`);
         yield* FiberMap.remove(watchers, root);
         yield* FiberMap.remove(debouncers, root);
       });
@@ -784,8 +902,24 @@ export const startLiveEngine = (
       yield* afterSyncCheck;
     });
 
+    yield* scanChanges;
+
     yield* Effect.forkIn(
       syncAll.pipe(Effect.andThen(Deferred.succeed(readySignal, true))),
+      scope
+    );
+
+    yield* Effect.forkIn(
+      Effect.sleep(scanMs).pipe(
+        Effect.andThen(scanChanges),
+        Effect.flatMap((hits) =>
+          running
+            ? Effect.forEach(hits, trigger, { discard: true })
+            : Effect.void
+        ),
+        Effect.catchCause(() => Effect.void),
+        Effect.forever
+      ),
       scope
     );
 

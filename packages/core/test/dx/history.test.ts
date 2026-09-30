@@ -328,7 +328,7 @@ describe("dx_history", () => {
     expect(b.status.value).toBe("merged");
     expect(b.commits.value).toBe(1);
     expect(b.chats.value).toBeNull();
-    expect(b.chats.reason).toBe("no AI evidence on this flight");
+    expect(b.chats.reason).toBe("no AI evidence on this branch");
 
     for (const row of rows) {
       for (const measure of measures(row)) {

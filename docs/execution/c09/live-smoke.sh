@@ -30,9 +30,9 @@ cursor-agent -p --trust --force --output-format stream-json --workspace "$DEMO" 
   > "$T/cursor-stream.jsonl" 2> "$OUT/cursor-agent.err"
 log "cursor-agent exit $?"
 cp "$T/cursor-stream.jsonl" "$T/cursor-stream.keep" 2>/dev/null
-git add -A -- . ':!.dx-flight-recorder' ':!.cursor' 2>/dev/null; git commit -qm "add mul" ; log "commit exit $?"
+git add -A -- . ':!.cursor' 2>/dev/null; git commit -qm "add mul" ; log "commit exit $?"
 
-SPOOL="$DEMO/.dx-flight-recorder/cursor-hooks-spool"
+SPOOL="$(ls -d "${DFT_HOME:-$HOME/.dft}"/spool/"$(basename "$DEMO")"-*/cursor-hooks 2>/dev/null | head -1)"
 log "spool files: $(ls "$SPOOL" 2>/dev/null | wc -l | tr -d ' ')"
 dx collect --source collector.cursor-hooks --input "$SPOOL" --repo "$DEMO" > "$OUT/collect-hooks.json" 2>&1; log "collect cursor-hooks exit $?"
 dx collect --source collector/cursor-cli --input "$T/cursor-stream.jsonl" --repo "$DEMO" > "$OUT/collect-cursor-cli.json" 2>&1; log "collect cursor-cli exit $?"

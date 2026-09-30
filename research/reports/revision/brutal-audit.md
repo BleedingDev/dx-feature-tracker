@@ -1,4 +1,4 @@
-# Adversarial audit of DX Flight Recorder
+# Adversarial audit of dx-feature-tracker
 
 Research date: 2026-09-30. Scope: a standalone Ratstack product, a four-hour hackathon, 49 possible workers plus a coordinator. This is a product and execution audit, not a runtime verification. Biomem is optional background context and has no required place in the architecture or demo. No private local data was inspected.
 
@@ -27,7 +27,7 @@ Primary sources: [LinearB MCP](https://linearb.io/platform/mcp-server), [DX AI e
 
 ## Differentiation without invented novelty
 
-Current DX documentation already describes agent friction and inspectable session evidence. LinearB already describes conversational delivery analysis. A "flight recorder" metaphor does not create a new technical category. Nor does adding Biomem create required product differentiation.
+Current DX documentation already describes agent friction and inspectable session evidence. LinearB already describes conversational delivery analysis. A "feature tracker" metaphor does not create a new technical category. Nor does adding Biomem create required product differentiation.
 
 Choose this narrower proposition: "One install, one branch, inspectable local evidence, no org analytics purchase required." This is a design target, not a verified competitive exclusivity claim. Its non-novel value is saving the developer from correlating chat history, shell failures, CI attempts and reviews manually. Build evidence navigation and trustworthy data coverage into the report because that is what makes the aggregate usable.
 
@@ -124,7 +124,7 @@ Prioritized cuts if gates fail: cloud presentation, account billing allocation, 
 
 ## Recommended product decision
 
-Build DX Flight Recorder as an independent Ratstack application. Its first success criterion is that one developer can reconstruct a real feedback loop without org-admin access and verify the report's arithmetic. Catalogue all credible telemetry routes and let independent agents implement gated adapters against one contract. Make the demo about evidence that changes the next action. Offer Biomem separately only if it supports promotion context, without making storage or recall a prerequisite.
+Build dx-feature-tracker as an independent Ratstack application. Its first success criterion is that one developer can reconstruct a real feedback loop without org-admin access and verify the report's arithmetic. Catalogue all credible telemetry routes and let independent agents implement gated adapters against one contract. Make the demo about evidence that changes the next action. Offer Biomem separately only if it supports promotion context, without making storage or recall a prerequisite.
 
 ## Sources and confidence
 

@@ -177,5 +177,5 @@ The `(no branch)` row holds the account-wide Cursor dashboard usage (149 rows) t
 - `analyze`, `explain`, `chats` and `status` print JSON even without `--json`. Only `history`, `snapshot`, `sync` and `install` have text output.
 - `cursor-agent` stream captures have to be collected explicitly (`dft collect --source cursor-cli --input …`).
 - The `cursor-usage-api` auto-sync source (work in progress) files account-wide usage under the current repo as `(no branch)`. On later runs it failed its response check and was reported as unavailable.
-- `chats` counts 6 tool calls for the session: 4 `postToolUse` and 2 `postToolUseFailure` hook events. The flight metric shows 4, taken from the cursor-cli stream, which has the highest precedence.
+- `chats` counts 6 tool calls for the session: 4 `postToolUse` and 2 `postToolUseFailure` hook events. The branch time metric shows 4, taken from the cursor-cli stream, which has the highest precedence.
 - No priced model could be run because the account is on the free plan (Auto only). The price-table estimate path is covered by the p1-prices tests, not by this live run.

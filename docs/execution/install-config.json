@@ -28,11 +28,11 @@
       "afterMCPExecution",
       "afterAgentResponse"
     ],
-    "spool": "<target>/.dx-flight-recorder/cursor-hooks-spool",
-    "gitExcludeLine": ".dx-flight-recorder/"
+    "spool": "~/.dft/spool/<target worktree>/cursor-hooks",
+    "gitExcludeLine": "old in-repo spool folder (SPOOL_IGNORE_LINE in scripts/dx-install.ts)"
   },
   "skills": ["dx-analyze", "dx-explain"],
-  "manifest": "dx-flight-recorder.install.json",
+  "manifest": "dx-feature-tracker.install.json",
   "backupSuffix": ".dx-backup-<iso-timestamp>",
   "checks": {
     "test": "pnpm --filter @rat-stack/core exec vitest run test/dx/c13.test.ts",

@@ -1,4 +1,4 @@
-# DX Flight Recorder research and execution pack
+# dx-feature-tracker research and execution pack
 
 Standalone tool. Ratstack. Four-hour deadline. No Biomem integration or promotion.
 

@@ -64,7 +64,7 @@ const unavailable = decodeFixtureDoc(
 
 const plan = decodeReplayPlan(readFixture("b01/replay-reordered.json"));
 
-const root = mkdtempSync(path.join(os.tmpdir(), "dxfr-b01-"));
+const root = mkdtempSync(path.join(os.tmpdir(), "dft-b01-"));
 
 afterAll(() => {
   rmSync(root, { force: true, recursive: true });

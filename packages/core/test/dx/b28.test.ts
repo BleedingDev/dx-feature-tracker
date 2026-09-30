@@ -194,7 +194,7 @@ describe("b28 git churn metric (fixture b28-branch-snapshot)", () => {
 });
 
 describe("b28 git churn metric (fixture b28-live-temp-repo)", () => {
-  const dir = mkdtempSync(path.join(tmpdir(), "dxfr-b28-"));
+  const dir = mkdtempSync(path.join(tmpdir(), "dft-b28-"));
 
   afterAll(() => {
     rmSync(dir, { force: true, recursive: true });
@@ -205,9 +205,9 @@ describe("b28 git churn metric (fixture b28-live-temp-repo)", () => {
       "git",
       [
         "-c",
-        "user.name=dxfr",
+        "user.name=dft",
         "-c",
-        "user.email=dxfr@example.invalid",
+        "user.email=dft@example.invalid",
         "-c",
         "commit.gpgsign=false",
         ...args,

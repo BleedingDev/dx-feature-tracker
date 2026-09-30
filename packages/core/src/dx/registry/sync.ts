@@ -1,4 +1,5 @@
 // @effect-diagnostics nodeBuiltinImport:off -- Auto-sync discovers per-repo pull sources (transcript folders) with synchronous directory listings at the process boundary.
+import { execFileSync } from "node:child_process";
 import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 
@@ -8,6 +9,7 @@ import { runCollect } from "../cli/commands/collect.js";
 import { chatStoreSources } from "../collectors/cursor-chats-store/sources.js";
 import {
   HOOK_SPOOL_FOLDER,
+  LEGACY_SPOOL_FOLDER,
   latestSpoolRecord,
 } from "../collectors/cursor-hooks/spool.js";
 import { localDbSources } from "../collectors/cursor-local-db/sources.js";
@@ -20,6 +22,7 @@ import {
   contextForRepo,
   defaultDftHome,
   legacyHookSpoolDirFor,
+  listRepoWorktrees,
   repoWorktrees,
 } from "./runtime.js";
 
@@ -46,7 +49,7 @@ export interface AutoSyncOptions {
 }
 
 export const LEGACY_FOLDER_NOTE =
-  "Old folder .dx-flight-recorder/ in this repo is no longer used; you can delete it." as const;
+  `Old folder ${LEGACY_SPOOL_FOLDER}/ in this repo is no longer used; you can delete it.` as const;
 
 const TRANSCRIPT_SOURCE = "collector.cursor-transcripts";
 
@@ -192,6 +195,58 @@ export const planSources = (
   return [...live, ...leftovers];
 };
 
+const BRANCH_LIST_TIMEOUT_MS = 3000;
+
+export const localBranches = (repoPath: string): readonly string[] => {
+  try {
+    return execFileSync(
+      "git",
+      [
+        "-C",
+        repoPath,
+        "for-each-ref",
+        "--format=%(refname:short)",
+        "refs/heads/",
+      ],
+      {
+        encoding: "utf-8",
+        stdio: ["ignore", "pipe", "ignore"],
+        timeout: BRANCH_LIST_TIMEOUT_MS,
+      }
+    )
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line !== "");
+  } catch {
+    return [];
+  }
+};
+
+export const idleBranchSources = (
+  context: FlightContext,
+  repoPath: string
+): readonly PlannedSource[] => {
+  const worktree = context.worktreePath;
+
+  if (worktree === null) {
+    return [];
+  }
+
+  const checkedOut = new Set(
+    listRepoWorktrees(repoPath).flatMap((w) =>
+      w.branch === null ? [] : [w.branch]
+    )
+  );
+
+  return localBranches(repoPath)
+    .filter((branch) => !checkedOut.has(branch) && branch !== context.branch)
+    .map((branch) => ({
+      context: { ...context, branch, headSha: null },
+      input: worktree,
+      source: "collector.git-history",
+    }));
+};
+
 export const autoSync = (
   store: EventStoreService,
   collectors: readonly RegisteredCollector[],
@@ -199,7 +254,11 @@ export const autoSync = (
 ): Effect.Effect<SyncReport, never, DxCollectorServices> =>
   Effect.gen(function* syncRepo() {
     const context = contextForRepo(options.repo);
-    const plan = planSources(context, options, repoWorktrees(options.repo));
+
+    const plan = [
+      ...planSources(context, options, repoWorktrees(options.repo)),
+      ...idleBranchSources(context, options.repo),
+    ];
 
     // oxlint-disable-next-line unicorn/no-array-method-this-argument -- Effect.forEach takes an options object, not a thisArg.
     const steps = yield* Effect.forEach(plan, (step) =>

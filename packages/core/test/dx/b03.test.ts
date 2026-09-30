@@ -261,7 +261,7 @@ const gitIn = (cwd: string, args: readonly string[], date?: string) =>
 describe("b03 git history collector (live temp repo)", () => {
   it.effect("collects a real feature branch against main", () =>
     Effect.gen(function* run() {
-      const root = mkdtempSync(path.join(tmpdir(), "dxfr-b03-"));
+      const root = mkdtempSync(path.join(tmpdir(), "dft-b03-"));
 
       tempRoots.push(root);
       gitIn(root, ["init", "--quiet", "--initial-branch=main"]);

@@ -165,7 +165,7 @@ const isAiEvent = (event: DxEventEnvelope): boolean =>
 
 const chatsDefinition: MetricDefinitionRef = {
   description:
-    "Distinct AI chat sessions (session ids on ai.* events) observed on the flight.",
+    "Distinct AI chat sessions (session ids on ai.* events) observed on the branch.",
   id: MetricIdSchema.make("dx.history.chats"),
   unit: "chats",
   version: "1.0.0",
@@ -175,7 +175,7 @@ const chatsMeasure = (events: readonly DxEventEnvelope[]): HistoryMeasure => {
   const ai = events.filter(isAiEvent);
 
   if (ai.length === 0) {
-    return unavailable(chatsDefinition, "no AI evidence on this flight");
+    return unavailable(chatsDefinition, "no AI evidence on this branch");
   }
 
   const sessions = new Set(
@@ -187,7 +187,7 @@ const chatsMeasure = (events: readonly DxEventEnvelope[]): HistoryMeasure => {
   if (sessions.size === 0) {
     return unavailable(
       chatsDefinition,
-      "AI events on this flight carry no session id"
+      "AI events on this branch carry no session id"
     );
   }
 
@@ -321,8 +321,8 @@ const buildRow = (
   const git = computeGitChurn(snapshot).results;
   const money = cost ?? [];
   const span = activitySpan(flight.events);
-  const noCost = "cost metric produced no result for this flight";
-  const noTime = "flight-time metric produced no result for this flight";
+  const noCost = "cost metric produced no result for this branch";
+  const noTime = "branch time metric produced no result for this branch";
 
   return {
     activeTime: measureOf(time, activeDefinition, noTime),
@@ -333,7 +333,7 @@ const buildRow = (
     commits: measureOf(
       git,
       commitsDefinition,
-      "git metric produced no result for this flight"
+      "git metric produced no result for this branch"
     ),
     events: flight.events.length,
     firstActivityAt: span.first === null ? null : isoOf(span.first),
@@ -352,7 +352,7 @@ const buildRow = (
     requests: measureOf(
       usage,
       requestsDefinition,
-      "ai-usage metric produced no result for this flight"
+      "ai-usage metric produced no result for this branch"
     ),
     status: statusOf(flight, options.resolveStatus),
     tokens: tokenMeasures(usage),
