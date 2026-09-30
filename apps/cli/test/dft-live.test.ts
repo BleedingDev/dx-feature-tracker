@@ -260,7 +260,9 @@ describe("dft dashboard live server", () => {
         const page = yield* call(server, "/");
 
         expect(page.body).toContain('id="intro"');
-        expect(page.body).toContain('id="s-intro"');
+        expect(page.body).toMatch(
+          /<nav>.*<button type="button" id="nav-intro">Intro<\/button><\/nav>/u
+        );
         expect(page.body).toContain("/intro/dft-intro.webm?v=");
         expect(page.body).toMatch(/<video id="intro-video" muted playsinline/u);
         expect(page.headers["content-security-policy"]).toContain(
@@ -320,7 +322,7 @@ describe("dft dashboard live server", () => {
 
           expect(page.status).toBe(200);
           expect(page.body).not.toContain('id="intro"');
-          expect(page.body).not.toContain('id="s-intro"');
+          expect(page.body).not.toContain('id="nav-intro"');
           expect(page.body).not.toContain("<video");
 
           const video = yield* call(server, "/intro/dft-intro.webm");

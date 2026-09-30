@@ -14,7 +14,8 @@ button,input,select{font:inherit;color:inherit}
 .brand{display:flex;align-items:center;gap:8px;font:600 15px/1 var(--mono);text-decoration:none}
 .brand svg{width:22px;height:22px}
 nav{display:flex;gap:4px}
-nav a{padding:6px 10px;border-radius:6px;text-decoration:none;color:var(--muted)}
+nav a,nav button{padding:6px 10px;border:0;border-radius:6px;background:none;font:inherit;text-decoration:none;color:var(--muted);cursor:pointer}
+nav button:hover{color:var(--text)}
 nav a[aria-current=page]{color:var(--text);background:var(--surface)}
 .live{margin-left:auto;display:flex;align-items:center;gap:6px;color:var(--faint);font-size:12px;white-space:nowrap}
 .live i{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px rgb(134 239 172 / .12)}
@@ -102,16 +103,13 @@ label.switch{display:flex;gap:10px;align-items:center;cursor:pointer}
 .intro-skip{position:absolute;right:12px;bottom:12px;background:rgb(28 28 31 / .88)}
 .intro-play{position:absolute;left:12px;bottom:12px;display:flex;align-items:center;gap:6px;border:0;border-radius:6px;padding:6px 14px 6px 10px;background:var(--accent);color:var(--on-accent);font-weight:600;cursor:pointer}
 .intro-play svg{width:16px;height:16px}
-.intro-play:focus-visible,.intro-skip:focus-visible,.link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.link{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
-.link:hover{color:var(--text)}
+.intro-play:focus-visible,.intro-skip:focus-visible,nav button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 `;
 
 const introFile = (name: string) =>
   `/intro/${name}?v=${encodeURIComponent(VERSION)}`;
 
-const INTRO_LINK = `<p class="quiet"><button type="button" class="link" id="s-intro">Play intro</button></p>
-`;
+const INTRO_NAV = `<button type="button" id="nav-intro">Intro</button>`;
 
 const INTRO_OVERLAY = `<div id="intro" class="intro" role="dialog" aria-modal="true" aria-label="dft intro" hidden>
 <div class="intro-box">
@@ -125,7 +123,7 @@ const INTRO_OVERLAY = `<div id="intro" class="intro" role="dialog" aria-modal="t
 const body = (intro: boolean) => `
 <header class="bar">
 <a class="brand" href="#/"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#151517"/><path d="M11 7v18M11 12c0 5 10 3 10 9" fill="none" stroke="#f0b44c" stroke-width="3" stroke-linecap="round"/><circle cx="21" cy="22" r="3" fill="#f0b44c"/></svg>dft</a>
-<nav><a href="#/" data-nav="branches">Branches</a><a href="#/setup" data-nav="setup">Setup</a></nav>
+<nav><a href="#/" data-nav="branches">Branches</a><a href="#/setup" data-nav="setup">Setup</a>${intro ? INTRO_NAV : ""}</nav>
 <span id="live" class="live off" aria-live="off"><i></i><span id="live-text">connecting</span></span>
 </header>
 <main>
@@ -178,7 +176,7 @@ const body = (intro: boolean) => `
 </section>
 </div>
 <p class="quiet" id="s-where"></p>
-${intro ? INTRO_LINK : ""}</div>
+</div>
 </section>
 </main>
 <footer class="foot"><p>${enterpriseHtml()}</p></footer>
@@ -208,7 +206,7 @@ var last=video.querySelector("source:last-of-type");if(last)last.addEventListene
 skip.addEventListener("click",close);
 play.addEventListener("click",start);
 box.addEventListener("click",function(e){if(e.target===box)close();});
-var again=document.getElementById("s-intro");if(again)again.addEventListener("click",open);
+var again=document.getElementById("nav-intro");if(again)again.addEventListener("click",open);
 if(!seen())open();
 })();
 `;

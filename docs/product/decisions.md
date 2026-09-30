@@ -26,3 +26,4 @@ Settled with the product owner on 2026-09-30. Phase 1 is local tracking of Curso
 | D20 | Running | Foreground now (Ctrl+C to stop). A login service (launchd, systemd) comes later. |
 | D21 | API | No public JSON API for now. A later paid enterprise tier may add one with SSO. |
 | D22 | Wording | Plain, unslopped text everywhere. No em dashes. |
+| D23 | Dashboard navigation | Later: clearer navigation (back, breadcrumbs, direct links to a branch). |
