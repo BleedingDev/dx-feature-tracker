@@ -1,63 +1,54 @@
-# DX Feature Tracker
+# AI Engineering Cost Tracker
 
-> Cursor helps developers write code. DX Flight Recorder tells them how their development actually went.
+AI Engineering Cost Tracker makes AI-assisted software development features measurable.
 
-A hackathon project: a flight recorder for developing one feature branch in Cursor. It collects evidence from Git, Cursor AI usage, CI runs and GitHub PRs/reviews, and links them by repository and branch. It then answers one question: **where did the time go?**
+When an AI coding agent such as Grok or Cursor works on a feature, it can consume thousands or millions of tokens across dozens of requests. Today, it is difficult to answer a simple question:
 
-- **`/dx analyze`** returns a flight report: duration, AI tokens and cost (when known), how much AI code survived, the biggest source of friction, and one recommendation backed by evidence.
-- **`/dx explain`** shows the flight as a timeline, e.g. `branch → AI generation → tests → CI failure → AI fix → PR → review → merge`.
+**How much did this feature actually cost to build with AI?**
 
-The original pitch is in [IDEA.md](IDEA.md).
+This tool connects AI usage with Git branches, commits, code changes, tests, and development activity to provide a complete picture of the cost and efficiency of AI-assisted development.
 
-## Status
+## What it tracks
 
-**Planning is done. Implementation hasn't started.** This repo has the research and an executable plan. No product code exists yet, and no phase gate has been run.
+- **AI cost** — actual API spending
+- **Token usage** — input, output, reasoning, and cached tokens
+- **Git branches** — track AI usage per feature or branch
+- **Tool calls** — understand how the agent spent its time
+- **Code changes** — files and lines changed
+- **Tests** — test runs, failures, and iterations
+- **Rework** — how much code had to be changed again
+- **Development time** — measure agent activity over time
 
-## Approach
+## The result
 
-- A standalone local tool built on **Ratstack** (Effect). Each capability contract has one handler, exposed as both a CLI command and an MCP tool, with a SQLite event store.
-- **Cursor is the main interface.** Every presentable phase must be demonstrated in a real Cursor install, not only a mock client.
-- No Cursor Enterprise needed. It uses hooks, local Cursor data and transcripts, usage exports, Git, and the GitHub API with a personal token.
-- **Honest numbers.** Missing tokens, cost or AI-survival data shows as *unavailable*. CI duration alone doesn't count as developer waiting time. No made-up savings.
-- Built in **four hours** by a coordinating agent plus up to 49 parallel agents.
+Instead of simply knowing how many tokens an AI agent used, you can understand the true engineering cost of delivering a feature.
 
-## Phases
+**Feature: OAuth Authentication**
 
-Each phase ends with a gate. You can stop at any passed gate and still have something that works and can be presented.
+| Metric | Value |
+| --- | --- |
+| AI Cost | $3.82 |
+| Tokens | 1.47M |
+| Agent Time | 11m 42s |
+| Tool Calls | 83 |
+| Files Changed | 23 |
+| Tests Run | 14 |
+| Test Failures | 3 |
+| Commits | 8 |
+| Rework | 27% |
 
-| Phase | What you can show |
-|---|---|
-| **P0 foundation** | Ratstack boots, contracts are frozen, SQLite and real stdio MCP work. A technical checkpoint only. |
-| **P1 v0** | Analyze/explain inside Cursor on real Git data, plus a clearly labelled replay for AI/CI. |
-| **P2 v1** *(target)* | A real branch: Git, one validated AI-usage source, and real GitHub Actions/PR evidence. |
-| **P3 v2** | Optional extras such as cost, AI survival, local test feedback or a dashboard. Each extra passes its own gate. |
-| **P4 release** | A frozen artifact, installer and restart rehearsal, and a claims review. |
+**$3.82 / shipped feature**
 
-At the four-hour mark, present the highest phase that passed.
+## The vision
 
-## Repository layout
+AI coding should be treated as an engineering activity, not just an AI interaction.
 
-```
-IDEA.md                       original pitch (Czech)
-plans/                        79 executable plan files, one per assignment
-  dxfr-rat-a*                   foundation and integration
-  dxfr-rat-b*                   modules: collectors, correlation, metrics, reports, CLI/MCP, UI
-  dxfr-rat-c*                   verification, installer, demo, release
-  dxfr-rat-g*                   phase gates G00–G04
-research/
-  README.md                     index of the research pack
-  show-me-final-plan.md         visual walkthrough of the plan (start here)
-  phase-gates.md                stoppable phases and required validation
-  hackathon-execution.md        four-hour execution policy and deadline cuts
-  implementation-spec.md        build contract
-  synthesis.md                  research conclusions
-  plan-index.md                 all 79 assignments
-  execution-manifest.json       dependency manifest (145 edges)
-  dag.mmd                       dependency graph (Mermaid)
-  reports/revision/             current research: Cursor local data, usage exports,
-                                provenance, GitHub, Ratstack, parallel execution, audit
-  reports/first-pass/           earlier research, superseded where it conflicts
-  reviews/                      independent plan review and how each point was handled
-```
+The goal is to move from:
 
-The plans use the `plan-graph` `.plan.md` format (`name`, `overview`, `todos`), so an agent orchestrator can schedule them as a dependency graph.
+> How many tokens did the AI use?
+
+to:
+
+> What did it cost to successfully ship this feature?
+
+AI Engineering Cost Tracker provides the observability layer needed to answer that question.
