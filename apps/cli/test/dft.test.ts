@@ -18,6 +18,9 @@ import {
   installCursorHooks,
   installGitHooks,
   installSkills,
+  installText,
+  installWarnings,
+  isOldNode,
   mergeCursorHooks,
 } from "../src/dft-install.js";
 
@@ -128,5 +131,55 @@ describe("dft install --git-hooks", () => {
 
     expect(step?.action).toBe("printed");
     expect(step?.detail).toContain("run: /r/bin/dft snapshot || true");
+  });
+});
+
+describe("dft install output", () => {
+  it("lists what was set up and numbered next steps", () => {
+    const repo = scratchRepo();
+
+    const text = installText(
+      {
+        git: null,
+        hooks: installCursorHooks(repo, "dft hook"),
+        skills: installSkills(repo),
+        worktree: repo,
+      },
+      {
+        cursorInstalled: true,
+        gitRepo: true,
+        login: "yes",
+        nodeVersion: "v24.18.0",
+      }
+    );
+
+    expect(text).toContain("  ✓ Cursor hooks    .cursor/hooks.json\n");
+    expect(text).toContain("/dx-analyze, /dx-explain");
+    expect(text).toContain("dft install --git-hooks");
+    expect(text).toContain("Next steps");
+    expect(text).toMatch(/1\. Restart Cursor/u);
+    expect(text).toMatch(/3\. dft analyze .*\/dx-analyze/u);
+    expect(text).not.toContain("Check this");
+  });
+
+  it("warns about missing git, Cursor, login and old Node", () => {
+    expect(
+      installWarnings({
+        cursorInstalled: false,
+        gitRepo: false,
+        login: "no",
+        nodeVersion: "v22.3.0",
+      })
+    ).toHaveLength(4);
+    expect(
+      installWarnings({
+        cursorInstalled: true,
+        gitRepo: true,
+        login: "unknown",
+        nodeVersion: "v24.18.0",
+      })
+    ).toEqual([]);
+    expect(isOldNode("v24.17.9")).toBe(true);
+    expect(isOldNode("v25.0.0")).toBe(false);
   });
 });

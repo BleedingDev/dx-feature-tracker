@@ -37,7 +37,7 @@ const definition = (
 export const commitsDefinition = definition(
   "dx.git.commits",
   "commits",
-  "Distinct commits in baseSha..HEAD, merges included."
+  "Distinct commits in baseSha..HEAD, merges included. baseSha is the merge-base with the default branch (origin/HEAD, main or master), so a branch created from another feature branch also counts that parent's unmerged commits."
 );
 
 export const mergeCommitsDefinition = definition(

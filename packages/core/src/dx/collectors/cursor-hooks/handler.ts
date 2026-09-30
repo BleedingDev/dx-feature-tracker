@@ -12,7 +12,7 @@ import type {
   SpoolRecord,
 } from "./spool-record.js";
 import { emptySpoolGitContext, SPOOL_VERSION } from "./spool-record.js";
-import { DEFAULT_SPOOL_RELATIVE, writeSpoolRecord } from "./spool.js";
+import { writeSpoolRecord } from "./spool.js";
 
 const GIT_TIMEOUT_MS = 1500;
 
@@ -64,7 +64,7 @@ export const resolveGitContext: GitResolver = (cwd) => {
 export interface HookRuntime {
   readonly cwd: string;
   readonly now: Date;
-  readonly spoolDir: string | null;
+  readonly spoolDirFor: (worktreePath: string) => string;
   readonly resolveGit: GitResolver;
 }
 
@@ -133,13 +133,9 @@ export const handleCursorHook = (
   const root = hook.workspaceRoots[0] ?? runtime.cwd;
   const git = runtime.resolveGit(root);
 
-  const spoolDir =
-    runtime.spoolDir ??
-    path.join(git.worktreePath ?? root, DEFAULT_SPOOL_RELATIVE);
-
   try {
     const written = writeSpoolRecord(
-      spoolDir,
+      runtime.spoolDirFor(git.worktreePath ?? root),
       buildSpoolRecord(hook, git, runtime.now)
     );
 

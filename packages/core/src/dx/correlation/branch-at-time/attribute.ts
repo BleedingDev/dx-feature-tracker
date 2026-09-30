@@ -121,17 +121,19 @@ const timelineFor = (
   );
 };
 
-const linkKeysOf = (event: DxEventEnvelope): readonly string[] => [
+const requestKeysOf = (event: DxEventEnvelope): readonly string[] => [
   ...(event.identity.requestId === null
     ? []
     : [`request:${event.identity.requestId}`]),
   ...(event.identity.generationId === null
     ? []
     : [`generation:${event.identity.generationId}`]),
-  ...(event.identity.sessionId === null
-    ? []
-    : [`session:${event.identity.sessionId}`]),
 ];
+
+const sessionKeyOf = (event: DxEventEnvelope): string | null =>
+  event.identity.sessionId === null || event.identity.sessionId === ""
+    ? null
+    : `session:${event.identity.sessionId}`;
 
 const timeOf = (event: DxEventEnvelope): number | null => {
   if (event.occurredAt === null) {
@@ -141,6 +143,40 @@ const timeOf = (event: DxEventEnvelope): number | null => {
   const ms = Date.parse(event.occurredAt);
 
   return Number.isNaN(ms) ? null : ms;
+};
+
+const instantOf = (event: DxEventEnvelope): number | null => {
+  const ms = Date.parse(event.occurredAt ?? event.observedAt);
+
+  return Number.isNaN(ms) ? null : ms;
+};
+
+interface TimedAttribution {
+  readonly at: number | null;
+  readonly found: HistoricalAttribution;
+}
+
+const nearestSessionMatch = (
+  candidates: readonly TimedAttribution[],
+  event: DxEventEnvelope
+): HistoricalAttribution | undefined => {
+  const at = instantOf(event);
+  let best: TimedAttribution | undefined;
+  let bestGap = Number.POSITIVE_INFINITY;
+
+  for (const candidate of candidates) {
+    const gap =
+      at === null || candidate.at === null
+        ? Number.POSITIVE_INFINITY
+        : Math.abs(candidate.at - at);
+
+    if (best === undefined || gap < bestGap) {
+      best = candidate;
+      bestGap = gap;
+    }
+  }
+
+  return best?.found;
 };
 
 type Resolver = (event: DxEventEnvelope) => HistoricalAttribution | null;
@@ -288,20 +324,51 @@ export const attributeHistoricalBranches = (
   );
 
   const linked = new Map<string, HistoricalAttribution>();
+  const sessions = new Map<string, TimedAttribution[]>();
 
   for (const event of events) {
     const found = first.get(event.eventId);
 
     if (found?.branch !== null && found?.branch !== undefined) {
-      for (const key of linkKeysOf(event)) {
+      for (const key of requestKeysOf(event)) {
         const prior = linked.get(key);
 
         if (prior === undefined || prior.confidence < found.confidence) {
           linked.set(key, found);
         }
       }
+
+      const sessionKey = sessionKeyOf(event);
+
+      if (sessionKey !== null) {
+        sessions.set(sessionKey, [
+          ...(sessions.get(sessionKey) ?? []),
+          { at: instantOf(event), found },
+        ]);
+      }
     }
   }
+
+  const linkFor = (event: DxEventEnvelope) => {
+    const byRequest = requestKeysOf(event)
+      .map((key) => linked.get(key))
+      .find((a) => a !== undefined);
+
+    if (byRequest !== undefined) {
+      return { found: byRequest, via: "request" as const };
+    }
+
+    const sessionKey = sessionKeyOf(event);
+
+    const bySession =
+      sessionKey === null
+        ? undefined
+        : nearestSessionMatch(sessions.get(sessionKey) ?? [], event);
+
+    return bySession === undefined
+      ? undefined
+      : { found: bySession, via: "session" as const };
+  };
 
   const attributions: HistoricalAttribution[] = [];
 
@@ -312,12 +379,8 @@ export const attributeHistoricalBranches = (
 
     const own = first.get(event.eventId) ?? null;
 
-    const viaLink =
-      own === null
-        ? linkKeysOf(event)
-            .map((key) => linked.get(key))
-            .find((a) => a !== undefined)
-        : undefined;
+    const link = own === null ? linkFor(event) : undefined;
+    const viaLink = link?.found;
 
     const found =
       own ??
@@ -336,7 +399,10 @@ export const attributeHistoricalBranches = (
             branch: viaLink.branch,
             confidence: Math.min(viaLink.confidence, 0.8),
             method: "request-link" as const,
-            reason: `shares a request/conversation id with ${viaLink.eventId} (${viaLink.basis})`,
+            reason:
+              link?.via === "session"
+                ? `nearest-in-time event of the same conversation, ${viaLink.eventId} (${viaLink.basis}); the conversation only gives repo and worktree, the branch comes from that nearest event`
+                : `shares a request id with ${viaLink.eventId} (${viaLink.basis})`,
           });
 
     attributions.push(found);

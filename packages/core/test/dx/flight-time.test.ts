@@ -87,7 +87,7 @@ const spoolHooks = (): string => {
         repoCommonDir: "/fixture/workspace/.git",
         worktreePath: "/fixture/workspace",
       }),
-      spoolDir,
+      spoolDirFor: () => spoolDir,
     });
   }
 

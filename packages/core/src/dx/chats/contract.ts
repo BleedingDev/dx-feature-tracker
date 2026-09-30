@@ -63,6 +63,7 @@ export type ModelTurn = typeof ModelTurnSchema.Type;
 export const ChatNodeSchema = Schema.Struct({
   adapters: Schema.Array(Schema.String),
   agentTimeMs: ChatValueSchema,
+  branches: Schema.Array(Schema.String),
   childSessionIds: Schema.Array(Schema.String),
   eventCount: Schema.Int,
   isSubagent: Schema.NullOr(Schema.Boolean),

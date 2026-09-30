@@ -4,13 +4,19 @@ import { homedir } from "node:os";
 import path from "node:path";
 
 import type { FlightContext } from "./model/event.js";
-import { hookSpoolDirFor } from "./registry/runtime.js";
+import {
+  defaultDftHome,
+  hookSpoolDirFor,
+  legacyHookSpoolDirFor,
+} from "./registry/runtime.js";
 
 export {
   contextForRepo,
   dxStoreLayer,
   gitSelectorResolver,
+  defaultDftHome,
   hookSpoolDirFor,
+  legacyHookSpoolDirFor,
   resolveDxStore,
   runCursorHook,
   selectorForContext,
@@ -34,10 +40,12 @@ export interface AutoSource {
 export const autoSources = (
   context: FlightContext,
   cwd: string,
-  storePath: string
+  storePath: string,
+  dftHome: string = defaultDftHome()
 ): readonly AutoSource[] => {
   const worktree = context.worktreePath ?? cwd;
-  const spool = hookSpoolDirFor(worktree);
+  const spool = hookSpoolDirFor(worktree, dftHome);
+  const legacySpool = legacyHookSpoolDirFor(worktree);
   const commands = commandLogPath(storePath);
 
   const sources: AutoSource[] = [
@@ -46,6 +54,10 @@ export const autoSources = (
 
   if (existsSync(spool)) {
     sources.push({ input: spool, source: "collector.cursor-hooks" });
+  }
+
+  if (existsSync(legacySpool)) {
+    sources.push({ input: legacySpool, source: "collector.cursor-hooks" });
   }
 
   if (existsSync(commands)) {

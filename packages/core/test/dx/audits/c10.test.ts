@@ -157,7 +157,7 @@ const runHook = (id: string): HookRun => {
     cwd: ROOT,
     now: new Date("2026-09-30T12:00:00.000Z"),
     resolveGit: fakeGit,
-    spoolDir,
+    spoolDirFor: () => spoolDir,
   });
 
   expect(result.outcome.state, `${id} should spool`).toBe("spooled");
@@ -241,7 +241,7 @@ describe("c10 cursor hook path: redact, bound, never execute", () => {
       cwd: ROOT,
       now: new Date("2026-09-30T12:00:00.000Z"),
       resolveGit: fakeGit,
-      spoolDir,
+      spoolDirFor: () => spoolDir,
     };
 
     for (const stdin of [

@@ -2,7 +2,7 @@
 import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 
-import { Effect } from "effect";
+import { Console, Effect } from "effect";
 
 import { runCollect } from "../cli/commands/collect.js";
 import { autoSources } from "../composition.js";
@@ -10,7 +10,11 @@ import type { AutoSource } from "../composition.js";
 import type { EventStoreService } from "../contracts/services.js";
 import type { FlightContext } from "../model/event.js";
 import type { DxCollectorServices, RegisteredCollector } from "./registry.js";
-import { contextForRepo } from "./runtime.js";
+import {
+  contextForRepo,
+  defaultDftHome,
+  legacyHookSpoolDirFor,
+} from "./runtime.js";
 
 export interface SyncStep {
   readonly duplicates: number | null;
@@ -28,10 +32,14 @@ export interface SyncReport {
 
 export interface AutoSyncOptions {
   readonly cwd: string;
+  readonly dftHome?: string;
   readonly home: string;
   readonly repo: string;
   readonly storePath: string;
 }
+
+export const LEGACY_FOLDER_NOTE =
+  "Old folder .dx-flight-recorder/ in this repo is no longer used; you can delete it." as const;
 
 const TRANSCRIPT_SOURCE = "collector.cursor-transcripts";
 
@@ -133,7 +141,12 @@ export const planSources = (
   const worktree = context.worktreePath ?? options.cwd;
 
   return [
-    ...autoSources(context, options.cwd, options.storePath),
+    ...autoSources(
+      context,
+      options.cwd,
+      options.storePath,
+      options.dftHome ?? defaultDftHome()
+    ),
     ...transcriptSources(options.home, worktree),
   ];
 };
@@ -174,6 +187,12 @@ export const autoSync = (
         )
       )
     );
+
+    const legacy = legacyHookSpoolDirFor(context.worktreePath ?? options.cwd);
+
+    if (steps.some((step) => step.input === legacy)) {
+      yield* Console.error(LEGACY_FOLDER_NOTE);
+    }
 
     return {
       context,

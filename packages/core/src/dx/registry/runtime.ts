@@ -1,5 +1,7 @@
 // @effect-diagnostics nodeBuiltinImport:off -- Runtime wiring resolves the selected repo path and the store path once per invocation at the process boundary.
+import { createHash } from "node:crypto";
 import { realpathSync } from "node:fs";
+import { homedir } from "node:os";
 import path from "node:path";
 
 import { Effect } from "effect";
@@ -13,7 +15,10 @@ import type {
   GitResolver,
   HookResult,
 } from "../collectors/cursor-hooks/handler.js";
-import { DEFAULT_SPOOL_RELATIVE } from "../collectors/cursor-hooks/spool.js";
+import {
+  HOOK_SPOOL_FOLDER,
+  LEGACY_SPOOL_RELATIVE,
+} from "../collectors/cursor-hooks/spool.js";
 import type { EventStore } from "../contracts/event-store.js";
 import type { StoreFailure } from "../contracts/services.js";
 import type { SelectorResolver } from "../mcp/handlers/deps.js";
@@ -148,18 +153,35 @@ export const gitSelectorResolver =
       });
     });
 
-export const hookSpoolDirFor = (worktreePath: string): string =>
-  path.join(worktreePath, DEFAULT_SPOOL_RELATIVE);
+export const defaultDftHome = (): string =>
+  resolveDftHome(process.env, homedir());
+
+export const worktreeSpoolId = (worktreePath: string): string => {
+  const real = canonical(worktreePath);
+  const hash = createHash("sha256").update(real).digest("hex").slice(0, 8);
+  const name = path.basename(real).replaceAll(/[^A-Za-z0-9._-]+/gu, "-");
+
+  return name === "" || name === "-" ? hash : `${name}-${hash}`;
+};
+
+export const hookSpoolDirFor = (
+  worktreePath: string,
+  dftHome: string = defaultDftHome()
+): string =>
+  path.join(dftHome, "spool", worktreeSpoolId(worktreePath), HOOK_SPOOL_FOLDER);
+
+export const legacyHookSpoolDirFor = (worktreePath: string): string =>
+  path.join(worktreePath, LEGACY_SPOOL_RELATIVE);
 
 export const runCursorHook = (
   stdinText: string,
   cwd: string,
   now: Date,
-  spoolDir: string | null = null
+  dftHome: string = defaultDftHome()
 ): HookResult =>
   handleCursorHook(stdinText, {
     cwd,
     now,
     resolveGit: resolveCanonicalGit,
-    spoolDir,
+    spoolDirFor: (worktreePath) => hookSpoolDirFor(worktreePath, dftHome),
   });

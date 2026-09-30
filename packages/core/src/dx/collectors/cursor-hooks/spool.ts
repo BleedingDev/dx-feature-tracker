@@ -16,8 +16,12 @@ import { MAX_PAYLOAD_BYTES } from "../../model/event.js";
 import type { SpoolRecord } from "./spool-record.js";
 import { SpoolRecordSchema } from "./spool-record.js";
 
-export const DEFAULT_SPOOL_RELATIVE =
-  ".dx-flight-recorder/cursor-hooks-spool" as const;
+export const HOOK_SPOOL_FOLDER = "cursor-hooks" as const;
+
+export const LEGACY_SPOOL_FOLDER = ".dx-flight-recorder" as const;
+
+export const LEGACY_SPOOL_RELATIVE =
+  `${LEGACY_SPOOL_FOLDER}/cursor-hooks-spool` as const;
 
 const SPOOL_SUFFIX = ".json";
 

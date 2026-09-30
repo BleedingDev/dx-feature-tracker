@@ -27,6 +27,7 @@ import { frictionMetric } from "../../../src/dx/metrics/friction/metric.js";
 import { gitChurnMetric } from "../../../src/dx/metrics/git/metric.js";
 import type { FlightContext } from "../../../src/dx/model/event.js";
 import type { AnalyzeReport } from "../../../src/dx/model/report.js";
+import { hookSpoolDirFor } from "../../../src/dx/registry/runtime.js";
 import { openSqliteEventStore } from "../../../src/dx/storage/sqlite-event-store.js";
 
 const FIXTURES = path.join(import.meta.dirname, "fixtures", "a07-live");
@@ -69,7 +70,7 @@ const makeRepo = (): FlightContext => {
 };
 
 const replayCapturedSpoolInto = (repo: string): string => {
-  const dir = path.join(repo, ".dx-flight-recorder", "cursor-hooks-spool");
+  const dir = hookSpoolDirFor(repo, path.join(scratch, "dft-home"));
   fs.mkdirSync(dir, { recursive: true });
 
   for (const name of fs.readdirSync(path.join(FIXTURES, "spool"))) {

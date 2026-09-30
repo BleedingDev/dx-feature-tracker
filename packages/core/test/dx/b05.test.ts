@@ -59,7 +59,7 @@ const spoolFixture = (fixture: string, spoolDir: string) => {
       cwd: "/fixture/workspace",
       now: new Date(Date.UTC(2026, 8, 30, 12, 0, index)),
       resolveGit: fixedGit,
-      spoolDir,
+      spoolDirFor: () => spoolDir,
     })
   );
 };
@@ -264,7 +264,7 @@ describe("B05 cursor hooks collector", () => {
         cwd: scratchRoot,
         now: new Date(),
         resolveGit: fixedGit,
-        spoolDir,
+        spoolDirFor: () => spoolDir,
       }
     );
 

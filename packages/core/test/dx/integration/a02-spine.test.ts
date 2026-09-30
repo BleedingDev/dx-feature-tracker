@@ -22,7 +22,17 @@ import {
 
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "dxfr-a02-"));
 
+const previousDftHome = process.env.DFT_HOME;
+
+process.env.DFT_HOME = path.join(scratch, "dft-home");
+
 afterAll(() => {
+  if (previousDftHome === undefined) {
+    delete process.env.DFT_HOME;
+  } else {
+    process.env.DFT_HOME = previousDftHome;
+  }
+
   fs.rmSync(scratch, { force: true, recursive: true });
 });
 

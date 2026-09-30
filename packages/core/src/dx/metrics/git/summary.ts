@@ -9,7 +9,7 @@ import { EvidenceIdSchema } from "../../model/ids.js";
 export const GIT_CHURN_SOURCE_ADAPTER_ID = "git-history";
 
 export const BASE_SHA_DEFINITION =
-  "baseSha = git merge-base(resolved base ref, HEAD) recorded by the git-history collector; base ref is the explicit --base ref, else the first of origin/HEAD, main, master, origin/main, origin/master that is not the current branch. Branch totals cover commits in baseSha..HEAD; merge commits carry no numstat and contribute no lines.";
+  "baseSha = git merge-base(resolved base ref, HEAD) recorded by the git-history collector; base ref is the explicit --base ref, else the first of origin/HEAD, main, master, origin/main, origin/master that is not the current branch. Branch totals cover commits in baseSha..HEAD; merge commits carry no numstat and contribute no lines. A branch created from another feature branch is still measured from the default-branch merge-base, so its totals include the parent branch's unmerged commits (dft does not yet use the reflog 'branch: Created from' parent or the closest ancestor branch as the base).";
 
 export interface CommitFacts {
   readonly baseSha: string | null;

@@ -354,9 +354,28 @@ const isSubagentOf = (
   return flags.length === 0 ? null : flags.includes(true);
 };
 
+const branchesOf = (events: readonly DxEventEnvelope[]): string[] => {
+  const firstSeen = new Map<string, string>();
+
+  for (const event of events) {
+    const { branch } = event.context;
+    const at = event.occurredAt ?? event.observedAt;
+    const prior = firstSeen.get(branch ?? "");
+
+    if (branch !== null && (prior === undefined || at < prior)) {
+      firstSeen.set(branch, at);
+    }
+  }
+
+  return [...firstSeen.entries()]
+    .toSorted(([a, at], [b, bt]) => at.localeCompare(bt) || a.localeCompare(b))
+    .map(([branch]) => branch);
+};
+
 const buildNode = (
   sessionId: string,
-  events: readonly DxEventEnvelope[]
+  events: readonly DxEventEnvelope[],
+  sessionEvents: readonly DxEventEnvelope[]
 ): Omit<ChatNode, "childSessionIds"> => {
   const account = accountAiUsage(events);
 
@@ -379,6 +398,7 @@ const buildNode = (
   return {
     adapters: [...new Set(events.map((e) => e.adapterId))].toSorted(),
     agentTimeMs: agentTimeOf(events),
+    branches: branchesOf(sessionEvents),
     eventCount: events.length,
     isSubagent,
     modelTimeline: timeline,
@@ -416,8 +436,26 @@ const isAiEvent = (event: DxEventEnvelope) =>
 
 export const buildChatTree = (
   events: readonly DxEventEnvelope[],
-  scope: ChatTreeScope
+  scope: ChatTreeScope,
+  allBranches: readonly DxEventEnvelope[] = events
 ): ChatsReport => {
+  const acrossBranches = new Map<string, DxEventEnvelope[]>();
+
+  for (const event of allBranches) {
+    const { sessionId } = event.identity;
+
+    if (
+      sessionId !== null &&
+      isAiEvent(event) &&
+      inScope(event, { ...scope, branch: null })
+    ) {
+      acrossBranches.set(sessionId, [
+        ...(acrossBranches.get(sessionId) ?? []),
+        event,
+      ]);
+    }
+  }
+
   const bySession = new Map<string, DxEventEnvelope[]>();
   const unattributed: DxEventEnvelope[] = [];
 
@@ -434,7 +472,7 @@ export const buildChatTree = (
   }
 
   const nodes = [...bySession.entries()].map(([sessionId, members]) =>
-    buildNode(sessionId, members)
+    buildNode(sessionId, members, acrossBranches.get(sessionId) ?? members)
   );
 
   const children = new Map<string, string[]>();

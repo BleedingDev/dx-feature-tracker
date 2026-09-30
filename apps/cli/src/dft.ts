@@ -14,7 +14,6 @@ import {
   defaultCostOptions,
   defaultPriceProvider,
   dxStoreLayer,
-  formatSyncLine,
   loadUserPriceTable,
   makeDxCapabilities,
   metricsWithCost,
@@ -24,24 +23,32 @@ import {
   runCursorHook,
   selectPriceTable,
 } from "@rat-stack/core/dx";
-import type { FlightHistoryRow } from "@rat-stack/core/dx";
+import type { FlightHistoryRow, SyncReport } from "@rat-stack/core/dx";
 import { Console, Data, DateTime, Effect, Layer, Option } from "effect";
 import { Command, Flag } from "effect/unstable/cli";
 
 import {
   dftInvocation,
+  installChecks,
   installCursorHooks,
   installGitHooks,
   installSkills,
+  installText,
 } from "./dft-install.js";
-import type { InstallStep } from "./dft-install.js";
 import {
   analyzeText,
+  chatsText,
+  explainText,
+  formatUsd,
   historyText,
   ledgerValues,
-  moneyLines,
-  usageLines,
+  modelShares,
+  snapshotLine,
+  statusText,
+  syncNote,
+  syncText,
 } from "./dft-render.js";
+import type { AnalyzeExtras } from "./dft-render.js";
 import { mcpServer } from "./surfaces.js";
 import { VERSION } from "./version.js";
 
@@ -66,7 +73,7 @@ const booleanFlag = (name: string, description: string) =>
 const reportFlags = {
   allRepos: booleanFlag(
     "all-repos",
-    "Report every repository in the store, not just the current one"
+    "Include every repo dft has seen, not just this one"
   ),
   branch: optionalString(
     "branch",
@@ -74,15 +81,12 @@ const reportFlags = {
   ),
   db: optionalString(
     "db",
-    "Path to the SQLite store; defaults to $DFT_HOME/dft.db (~/.dft/dft.db)"
+    "Database file; defaults to ~/.dft/dft.db (or $DFT_HOME/dft.db)"
   ),
-  json: booleanFlag(
-    "json",
-    "Print JSON on stdout instead of text; sync notes go to stderr"
-  ),
+  json: booleanFlag("json", "Print JSON instead of text"),
   noSync: booleanFlag(
     "no-sync",
-    "Skip importing new local data first; report only what is already stored"
+    "Don't import new data first; use what is already stored"
   ),
   repo: optionalString(
     "repo",
@@ -90,7 +94,11 @@ const reportFlags = {
   ),
   since: optionalString(
     "since",
-    "Only count activity after this point: 30m, 24h, 7d, 2w or an ISO timestamp like 2026-09-01T00:00:00Z"
+    "Only count activity since then: 30m, 24h, 7d, 2w or a date like 2026-09-01"
+  ),
+  verbose: booleanFlag(
+    "verbose",
+    "Say why numbers are missing and list every source read"
   ),
 };
 
@@ -102,6 +110,7 @@ export interface ReportFlags {
   readonly noSync: boolean;
   readonly repo: string | undefined;
   readonly since: string | undefined;
+  readonly verbose: boolean;
 }
 
 export const dftPaths = (flags: Pick<ReportFlags, "db" | "repo">) => {
@@ -164,10 +173,10 @@ const dftSession = (flags: ReportFlags) =>
 
 type Session = Effect.Success<ReturnType<typeof dftSession>>;
 
-const syncStep = (flags: ReportFlags, session: Session) =>
+const syncStep = (flags: ReportFlags, session: Session, quiet = false) =>
   Effect.gen(function* sync() {
     if (flags.noSync) {
-      return;
+      return null;
     }
 
     const store = yield* EventStore;
@@ -179,7 +188,13 @@ const syncStep = (flags: ReportFlags, session: Session) =>
       storePath: session.paths.store.path,
     });
 
-    yield* Console.error(formatSyncLine(report));
+    const note = quiet ? null : syncNote(report, flags.verbose);
+
+    if (note !== null) {
+      yield* Console.error(note);
+    }
+
+    return report;
   });
 
 const printOutput = (
@@ -189,27 +204,49 @@ const printOutput = (
 ): Effect.Effect<void> =>
   Console.log(flags.json || text === undefined ? json : text);
 
-const reportCommand = <A, E, R>(
+interface RenderContext {
+  readonly flags: ReportFlags;
+  readonly home: string;
+  readonly now: number;
+  readonly sync: SyncReport | null;
+  readonly verbose: boolean;
+}
+
+interface ReportView<A, J> {
+  readonly json?: (output: A) => J;
+  readonly presync?: boolean;
+  readonly render?: (output: A, context: RenderContext) => string;
+}
+
+const reportCommand = <A, E, R, J = A>(
   name: string,
   description: string,
   run: (flags: ReportFlags, session: Session) => Effect.Effect<A, E, R>,
-  render?: (output: A) => string,
-  presync = true
+  view: ReportView<A, J> = {}
 ) =>
   Command.make(name, reportFlags, (flags) =>
     Effect.gen(function* report() {
       const session = yield* dftSession(flags);
 
       yield* Effect.gen(function* withStore() {
-        if (presync) {
-          yield* syncStep(flags, session);
-        }
+        const sync =
+          view.presync === false
+            ? null
+            : yield* syncStep(flags, session, name === "status");
 
         const output = yield* run(flags, session);
+        const now = DateTime.toEpochMillis(yield* DateTime.now);
+
         yield* printOutput(
           flags,
-          JSON.stringify(output, null, 2),
-          render?.(output)
+          JSON.stringify(view.json?.(output) ?? output, null, 2),
+          view.render?.(output, {
+            flags,
+            home: session.paths.home,
+            now,
+            sync,
+            verbose: flags.verbose,
+          })
         );
       }).pipe(Effect.provide(dxStoreLayer(session.paths.store)));
     })
@@ -224,76 +261,23 @@ const capabilityAt = (session: Session) => {
 
 const statusCommand = reportCommand(
   "status",
-  "Check that dft is set up: store path, which local sources were found and whether each report is ready. Syncs this repo first.",
-  (_flags, session) => capabilityAt(session).status.handler({})
+  "Check that dft is set up: where data is stored and which sources (git, Cursor) were found. Imports new data first.",
+  (_flags, session) => capabilityAt(session).status.handler({}),
+  {
+    render: (output, context) =>
+      statusText(output, context.sync, {
+        home: context.home,
+        now: context.now,
+        verbose: context.verbose,
+      }),
+  }
 ).pipe(
-  Command.withShortDescription(
-    "Check setup: store, local sources found, report readiness"
-  ),
+  Command.withShortDescription("Check setup and which sources were found"),
   Command.withExamples([
     { command: "dft status", description: "Check setup for the current repo" },
     {
       command: "dft status --json --no-sync",
       description: "Machine-readable status without importing new data",
-    },
-  ])
-);
-
-const analyzeHandler = (flags: ReportFlags, session: Session) =>
-  capabilityAt(session).analyze.handler(
-    flags.allRepos ? {} : { repo: session.paths.repo }
-  );
-
-const analyzeExamples = [
-  {
-    command: "dft analyze",
-    description: "Cost, tokens and time for the checked-out branch",
-  },
-  {
-    command: "dft analyze --branch feature/x --json",
-    description: "Another branch, as JSON",
-  },
-  {
-    command: "dft analyze --since 7d --no-sync",
-    description: "Last 7 days only, without importing new data first",
-  },
-];
-
-const analyzeCommand = reportCommand(
-  "analyze",
-  "AI cost report for one branch: each money ledger listed separately (never summed), plus tokens, active time and git activity. Syncs this repo first unless --no-sync.",
-  analyzeHandler,
-  analyzeText
-).pipe(
-  Command.withShortDescription(
-    "Cost report for a branch: money ledgers, tokens, time, git"
-  ),
-  Command.withExamples(analyzeExamples)
-);
-
-const analyseCommand = reportCommand(
-  "analyse",
-  "Same as analyze",
-  analyzeHandler,
-  analyzeText
-).pipe(Command.withExamples(analyzeExamples));
-
-const explainCommand = reportCommand(
-  "explain",
-  "Show the timeline of events behind a branch's numbers, each linked to its source evidence (up to 200 entries). Use it to check where a cost came from.",
-  (_flags, session) => capabilityAt(session).explain.handler({ limit: 200 })
-).pipe(
-  Command.withShortDescription(
-    "Timeline of events behind a branch's numbers, with evidence"
-  ),
-  Command.withExamples([
-    {
-      command: "dft explain",
-      description: "Explain the checked-out branch",
-    },
-    {
-      command: "dft explain --branch feature/x --since 24h",
-      description: "Another branch, last 24 hours",
     },
   ])
 );
@@ -328,16 +312,133 @@ const historyInput = (flags: ReportFlags, session: Session) =>
     { branch: undefined, since: flags.since }
   );
 
+const currentRow = (
+  rows: readonly FlightHistoryRow[],
+  branch: string | null
+): FlightHistoryRow | null => rows.find((row) => row.branch === branch) ?? null;
+
+const analyzeExtras = (flags: ReportFlags, session: Session) =>
+  Effect.gen(function* extras() {
+    const caps = capabilityAt(session);
+
+    const chats = yield* caps.chats
+      .handler(optionalInput({ repo: session.paths.repo }, flags))
+      .pipe(Effect.option);
+
+    const history = yield* caps.history
+      .handler(historyInput(flags, session))
+      .pipe(Effect.option);
+
+    const { branch } = contextForRepo(session.paths.repo);
+    const wanted = flags.branch ?? branch;
+
+    const row = Option.isSome(history)
+      ? currentRow(history.value.rows, wanted ?? null)
+      : null;
+
+    return {
+      models: Option.isSome(chats) ? modelShares(chats.value.chats) : [],
+      status: row === null ? null : row.status.value,
+    } satisfies AnalyzeExtras;
+  });
+
+const analyzeHandler = (flags: ReportFlags, session: Session) =>
+  Effect.gen(function* analyze() {
+    const report = yield* capabilityAt(session).analyze.handler(
+      flags.allRepos ? {} : { repo: session.paths.repo }
+    );
+
+    const extras =
+      flags.json || flags.allRepos
+        ? null
+        : yield* analyzeExtras(flags, session);
+
+    return { extras, report };
+  });
+
+type AnalyzeOutput = Effect.Success<ReturnType<typeof analyzeHandler>>;
+
+const analyzeView: ReportView<AnalyzeOutput, AnalyzeOutput["report"]> = {
+  json: (output) => output.report,
+  render: (output, context) =>
+    analyzeText(output.report, output.extras, {
+      now: context.now,
+      verbose: context.verbose,
+    }),
+};
+
+const analyzeExamples = [
+  {
+    command: "dft analyze",
+    description: "Cost, tokens and time for the checked-out branch",
+  },
+  {
+    command: "dft analyze --branch feature/x --json",
+    description: "Another branch, as JSON",
+  },
+  {
+    command: "dft analyze --since 7d --no-sync",
+    description: "Last 7 days only, without importing new data first",
+  },
+];
+
+const analyzeCommand = reportCommand(
+  "analyze",
+  "AI cost of one branch: what Cursor billed, Cursor's own figure and a list-price estimate (shown apart, never added), plus tokens, time and commits. Imports new data first unless --no-sync.",
+  analyzeHandler,
+  analyzeView
+).pipe(
+  Command.withShortDescription("Cost, tokens and time for a branch"),
+  Command.withExamples(analyzeExamples)
+);
+
+const analyseCommand = reportCommand(
+  "analyse",
+  "Same as analyze",
+  analyzeHandler,
+  analyzeView
+).pipe(Command.withExamples(analyzeExamples));
+
+const explainCommand = reportCommand(
+  "explain",
+  "Show what happened on a branch, by time: chats, tool calls, commits. Use it to see where a cost came from. Shows up to 200 events.",
+  (_flags, session) => capabilityAt(session).explain.handler({ limit: 200 }),
+  {
+    render: (output, context) =>
+      explainText(
+        output,
+        context.flags.branch ?? context.sync?.context.branch ?? null
+      ),
+  }
+).pipe(
+  Command.withShortDescription("What happened on a branch, by time"),
+  Command.withExamples([
+    {
+      command: "dft explain",
+      description: "Explain the checked-out branch",
+    },
+    {
+      command: "dft explain --branch feature/x --since 24h",
+      description: "Another branch, last 24 hours",
+    },
+  ])
+);
+
 const historyCommand = reportCommand(
   "history",
-  "List every branch worked on (one row per repo and branch) with status, active time, tokens and each money ledger. Covers the current repo unless --all-repos. --branch is ignored here.",
+  "One row per branch: status, agent time, tokens, billed cost and estimate. This repo only unless --all-repos. --branch is ignored here.",
   (flags, session) =>
     capabilityAt(session).history.handler(historyInput(flags, session)),
-  (output) => historyText(output.rows)
+  {
+    render: (output, context) =>
+      historyText(output.rows, {
+        allRepos: output.allRepos,
+        now: context.now,
+        verbose: context.verbose,
+      }),
+  }
 ).pipe(
-  Command.withShortDescription(
-    "All branches with status, time, tokens and money ledgers"
-  ),
+  Command.withShortDescription("Cost of every branch, one row each"),
   Command.withExamples([
     { command: "dft history", description: "All branches in this repo" },
     {
@@ -353,15 +454,17 @@ const historyCommand = reportCommand(
 
 const chatsCommand = reportCommand(
   "chats",
-  "Show the chat sessions for a branch as a tree, with the model and reasoning level used on each turn.",
+  "Show the chats on a branch as a tree, with cost, tokens and the models used.",
   (flags, session) =>
     capabilityAt(session).chats.handler(
       optionalInput({ repo: session.paths.repo }, flags)
-    )
+    ),
+  {
+    render: (output, context) =>
+      chatsText(output, { now: context.now, verbose: context.verbose }),
+  }
 ).pipe(
-  Command.withShortDescription(
-    "Chat tree for a branch with per-turn model and reasoning level"
-  ),
+  Command.withShortDescription("Chats on a branch, with cost and models used"),
   Command.withExamples([
     { command: "dft chats", description: "Chats on the checked-out branch" },
     {
@@ -373,7 +476,7 @@ const chatsCommand = reportCommand(
 
 const syncCommand = reportCommand(
   "sync",
-  "Import new local data for this repo: Cursor hook spool, git history and chat transcripts. Safe to re-run; only new data is added. Other commands already sync first, so you rarely need this.",
+  "Import new data for this repo from Cursor hooks, git and Cursor chats. Safe to run again. Other commands do this first, so you rarely need it.",
   (flags, session) =>
     Effect.gen(function* sync() {
       const store = yield* EventStore;
@@ -385,11 +488,13 @@ const syncCommand = reportCommand(
         storePath: session.paths.store.path,
       });
     }),
-  (output) => formatSyncLine(output),
-  false
+  {
+    presync: false,
+    render: (output, context) => syncText(output, context.verbose),
+  }
 ).pipe(
   Command.withShortDescription(
-    "Import new local data (hook spool, git, transcripts); safe to re-run"
+    "Import new data now; other commands do this for you"
   ),
   Command.withExamples([
     { command: "dft sync", description: "Import new data for this repo" },
@@ -412,11 +517,6 @@ const gitDirty = (worktree: string): boolean | null => {
     return null;
   }
 };
-
-const currentRow = (
-  rows: readonly FlightHistoryRow[],
-  branch: string | null
-): FlightHistoryRow | null => rows.find((row) => row.branch === branch) ?? null;
 
 const persistSnapshot = (flags: ReportFlags) =>
   Effect.gen(function* snapshot() {
@@ -462,17 +562,10 @@ const persistSnapshot = (flags: ReportFlags) =>
       appendFileSync(snapshotsFile, `${JSON.stringify(record)}\n`);
     });
 
-    const head = `dft snapshot ${record.snapshotId} ${context.branch ?? "(detached)"}@${(context.headSha ?? "unknown").slice(0, 12)}${record.dirty === true ? " (dirty)" : ""}`;
-
-    const lines =
-      result.row === null
-        ? [head, "  no activity recorded for this branch yet"]
-        : [head, ...moneyLines(result.row), ...usageLines(result.row)];
-
     yield* printOutput(
       flags,
       JSON.stringify(record, null, 2),
-      lines.join("\n")
+      snapshotLine(context.branch, result.row)
     );
 
     return result.row;
@@ -495,7 +588,7 @@ const enforceMaxCost = (
   return over === undefined || limit === undefined
     ? Effect.void
     : Console.error(
-        `dft snapshot: a money ledger (${over}) exceeds --max-cost ${limit}; ledgers are compared one by one, never summed`
+        `dft: ${formatUsd(over)} is over --max-cost ${formatUsd(limit)} (each cost figure is checked on its own)`
       ).pipe(
         Effect.andThen(
           Effect.fail(new CostLimitExceeded({ limit, observed: over }))
@@ -509,7 +602,7 @@ const snapshotCommand = Command.make(
     ...reportFlags,
     maxCost: Flag.Finite("max-cost").pipe(
       Flag.withDescription(
-        "Fail (exit 1) when any single money ledger exceeds this amount; ledgers are never summed"
+        "Exit 1 when any one cost figure (billed, Cursor's, estimate) is over this many dollars"
       ),
       Flag.optional,
       Flag.map(Option.getOrUndefined)
@@ -520,36 +613,33 @@ const snapshotCommand = Command.make(
       // oxlint-disable-next-line promise/prefer-await-to-callbacks, promise/prefer-await-to-then -- Oxlint mistakes this Effect handler for a Promise callback.
       Effect.catch((error) =>
         Console.error(
-          `dft snapshot: not persisted (${error.message}); never blocking`
+          `dft: snapshot not saved (${error.message}); commit continues`
         ).pipe(Effect.as(null))
       ),
       Effect.flatMap((row) => enforceMaxCost(row, flags.maxCost))
     )
 ).pipe(
   Command.withDescription(
-    "Save the branch's current cost to snapshots.jsonl next to the store, keyed to HEAD and the dirty flag, and print one line per money ledger. Meant for git hooks: it never fails on its own errors, and exits 1 only when --max-cost is exceeded."
+    "Record the branch's cost at the current commit and print it on one line. Made for git hooks: it never blocks a commit, except with --max-cost when the cost is over the limit. Saved to snapshots.jsonl next to the database."
   ),
   Command.withShortDescription(
-    "Record cost at HEAD; optional --max-cost budget check for git hooks"
+    "Record cost at this commit (used by git hooks)"
   ),
   Command.withExamples([
     { command: "dft snapshot", description: "Record and print the cost now" },
     {
       command: "dft snapshot --max-cost 5",
-      description: "Exit 1 if any single ledger is over 5",
+      description: "Exit 1 if any cost figure is over $5",
     },
   ])
 );
-
-const installLine = (step: InstallStep): string =>
-  `${step.action.padEnd(9)} ${step.path}: ${step.detail}`;
 
 const installCommand = Command.make(
   "install",
   {
     gitHooks: booleanFlag(
       "git-hooks",
-      "Also add `dft snapshot` to the pre-commit and pre-push git hooks; existing hooks are kept"
+      "Also record cost on every commit and push (adds to your git hooks, keeps what is there)"
     ),
     json: reportFlags.json,
     repo: reportFlags.repo,
@@ -561,30 +651,40 @@ const installCommand = Command.make(
       const worktree = context.worktreePath ?? paths.repo;
       const command = dftInvocation(process.execPath, process.argv[1] ?? "dft");
 
-      const steps = yield* Effect.sync(() => [
-        installCursorHooks(worktree, `${command} hook`),
-        ...installSkills(worktree),
-        ...(flags.gitHooks ? installGitHooks(worktree, command) : []),
-      ]);
+      const result = yield* Effect.sync(() => {
+        const hooks = installCursorHooks(worktree, `${command} hook`);
+        const skills = installSkills(worktree);
+        const git = flags.gitHooks ? installGitHooks(worktree, command) : null;
 
-      yield* Console.log(
-        flags.json
-          ? JSON.stringify({ command, steps, worktree }, null, 2)
-          : steps.map(installLine).join("\n")
+        return { git, hooks, skills, worktree };
+      });
+
+      const steps = [result.hooks, ...result.skills, ...(result.git ?? [])];
+
+      if (flags.json) {
+        yield* Console.log(
+          JSON.stringify({ command, steps, worktree }, null, 2)
+        );
+
+        return;
+      }
+
+      const checks = yield* Effect.sync(() =>
+        installChecks(worktree, homedir(), process.platform, process.version)
       );
+
+      yield* Console.log(installText(result, checks, homedir()));
     })
 ).pipe(
   Command.withDescription(
-    "Set up dft in this repo: add dft entries to .cursor/hooks.json and install the dft Cursor skills. Only touches the project; never writes to ~/.cursor. Run once: running it again adds duplicate dft hook entries."
+    "Set up dft in this repo: add Cursor hooks to .cursor/hooks.json and the /dx-analyze and /dx-explain skills. Changes only this repo, never ~/.cursor. Safe to run again."
   ),
-  Command.withShortDescription(
-    "Set up Cursor hooks and skills in this repo (run once)"
-  ),
+  Command.withShortDescription("Set up Cursor hooks and skills in this repo"),
   Command.withExamples([
     { command: "dft install", description: "Set up Cursor hooks and skills" },
     {
       command: "dft install --git-hooks",
-      description: "Also snapshot cost on every commit and push",
+      description: "Also record cost on every commit and push",
     },
   ])
 );
@@ -638,17 +738,17 @@ const fixedCaps = {
 const collectCommand = toCommand(fixedCaps.collect, { name: "collect" }).pipe(
   Command.provide(dxStoreLayer(fixed.store)),
   Command.withShortDescription(
-    "Advanced: run collectors directly; most users want dft sync"
+    "Advanced: import one source by hand; most people want dft sync"
   )
 );
 
 const markCommand = toCommand(fixedCaps.mark, { name: "mark" }).pipe(
   Command.provide(dxStoreLayer(fixed.store)),
   Command.withDescription(
-    "Advanced, optional: write an explicit flight start/stop/wait marker or labelled claim. Reports work without manual marks; branch and time are detected automatically."
+    "Advanced, optional: add a start, stop or wait mark by hand. Not needed: branch and time are detected on their own."
   ),
   Command.withShortDescription(
-    "Advanced, optional: add a manual marker; not needed for normal reports"
+    "Advanced: add a start/stop mark by hand (not needed)"
   )
 );
 
@@ -656,7 +756,7 @@ const evidenceCommand = toCommand(fixedCaps.evidence, {
   name: "evidence",
 }).pipe(
   Command.provide(dxStoreLayer(fixed.store)),
-  Command.withShortDescription("Advanced: look up stored evidence records")
+  Command.withShortDescription("Advanced: look up the raw stored records")
 );
 
 const mcpCommand = Command.make("mcp", {}, () =>
@@ -671,13 +771,13 @@ const mcpCommand = Command.make("mcp", {}, () =>
 export const dftCommand = Command.make("dft").pipe(
   Command.withDescription(
     [
-      "AI engineering cost tracker: tokens, active time and every money ledger per branch, from local Cursor and git data.",
+      "See what AI coding costs per branch: billed cost, tokens and time, from Cursor and git on this machine.",
       "",
       "  Quick start:",
-      "    dft install                           set up Cursor hooks and skills in this repo (once)",
-      "    dft analyze                           cost report for the current branch",
-      "    dft history --since 30d --all-repos   every branch you worked on, all repos",
-      "    dft <command> --help                  flags and examples for one command",
+      "    dft install                           set up this repo (safe to run again)",
+      "    dft analyze                           cost of the current branch",
+      "    dft history --since 30d --all-repos   every branch, all repos, last 30 days",
+      "    dft <command> --help                  flags and examples",
     ].join("\n")
   ),
   Command.withSubcommands([

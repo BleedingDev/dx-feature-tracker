@@ -31,6 +31,8 @@ afterAll(() => {
 
 const repo = path.join(scratch, "repo");
 
+const dftHome = path.join(scratch, "dft-home");
+
 const branch = "feature/a07-rebuild";
 
 const git = (...args: readonly string[]) =>
@@ -44,7 +46,7 @@ git("config", "user.email", "fixture@example.invalid");
 
 git("config", "user.name", "fixture");
 
-fs.writeFileSync(path.join(repo, ".gitignore"), ".dx-flight-recorder/\n");
+fs.writeFileSync(path.join(repo, ".gitignore"), "node_modules/\n");
 
 fs.writeFileSync(path.join(repo, "math.mjs"), "export const add = 1;\n");
 
@@ -118,7 +120,8 @@ for (const line of hookLines) {
   runCursorHook(
     JSON.stringify({ ...JSON.parse(line), workspace_roots: [repo] }),
     repo,
-    hookAt
+    hookAt,
+    dftHome
   );
 }
 
@@ -164,7 +167,7 @@ const recordFlight = (storePath: string) =>
     }
 
     const sources = [
-      ...autoSources(context, repo, storePath),
+      ...autoSources(context, repo, storePath, dftHome),
       { input: cliStream, source: "collector/cursor-cli" },
     ];
 

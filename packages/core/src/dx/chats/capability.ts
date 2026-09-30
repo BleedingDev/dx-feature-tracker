@@ -116,11 +116,15 @@ export const makeDxChatsCapability = (deps: DxChatsDeps = {}) =>
         const retro = yield* reattributeIfPossible(events);
         const snapshot = narrowToBranch(wide, selector, retro.events);
 
-        return buildChatTree(snapshot.events, {
-          branch: selector.branch,
-          repoCommonDir: selector.repoCommonDir,
-          since,
-        });
+        return buildChatTree(
+          snapshot.events,
+          {
+            branch: selector.branch,
+            repoCommonDir: selector.repoCommonDir,
+            since,
+          },
+          retro.events
+        );
       })
     )
   );

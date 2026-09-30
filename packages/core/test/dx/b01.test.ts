@@ -367,7 +367,7 @@ describe("B01 sqlite event store", () => {
       resolveStorePath({ env: {}, home, replay: false, store: null })
     ).toEqual({
       kind: "live",
-      path: "/home/dx/.dx-flight-recorder/events.sqlite",
+      path: "/home/dx/.dft/dft.db",
       source: "default",
     });
     expect(
@@ -379,7 +379,7 @@ describe("B01 sqlite event store", () => {
       })
     ).toEqual({
       kind: "replay",
-      path: "/home/dx/.dx-flight-recorder/replay.sqlite",
+      path: "/home/dx/.dft/replay.db",
       source: "default",
     });
     expect(

@@ -69,10 +69,42 @@ export const summaryToJson = (summary: readonly BranchAttributionSummary[]) =>
     movedFromCollectedBranch: s.movedFromCollectedBranch,
   }));
 
+const instantOf = (event: DxEventEnvelope): number | null => {
+  const ms = Date.parse(event.occurredAt ?? event.observedAt);
+
+  return Number.isNaN(ms) ? null : ms;
+};
+
+const nearestInTime = (
+  candidates: readonly DxEventEnvelope[],
+  target: DxEventEnvelope
+): DxEventEnvelope | undefined => {
+  const at = instantOf(target);
+
+  if (at === null) {
+    return candidates[0];
+  }
+
+  let best: DxEventEnvelope | undefined;
+  let bestGap = Number.POSITIVE_INFINITY;
+
+  for (const candidate of candidates) {
+    const t = instantOf(candidate);
+    const gap = t === null ? Number.POSITIVE_INFINITY : Math.abs(t - at);
+
+    if (best === undefined || gap < bestGap) {
+      best = candidate;
+      bestGap = gap;
+    }
+  }
+
+  return best;
+};
+
 export const joinAccountRows = (
   events: readonly DxEventEnvelope[]
 ): readonly DxEventEnvelope[] => {
-  const local = new Map<string, DxEventEnvelope["context"]>();
+  const local = new Map<string, DxEventEnvelope[]>();
 
   for (const e of events) {
     const { sessionId } = e.identity;
@@ -80,20 +112,50 @@ export const joinAccountRows = (
     if (
       sessionId !== null &&
       sessionId !== "" &&
-      e.context.repoCommonDir !== null &&
-      !local.has(sessionId)
+      e.context.repoCommonDir !== null
     ) {
-      local.set(sessionId, e.context);
+      local.set(sessionId, [...(local.get(sessionId) ?? []), e]);
     }
   }
 
   return events.map((e) => {
-    const context =
-      e.context.repoCommonDir === null && e.identity.sessionId !== null
-        ? local.get(e.identity.sessionId)
-        : undefined;
+    const { sessionId } = e.identity;
 
-    return context === undefined ? e : { ...e, context };
+    if (e.context.repoCommonDir !== null || sessionId === null) {
+      return e;
+    }
+
+    const members = local.get(sessionId) ?? [];
+    const nearest = nearestInTime(members, e);
+
+    if (nearest === undefined) {
+      return e;
+    }
+
+    const withWorktree = nearestInTime(
+      members.filter((m) => m.context.worktreePath !== null),
+      e
+    );
+
+    return {
+      ...e,
+      context: {
+        ...e.context,
+        branch: nearest.context.branch,
+        flightId: nearest.context.flightId,
+        repoCommonDir: nearest.context.repoCommonDir,
+        worktreePath:
+          withWorktree?.context.worktreePath ?? nearest.context.worktreePath,
+      },
+      payload: {
+        ...e.payload,
+        sessionJoin: {
+          attribution: "provisional",
+          branchFrom: nearest.eventId,
+          method: "nearest-session-event",
+        },
+      },
+    };
   });
 };
 
@@ -102,7 +164,11 @@ const joinWithinRepo = (
   accountRows: readonly DxEventEnvelope[],
   repoCommonDir: string | null
 ): readonly DxEventEnvelope[] =>
-  joinAccountRows([...repoEvents, ...accountRows]).filter(
+  joinAccountRows([
+    ...new Map(
+      [...repoEvents, ...accountRows].map((e) => [e.eventId, e] as const)
+    ).values(),
+  ]).filter(
     (e) => repoCommonDir === null || e.context.repoCommonDir === repoCommonDir
   );
 

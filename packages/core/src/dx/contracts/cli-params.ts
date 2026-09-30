@@ -1,10 +1,8 @@
 import { Schema } from "effect";
 
-export const DEFAULT_STORE_RELATIVE =
-  ".dx-flight-recorder/events.sqlite" as const;
+export const DEFAULT_STORE_RELATIVE = ".dft/dft.db" as const;
 
-export const DEFAULT_REPLAY_STORE_RELATIVE =
-  ".dx-flight-recorder/replay.sqlite" as const;
+export const DEFAULT_REPLAY_STORE_RELATIVE = ".dft/replay.db" as const;
 
 export const STORE_ENV_VAR = "DX_STORE" as const;
 
