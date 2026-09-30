@@ -218,7 +218,7 @@ say "npm pack"
 (cd "$pkg_dir" && npm pack --silent --pack-destination "$tmp" >/dev/null)
 packed=$tmp/dx-feature-tracker-$bundle_version.tgz
 [ -f "$packed" ] || die "npm pack did not produce $(basename "$packed")"
-for entry in package/package.json package/dist/dft.mjs package/dist/dft-main.mjs package/dist/check-node.cjs; do
+for entry in package/package.json package/dist/dft.mjs package/dist/dft-main.mjs package/dist/check-node.cjs package/dist/assets/intro/dft-intro.webm package/dist/assets/intro/dft-intro.mp4 package/dist/assets/intro/dft-intro-poster.png; do
   tar -tzf "$packed" | grep -Fxq "$entry" || die "tarball is missing $entry"
 done
 packed_version=$(tar -xOzf "$packed" package/package.json | node -e 'let s="";process.stdin.on("data",(d)=>s+=d).on("end",()=>console.log(JSON.parse(s).version))')

@@ -95,3 +95,5 @@ import("./dft-main.mjs");
 LAUNCHER
 chmod 755 "$pkg_dir/dist/dft.mjs"
 cp -R "$root/.cursor/skills" "$pkg_dir/dist/skills"
+mkdir -p "$pkg_dir/dist/assets"
+cp -R "$root/apps/cli/assets/intro" "$pkg_dir/dist/assets/intro"

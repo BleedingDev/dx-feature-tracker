@@ -30,6 +30,8 @@ const repo = path.join(scratch, "app");
 
 const cliPath = path.resolve(import.meta.dirname, "../dist/dft-main.js");
 
+const introDir = path.resolve(import.meta.dirname, "../assets/intro");
+
 const git = (...args: readonly string[]) =>
   execFileSync("git", ["-C", repo, "-c", "core.hooksPath=/dev/null", ...args], {
     encoding: "utf-8",
@@ -73,6 +75,8 @@ const normalized = (text: string): string =>
 
 interface Reply {
   readonly body: string;
+  readonly bytes: number;
+  readonly headers: Readonly<Record<string, string | string[] | undefined>>;
   readonly status: number;
 }
 
@@ -101,9 +105,13 @@ const call = (
           chunks.push(chunk);
         });
         res.on("end", () => {
+          const raw = Buffer.concat(chunks);
+
           resume(
             Effect.succeed({
-              body: Buffer.concat(chunks).toString("utf-8"),
+              body: raw.toString("utf-8"),
+              bytes: raw.length,
+              headers: res.headers,
               status: res.statusCode ?? 0,
             })
           );
@@ -169,7 +177,8 @@ const withDashboard = <A, E>(
   body: (
     server: LiveServer,
     engine: Effect.Success<ReturnType<typeof startLiveEngine>>
-  ) => Effect.Effect<A, E>
+  ) => Effect.Effect<A, E>,
+  extra: { readonly introDir?: string } = {}
 ) =>
   Effect.scoped(
     Effect.gen(function* run() {
@@ -198,6 +207,7 @@ const withDashboard = <A, E>(
         },
         port: 0,
         since: undefined,
+        ...extra,
       });
 
       return yield* body(server, engine);
@@ -242,6 +252,83 @@ describe("dft dashboard live server", () => {
           expect(foreign.status).toBe(403);
         })
       )
+  );
+
+  it.live("serves the intro video files with their types and ranges", () =>
+    withDashboard((server) =>
+      Effect.gen(function* intro() {
+        const page = yield* call(server, "/");
+
+        expect(page.body).toContain('id="intro"');
+        expect(page.body).toContain('id="s-intro"');
+        expect(page.body).toContain("/intro/dft-intro.webm?v=");
+        expect(page.body).toMatch(/<video id="intro-video" muted playsinline/u);
+        expect(page.headers["content-security-policy"]).toContain(
+          "media-src 'self'"
+        );
+
+        for (const [name, type] of [
+          ["dft-intro.webm", "video/webm"],
+          ["dft-intro.mp4", "video/mp4"],
+          ["dft-intro-poster.png", "image/png"],
+        ] as const) {
+          const reply = yield* call(server, `/intro/${name}?v=1`);
+
+          expect(reply.status).toBe(200);
+          expect(reply.headers["content-type"]).toBe(type);
+          expect(reply.headers["cache-control"]).toContain("immutable");
+          expect(reply.bytes).toBe(fs.statSync(path.join(introDir, name)).size);
+        }
+
+        const part = yield* call(server, "/intro/dft-intro.mp4", {
+          headers: { range: "bytes=0-99" },
+        });
+
+        const { size } = fs.statSync(path.join(introDir, "dft-intro.mp4"));
+
+        expect(part.status).toBe(206);
+        expect(part.bytes).toBe(100);
+        expect(part.headers["content-range"]).toBe(
+          `bytes 0-99/${String(size)}`
+        );
+
+        const tail = yield* call(server, "/intro/dft-intro.mp4", {
+          headers: { range: "bytes=-10" },
+        });
+
+        expect(tail.status).toBe(206);
+        expect(tail.bytes).toBe(10);
+
+        const outside = yield* call(server, "/intro/dft-intro.mp4", {
+          headers: { range: `bytes=${String(size)}-` },
+        });
+
+        expect(outside.status).toBe(416);
+
+        const other = yield* call(server, "/intro/../dft.db");
+
+        expect(other.status).toBe(404);
+      })
+    )
+  );
+
+  it.live("leaves the intro out when its files are missing", () =>
+    withDashboard(
+      (server) =>
+        Effect.gen(function* noIntro() {
+          const page = yield* call(server, "/");
+
+          expect(page.status).toBe(200);
+          expect(page.body).not.toContain('id="intro"');
+          expect(page.body).not.toContain('id="s-intro"');
+          expect(page.body).not.toContain("<video");
+
+          const video = yield* call(server, "/intro/dft-intro.webm");
+
+          expect(video.status).toBe(404);
+        }),
+      { introDir: path.join(scratch, "no-intro") }
+    )
   );
 
   it.live("returns the same JSON as dft history and dft analyze", () =>
@@ -433,5 +520,7 @@ describe("dft dashboard --one-time", () => {
 
     expect(html).toContain("AI cost per branch");
     expect(html).not.toMatch(/[–—]/u);
+    expect(html).not.toContain("dft-intro");
+    expect(html).not.toContain("<video");
   });
 });

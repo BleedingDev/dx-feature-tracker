@@ -48,6 +48,12 @@ import {
   installCursorHooks,
   installSkills,
 } from "./dft-install.js";
+import {
+  INTRO_ROUTE,
+  introAssetsDir,
+  loadIntroAssets,
+  parseRange,
+} from "./dft-intro.js";
 import { liveDashboardPage } from "./dft-live-page.js";
 import {
   analyzeText,
@@ -83,6 +89,7 @@ export interface LiveServerOptions {
   readonly allRepos: boolean;
   readonly costOptions: CostOptions;
   readonly engine: LiveEngine;
+  readonly introDir?: string;
   readonly paths: LivePaths;
   readonly port: number;
   readonly since: string | undefined;
@@ -329,6 +336,10 @@ export const serveDashboard = (options: LiveServerOptions) =>
     const token = randomBytes(24).toString("hex");
     const run = yield* FiberSet.makeRuntime();
     const clients = new Set<ServerResponse>();
+
+    const intro = yield* Effect.sync(() =>
+      loadIntroAssets(options.introDir ?? introAssetsDir())
+    );
 
     let { port } = options;
 
@@ -716,6 +727,56 @@ export const serveDashboard = (options: LiveServerOptions) =>
         });
       });
 
+    const sendIntro = (
+      request: IncomingMessage,
+      response: ServerResponse,
+      name: string
+    ) => {
+      const asset = intro?.get(name);
+
+      if (asset === undefined) {
+        return fail(404, "Not found.");
+      }
+
+      const size = asset.body.length;
+      const range = parseRange(request.headers.range, size);
+
+      return Effect.sync(() => {
+        if (range === "invalid") {
+          response.writeHead(416, {
+            "content-range": `bytes */${String(size)}`,
+          });
+          response.end();
+
+          return;
+        }
+
+        const headers = {
+          "accept-ranges": "bytes",
+          "cache-control": "public, max-age=31536000, immutable",
+          "content-type": asset.contentType,
+          "x-content-type-options": "nosniff",
+        };
+
+        if (range === null) {
+          response.writeHead(200, {
+            ...headers,
+            "content-length": String(size),
+          });
+          response.end(asset.body);
+
+          return;
+        }
+
+        response.writeHead(206, {
+          ...headers,
+          "content-length": String(range.end - range.start + 1),
+          "content-range": `bytes ${String(range.start)}-${String(range.end)}/${String(size)}`,
+        });
+        response.end(asset.body.subarray(range.start, range.end + 1));
+      });
+    };
+
     const route = (request: IncomingMessage, response: ServerResponse) =>
       Effect.gen(function* handle() {
         if (!hostAllowed(request)) {
@@ -775,12 +836,12 @@ export const serveDashboard = (options: LiveServerOptions) =>
               response.writeHead(200, {
                 "cache-control": "no-store",
                 "content-security-policy":
-                  "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src data:; form-action 'none'; base-uri 'none'; frame-ancestors 'none'",
+                  "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; connect-src 'self'; img-src data: 'self'; media-src 'self'; form-action 'none'; base-uri 'none'; frame-ancestors 'none'",
                 "content-type": "text/html; charset=utf-8",
                 "referrer-policy": "no-referrer",
                 "x-content-type-options": "nosniff",
               });
-              response.end(liveDashboardPage(token));
+              response.end(liveDashboardPage(token, { intro: intro !== null }));
             });
           }
 
@@ -821,7 +882,13 @@ export const serveDashboard = (options: LiveServerOptions) =>
           }
 
           default: {
-            return yield* fail(404, "Not found.");
+            return url.pathname.startsWith(INTRO_ROUTE)
+              ? yield* sendIntro(
+                  request,
+                  response,
+                  url.pathname.slice(INTRO_ROUTE.length)
+                )
+              : yield* fail(404, "Not found.");
           }
         }
       }).pipe(

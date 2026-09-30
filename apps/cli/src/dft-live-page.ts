@@ -1,4 +1,5 @@
 import { enterpriseHtml } from "./dft-render.js";
+import { VERSION } from "./version.js";
 
 const STYLE = `
 :root{color-scheme:dark;--bg:#0b0b0c;--surface:#151517;--raised:#1c1c1f;--text:#f4f4f5;--muted:#a1a1aa;--faint:#71717a;--line:rgb(255 255 255 / .09);--ring:rgb(255 255 255 / .07);--accent:#f0b44c;--on-accent:#0b0b0c;--bad:#f87171;--good:#86efac;--sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;--mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;--gutter:16px;--radius:10px}
@@ -95,9 +96,33 @@ label.switch{display:flex;gap:10px;align-items:center;cursor:pointer}
 #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);max-width:calc(100% - 32px);background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:8px 14px;opacity:0;transition:opacity .2s;pointer-events:none}
 #toast.show{opacity:1}
 #toast.bad{color:var(--bad)}
+.intro{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:var(--gutter);background:rgb(5 5 6 / .84);backdrop-filter:blur(6px)}
+.intro-box{position:relative;width:min(960px,100%);aspect-ratio:16/9;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--bg);box-shadow:0 24px 80px rgb(0 0 0 / .6)}
+.intro-box video{display:block;width:100%;height:100%;object-fit:cover}
+.intro-skip{position:absolute;right:12px;bottom:12px;background:rgb(28 28 31 / .88)}
+.intro-play{position:absolute;left:12px;bottom:12px;display:flex;align-items:center;gap:6px;border:0;border-radius:6px;padding:6px 14px 6px 10px;background:var(--accent);color:var(--on-accent);font-weight:600;cursor:pointer}
+.intro-play svg{width:16px;height:16px}
+.intro-play:focus-visible,.intro-skip:focus-visible,.link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.link{background:none;border:0;padding:0;color:var(--muted);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.link:hover{color:var(--text)}
 `;
 
-const BODY = `
+const introFile = (name: string) =>
+  `/intro/${name}?v=${encodeURIComponent(VERSION)}`;
+
+const INTRO_LINK = `<p class="quiet"><button type="button" class="link" id="s-intro">Play intro</button></p>
+`;
+
+const INTRO_OVERLAY = `<div id="intro" class="intro" role="dialog" aria-modal="true" aria-label="dft intro" hidden>
+<div class="intro-box">
+<video id="intro-video" muted playsinline preload="none" poster="${introFile("dft-intro-poster.png")}"><source src="${introFile("dft-intro.webm")}" type="video/webm"><source src="${introFile("dft-intro.mp4")}" type="video/mp4"></video>
+<button type="button" class="intro-play" id="intro-play" aria-label="Play intro" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg>Play</button>
+<button type="button" class="btn intro-skip" id="intro-skip">Skip</button>
+</div>
+</div>
+`;
+
+const body = (intro: boolean) => `
 <header class="bar">
 <a class="brand" href="#/"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7" fill="#151517"/><path d="M11 7v18M11 12c0 5 10 3 10 9" fill="none" stroke="#f0b44c" stroke-width="3" stroke-linecap="round"/><circle cx="21" cy="22" r="3" fill="#f0b44c"/></svg>dft</a>
 <nav><a href="#/" data-nav="branches">Branches</a><a href="#/setup" data-nav="setup">Setup</a></nav>
@@ -153,11 +178,39 @@ const BODY = `
 </section>
 </div>
 <p class="quiet" id="s-where"></p>
-</div>
+${intro ? INTRO_LINK : ""}</div>
 </section>
 </main>
 <footer class="foot"><p>${enterpriseHtml()}</p></footer>
-<div id="toast" role="status" aria-live="polite"></div>
+${intro ? INTRO_OVERLAY : ""}<div id="toast" role="status" aria-live="polite"></div>
+`;
+
+const INTRO_SCRIPT = `
+(function(){
+"use strict";
+var box=document.getElementById("intro");
+if(!box)return;
+var video=document.getElementById("intro-video");
+var play=document.getElementById("intro-play");
+var skip=document.getElementById("intro-skip");
+var KEY="dft.intro.seen";
+var back=null;
+var calm=!!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+function seen(){try{return localStorage.getItem(KEY)==="1";}catch(e){return false;}}
+function remember(){try{localStorage.setItem(KEY,"1");}catch(e){}}
+function onKey(e){if(e.key==="Escape")close();}
+function close(){if(box.hidden)return;video.pause();video.autoplay=false;box.hidden=true;document.removeEventListener("keydown",onKey);if(back&&back.focus)back.focus();back=null;}
+function start(){play.hidden=true;video.autoplay=true;var p=video.play();if(p&&p.catch)p.catch(function(){video.autoplay=false;play.hidden=false;play.focus();});}
+function open(){remember();back=document.activeElement;box.hidden=false;document.addEventListener("keydown",onKey);try{video.currentTime=0;}catch(e){}
+if(calm){video.autoplay=false;play.hidden=false;play.focus();}else{skip.focus();start();}}
+video.addEventListener("ended",close);
+var last=video.querySelector("source:last-of-type");if(last)last.addEventListener("error",close);
+skip.addEventListener("click",close);
+play.addEventListener("click",start);
+box.addEventListener("click",function(e){if(e.target===box)close();});
+var again=document.getElementById("s-intro");if(again)again.addEventListener("click",open);
+if(!seen())open();
+})();
 `;
 
 const SCRIPT = `
@@ -236,7 +289,14 @@ show();connect();
 })();
 `;
 
-export const liveDashboardPage = (token: string): string =>
+export interface LivePageOptions {
+  readonly intro?: boolean;
+}
+
+export const liveDashboardPage = (
+  token: string,
+  options: LivePageOptions = {}
+): string =>
   [
     "<!doctype html>",
     '<html lang="en">',
@@ -251,8 +311,9 @@ export const liveDashboardPage = (token: string): string =>
     `<style>${STYLE}</style>`,
     "</head>",
     "<body>",
-    BODY,
+    body(options.intro === true),
     `<script>${SCRIPT}</script>`,
+    ...(options.intro === true ? [`<script>${INTRO_SCRIPT}</script>`] : []),
     "</body>",
     "</html>",
     "",
