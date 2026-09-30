@@ -8,6 +8,8 @@ import { EVENT_SCHEMA_VERSION } from "../../model/event.js";
 import { EventIdSchema } from "../../model/ids.js";
 import { sha256Hex } from "./sanitize.js";
 import type { SanitizedHook, SpoolRecord } from "./spool-record.js";
+import type { StopTokenUsage } from "./stop-usage.js";
+import { stopTokenUsage } from "./stop-usage.js";
 
 export const CURSOR_HOOKS_ADAPTER_ID = "cursor-hooks" as const;
 
@@ -274,6 +276,58 @@ const envelope = (
   };
 };
 
+const UNVERIFIED_NOTE =
+  "raw Cursor stop-hook field; semantics unverified, do not sum until probe passes";
+
+const VERIFIED_NOTE =
+  "cursor-agent stop hook per-request token count; input_tokens is gross of cache reads and writes";
+
+const categorySemantics = (usage: StopTokenUsage): FieldSemantics[] => {
+  const { categories, freshInputClamped } = usage;
+
+  const entry = (
+    category: string,
+    rawName: string,
+    method: FieldSemantics["method"],
+    note: string
+  ): FieldSemantics[] =>
+    category in categories
+      ? [
+          {
+            field: `payload.normalizedCategories.${category}`,
+            method,
+            note,
+            rawName,
+            unit: "tokens",
+          },
+        ]
+      : [];
+
+  return [
+    ...entry(
+      "input",
+      "input_tokens-cache_read_tokens-cache_write_tokens",
+      "derived",
+      freshInputClamped
+        ? "fresh input = input_tokens - cache_read_tokens - cache_write_tokens was negative; clamped to 0"
+        : "fresh input = input_tokens - cache_read_tokens - cache_write_tokens"
+    ),
+    ...entry(
+      "cachedInput",
+      "cache_read_tokens",
+      "source-reported",
+      VERIFIED_NOTE
+    ),
+    ...entry(
+      "cacheWrite",
+      "cache_write_tokens",
+      "source-reported",
+      VERIFIED_NOTE
+    ),
+    ...entry("output", "output_tokens", "source-reported", VERIFIED_NOTE),
+  ];
+};
+
 const usageEnvelope = (
   record: SpoolRecord,
   origin: Origin,
@@ -282,25 +336,37 @@ const usageEnvelope = (
   const { hook } = record;
   const upstreamKey = `usage:${turnKey}`;
 
+  const rawUsage = Object.fromEntries(
+    hook.rawUsage.map((entry) => [entry.path, entry.value])
+  );
+
+  const usage = stopTokenUsage(rawUsage);
+
+  const verified = new Set<string>(usage?.verifiedFields);
+
   return envelope(record, origin, {
-    fieldSemantics: hook.rawUsage.map((entry) =>
-      semantics(
-        `payload.rawUsage.${entry.path}`,
-        entry.path,
-        null,
-        "raw Cursor stop-hook field; semantics unverified, do not sum until probe passes"
-      )
-    ),
+    fieldSemantics: [
+      ...(usage === null ? [] : categorySemantics(usage)),
+      ...hook.rawUsage.map((entry) =>
+        semantics(
+          `payload.rawUsage.${entry.path}`,
+          entry.path,
+          verified.has(entry.path) ? "tokens" : null,
+          verified.has(entry.path) ? VERIFIED_NOTE : UNVERIFIED_NOTE
+        )
+      ),
+    ],
     kind: "ai.usage",
     payload: {
+      freshInputClamped: usage?.freshInputClamped ?? false,
       hookEvent: hook.hookEvent,
-      model: hook.model,
-      normalizedCategories: null,
-      rawUsage: Object.fromEntries(
-        hook.rawUsage.map((entry) => [entry.path, entry.value])
-      ),
-      semanticsVerified: false,
+      model: hook.subagentModel ?? hook.model,
+      normalizedCategories: usage === null ? null : { ...usage.categories },
+      rawUsage,
+      semanticsVerified: usage !== null,
       sourceKind: "hooks-stop",
+      status: hook.status,
+      verifiedRawFields: [...verified],
     },
     upstreamKey,
   });

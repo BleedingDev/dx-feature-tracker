@@ -31,9 +31,9 @@ const PERSISTENT_GAPS: readonly SourceGap[] = [
       "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import",
   },
   {
-    code: "stop-usage-unverified",
+    code: "stop-usage-partially-verified",
     message:
-      "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes",
+      "stop-hook input_tokens, output_tokens, cache_read_tokens and cache_write_tokens are summed (fresh input = input_tokens minus cache reads and writes); any other stop-hook usage field is kept raw and never summed",
   },
   {
     code: "live-capture-not-demonstrated",
@@ -65,6 +65,7 @@ export const cursorHooksDescriptor: ModuleDescriptor = {
     "other.toolName",
     "other.durationMs",
     "ai.usage.rawUsage",
+    "ai.usage.normalizedCategories",
   ],
   version: CURSOR_HOOKS_ADAPTER_VERSION,
 };

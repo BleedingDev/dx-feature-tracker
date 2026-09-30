@@ -11,9 +11,11 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 
+import { NodeServices } from "@effect/platform-node";
 import { afterAll, describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 
+import { cursorCliCollector } from "../../src/dx/collectors/cursor-cli/collector.js";
 import {
   cursorHooksCollector,
   cursorHooksDescriptor,
@@ -24,7 +26,11 @@ import {
   resolveGitContext,
 } from "../../src/dx/collectors/cursor-hooks/handler.js";
 import type { CollectInput } from "../../src/dx/contracts/services.js";
+import { accountAiUsage } from "../../src/dx/metrics/ai-usage/ledger.js";
+import type { AiUsageAccount } from "../../src/dx/metrics/ai-usage/ledger.js";
+import type { DxEventEnvelope } from "../../src/dx/model/event.js";
 import { emptyFlightContext } from "../../src/dx/model/event.js";
+import { EventIdSchema } from "../../src/dx/model/ids.js";
 
 const fixtureDir = path.join(import.meta.dirname, "fixtures", "b05");
 
@@ -63,6 +69,47 @@ const spoolFixture = (fixture: string, spoolDir: string) => {
     })
   );
 };
+
+const spoolLines = (lines: readonly object[], spoolDir: string) =>
+  lines.map((line, index) =>
+    handleCursorHook(JSON.stringify(line), {
+      cwd: "/fixture/workspace",
+      now: new Date(Date.UTC(2026, 8, 30, 13, 0, index)),
+      resolveGit: fixedGit,
+      spoolDirFor: () => spoolDir,
+    })
+  );
+
+const A07_SESSION = "487a09d4-1638-4add-a548-db653635a61b";
+
+const A07_REQUEST = "6cae283f-4b57-4449-ba6f-33ed59ec5506";
+
+const A07_STREAM = path.join(
+  import.meta.dirname,
+  "integration",
+  "fixtures",
+  "a07-live",
+  "cursor-cli.stream.jsonl"
+);
+
+const stopLine = (fields: Readonly<Record<string, number | string>>) => ({
+  conversation_id: "real-shape-conv",
+  cursor_version: "2026.09.28-64d2043",
+  hook_event_name: "stop",
+  loop_count: 0,
+  model: "default",
+  status: "completed",
+  workspace_roots: ["/fixture/workspace"],
+  ...fields,
+});
+
+const usageEvents = (events: readonly DxEventEnvelope[]) =>
+  events.filter((event) => event.kind === "ai.usage");
+
+const tokenTotal = (account: AiUsageAccount, category: string) =>
+  account.totals.find(
+    (row) => row.ledger === "tokens" && row.category === category
+  )?.value ?? null;
 
 const collectInput = (spoolDir: string | null): CollectInput => ({
   adapterId: "cursor-hooks",
@@ -191,6 +238,260 @@ describe("B05 cursor hooks collector", () => {
   );
 
   it.effect(
+    "promotes exact stop-hook tokens for completed, aborted and error turns",
+    () =>
+      Effect.gen(function* exactTokens() {
+        const spoolDir = freshSpool("exact");
+
+        spoolLines(
+          [
+            stopLine({
+              cache_read_tokens: 800,
+              cache_write_tokens: 100,
+              generation_id: "gen-completed",
+              input_tokens: 1500,
+              output_tokens: 340,
+            }),
+            stopLine({
+              cache_read_tokens: 800,
+              cache_write_tokens: 100,
+              generation_id: "gen-completed",
+              input_tokens: 1500,
+              output_tokens: 340,
+            }),
+            stopLine({
+              cache_read_tokens: 0,
+              cache_write_tokens: 0,
+              generation_id: "gen-aborted",
+              input_tokens: 200,
+              model: "gpt-5.5-high",
+              output_tokens: 5,
+              status: "aborted",
+            }),
+            stopLine({
+              cache_read_tokens: 900,
+              cache_write_tokens: 50,
+              generation_id: "gen-error",
+              input_tokens: 700,
+              output_tokens: 0,
+              status: "error",
+            }),
+          ],
+          spoolDir
+        );
+
+        const batch = yield* cursorHooksCollector.collect(
+          collectInput(spoolDir)
+        );
+
+        const usage = usageEvents(batch.events);
+
+        expect(batch.coverage.observedItems).toBe(4);
+        expect(batch.events).toHaveLength(6);
+        expect(
+          usage.map((event) => [
+            event.identity.generationId,
+            event.payload.status,
+            event.payload.model,
+            event.payload.semanticsVerified,
+            event.payload.freshInputClamped,
+            event.payload.normalizedCategories,
+          ])
+        ).toEqual([
+          [
+            "gen-completed",
+            "completed",
+            "default",
+            true,
+            false,
+            { cacheWrite: 100, cachedInput: 800, input: 600, output: 340 },
+          ],
+          [
+            "gen-aborted",
+            "aborted",
+            "gpt-5.5-high",
+            true,
+            false,
+            { cacheWrite: 0, cachedInput: 0, input: 200, output: 5 },
+          ],
+          [
+            "gen-error",
+            "error",
+            "default",
+            true,
+            true,
+            { cacheWrite: 50, cachedInput: 900, input: 0, output: 0 },
+          ],
+        ]);
+
+        const clamped = usage[2]?.fieldSemantics.find(
+          (field) => field.field === "payload.normalizedCategories.input"
+        );
+
+        expect(clamped?.method).toBe("derived");
+        expect(clamped?.note).toContain("clamped to 0");
+
+        const account = accountAiUsage(batch.events);
+
+        expect(account.uncovered).toEqual([]);
+        expect(account.requestCount).toBe(3);
+        expect(
+          ["input", "cached-input", "cache-write", "output"].map((category) =>
+            tokenTotal(account, category)
+          )
+        ).toEqual([800, 1700, 150, 345]);
+      })
+  );
+
+  it.effect(
+    "reconciles a stop hook with the a07 cursor-cli result.usage of the same run",
+    () =>
+      Effect.gen(function* reconcile() {
+        const spoolDir = freshSpool("reconcile");
+
+        spoolLines(
+          [
+            stopLine({
+              cache_read_tokens: 66_304,
+              cache_write_tokens: 0,
+              conversation_id: A07_SESSION,
+              generation_id: A07_REQUEST,
+              input_tokens: 34_384 + 66_304,
+              output_tokens: 710,
+            }),
+          ],
+          spoolDir
+        );
+
+        const hooks = yield* cursorHooksCollector.collect(
+          collectInput(spoolDir)
+        );
+
+        const cli = yield* cursorCliCollector.collect({
+          ...collectInput(A07_STREAM),
+          adapterId: "cursor-cli",
+        });
+
+        const [hookUsage] = usageEvents(hooks.events);
+        const [cliUsage] = usageEvents(cli.events);
+
+        expect(cliUsage?.payload.tokens).toMatchObject({
+          "cached-input": 66_304,
+          input: 34_384,
+          output: 710,
+        });
+        expect(hookUsage?.payload.normalizedCategories).toEqual({
+          cacheWrite: 0,
+          cachedInput: 66_304,
+          input: 34_384,
+          output: 710,
+        });
+
+        const account = accountAiUsage([...hooks.events, ...cli.events]);
+
+        expect(account.requestCount).toBe(1);
+        expect(
+          ["input", "cached-input", "cache-write", "output"].map((category) =>
+            tokenTotal(account, category)
+          )
+        ).toEqual([34_384, 66_304, 0, 710]);
+        expect(account.groups.map((group) => group.reason)).toEqual([
+          "same request/turn reported by cursor-cli, hooks-stop; per-field source precedence applied",
+        ]);
+
+        const dashboard = usageEvents(cli.events).map(
+          (event): DxEventEnvelope => ({
+            ...event,
+            adapterId: "cursor-dashboard-response",
+            eventId: EventIdSchema.make("dashboard-row"),
+            identity: {
+              ...event.identity,
+              requestId: A07_REQUEST,
+              sessionId: null,
+            },
+            payload: {
+              requestKey: `request:${A07_REQUEST}`,
+              sourceKind: "dashboard-json",
+              tokens: { "cached-input": 66_000, input: 34_000, output: 700 },
+            },
+          })
+        );
+
+        const billed = accountAiUsage([
+          ...hooks.events,
+          ...cli.events,
+          ...dashboard,
+        ]);
+
+        expect(billed.requestCount).toBe(1);
+        expect(
+          ["input", "cached-input", "cache-write", "output"].map((category) =>
+            tokenTotal(billed, category)
+          )
+        ).toEqual([34_000, 66_000, 0, 700]);
+      }).pipe(Effect.provide(NodeServices.layer))
+  );
+
+  it.effect(
+    "sums legacy stop-hook usage stored before semantics were verified",
+    () =>
+      Effect.gen(function* legacy() {
+        const spoolDir = freshSpool("legacy");
+
+        spoolLines(
+          [
+            stopLine({
+              cache_read_tokens: 10,
+              cache_write_tokens: 5,
+              cost_usd: 0.5,
+              generation_id: "gen-legacy",
+              input_tokens: 40,
+              output_tokens: 7,
+            }),
+          ],
+          spoolDir
+        );
+
+        const batch = yield* cursorHooksCollector.collect(
+          collectInput(spoolDir)
+        );
+
+        const legacyEvents = batch.events.map((event) =>
+          event.kind === "ai.usage"
+            ? {
+                ...event,
+                fieldSemantics: [],
+                payload: {
+                  hookEvent: "stop",
+                  model: event.payload.model,
+                  normalizedCategories: null,
+                  rawUsage: event.payload.rawUsage,
+                  semanticsVerified: false,
+                  sourceKind: "hooks-stop",
+                },
+              }
+            : event
+        );
+
+        for (const events of [batch.events, legacyEvents]) {
+          const account = accountAiUsage(events);
+
+          expect(
+            ["input", "cached-input", "cache-write", "output"].map((category) =>
+              tokenTotal(account, category)
+            )
+          ).toEqual([25, 10, 5, 7]);
+          expect(account.uncovered.map((entry) => entry.fields)).toEqual([
+            ["cost_usd"],
+          ]);
+          expect(
+            account.totals.find((row) => row.category === "input")?.methods
+          ).toEqual(["derived"]);
+        }
+      })
+  );
+
+  it.effect(
     "reports malformed and unknown hooks instead of empty success",
     () =>
       Effect.gen(function* malformed() {
@@ -304,7 +605,7 @@ describe("B05 cursor hooks collector", () => {
   it("describes itself honestly", () => {
     expect(cursorHooksDescriptor.readiness).toBe("degraded");
     expect(cursorHooksDescriptor.gaps.map((gap) => gap.code)).toContain(
-      "stop-usage-unverified"
+      "stop-usage-partially-verified"
     );
   });
 });

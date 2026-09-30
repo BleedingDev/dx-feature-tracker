@@ -1,5 +1,7 @@
 import { Option, Schema } from "effect";
 
+import { CURSOR_HOOKS_ADAPTER_ID } from "../../collectors/cursor-hooks/decode.js";
+import { stopTokenUsage } from "../../collectors/cursor-hooks/stop-usage.js";
 import type {
   AiSourceKind,
   LedgerKind,
@@ -99,6 +101,7 @@ const UsageFlagsSchema = Schema.Struct({
   scope: Schema.optional(Schema.NullOr(Schema.String)),
   semanticsVerified: Schema.optional(Schema.Boolean),
   sourceKind: Schema.optional(Schema.NullOr(Schema.String)),
+  verifiedRawFields: Schema.optional(Schema.Array(Schema.String)),
 });
 
 type UsageFlags = typeof UsageFlagsSchema.Type;
@@ -167,10 +170,11 @@ export const matchKeysOf = (event: DxEventEnvelope): string[] => {
 
 const methodFor = (
   event: DxEventEnvelope,
-  fields: readonly string[]
+  fields: readonly string[],
+  fallback: ValueMethod = "source-reported"
 ): ValueMethod =>
   event.fieldSemantics.find((entry) => fields.includes(entry.field))?.method ??
-  "source-reported";
+  fallback;
 
 const scopeOf = (
   event: DxEventEnvelope,
@@ -200,7 +204,8 @@ interface RowSeed {
 const tokenSeeds = (
   event: DxEventEnvelope,
   tokens: Readonly<Record<string, number | null>>,
-  prefix: string
+  prefix: string,
+  fallbackMethod: (key: string) => ValueMethod = () => "source-reported"
 ): RowSeed[] =>
   Object.entries(tokens).flatMap(([key, value]) => {
     const category = TOKEN_KEYS.get(key);
@@ -214,10 +219,11 @@ const tokenSeeds = (
         category,
         currency: null,
         ledger: "tokens" as const,
-        method: methodFor(event, [
-          `${prefix}.${key}`,
-          `payload.${prefix}.${key}`,
-        ]),
+        method: methodFor(
+          event,
+          [`${prefix}.${key}`, `payload.${prefix}.${key}`],
+          fallbackMethod(key)
+        ),
         rawCategory: key,
         value,
       },
@@ -297,6 +303,50 @@ const moneySeeds = (money: MoneyFields): RowSeed[] => {
   return seeds;
 };
 
+const numericRawUsage = (
+  event: DxEventEnvelope
+): Readonly<Record<string, number>> =>
+  Option.match(decodeTokens(event.payload.rawUsage), {
+    onNone: () => ({}),
+    onSome: (map) =>
+      Object.fromEntries(
+        Object.entries(map).flatMap(([key, value]) =>
+          value === null ? [] : [[key, value] as const]
+        )
+      ),
+  });
+
+const legacyStopUsage = (event: DxEventEnvelope, flags: UsageFlags) =>
+  flags.semanticsVerified === true ||
+  event.adapterId !== CURSOR_HOOKS_ADAPTER_ID ||
+  flags.sourceKind !== "hooks-stop"
+    ? null
+    : stopTokenUsage(numericRawUsage(event));
+
+const hookCategories = (
+  event: DxEventEnvelope,
+  flags: UsageFlags
+): Option.Option<Readonly<Record<string, number | null>>> => {
+  if (flags.semanticsVerified === true) {
+    return decodeTokens(event.payload.normalizedCategories);
+  }
+
+  const legacy = legacyStopUsage(event, flags);
+
+  return legacy === null ? Option.none() : Option.some(legacy.categories);
+};
+
+const verifiedRawFieldsOf = (
+  event: DxEventEnvelope,
+  flags: UsageFlags
+): readonly string[] | null => {
+  if (flags.semanticsVerified === true) {
+    return flags.verifiedRawFields ?? null;
+  }
+
+  return legacyStopUsage(event, flags)?.verifiedFields ?? [];
+};
+
 const eventSeeds = (event: DxEventEnvelope, flags: UsageFlags): RowSeed[] => {
   const { payload } = event;
   const cost = Option.getOrNull(decodeCost(payload.cost));
@@ -316,13 +366,13 @@ const eventSeeds = (event: DxEventEnvelope, flags: UsageFlags): RowSeed[] => {
     onSome: (map) => tokenSeeds(event, map, "tokens"),
   });
 
-  const hookTokens =
-    flags.semanticsVerified === true
-      ? Option.match(decodeTokens(payload.normalizedCategories), {
-          onNone: () => [],
-          onSome: (map) => tokenSeeds(event, map, "normalizedCategories"),
-        })
-      : [];
+  const hookTokens = Option.match(hookCategories(event, flags), {
+    onNone: () => [],
+    onSome: (map) =>
+      tokenSeeds(event, map, "normalizedCategories", (key) =>
+        key === "input" ? "derived" : "source-reported"
+      ),
+  });
 
   const money = Option.match(decodeMoney(payload), {
     onNone: () => [],
@@ -348,13 +398,15 @@ const hookUncovered = (
   flags: UsageFlags,
   evidenceId: EvidenceId
 ): UncoveredUsage[] => {
-  if (flags.semanticsVerified === true) {
+  const verified = verifiedRawFieldsOf(event, flags);
+
+  if (verified === null) {
     return [];
   }
 
   const fields = Option.match(decodeRawUsage(event.payload.rawUsage), {
     onNone: () => [],
-    onSome: (raw) => Object.keys(raw),
+    onSome: (raw) => Object.keys(raw).filter((key) => !verified.includes(key)),
   });
 
   return fields.length === 0
