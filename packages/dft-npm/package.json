@@ -1,6 +1,6 @@
 {
   "name": "dx-feature-tracker",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "dft: local AI engineering cost tracker for Cursor and git. Records hooks, transcripts and Cursor usage into a local SQLite store and reports cost per branch.",
   "keywords": [
     "ai",
