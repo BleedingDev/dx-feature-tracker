@@ -50,8 +50,9 @@ flowchart LR
     hooks["Cursor hooks"] --> sync["Import step"]
     chats["Cursor chat transcripts"] --> sync
     git["git history of this repo"] --> sync
+    localdb["Cursor local database (read-only copy)"] --> sync
+    agent["cursor-agent chats"] --> sync
     usage["Billed usage from cursor.com"] --> sync
-    manual["By hand with dft collect: Cursor local database, cursor-agent output"] -.-> store
     sync --> store[("~/.dft on your machine")]
     store --> a["analyze / line"]
     store --> h["history / chats / explain"]
@@ -59,7 +60,7 @@ flowchart LR
     store --> s["snapshot"]
 ```
 
-Everything `dft` reads ends up in one local store, `~/.dft/dft.db` (or `$DFT_HOME/dft.db`). Every report is built from that store. The dotted line is the part you feed by hand.
+Everything `dft` reads ends up in one local store, `~/.dft/dft.db` (or `$DFT_HOME/dft.db`). Every report is built from that store, and nothing has to be imported by hand.
 
 ### What happens on its own, and what only when you ask?
 
@@ -72,7 +73,7 @@ sequenceDiagram
     Cursor->>dft: hook fires on each agent step
     dft->>Store: save a small cleaned note
     You->>dft: dft analyze
-    dft->>Store: import new git, chats, hook notes, billed usage
+    dft->>Store: import new git, chats, hook notes, Cursor database, billed usage
     Store-->>dft: numbers for this branch
     dft-->>You: billed, Cursor's figure, estimate
 ```
@@ -85,10 +86,10 @@ While you work, Cursor calls `dft hook`, which saves a small cleaned note. When 
 | Cursor chat transcripts | automatic, before each report |
 | git history (all worktrees of the repo) | automatic, before each report |
 | Billed usage from cursor.com | automatic, before each report, if you are logged in to Cursor and use the default `~/.dft` store |
-| Cursor local database | on demand: `dft collect --source cursor-local-db --input <state.vscdb>` |
-| cursor-agent output | on demand: `dft collect --source cursor-cli --input <file>` |
+| Cursor local database | automatic, before each report, only chats from this repo's worktrees |
+| cursor-agent chats | automatic, before each report, per turn, for this repo's worktrees |
 
-The Cursor local database holds chats from every project, so `dft` does not read it on its own. It only reads your Cursor login from it, for the usage request.
+The Cursor local database holds chats from every project. `dft` never opens the live file for writing: it reads a backup copy in a scratch folder, removes the copy afterwards, and keeps only the chats that ran in a worktree of this repo. cursor-agent keeps a chat store per folder it ran in, so `dft` reads only the stores of this repo's worktrees and records each turn on the branch it ran on. The Cursor local database also holds your Cursor login, which `dft` reads for the usage request.
 
 ### What does dft write, and where?
 
@@ -105,7 +106,7 @@ The Cursor local database holds chats from every project, so `dft` does not read
 +└── dashboard.html            # dft dashboard (0.1.5)
 ```
 
-Inside your repo, `dft` writes only under `.cursor/` (and your git hooks if you ask). It never writes to `~/.cursor`; it only reads chat transcripts from there. `$DFT_HOME` moves everything above except `price-catalog/`, which always stays in `~/.dft`. `dft install --all-worktrees` **(0.1.5)** sets up every worktree of the repo in one go.
+Inside your repo, `dft` writes only under `.cursor/` (and your git hooks if you ask). It never writes to `~/.cursor`; it only reads chat transcripts and cursor-agent chats from there. `$DFT_HOME` moves everything above except `price-catalog/`, which always stays in `~/.dft`. `dft install --all-worktrees` **(0.1.5)** sets up every worktree of the repo in one go.
 
 ### What leaves your machine?
 
@@ -211,7 +212,7 @@ sequenceDiagram
     dft-->>Dev: billed, Cursor's figure, estimate, tokens, time
 ```
 
-You never start or stop anything: the hooks record while you work in Cursor. Every `dft` report first imports what is new (git, hooks, chats, Cursor billing), so numbers are fresh (add `--no-sync` to skip that). The line `dft` adds to your git hooks ends in `|| true`, so it never blocks a commit.
+You never start or stop anything: the hooks record while you work in Cursor. Every `dft` report first imports what is new (git, hooks, chats, the Cursor local database, Cursor billing), so numbers are fresh (add `--no-sync` to skip that). The line `dft` adds to your git hooks ends in `|| true`, so it never blocks a commit.
 
 ### What do I see when I commit?
 
@@ -407,7 +408,7 @@ Each kind has its own price, so the estimate prices each kind separately. Reason
 + Missing: billed, Cursor's figure. Add --verbose to see why.
 ```
 
-A missing number is never shown as `0`. It is left out, or shown as `—` when a whole line has nothing. In `dft analyze`, the `Missing:` note names what is not there, and `--verbose` says why (for example: Cursor usage import is off). With no AI data at all, it says "No AI cost or tokens recorded for this branch yet" instead. `$0.00` would claim the work was free. `—` says `dft` could not see the number.
+A missing number is never shown as `0`. It is left out, or shown as `-` when a whole line has nothing. In `dft analyze`, the `Missing:` note names what is not there, and `--verbose` says why (for example: Cursor usage import is off). With no AI data at all, it says "No AI cost or tokens recorded for this branch yet" instead. `$0.00` would claim the work was free. `-` says `dft` could not see the number.
 
 ### How is the model and reasoning level read for each turn?
 
@@ -482,7 +483,7 @@ Work    7 commits · 14 files · +1.2k −310 lines · 342 tool calls · 58 requ
 Models  claude-4.5-sonnet 64% · gpt-5 28% · Auto 8%
 ```
 
-One branch, in full. Billed, Cursor's figure and the estimate sit side by side and are never added together. A number that is missing is left out and named in a `Missing: …` line at the end (a row with nothing at all shows `—`); `--verbose` says why.
+One branch, in full. Billed, Cursor's figure and the estimate sit side by side and are never added together. A number that is missing is left out and named in a `Missing: …` line at the end (a row with nothing at all shows `-`). `--verbose` says why.
 
 ### What does `dft line` print?
 
@@ -503,7 +504,7 @@ $ dft history --since 30d
 BRANCH            STATUS  LAST ACTIVE   AGENT TIME  TOKENS  BILLED  ESTIMATE  CHATS  COMMITS
 feature/checkout  open    1 hour ago        1h 48m    4.7M   $4.12     $5.87      6        7
 fix/login-loop    merged  3 days ago           22m    610k   $0.48     $0.71      2        3
-main              open    5 days ago             —       —       —         —      —        2
+main              open    5 days ago             -       -       -         -      -        2
 
 Billed is what Cursor charged. Estimate is list price for the tokens. They are shown apart, never added.
 ```
@@ -515,7 +516,7 @@ fix/login-loop    $0.48 billed · $0.71 est · 610k tokens · 22m agent · 2 cha
 main              no AI usage yet · 2 commits
 ```
 
-One row per branch, newest first; `—` means no number. Add `--all-repos` to see every repo (rows read `repo:branch`), where Cursor usage that fits no branch shows as a separate "Cursor account, not tied to a branch" line. `--oneline` gives the same short line that `dft line` prints, once per branch.
+One row per branch, newest first. `-` means no number. Add `--all-repos` to see every repo (rows read `repo:branch`), where Cursor usage that fits no branch shows as a separate "Cursor account, not tied to a branch" line. `--oneline` gives the same short line that `dft line` prints, once per branch.
 
 ### Where do the other commands fit?
 

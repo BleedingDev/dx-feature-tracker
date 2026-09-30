@@ -166,6 +166,8 @@ When Cursor runs in Auto mode, the model shows as `Auto` (Cursor records it as `
 
 - **Cursor hooks** record sanitized hook metadata while you use Cursor.
 - **Sync on every command**: before each report, `dft` imports new git history, hook data and Cursor agent transcripts for the current repository. Missing sources are reported on stderr as `unavailable <source>: <reason>`. Use `--no-sync` to skip this.
+- **Cursor local database**: every sync also reads Cursor's local database. `dft` reads a backup copy in a scratch folder, never the live file, removes the copy afterwards, and keeps only the chats that ran in a worktree of this repository.
+- **cursor-agent chats**: every sync also reads the chat stores `cursor-agent` keeps for this repository's worktrees. Each turn is recorded on the branch it ran on.
 - **Cursor usage import**: if you are logged in to Cursor on this machine, `dft` reads the Cursor login from Cursor's local state database and imports your usage from cursor.com. The token stays on your machine and is only sent to cursor.com. `dft` does not store it. Turn this off with `DFT_CURSOR_USAGE=off`.
 - **Price catalog**: prices for estimates come from models.dev, with LiteLLM as a fallback. They are cached in `~/.dft` and refreshed after 24 hours. Offline, `dft` uses the last cache, then a bundled table. To use your own prices, put a table at `$DFT_HOME/prices.json`.
 

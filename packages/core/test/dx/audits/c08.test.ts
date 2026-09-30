@@ -1,5 +1,5 @@
-// @effect-diagnostics nodeBuiltinImport:off -- The C08 audit launches the built CLI MCP server as a real child process over stdio and owns one temp dir (Git repo, store, HOME, request scripts).
-import { execFileSync, spawnSync } from "node:child_process";
+// @effect-diagnostics nodeBuiltinImport:off -- The C08 audit launches the built CLI MCP server as a real child process over stdio and owns one temp dir (Git repo, store, HOME, DFT_HOME) and waits for every awaited response before closing stdin.
+import { execFileSync, spawn } from "node:child_process";
 import * as fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -29,6 +29,8 @@ const DX_TOOLS = [
 ] as const;
 
 const INTERRUPTED_ON_STDIN_EOF = 130;
+
+const SESSION_DEADLINE = "45 seconds";
 
 const FrameSchema = Schema.Struct({
   error: Schema.optional(
@@ -99,6 +101,8 @@ const repo = path.join(scratch, "repo");
 
 const home = path.join(scratch, "home");
 
+const dftHome = path.join(scratch, "dft");
+
 const storePath = path.join(scratch, "store", "dx.sqlite");
 
 const git = (...args: readonly string[]) =>
@@ -107,6 +111,8 @@ const git = (...args: readonly string[]) =>
 fs.mkdirSync(repo);
 
 fs.mkdirSync(home);
+
+fs.mkdirSync(dftHome);
 
 fs.mkdirSync(path.dirname(storePath));
 
@@ -159,66 +165,110 @@ const HANDSHAKE = [
   notification("notifications/initialized", {}),
 ];
 
-let sessionCount = 0;
+const decodeRequestId = Schema.decodeUnknownOption(
+  Schema.Struct({ id: Schema.Finite })
+);
 
-const runSession = (
-  messages: readonly Schema.JsonObject[],
-  holdSeconds = 4
-) => {
-  sessionCount += 1;
-
-  const script = path.join(scratch, `session-${sessionCount}.jsonl`);
-
-  fs.writeFileSync(
-    script,
-    [...HANDSHAKE, ...messages]
-      .map((message) => `${JSON.stringify(message)}\n`)
-      .join("")
+const requestIds = (messages: readonly Schema.JsonObject[]) =>
+  messages.flatMap((message) =>
+    Option.toArray(Option.map(decodeRequestId(message), ({ id }) => id))
   );
 
-  const run = spawnSync(
-    "sh",
-    [
-      "-c",
-      '{ cat "$1"; sleep "$2"; } | "$3" "$4" mcp',
-      "sh",
-      script,
-      String(holdSeconds),
-      process.execPath,
-      CLI,
-    ],
-    {
-      cwd: repo,
-      encoding: "utf-8",
-      env: {
-        DX_REPO: repo,
-        DX_STORE: storePath,
-        HOME: home,
-        PATH: process.env.PATH ?? "",
-      },
-      timeout: 45_000,
-    }
-  );
+interface Session {
+  readonly byId: (id: number) => Frame | undefined;
+  readonly nonProtocol: readonly string[];
+  readonly signal: NodeJS.Signals | null;
+  readonly status: number | null;
+}
 
-  const lines = run.stdout.split("\n").filter((line) => line.length > 0);
+const toSession = (
+  stdout: string,
+  status: number | null,
+  signal: NodeJS.Signals | null
+): Session => {
+  const lines = stdout.split("\n").filter((line) => line.length > 0);
 
   const frames = lines.flatMap((line) => Option.toArray(decodeFrameLine(line)));
 
   return {
     byId: (id: number) => frames.find((frame) => frame.id === id),
     nonProtocol: lines.filter((line) => Option.isNone(decodeFrameLine(line))),
-    signal: run.signal,
-    status: run.status,
+    signal,
+    status,
   };
 };
 
+const runSession = (
+  messages: readonly Schema.JsonObject[],
+  awaitIds: readonly number[] = requestIds([...HANDSHAKE, ...messages])
+) =>
+  Effect.callback<Session>((resume) => {
+    const child = spawn(process.execPath, [CLI, "mcp"], {
+      cwd: repo,
+      env: {
+        DFT_CURSOR_USAGE: "off",
+        DFT_HOME: dftHome,
+        DX_REPO: repo,
+        DX_STORE: storePath,
+        HOME: home,
+        PATH: process.env.PATH ?? "",
+      },
+      stdio: ["pipe", "pipe", "ignore"],
+    });
+
+    const pending = new Set<Frame["id"]>(awaitIds);
+
+    let stdout = "";
+
+    const closeInput = () => {
+      if (!child.stdin.writableEnded) {
+        child.stdin.end();
+      }
+    };
+
+    child.stdout.setEncoding("utf-8");
+
+    child.stdout.on("data", (chunk: string) => {
+      stdout += chunk;
+
+      for (const line of stdout.split("\n")) {
+        for (const frame of Option.toArray(decodeFrameLine(line))) {
+          pending.delete(frame.id);
+        }
+      }
+
+      if (pending.size === 0) {
+        closeInput();
+      }
+    });
+
+    child.on("error", (error) => {
+      resume(Effect.die(error));
+    });
+
+    child.on("close", (status, signal) => {
+      resume(Effect.succeed(toSession(stdout, status, signal)));
+    });
+
+    child.stdin.write(
+      [...HANDSHAKE, ...messages]
+        .map((message) => `${JSON.stringify(message)}\n`)
+        .join("")
+    );
+
+    return Effect.sync(() => {
+      child.kill("SIGKILL");
+    });
+  }).pipe(Effect.timeout(SESSION_DEADLINE));
+
 describe.skipIf(!cliBuilt)("C08 MCP launch audit (built CLI stdio)", () => {
-  it.effect(
+  it.live(
     "launches, negotiates 2025-06-18 and lists the six dx tools with schemas",
     () =>
-      Effect.sync(() =>
-        runSession([request(2, "tools/list", {}), toolCall(3, "dx_status", {})])
-      ).pipe(
+      runSession([
+        request(2, "tools/list", {}),
+        toolCall(3, "dx_status", {}),
+      ]).pipe(
         check((session) => {
           expect(
             Option.map(
@@ -251,19 +301,17 @@ describe.skipIf(!cliBuilt)("C08 MCP launch audit (built CLI stdio)", () => {
     60_000
   );
 
-  it.effect(
+  it.live(
     "keeps stdout protocol-only across writes, reads, tool errors and malformed calls",
     () =>
-      Effect.sync(() =>
-        runSession([
-          toolCall(2, "dx_collect", { repo, source: "git-history" }),
-          toolCall(3, "dx_mark", { kind: "start", label: "c08", repo }),
-          toolCall(4, "dx_analyze", { repo }),
-          toolCall(5, "dx_explain", { snapshotId: "snap_does_not_exist_c08" }),
-          toolCall(6, "dx_not_a_tool", {}),
-          request(7, "tools/call", { name: 42 }),
-        ])
-      ).pipe(
+      runSession([
+        toolCall(2, "dx_collect", { repo, source: "git-history" }),
+        toolCall(3, "dx_mark", { kind: "start", label: "c08", repo }),
+        toolCall(4, "dx_analyze", { repo }),
+        toolCall(5, "dx_explain", { snapshotId: "snap_does_not_exist_c08" }),
+        toolCall(6, "dx_not_a_tool", {}),
+        request(7, "tools/call", { name: 42 }),
+      ]).pipe(
         check((session) => {
           expect(
             [2, 3, 4].map((id) => isToolError(session.byId(id)))
@@ -283,11 +331,11 @@ describe.skipIf(!cliBuilt)("C08 MCP launch audit (built CLI stdio)", () => {
     60_000
   );
 
-  it.effect(
+  it.live(
     "honours notifications/cancelled without crashing and keeps serving",
     () =>
-      Effect.sync(() =>
-        runSession([
+      runSession(
+        [
           toolCall(2, "dx_analyze", { repo }),
           notification("notifications/cancelled", {
             reason: "c08 audit cancellation",
@@ -299,7 +347,8 @@ describe.skipIf(!cliBuilt)("C08 MCP launch audit (built CLI stdio)", () => {
           }),
           request(3, "ping", {}),
           toolCall(4, "dx_status", {}),
-        ])
+        ],
+        [1, 3, 4]
       ).pipe(
         check((session) => {
           expect(session.byId(3)?.error).toBeUndefined();
@@ -316,11 +365,11 @@ describe.skipIf(!cliBuilt)("C08 MCP launch audit (built CLI stdio)", () => {
     60_000
   );
 
-  it.effect(
+  it.live(
     "bounds explain pagination by limit and snapshot-bound cursor, and evidence batches",
     () =>
-      Effect.sync(() => {
-        const analyzeSession = runSession([
+      Effect.gen(function* observeExplainPaging() {
+        const analyzeSession = yield* runSession([
           toolCall(2, "dx_collect", { repo, source: "git-history" }),
           toolCall(3, "dx_analyze", { repo }),
         ]);
@@ -329,7 +378,7 @@ describe.skipIf(!cliBuilt)("C08 MCP launch audit (built CLI stdio)", () => {
           Option.flatMap(structured(analyzeSession.byId(3)), decodeAnalyze)
         ).snapshot;
 
-        const pageSession = runSession([
+        const pageSession = yield* runSession([
           toolCall(2, "dx_explain", { limit: 1, snapshotId }),
           toolCall(3, "dx_explain", { limit: 0, snapshotId }),
           toolCall(4, "dx_explain", { limit: -1, snapshotId }),
@@ -351,7 +400,7 @@ describe.skipIf(!cliBuilt)("C08 MCP launch audit (built CLI stdio)", () => {
           Option.flatMap(structured(pageSession.byId(2)), decodeExplain)
         );
 
-        const secondSession = runSession([
+        const secondSession = yield* runSession([
           toolCall(2, "dx_explain", {
             cursor: first.nextCursor,
             limit: 1,
