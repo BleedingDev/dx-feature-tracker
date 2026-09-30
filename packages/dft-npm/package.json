@@ -26,7 +26,6 @@
   ],
   "type": "module",
   "scripts": {
-    "preinstall": "node dist/check-node.cjs",
     "bundle": "sh scripts/bundle.sh"
   },
   "engines": {
