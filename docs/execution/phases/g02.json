@@ -1,0 +1,267 @@
+{
+  "gate": "G02",
+  "attempt": 1,
+  "milestone": "P2 real flight: live Cursor hook route (B05) verified on the gate digest, C17 real flight re-invoked through the built CLI and installer, per-branch analyze/explain/evidence on real Git and hook time",
+  "verdict": "pass",
+  "verdictScope": "degraded-live pass. The G02 runtime predicate (at least one verified real B05/B07/B08 route) is met by B05: on this digest a real cursor-agent invocation fired the project hooks, 4 spool files were collected through the built CLI and analyzed into agent/active/branch time. A token-bearing Cursor turn was NOT observed on this digest: cursor-agent exited 1 twice (Cursor free-plan usage limit, same as G01 at 15:12). The token route (B10 cursor-cli stream) rests on C17's real run at 14:48 (exit 0, 22150 input / 1275 output / 153984 cached tokens) and C14/C09; the collector, ai-usage metric and storage source are unchanged since 14:45 (only apps/cli dft surfaces changed). G02 therefore does not claim live token capture on its own digest; that stays in pendingObservation. CI/PR evidence is out of scope by product decision and is not required.",
+  "decidedAt": "2026-09-30T15:19+02:00",
+  "deadline": {
+    "hardStop": "2026-09-30T15:47+02:00",
+    "freezeAt": "15:16:04",
+    "note": "2-hour override; frozen after the correctness-only cut approached (15:17)"
+  },
+  "candidate": {
+    "baseCommit": "b7a41b9064585ee643c5fa77e1ad7b3ebdc8eab4",
+    "freezeMethod": "APFS clone (cp -Rc) of the live checkout into the gate scratchpad at 15:16:04. The live tree then held only a formatting revert of docs/demo/phase1-demo.md plus the excluded untracked apps/web/ and docs/execution/scratch_c12.bak. `pnpm exec oxfmt docs/demo/phase1-demo.md` in the clone restored it byte-for-byte to HEAD, so the tested tracked content is exactly b7a41b9.",
+    "testedDigest": "sha256:5cf74f3b429197047d9d8b3176208c6a232814ae59787158fb348d11a0306f28",
+    "digestMethod": "sha256 of (HEAD sha line + `shasum -a 256` lines of sorted modified+untracked non-ignored files), computed in the clone after the format repair and before the exit-0 fence; the only untracked files were the excluded apps/web/src/features/dx/b42/*, apps/web/test/dx/b42.test.ts and docs/execution/scratch_c12.bak",
+    "contractVersion": "dx.contracts.v1",
+    "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+    "commitContents": "only docs/execution/phases/g02.json, committed from the frozen clone (tracked content == b7a41b9) so the commit's pre-commit hook ran on the tested content. Concurrent in-flight edits that appeared in the live checkout after the freeze (.gitignore, pnpm-workspace.yaml, apps/cli/src/dft-skills.ts, packages/core/src/dx/{chats,history}/capability.ts, reports/analyze/select.ts, correlation/branch-at-time/snapshot.ts, packages/dft-npm/, docs/demo/phase1-demo.md revert) were NOT tested by this gate and are NOT committed; they belong to G03.",
+    "excludedFromCommit": [
+      "apps/web/ (B42 disabled optional web drilldown; not a workspace package)",
+      "docs/execution/scratch_c12.bak (stray backup)",
+      "all post-freeze live edits listed above"
+    ]
+  },
+  "enabledModules": {
+    "note": "Unchanged from G01 (same tracked content b7a41b9). Registry admits ready/degraded descriptors; disabled ones are listed by dx status only.",
+    "ready": [
+      "a01",
+      "a02",
+      "a03",
+      "a04",
+      "a05",
+      "a06",
+      "a09",
+      "b01",
+      "b02",
+      "b03",
+      "b04",
+      "b06",
+      "b20",
+      "b22",
+      "b23",
+      "b24",
+      "b26",
+      "b27",
+      "b28",
+      "b30",
+      "b34",
+      "b35",
+      "b36",
+      "b37",
+      "b38",
+      "b39",
+      "b40",
+      "flight-time",
+      "auto-usage"
+    ],
+    "degraded": [
+      "a07",
+      "a08",
+      "b05",
+      "b07",
+      "b08",
+      "b10",
+      "b11",
+      "b12",
+      "b13",
+      "b14",
+      "b21",
+      "b31",
+      "b46",
+      "b48",
+      "backfill"
+    ],
+    "disabled": [
+      "b09",
+      "b33",
+      "b41",
+      "b42",
+      "b43",
+      "b44",
+      "b45"
+    ],
+    "validators": {
+      "ready": [
+        "c01",
+        "c02",
+        "c03",
+        "c06",
+        "c07",
+        "c08",
+        "c09",
+        "c10",
+        "c12",
+        "c13",
+        "c14",
+        "c15",
+        "c17"
+      ],
+      "degraded": [
+        "c05",
+        "c16"
+      ]
+    }
+  },
+  "gateRepairs": [
+    {
+      "owner": "unknown concurrent writer of docs/demo/phase1-demo.md (demo doc; G01 formatted it)",
+      "file": "docs/demo/phase1-demo.md",
+      "problem": "Live copy reverted G01's oxfmt formatting (single-line JSON result block, table cell spacing), so //#lint `oxfmt --check .` exited 1.",
+      "fix": "`pnpm exec oxfmt docs/demo/phase1-demo.md` in the frozen clone; result is byte-identical to HEAD (git diff empty). Live checkout left untouched; the writer must re-run oxfmt on that file before G03."
+    }
+  ],
+  "commands": [
+    {
+      "name": "fence attempt 1 (frozen clone, before repair)",
+      "argv": [
+        "pnpm",
+        "exec",
+        "turbo",
+        "run",
+        "check",
+        "test",
+        "build",
+        "--continue"
+      ],
+      "at": "15:16:10",
+      "exit": 1,
+      "result": "17/18 tasks ok; //#lint failed only on oxfmt format of docs/demo/phase1-demo.md (ultracite 0 warnings 0 errors)",
+      "superseded": true
+    },
+    {
+      "name": "fence (frozen candidate after repair)",
+      "argv": [
+        "pnpm",
+        "exec",
+        "turbo",
+        "run",
+        "check",
+        "test",
+        "build",
+        "--continue"
+      ],
+      "at": "15:17:04-15:17:08",
+      "exit": 0,
+      "result": "18/18 tasks successful (17 replayed from turbo cache of attempt 1 on identical inputs, //#lint re-executed clean); tests capability 72/72, devtools 19/19, cli 20/20, core 567 passed + 3 expected-fail (70 files)"
+    },
+    {
+      "name": "C17 real flight rerun on the frozen candidate",
+      "argv": [
+        "/Users/satan/bin/owned-temp-dir",
+        "--run",
+        "g02-c17",
+        "--",
+        "bash",
+        "docs/execution/c17/run.sh"
+      ],
+      "env": "C17_OUT=<gate scratchpad>/c17out",
+      "at": "15:17:15-15:17:30",
+      "exit": 1,
+      "result": "install 0, cursor-agent 1 and 1 (usage limit; no result line), spool_files 4, collect-git 0, collect-hooks 0, collect-cli 0 (no usage lines), collect-test-operator 1 (agent never wrote math.test.mjs, so no junit file), collect-gitobs 0, collect-transcripts-imported 0 (transcript found), recollect-cli 0, analyze 0, analyze same snapshot 0, explain by snapshot 0 (103 lines), evidence follow 0 (5 evidenceIds), status 0, uninstall 0; owned temp dir cleaned; ~/.cursor/hooks.json sha 162231fe... before = after"
+    },
+    {
+      "name": "built-CLI replay of the B10 stream fixture (fixture, not live)",
+      "argv": [
+        "node",
+        "apps/cli/dist/cli.js",
+        "dx",
+        "collect",
+        "--source",
+        "collector/cursor-cli",
+        "--input",
+        "packages/core/test/dx/fixtures/b10/stream.jsonl",
+        "; dx analyze --repo <owned temp repo>"
+      ],
+      "at": "15:18",
+      "exit": 0,
+      "result": "collect 0, analyze 0: requests 1, input 1200, output 340, cached-input 8000, cache-write 150, reasoning unavailable, total null. Proves the token path in the built artifact on this digest; does not replace live evidence."
+    },
+    {
+      "name": "lefthook pre-commit on the LIVE checkout (first commit attempt)",
+      "argv": [
+        "git",
+        "commit"
+      ],
+      "at": "15:19:18-15:19:49",
+      "exit": 1,
+      "result": "Live tree (post-freeze in-flight edits by other agents, not the candidate) failed: oxfmt check on docs/demo/phase1-demo.md, and core test a07-rebuild (fresh-store metric hash fe05e62f... != e29b6923...). Commit therefore made from the frozen clone, whose pre-commit ran on the tested content."
+    }
+  ],
+  "requiredChecks": {
+    "realB05B07B08Route": "pass via B05: real cursor-agent invocation on this digest fired project hooks; 4 spool events collected (collector.cursor-hooks exit 0) and analyzed: dx.flight.agent.ms 7281 (4 source intervals merged into 2, 2638 ms overlap counted once), dx.flight.active.ms 8126, dx.flight.branch-age.ms 12475 from reflog branch creation. B07 transcript import also ran (exit 0, origin=imported). B08 has no usage CSV on this host (not attempted).",
+    "actualC17CursorInvocation": "pass (invocation) / pending (token-bearing turn): C17 ran a real token-bearing flight at 14:48 (exit 0, docs/execution/c17); the gate re-invoked Cursor through run.sh on this digest and the hooks fired, but Cursor refused the turn with its usage limit.",
+    "sourceVersionPrivacyAccountingClientRegression": "pass in the exit-0 fence: c01 source versions, c10 privacy audit, c05 accounting fixtures, c08 MCP client launch, c02/a07-rebuild deterministic replay and regression",
+    "builtArtifactBoot": "pass: fence built apps/cli/dist/cli.js and run.sh drove install/collect/analyze/explain/evidence/status/uninstall through it",
+    "immutableSnapshotReuse": "pass: run.sh analyze twice on snapshot snap_4b1cdb4115336473504a13b0d9b3a4ba, both exit 0",
+    "userCursorConfigUntouched": "pass: ~/.cursor/hooks.json sha256 identical before and after; project .cursor/ only, uninstalled after",
+    "workspaceChecks": "pass: fence exit 0",
+    "ciPr": "out of scope by product decision; not required"
+  },
+  "cursorEvidence": {
+    "client": "cursor-agent 2026.09.28-64d2043 (installed CLI, logged in, free plan)",
+    "thisDigest_15:17": "real invocation on feature/c17-real-flight in an owned temp demo repo; 4 project-hook spool events captured and shown in analyze/explain/evidence; agent turn refused by usage limit so no tokens, no tool calls, no commit.",
+    "earlierLiveRuns": {
+      "C17_14:48": "real flight exit 0: 1 request, 22150 input / 1275 output / 153984 cached tokens, reasoning and money unavailable, agent 30788 ms, branch age 35544 ms, 1 commit, 2 files, +14 lines, 2 test runs 0 failures (docs/execution/c17/out)",
+      "A09": "real cursor-agent run, 31 hook events inserted, cursor-cli 1 ai.usage, transcripts, git, local-test x2 (docs/execution/source-receipts/cursor-live-probe.json)",
+      "C14": "tokens 25599/1381/122880 cached matched the stream's result.usage exactly (docs/execution/c14/live)"
+    },
+    "codeIdentity": "No file under packages/core/src/dx/collectors/cursor-cli, collectors/cursor-hooks, metrics/ai-usage, storage or scripts/dx-install.ts changed after 14:45; only apps/cli/src dft surface files changed (14:57-15:01).",
+    "pendingObservation": [
+      "A token-bearing real Cursor turn on a committed gate digest (blocked by the Cursor free-plan usage limit at 15:12 and 15:17).",
+      "Cursor as MCP client calling dx_analyze and dx_explain on one snapshot (carried from G01)."
+    ]
+  },
+  "coverage": {
+    "cursor": "hooks (live on this digest), cursor-agent stream-json tokens input/output/cached (live at C17/C14/C09; reasoning and money not reported by the source), transcripts (imported, live at C17/A09), local ai-code-tracking.db via backup copy (B06; CLI lacks scratchDir flag), usage CSV (B08, no file on host), dashboard/usage API (auto-usage, no charge observed)",
+    "git": "real: commits, files, lines, branch age from reflog, uncommitted/untracked",
+    "localTests": "junit/command capture; C17 live saw 2 test runs, 0 failures",
+    "money": "unavailable on this host; price-table estimate labelled method=price-table:cursor@2026-09 and unavailable without token readings",
+    "ciPr": "out of scope"
+  },
+  "gaps": [
+    {
+      "owner": "operator / Cursor quota",
+      "gap": "Re-run `C17_OUT=<dir> owned-temp-dir --run c17 -- bash docs/execution/c17/run.sh` on the next gate digest with an account that has remaining agent usage, to observe tokens on that digest."
+    },
+    {
+      "owner": "writers of post-freeze live edits (reports/analyze/select.ts, correlation/branch-at-time/snapshot.ts, chats/history capability.ts; A02/analysis owners)",
+      "gap": "On the live checkout at 15:19 test/dx/integration/a07-rebuild.test.ts fails: a fresh store no longer rebuilds the same metric hash (deterministic-replay regression). Must be fixed before G03 freezes."
+    },
+    {
+      "owner": "docs/demo/phase1-demo.md writer",
+      "gap": "Live copy reverts G01 formatting; run `pnpm exec oxfmt docs/demo/phase1-demo.md` or the G03 fence //#lint fails."
+    },
+    {
+      "owner": "A02",
+      "gap": "`dx analyze/explain --flight <branch>` selects by flight_id, which no collector sets; analyze --repo reports flightId null (C17/A09)."
+    },
+    {
+      "owner": "A02 / B06",
+      "gap": "`dx collect --source cursor-local-db` exits 1: needs scratchDir for the backup copy and the CLI has no flag (A09)."
+    },
+    {
+      "owner": "flight-time / B05 / B10",
+      "gap": "dx.flight.tool-calls double counts (36 vs 12 in the stream at C17); do not quote tool calls."
+    },
+    {
+      "owner": "analysis (B30/metrics ai-usage)",
+      "gap": "dx.ai-usage.tokens.total is null although input/output/cached components exist."
+    },
+    {
+      "owner": "B05",
+      "gap": "Stale coverage gap 'live-capture-not-demonstrated' still emitted though live capture is demonstrated; sanitize.ts env-prefix commandBin (C10)."
+    },
+    {
+      "owner": "B30",
+      "gap": "Unkeyed events imported twice are summed; a request seen on two branches counts on both (C05)."
+    },
+    {
+      "owner": "B02",
+      "gap": "Branch recreated at the same HEAD does not split into a new flight (C03)."
+    }
+  ],
+  "logs": "Gate scratchpad (not committed): fence.log, fence2.log, c17out/ (exits, times, versions, collect/analyze/explain/evidence/status outputs; raw prompts and streams stayed in the deleted owned temp dir)."
+}
