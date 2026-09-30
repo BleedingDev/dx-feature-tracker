@@ -1,6 +1,7 @@
 import { Schema } from "effect";
 
 import type { TokenCategory } from "../../model/ai.js";
+import { matchSlug } from "./price-catalog/slug.js";
 import type { TokenReading } from "./readings.js";
 
 const RateSchema = Schema.optional(Schema.NullOr(Schema.Finite));
@@ -49,7 +50,11 @@ export type UnpricedReason =
   | "no-tokens";
 
 export type PriceOutcome =
-  | { readonly kind: "priced"; readonly usd: number }
+  | {
+      readonly kind: "priced";
+      readonly unpricedCategories: readonly TokenCategory[];
+      readonly usd: number;
+    }
   | { readonly kind: "unpriced"; readonly reason: UnpricedReason };
 
 const beforeEffective = (occurredAt: string | null, table: PriceTable) => {
@@ -69,6 +74,7 @@ const priceRates = (
 ): PriceOutcome => {
   let usd = 0;
   let pricedAny = false;
+  const unpricedCategories: TokenCategory[] = [];
 
   for (const category of PRICED_CATEGORIES) {
     const count = tokens[category] ?? 0;
@@ -80,11 +86,16 @@ const priceRates = (
     const rate = rates[category] ?? null;
 
     if (rate === null) {
-      return { kind: "unpriced", reason: "missing-rate" };
+      unpricedCategories.push(category);
+      continue;
     }
 
     usd += (count * rate) / 1_000_000;
     pricedAny = true;
+  }
+
+  if (!pricedAny && unpricedCategories.length > 0) {
+    return { kind: "unpriced", reason: "missing-rate" };
   }
 
   if (!pricedAny) {
@@ -93,7 +104,19 @@ const priceRates = (
     return { kind: "unpriced", reason: hasTotal ? "total-only" : "no-tokens" };
   }
 
-  return { kind: "priced", usd };
+  return { kind: "priced", unpricedCategories, usd };
+};
+
+const ratesFor = (table: PriceTable, model: string): ModelRates | undefined => {
+  const direct = table.models[model];
+
+  if (direct !== undefined) {
+    return direct;
+  }
+
+  const match = matchSlug(model, new Set(Object.keys(table.models)));
+
+  return match.kind === "matched" ? table.models[match.catalogId] : undefined;
 };
 
 export const priceReading = (
@@ -104,7 +127,7 @@ export const priceReading = (
     return { kind: "unpriced", reason: "model-unknown" };
   }
 
-  const rates = table.models[reading.model];
+  const rates = ratesFor(table, reading.model);
 
   if (rates === undefined) {
     return { kind: "unpriced", reason: "model-not-in-table" };

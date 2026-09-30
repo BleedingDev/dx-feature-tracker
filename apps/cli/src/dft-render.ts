@@ -1111,6 +1111,24 @@ const unassignedHint = (
           : []),
       ];
 
+const unlinkedFootnote = (
+  rows: readonly FlightHistoryRow[]
+): readonly string[] => {
+  const requests = rows.reduce(
+    (sum, row) => sum + (measureValue(row.requests) ?? 0),
+    0
+  );
+
+  const billed = rows.reduce((sum, row) => sum + (rowBilled(row) ?? 0), 0);
+
+  return requests === 0 && billed === 0
+    ? []
+    : [
+        "",
+        `${formatCount(requests)} Cursor requests (${formatUsd(billed)} billed) could not be matched to a branch.`,
+      ];
+};
+
 export const historyText = (
   rows: readonly FlightHistoryRow[],
   options: RenderOptions & { readonly allRepos: boolean }
@@ -1172,6 +1190,7 @@ export const historyText = (
       ? []
       : ["", ...account.map((row) => accountLine(row, options.now))]),
     ...unassignedHint(unassigned, options.verbose),
+    ...unlinkedFootnote(account),
     ...(hasMoney
       ? [
           "",

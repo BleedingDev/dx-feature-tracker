@@ -22,6 +22,7 @@ export const BRANCH_AT_TIME_VERSION = "1.0.0";
 export const BRANCH_AT_TIME_TARGET_KIND = "branch";
 
 export type HistoricalBasis =
+  | "hook-turn"
   | "scored-commit"
   | "worktree-at-time"
   | "linked-request"
@@ -224,6 +225,65 @@ const byLiveCapture: Resolver = (event) =>
       }
     : null;
 
+export const HOOK_TURN_WINDOW_MS = 5 * 60 * 1000;
+
+const isJoinedAccountRow = (event: DxEventEnvelope): boolean =>
+  event.payload.sessionJoin !== undefined && event.payload.sessionJoin !== null;
+
+const liveTurnsBySession = (
+  events: readonly DxEventEnvelope[]
+): ReadonlyMap<string, readonly DxEventEnvelope[]> => {
+  const turns = new Map<string, DxEventEnvelope[]>();
+
+  for (const event of events) {
+    const sessionKey = sessionKeyOf(event);
+
+    if (sessionKey !== null && byLiveCapture(event) !== null) {
+      turns.set(sessionKey, [...(turns.get(sessionKey) ?? []), event]);
+    }
+  }
+
+  return turns;
+};
+
+const byHookTurn =
+  (turns: ReadonlyMap<string, readonly DxEventEnvelope[]>): Resolver =>
+  (event) => {
+    const sessionKey = sessionKeyOf(event);
+    const at = timeOf(event);
+
+    if (sessionKey === null || at === null || !isJoinedAccountRow(event)) {
+      return null;
+    }
+
+    let best: DxEventEnvelope | undefined;
+    let bestGap = HOOK_TURN_WINDOW_MS;
+
+    for (const turn of turns.get(sessionKey) ?? []) {
+      const turnAt = instantOf(turn);
+
+      const gap =
+        turnAt === null ? Number.POSITIVE_INFINITY : Math.abs(turnAt - at);
+
+      if (gap <= bestGap) {
+        best = turn;
+        bestGap = gap;
+      }
+    }
+
+    return best === undefined || best.context.branch === null
+      ? null
+      : {
+          ...base(event),
+          attribution: "strong",
+          basis: "hook-turn",
+          branch: best.context.branch,
+          confidence: 0.95,
+          method: "hook",
+          reason: `matches hook turn ${best.eventId} of the same conversation ${Math.round(bestGap / 1000)}s away, captured live on ${best.context.branch}`,
+        };
+  };
+
 const byWorktreeAtTime =
   (
     timelines: readonly WorktreeTimeline[],
@@ -321,6 +381,7 @@ export const attributeHistoricalBranches = (
 
   const direct: readonly Resolver[] = [
     byLiveCapture,
+    byHookTurn(liveTurnsBySession(events)),
     byScoredCommit(input.commitBranches),
     byWorktreeAtTime(input.timelines, options),
     byPlacedWorktree,

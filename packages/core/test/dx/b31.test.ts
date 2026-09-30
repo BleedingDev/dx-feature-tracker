@@ -295,6 +295,7 @@ describe("B31 cost ledgers", () => {
 
     expect(priceReading(base, priceTable)).toStrictEqual({
       kind: "priced",
+      unpricedCategories: [],
       usd: 1.25,
     });
     expect(
@@ -302,6 +303,13 @@ describe("B31 cost ledgers", () => {
     ).toStrictEqual({ kind: "unpriced", reason: "before-effective-date" });
     expect(
       priceReading({ ...base, tokens: { input: 10, reasoning: 5 } }, priceTable)
+    ).toStrictEqual({
+      kind: "priced",
+      unpricedCategories: ["reasoning"],
+      usd: 1.25e-5,
+    });
+    expect(
+      priceReading({ ...base, tokens: { reasoning: 5 } }, priceTable)
     ).toStrictEqual({ kind: "unpriced", reason: "missing-rate" });
     expect(
       priceReading({ ...base, tokens: { total: 500 } }, priceTable)

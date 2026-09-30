@@ -412,6 +412,25 @@ export const makeSqliteEventStore = (
       write("append", () => {
         let inserted = 0;
 
+        if (batch.replace !== undefined) {
+          const { adapterId, fromOccurredAt } = batch.replace;
+
+          const stale =
+            "SELECT event_id FROM events WHERE adapter_id = ? AND occurred_at >= ?";
+
+          db.prepare(
+            `DELETE FROM snapshots WHERE snapshot_id IN (SELECT snapshot_id FROM snapshot_events WHERE event_id IN (${stale}))`
+          ).run(adapterId, fromOccurredAt);
+
+          db.prepare(
+            `DELETE FROM snapshot_events WHERE snapshot_id NOT IN (SELECT snapshot_id FROM snapshots)`
+          ).run();
+
+          db.prepare(
+            "DELETE FROM events WHERE adapter_id = ? AND occurred_at >= ?"
+          ).run(adapterId, fromOccurredAt);
+        }
+
         for (const event of batch.events) {
           const result = insertEvent.run(
             event.eventId,

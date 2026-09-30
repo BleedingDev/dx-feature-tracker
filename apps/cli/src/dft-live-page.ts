@@ -114,8 +114,8 @@ const INTRO_NAV = `<button type="button" id="nav-intro">Intro</button>`;
 const INTRO_OVERLAY = `<div id="intro" class="intro" role="dialog" aria-modal="true" aria-label="dft intro" hidden>
 <div class="intro-box">
 <video id="intro-video" muted playsinline preload="none" poster="${introFile("dft-intro-poster.png")}"><source src="${introFile("dft-intro.webm")}" type="video/webm"><source src="${introFile("dft-intro.mp4")}" type="video/mp4"></video>
-<button type="button" class="intro-play" id="intro-play" aria-label="Play intro" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg>Play</button>
-<button type="button" class="btn intro-skip" id="intro-skip">Skip</button>
+<button type="button" class="intro-play" id="intro-play" aria-label="Play intro" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></svg><span id="intro-play-label">Play</span></button>
+<button type="button" class="btn intro-skip" id="intro-skip">Close</button>
 </div>
 </div>
 `;
@@ -191,6 +191,7 @@ if(!box)return;
 var video=document.getElementById("intro-video");
 var play=document.getElementById("intro-play");
 var skip=document.getElementById("intro-skip");
+var label=document.getElementById("intro-play-label");
 var KEY="dft.intro.seen";
 var back=null;
 var calm=!!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);
@@ -198,10 +199,10 @@ function seen(){try{return localStorage.getItem(KEY)==="1";}catch(e){return fals
 function remember(){try{localStorage.setItem(KEY,"1");}catch(e){}}
 function onKey(e){if(e.key==="Escape")close();}
 function close(){if(box.hidden)return;video.pause();video.autoplay=false;box.hidden=true;document.removeEventListener("keydown",onKey);if(back&&back.focus)back.focus();back=null;}
-function start(){play.hidden=true;video.autoplay=true;var p=video.play();if(p&&p.catch)p.catch(function(){video.autoplay=false;play.hidden=false;play.focus();});}
-function open(){remember();back=document.activeElement;box.hidden=false;document.addEventListener("keydown",onKey);try{video.currentTime=0;}catch(e){}
+function start(){play.hidden=true;if(video.ended){try{video.currentTime=0;}catch(e){}}video.autoplay=true;var p=video.play();if(p&&p.catch)p.catch(function(){video.autoplay=false;play.hidden=false;play.focus();});}
+function open(){remember();label.textContent="Play";back=document.activeElement;box.hidden=false;document.addEventListener("keydown",onKey);try{video.currentTime=0;}catch(e){}
 if(calm){video.autoplay=false;play.hidden=false;play.focus();}else{skip.focus();start();}}
-video.addEventListener("ended",close);
+video.addEventListener("ended",function(){label.textContent="Replay";play.hidden=false;play.focus();});
 var last=video.querySelector("source:last-of-type");if(last)last.addEventListener("error",close);
 skip.addEventListener("click",close);
 play.addEventListener("click",start);

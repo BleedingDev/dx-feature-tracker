@@ -130,6 +130,12 @@ export const EventBatchSchema = Schema.Struct({
   coverage: SourceCoverageSchema,
   cursor: Schema.NullOr(CollectCursorSchema),
   events: Schema.Array(DxEventEnvelopeSchema),
+  replace: Schema.optional(
+    Schema.Struct({
+      adapterId: Schema.String,
+      fromOccurredAt: IsoTimestampSchema,
+    })
+  ),
 });
 
 export type EventBatch = typeof EventBatchSchema.Type;

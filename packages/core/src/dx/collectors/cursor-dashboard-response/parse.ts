@@ -654,7 +654,11 @@ const toEvent = (
     model: row.model,
     rawCategory: row.kind,
     rawTokens: row.rawTokens,
-    requestKey: row.requestId ?? row.conversationId,
+    requestKey:
+      row.requestId ??
+      (row.conversationId === null
+        ? null
+        : `${row.conversationId}@${row.occurredAt}`),
     requestUnits: row.requestUnits,
     sourceKind: "dashboard-response",
     tokenBased: row.tokenBased,

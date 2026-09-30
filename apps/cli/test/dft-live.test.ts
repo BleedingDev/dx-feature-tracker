@@ -50,7 +50,14 @@ const makeRepo = () => {
 
 makeRepo();
 
-const cliEnv = { ...process.env, DFT_HOME: dftHome, HOME: scratch };
+process.env.DFT_CURSOR_USAGE = "off";
+
+const cliEnv = {
+  ...process.env,
+  DFT_CURSOR_USAGE: "off",
+  DFT_HOME: dftHome,
+  HOME: scratch,
+};
 
 const runCli = (args: readonly string[]) =>
   spawnSync(process.execPath, [cliPath, ...args], {
@@ -391,7 +398,7 @@ describe("dft dashboard live server", () => {
               res.on("data", (chunk: Buffer) => {
                 text += chunk.toString("utf-8");
 
-                if (text.includes("event: change")) {
+                if (text.includes(`"reason":"sync"`)) {
                   req.destroy();
                   resume(Effect.succeed(text));
                 }

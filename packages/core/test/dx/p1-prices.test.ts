@@ -155,7 +155,7 @@ describe("P1 bundled price tables", () => {
     expect(charge?.value).toBeNull();
   });
 
-  it("refuses readings with cache writes when the model lists no cache-write rate", () => {
+  it("prices the other categories when the model lists no cache-write rate", () => {
     const events = withModel(liveEvents(), "gpt-5").map((event) =>
       event.kind === "ai.usage"
         ? {
@@ -172,8 +172,8 @@ describe("P1 bundled price tables", () => {
       computeCost(snapshotOf(events), defaultCostOptions()).results
     );
 
-    expect(estimate.value).toBeNull();
-    expect(estimate.reason).toContain("missing-rate=1");
+    expect(estimate.value).toBe(0.000016);
+    expect(estimate.reason).not.toContain("missing-rate");
   });
 });
 

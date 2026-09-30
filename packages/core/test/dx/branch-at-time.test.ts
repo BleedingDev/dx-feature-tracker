@@ -410,3 +410,118 @@ describe("branch-at-time pure timeline", () => {
     });
   });
 });
+
+const deletedTimeline = (ff: boolean): WorktreeTimeline => {
+  const entries = parseReflogLines(
+    [
+      `HEAD@{2026-09-30T08:45:00+00:00}\u001F${ff ? "merge feature/a: Fast-forward" : "merge feature/a: Merge made by the 'ort' strategy."}`,
+      "HEAD@{2026-09-30T08:45:00+00:00}\u001Fcheckout: moving from feature/a to main",
+      "HEAD@{2026-09-30T08:40:00+00:00}\u001Fcommit: feat a",
+      "HEAD@{2026-09-30T08:10:00+00:00}\u001Fcheckout: moving from main to feature/a",
+      "HEAD@{2026-09-30T08:00:00+00:00}\u001Fcommit (initial): init",
+    ].join("\n")
+  );
+
+  const moves = buildHeadMoves(entries, new Set(["main"]), "main");
+
+  return {
+    currentBranch: "main",
+    currentSinceMs: null,
+    moves,
+    points: [],
+    reflogFromMs: moves[0]?.atMs ?? null,
+    worktree: "/repo",
+  };
+};
+
+describe("merged and deleted branches", () => {
+  for (const ff of [false, true]) {
+    it(`keeps a deleted branch name from the HEAD reflog (${ff ? "ff" : "no-ff"})`, () => {
+      const timeline = deletedTimeline(ff);
+
+      expect(branchAt(timeline, ms("2026-09-30T08:21:00+00:00"))).toMatchObject(
+        {
+          attribution: "strong",
+          branch: "feature/a",
+          detached: false,
+        }
+      );
+      expect(branchAt(timeline, ms("2026-09-30T08:51:00+00:00")).branch).toBe(
+        "main"
+      );
+    });
+  }
+
+  it("still treats a commit checkout as detached", () => {
+    const moves = buildHeadMoves(
+      parseReflogLines(
+        "HEAD@{2026-09-05T10:00:00+00:00}\u001Fcheckout: moving from main to 0123456"
+      ),
+      new Set(),
+      null
+    );
+
+    expect(moves.at(-1)).toMatchObject({ branch: null, detached: true });
+  });
+
+  it("places account rows on the hook turn of the same conversation", () => {
+    const hook = (id: string, at: string, branch: string) =>
+      aiEvent(id, at, {
+        acquisition: "hook",
+        context: { ...emptyFlightContext, branch, worktreePath: "/repo" },
+        identity: { ...emptyEventIdentity, sessionId: "conv-2" },
+      });
+
+    const row = (id: string, at: string) =>
+      aiEvent(id, at, {
+        context: {
+          ...emptyFlightContext,
+          branch: "main",
+          worktreePath: "/repo",
+        },
+        identity: { ...emptyEventIdentity, sessionId: "conv-2" },
+        payload: { sessionJoin: { method: "nearest-session-event" } },
+      });
+
+    const main: WorktreeTimeline = {
+      currentBranch: "main",
+      currentSinceMs: null,
+      moves: [
+        {
+          atMs: ms("2026-09-30T08:00:00+00:00"),
+          branch: "main",
+          detached: false,
+        },
+      ],
+      points: [],
+      reflogFromMs: ms("2026-09-30T08:00:00+00:00"),
+      worktree: "/repo",
+    };
+
+    const result = attributeHistoricalBranches(
+      [
+        hook("h1", "2026-09-30T08:30:00+00:00", "feature/a"),
+        hook("h2", "2026-09-30T08:50:00+00:00", "main"),
+        row("u1", "2026-09-30T08:31:00+00:00"),
+        row("u2", "2026-09-30T08:51:00+00:00"),
+        row("u3", "2026-09-30T09:40:00+00:00"),
+      ],
+      { commitBranches: new Map(), timelines: [main] }
+    );
+
+    const byId = new Map(result.attributions.map((a) => [a.eventId, a]));
+
+    expect(byId.get("u1")).toMatchObject({
+      basis: "hook-turn",
+      branch: "feature/a",
+    });
+    expect(byId.get("u2")).toMatchObject({
+      basis: "hook-turn",
+      branch: "main",
+    });
+    expect(byId.get("u3")).toMatchObject({
+      basis: "worktree-at-time",
+      branch: "main",
+    });
+  });
+});

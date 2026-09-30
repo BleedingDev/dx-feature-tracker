@@ -1,6 +1,12 @@
 // @effect-diagnostics nodeBuiltinImport:off -- This test reads the committed auto-usage fixture and uses a throwaway home dir in the OS temp dir.
 // @effect-diagnostics asyncFunction:off -- The fakes implement the promise-based fetch seams the collector and price provider wrap in Effect.tryPromise.
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -34,6 +40,8 @@ import {
   EventBatchSchema,
   emptyFlightContext,
 } from "../../src/dx/model/event.js";
+import { EventIdSchema } from "../../src/dx/model/ids.js";
+import { makeSqliteEventStore } from "../../src/dx/storage/sqlite-event-store.js";
 
 const fixturePages = Schema.decodeUnknownSync(
   Schema.fromJsonString(Schema.Struct({ pages: Schema.Array(Schema.Json) }))
@@ -380,5 +388,63 @@ describe("price catalog (auto-usage)", () => {
         expect(bundled.table.id).toBe("cursor");
       })
     )
+  );
+
+  it.effect(
+    "migrates an old-key store once: replaces adapter rows, no double count",
+    () =>
+      withHome((home) =>
+        Effect.gen(function* migrated() {
+          const opened = makeSqliteEventStore({
+            kind: "live",
+            path: path.join(home, "store.sqlite"),
+          });
+
+          const fresh = yield* collectWith(home, newRecorded());
+
+          const collapsed = {
+            ...fresh,
+            events: fresh.events.map((event) => ({
+              ...event,
+              eventId: EventIdSchema.make(
+                `old-${event.identity.sessionId ?? ""}`
+              ),
+            })),
+          };
+
+          yield* opened.service.append(collapsed);
+          mkdirSync(path.dirname(statePath(home)), { recursive: true });
+          writeFileSync(
+            statePath(home),
+            `${JSON.stringify({ lastTimestampMs: 1_790_748_000_000 })}\n`
+          );
+
+          const migration = yield* collectWith(home, newRecorded());
+          expect(migration.replace?.adapterId).toBe("cursor-usage-api");
+          const first = yield* opened.service.append(migration);
+          expect(first.inserted).toBe(3);
+          expect(readFileSync(statePath(home), "utf-8")).toContain(
+            '"version":2'
+          );
+
+          const again = yield* collectWith(home, newRecorded());
+          expect(again.replace).toBeUndefined();
+          const second = yield* opened.service.append(again);
+          expect(second.inserted).toBe(0);
+
+          const snapshot = yield* opened.service.snapshot({
+            branch: null,
+            flightId: null,
+            from: null,
+            repoCommonDir: null,
+            to: null,
+          });
+
+          const ids = snapshot.events.map((event) => event.eventId);
+          expect(ids.some((id) => id.startsWith("old-"))).toBe(false);
+          expect(ids).toHaveLength(3);
+          opened.close();
+        }).pipe(Effect.provide(NodeServices.layer))
+      )
   );
 });

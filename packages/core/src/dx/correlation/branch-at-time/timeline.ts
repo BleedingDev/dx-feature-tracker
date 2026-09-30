@@ -111,12 +111,17 @@ const transitionOf = (subject: string): Transition | null => {
   return started === undefined ? null : { from: null, to: null };
 };
 
+const DETACHED_NAME = /^(?:[0-9a-f]{7,64}|HEAD)$|[~^:@\s]|^refs\/(?!heads\/)/u;
+
+const looksLikeBranch = (name: string): boolean =>
+  name !== "" && !DETACHED_NAME.test(name);
+
 const stateOf = (
   name: string | null,
   branches: ReadonlySet<string>
 ): { readonly branch: string | null; readonly detached: boolean } =>
-  name !== null && branches.has(name)
-    ? { branch: name, detached: false }
+  name !== null && (branches.has(name) || looksLikeBranch(name))
+    ? { branch: name.replace(/^refs\/heads\//u, ""), detached: false }
     : { branch: null, detached: true };
 
 export const buildHeadMoves = (

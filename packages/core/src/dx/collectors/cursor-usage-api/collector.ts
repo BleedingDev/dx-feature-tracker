@@ -23,6 +23,10 @@ export const DEFAULT_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
 
 export const OVERLAP_MS = 60 * 60 * 1000;
 
+export const MIGRATION_LOOKBACK_MS = 90 * 24 * 60 * 60 * 1000;
+
+export const STATE_VERSION = 2;
+
 export interface CursorUsageApiDeps {
   readonly env: Readonly<Record<string, string | undefined>>;
   readonly fetchImpl: FetchLike;
@@ -38,20 +42,34 @@ const unavailable = (message: string) =>
   new SourceUnavailable({ adapterId: CURSOR_USAGE_API_ADAPTER_ID, message });
 
 const StateSchema = Schema.fromJsonString(
-  Schema.Struct({ lastTimestampMs: Schema.Finite })
+  Schema.Struct({
+    lastTimestampMs: Schema.Finite,
+    version: Schema.optional(Schema.Finite),
+  })
 );
 
 const decodeState = Schema.decodeUnknownOption(StateSchema);
 
-const readLastTimestamp = (fs: FileSystem.FileSystem, file: string) =>
+interface StoredState {
+  readonly lastTimestampMs: number | null;
+  readonly stale: boolean;
+}
+
+const readState = (fs: FileSystem.FileSystem, file: string) =>
   fs.readFileString(file).pipe(
-    Effect.map((text) =>
+    Effect.map((text): StoredState =>
       Option.match(decodeState(text), {
-        onNone: () => null,
-        onSome: (state) => state.lastTimestampMs,
+        onNone: () => ({ lastTimestampMs: null, stale: true }),
+        onSome: (state) => ({
+          lastTimestampMs: state.lastTimestampMs,
+          stale: state.version !== STATE_VERSION,
+        }),
       })
     ),
-    Effect.orElseSucceed(() => null)
+    Effect.orElseSucceed((): StoredState => ({
+      lastTimestampMs: null,
+      stale: false,
+    }))
   );
 
 const isoOf = (value: number | string | undefined): string | null => {
@@ -172,13 +190,22 @@ export const makeCursorUsageApiCollector = (
       const fromCursor =
         input.cursor === null ? null : Number(input.cursor.value);
 
-      const last =
+      const stored = yield* readState(fs, file);
+      const migrate = stored.stale;
+
+      const resumeMs =
         fromCursor !== null && Number.isFinite(fromCursor)
           ? fromCursor
-          : yield* readLastTimestamp(fs, file);
+          : stored.lastTimestampMs;
 
-      const startMs =
-        last === null ? nowMs - DEFAULT_LOOKBACK_MS : last - OVERLAP_MS;
+      const incrementalStartMs =
+        resumeMs === null ? nowMs - DEFAULT_LOOKBACK_MS : resumeMs - OVERLAP_MS;
+
+      const last = migrate ? null : resumeMs;
+
+      const startMs = migrate
+        ? nowMs - MIGRATION_LOOKBACK_MS
+        : incrementalStartMs;
 
       const window: FetchWindow = {
         endMs: nowMs,
@@ -234,14 +261,14 @@ export const makeCursorUsageApiCollector = (
             Effect.andThen(
               fs.writeFileString(
                 file,
-                `${JSON.stringify({ lastTimestampMs: newest })}\n`
+                `${JSON.stringify({ lastTimestampMs: newest, version: STATE_VERSION })}\n`
               )
             ),
             Effect.ignore
           );
       }
 
-      return {
+      const batch = {
         coverage: {
           ...result.coverage,
           adapterId: CURSOR_USAGE_API_ADAPTER_ID,
@@ -251,6 +278,18 @@ export const makeCursorUsageApiCollector = (
             ? null
             : { adapterId: CURSOR_USAGE_API_ADAPTER_ID, value: String(newest) },
         events,
+      };
+
+      if (!migrate) {
+        return batch;
+      }
+
+      return {
+        ...batch,
+        replace: {
+          adapterId: CURSOR_USAGE_API_ADAPTER_ID,
+          fromOccurredAt: DateTime.formatIso(DateTime.makeUnsafe(startMs)),
+        },
       };
     }),
   descriptor: cursorUsageApiDescriptor,
