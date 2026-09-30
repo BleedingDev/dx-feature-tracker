@@ -1,0 +1,15 @@
+{
+  "adapterId": "git-history",
+  "coverage": {
+    "adapterId": "git-history",
+    "expectedItems": 1,
+    "gaps": [],
+    "observedItems": 1,
+    "state": "complete",
+    "watermark": "8db69006871726f3cab2987b455f27b23cb847b5",
+    "windowFrom": "2026-09-30T13:02:38.000Z",
+    "windowTo": "2026-09-30T13:02:38.000Z"
+  },
+  "duplicates": 0,
+  "inserted": 3
+}

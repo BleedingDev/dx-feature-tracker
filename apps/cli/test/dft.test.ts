@@ -1,0 +1,132 @@
+// @effect-diagnostics nodeBuiltinImport:off -- Install wiring edits real files in a throwaway git repository, so the test drives node:fs and git directly.
+import { execFileSync } from "node:child_process";
+import {
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+
+import { afterEach, describe, expect, it } from "@effect/vitest";
+import { resolveDftStore } from "@rat-stack/core/dx";
+
+import {
+  CURSOR_HOOK_EVENTS,
+  installCursorHooks,
+  installGitHooks,
+  installSkills,
+  mergeCursorHooks,
+} from "../src/dft-install.js";
+
+const created: string[] = [];
+
+const scratchRepo = (): string => {
+  const dir = mkdtempSync(path.join(tmpdir(), "dft-wire-"));
+  created.push(dir);
+  execFileSync("git", ["init", "-q", "-b", "main", dir]);
+
+  return dir;
+};
+
+afterEach(() => {
+  for (const dir of created.splice(0)) {
+    rmSync(dir, { force: true, recursive: true });
+  }
+});
+
+describe("dft store resolution (D7)", () => {
+  it("defaults to ~/.dft/dft.db, honours DFT_HOME, and --db wins", () => {
+    expect(resolveDftStore({ db: null, env: {}, home: "/h" }).path).toBe(
+      "/h/.dft/dft.db"
+    );
+    expect(
+      resolveDftStore({ db: null, env: { DFT_HOME: "/x" }, home: "/h" })
+    ).toEqual({ kind: "live", path: "/x/dft.db", source: "env" });
+    expect(
+      resolveDftStore({ db: "/y/s.db", env: { DFT_HOME: "/x" }, home: "/h" })
+        .source
+    ).toBe("flag");
+  });
+});
+
+describe("dft install cursor hooks", () => {
+  it("keeps foreign hooks, adds dft once per event, and is idempotent", () => {
+    const existing = {
+      hooks: { stop: [{ command: "./audit.sh", timeout: 5 }] },
+      version: 1,
+    };
+
+    const first = mergeCursorHooks(existing, "node /r/bin/dft hook");
+
+    expect(first.added).toEqual([...CURSOR_HOOK_EVENTS]);
+    expect(first.file.hooks?.stop).toEqual([
+      { command: "./audit.sh", timeout: 5 },
+      { command: "node /r/bin/dft hook" },
+    ]);
+    expect(mergeCursorHooks(first.file, "node /r/bin/dft hook").added).toEqual(
+      []
+    );
+  });
+
+  it("writes only the project .cursor/hooks.json and leaves invalid JSON alone", () => {
+    const repo = scratchRepo();
+
+    expect(installCursorHooks(repo, "dft hook").action).toBe("created");
+    expect(installCursorHooks(repo, "dft hook").action).toBe("unchanged");
+
+    writeFileSync(path.join(repo, ".cursor", "hooks.json"), "{nope");
+
+    expect(installCursorHooks(repo, "dft hook").action).toBe("skipped");
+    expect(
+      readFileSync(path.join(repo, ".cursor", "hooks.json"), "utf-8")
+    ).toBe("{nope");
+  });
+
+  it("copies the recorder skills into the project", () => {
+    const repo = scratchRepo();
+    const steps = installSkills(repo);
+
+    expect(steps.map((step) => step.detail).toSorted()).toEqual([
+      "dx-analyze",
+      "dx-explain",
+    ]);
+    expect(
+      readFileSync(
+        path.join(repo, ".cursor", "skills", "dx-analyze", "SKILL.md"),
+        "utf-8"
+      )
+    ).toContain("dft analyze --json");
+  });
+});
+
+describe("dft install --git-hooks", () => {
+  it("chains after an existing hook instead of replacing it", () => {
+    const repo = scratchRepo();
+    const preCommit = path.join(repo, ".git", "hooks", "pre-commit");
+    writeFileSync(preCommit, "#!/bin/sh\necho mine\n");
+
+    const steps = installGitHooks(repo, "/r/bin/dft");
+
+    expect(steps.map((step) => step.action)).toEqual(["updated", "created"]);
+    expect(readFileSync(preCommit, "utf-8")).toBe(
+      "#!/bin/sh\necho mine\n/r/bin/dft snapshot || true\n"
+    );
+    expect(statSync(preCommit).mode.toString(8).endsWith("755")).toBe(true);
+    expect(
+      installGitHooks(repo, "/r/bin/dft").map((step) => step.action)
+    ).toEqual(["unchanged", "unchanged"]);
+  });
+
+  it("prints a snippet instead of editing when lefthook manages hooks", () => {
+    const repo = scratchRepo();
+    writeFileSync(path.join(repo, "lefthook.yml"), "pre-commit: {}\n");
+
+    const [step] = installGitHooks(repo, "/r/bin/dft");
+
+    expect(step?.action).toBe("printed");
+    expect(step?.detail).toContain("run: /r/bin/dft snapshot || true");
+  });
+});

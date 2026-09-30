@@ -1,0 +1,62 @@
+{
+  "fixtureId": "b06-state-vscdb-headers",
+  "origin": "fixture",
+  "note": "Synthetic Cursor state.vscdb rows (composerHeaders layout). Not real user data.",
+  "tables": ["ItemTable", "cursorDiskKV", "composerHeaders"],
+  "composerHeaders": [
+    {
+      "composerId": "fx-c1",
+      "workspaceId": "fx-ws-1",
+      "createdAt": 1790000000000,
+      "lastUpdatedAt": 1790000600000,
+      "isArchived": 0,
+      "isSubagent": 0,
+      "value": "{\"composerId\": \"fx-c1\", \"createdAt\": 1790000000000, \"lastUpdatedAt\": 1790000600000, \"unifiedMode\": \"agent\", \"trackedGitRepos\": [{\"repoPath\": \"/fixture/repo\", \"branch\": \"feature/fx\"}], \"workspaceIdentifier\": {\"id\": \"fx-ws-1\"}}"
+    },
+    {
+      "composerId": "fx-c2",
+      "workspaceId": "fx-ws-2",
+      "createdAt": 1790000100000,
+      "lastUpdatedAt": 1790000200000,
+      "isArchived": 0,
+      "isSubagent": 1,
+      "value": "{\"composerId\": \"fx-c2\", \"createdAt\": 1790000100000, \"lastUpdatedAt\": 1790000200000, \"unifiedMode\": \"chat\", \"trackedGitRepos\": [{\"repoPath\": \"/fixture/other\"}], \"workspaceIdentifier\": {\"id\": \"fx-ws-2\"}}"
+    }
+  ],
+  "cursorDiskKV": [
+    {
+      "key": "composerData:fx-c1",
+      "value": "{\"_v\": 18, \"composerId\": \"fx-c1\", \"text\": \"B06_SECRET_PROMPT_CANARY\", \"richText\": \"B06_SECRET_PROMPT_CANARY\", \"createdAt\": 1790000000000, \"lastUpdatedAt\": 1790000600000, \"status\": \"completed\", \"unifiedMode\": \"agent\", \"isAgentic\": true, \"modelConfig\": {\"modelName\": \"fixture-model\"}, \"usageData\": {\"fixture-model\": {\"costInCents\": 12.5, \"amount\": 3}}, \"contextTokensUsed\": 45000, \"contextTokenLimit\": 200000, \"contextUsagePercent\": 22.5, \"totalLinesAdded\": 40, \"totalLinesRemoved\": 7, \"addedFiles\": 2, \"removedFiles\": 0, \"trackedGitRepos\": [{\"repoPath\": \"/fixture/repo\", \"branch\": \"feature/fx\"}], \"workspaceIdentifier\": {\"id\": \"fx-ws-1\"}}"
+    },
+    {
+      "key": "composerData:fx-c2",
+      "value": "{\"_v\": 18, \"composerId\": \"fx-c2\", \"createdAt\": 1790000100000, \"lastUpdatedAt\": 1790000200000, \"unifiedMode\": \"chat\", \"trackedGitRepos\": [{\"repoPath\": \"/fixture/other\"}], \"workspaceIdentifier\": {\"id\": \"fx-ws-2\"}}"
+    },
+    {
+      "key": "composerRootWriterDiagnostic:x",
+      "value": "{\"x\": 1}"
+    },
+    {
+      "key": "bubbleId:fx-c1:b1",
+      "value": "{\"type\": 1, \"text\": \"B06_SECRET_PROMPT_CANARY\", \"createdAt\": \"2026-09-21T10:00:00.000Z\", \"tokenCount\": {\"inputTokens\": 0, \"outputTokens\": 0}}"
+    },
+    {
+      "key": "bubbleId:fx-c1:b2",
+      "value": "{\"type\": 2, \"requestId\": \"fx-req-2\", \"createdAt\": \"2026-09-21T10:00:05.000Z\", \"tokenCount\": {\"inputTokens\": 1200, \"outputTokens\": 300}, \"toolFormerData\": {\"name\": \"edit_file\", \"status\": \"completed\", \"rawArgs\": \"B06_SECRET_PROMPT_CANARY\"}}"
+    },
+    {
+      "key": "bubbleId:fx-c2:b1",
+      "value": "{\"type\": 2, \"createdAt\": \"2026-09-21T11:00:00.000Z\", \"tokenCount\": {\"inputTokens\": 50, \"outputTokens\": 5}}"
+    },
+    {
+      "key": "bubbleId:fx-c1:b3",
+      "value": "{not json"
+    }
+  ],
+  "ItemTable": [
+    {
+      "key": "cursorAuth/cachedEmail",
+      "value": "B06_SECRET_PROMPT_CANARY"
+    }
+  ]
+}

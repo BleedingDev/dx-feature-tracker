@@ -1,0 +1,32 @@
+{
+  "adapterId": "cursor-transcripts",
+  "coverage": {
+    "adapterId": "cursor-transcripts",
+    "expectedItems": null,
+    "gaps": [
+      {
+        "code": "charge-unavailable",
+        "message": "Cursor transcripts carry no billed charge; money stays unavailable unless a billing source is imported"
+      },
+      {
+        "code": "malformed-lines",
+        "message": "1 line(s) were not transcript JSON and were skipped"
+      },
+      {
+        "code": "usage-unavailable",
+        "message": "1 turn(s) had no usage fields; tokens unavailable (visible-text estimate only)"
+      },
+      {
+        "code": "timestamps-absent",
+        "message": "1 turn(s) have no per-turn timestamp in the transcript; occurredAt unknown"
+      }
+    ],
+    "observedItems": 1,
+    "state": "partial",
+    "watermark": null,
+    "windowFrom": null,
+    "windowTo": null
+  },
+  "duplicates": 0,
+  "inserted": 1
+}

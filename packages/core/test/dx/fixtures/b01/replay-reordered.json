@@ -1,0 +1,14 @@
+{
+  "fixtureId": "b01-replay-reordered",
+  "owner": "B01",
+  "origin": "fixture",
+  "description": "Replay idempotence plan over the frozen core golden flight: the same batches appended in reverse order with the git and marker batches duplicated must yield the same event set, watermark and snapshot ID as the canonical order.",
+  "sourceFixture": "core/core-golden-flight.json",
+  "canonicalOrder": [0, 1, 2, 3, 4],
+  "replayOrder": [4, 3, 2, 1, 0, 1, 0],
+  "expectations": {
+    "events": 12,
+    "replayDuplicates": 7,
+    "selectorFlightId": "flight-fixture-0001"
+  }
+}

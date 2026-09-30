@@ -1,0 +1,8 @@
+{
+  "request": {
+    "page": 1,
+    "pageSize": 100,
+    "headers": { "Cookie": "REDACTED-FIXTURE" }
+  },
+  "response": { "totalUsageEventsCount": 0, "usageEventsDisplay": [] }
+}

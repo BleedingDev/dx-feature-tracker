@@ -1,0 +1,827 @@
+{
+  "b30/hook-db-entire-duplicate": [
+    {
+      "acquisition": "hook",
+      "adapterId": "cursor-hooks",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/demo",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/demo/.git",
+        "worktreePath": "/work/demo"
+      },
+      "eventId": "hook-stop-1",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b30/hook-stop-1"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": "req-1",
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": "conv-1",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "hookEvent": "stop",
+        "model": "gpt-5",
+        "normalizedCategories": null,
+        "rawUsage": {
+          "usage.input_tokens": 1200
+        },
+        "semanticsVerified": false,
+        "sourceKind": "hooks-stop"
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:hook-stop-1"
+    },
+    {
+      "acquisition": "hook",
+      "adapterId": "cursor-hooks",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/demo",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/demo/.git",
+        "worktreePath": "/work/demo"
+      },
+      "eventId": "hook-stop-1-dup",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b30/hook-stop-1-dup"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": "req-1",
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": "conv-1",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "hookEvent": "stop",
+        "normalizedCategories": {
+          "input": 1200,
+          "output": 300
+        },
+        "rawUsage": {},
+        "semanticsVerified": true,
+        "sourceKind": "hooks-stop"
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:hook-stop-1-dup"
+    },
+    {
+      "acquisition": "hook",
+      "adapterId": "cursor-hooks",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/demo",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/demo/.git",
+        "worktreePath": "/work/demo"
+      },
+      "eventId": "hook-stop-1-dup2",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b30/hook-stop-1-dup2"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": "req-1",
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": "conv-1",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "hookEvent": "stop",
+        "normalizedCategories": {
+          "input": 1200,
+          "output": 300
+        },
+        "rawUsage": {},
+        "semanticsVerified": true,
+        "sourceKind": "hooks-stop"
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:hook-stop-1-dup2"
+    },
+    {
+      "acquisition": "db-snapshot",
+      "adapterId": "cursor-local-db",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/demo",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/demo/.git",
+        "worktreePath": "/work/demo"
+      },
+      "eventId": "db-bubble-1",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b30/db-bubble-1"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": "bubble-1",
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": "req-1",
+        "sessionId": "conv-1",
+        "turnId": null
+      },
+      "kind": "ai.turn",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "measurements": [
+          {
+            "category": "input",
+            "cumulativeVerified": false,
+            "currency": null,
+            "ledger": "tokens",
+            "method": "source-reported",
+            "rawCategory": "tokenCount.inputTokens",
+            "unit": "tokens",
+            "value": 1180
+          },
+          {
+            "category": "output",
+            "cumulativeVerified": false,
+            "currency": null,
+            "ledger": "tokens",
+            "method": "source-reported",
+            "rawCategory": "tokenCount.outputTokens",
+            "unit": "tokens",
+            "value": 310
+          }
+        ],
+        "role": "assistant",
+        "sourceKind": "local-db",
+        "toolName": null
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:db-bubble-1"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "entire",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/demo",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/demo/.git",
+        "worktreePath": "/work/demo"
+      },
+      "eventId": "entire-1",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b30/entire-1"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": "req-1",
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": "conv-1",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "cost": {
+          "currency": null,
+          "ledger": "charge",
+          "method": "source-reported",
+          "value": null
+        },
+        "cumulativeVerified": false,
+        "ledger": "tokens",
+        "sourceKind": "entire",
+        "tokens": {
+          "apiCallCount": 1,
+          "cacheWrite": null,
+          "cachedInput": 50,
+          "input": 1100,
+          "output": 290,
+          "total": null
+        }
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:entire-1"
+    },
+    {
+      "acquisition": "db-snapshot",
+      "adapterId": "cursor-local-db",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/demo",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/demo/.git",
+        "worktreePath": "/work/demo"
+      },
+      "eventId": "db-bubble-2",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b30/db-bubble-2"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": "bubble-2",
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": "req-2",
+        "sessionId": "conv-1",
+        "turnId": null
+      },
+      "kind": "ai.turn",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "measurements": [
+          {
+            "category": "input",
+            "cumulativeVerified": false,
+            "currency": null,
+            "ledger": "tokens",
+            "method": "source-reported",
+            "rawCategory": "tokenCount.inputTokens",
+            "unit": "tokens",
+            "value": 500
+          },
+          {
+            "category": "output",
+            "cumulativeVerified": false,
+            "currency": null,
+            "ledger": "tokens",
+            "method": "source-reported",
+            "rawCategory": "tokenCount.outputTokens",
+            "unit": "tokens",
+            "value": 100
+          }
+        ],
+        "role": "assistant",
+        "sourceKind": "local-db",
+        "toolName": "edit_file"
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:db-bubble-2"
+    },
+    {
+      "acquisition": "db-snapshot",
+      "adapterId": "cursor-local-db",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/demo",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/demo/.git",
+        "worktreePath": "/work/demo"
+      },
+      "eventId": "db-composer-usage",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b30/db-composer-usage"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": "conv-1",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "measurements": [
+          {
+            "category": "other",
+            "cumulativeVerified": false,
+            "currency": "USD",
+            "ledger": "metered",
+            "method": "source-reported",
+            "rawCategory": "usageData.costInCents",
+            "unit": "usd-cents",
+            "value": 42
+          }
+        ],
+        "model": "gpt-5",
+        "requests": 2,
+        "sourceKind": "local-db"
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:db-composer-usage"
+    }
+  ],
+  "b30/sdk-csv-overlap": [
+    {
+      "acquisition": "file-import",
+      "adapterId": "claude-jsonl",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/demo",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/demo/.git",
+        "worktreePath": "/work/demo"
+      },
+      "eventId": "claude-req-a",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b30/claude-req-a"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": "msg-a",
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": "ra",
+        "sessionId": "s-a",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "charge": null,
+        "listPriceEstimateUsd": 0.12,
+        "sourceKind": "claude-jsonl",
+        "tokens": {
+          "cache-write": 10,
+          "cached-input": 200,
+          "input": 30,
+          "output": 80
+        },
+        "toolCalls": 2
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:claude-req-a"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "sdk-fixture",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/demo",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/demo/.git",
+        "worktreePath": "/work/demo"
+      },
+      "eventId": "sdk-req-a",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b30/sdk-req-a"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": "ra",
+        "sessionId": "s-a",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "charge": 0.1,
+        "currency": "USD",
+        "sourceKind": "sdk",
+        "tokens": {
+          "input": 30,
+          "output": 81
+        }
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:sdk-req-a"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "cursor-usage-export",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/demo",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/demo/.git",
+        "worktreePath": "/work/demo"
+      },
+      "eventId": "csv-row-1",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b30/csv-row-1"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": null,
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "charge": 3.5,
+        "costLedger": "charge",
+        "costUsd": 3.5,
+        "currency": "USD",
+        "requestKey": null,
+        "sourceKind": "usage-csv",
+        "tokens": {
+          "input": 5000,
+          "output": 900,
+          "total": 5900
+        }
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:csv-row-1"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "cursor-transcript",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/demo",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/demo/.git",
+        "worktreePath": "/work/demo"
+      },
+      "eventId": "transcript-unkeyed",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b30/transcript-unkeyed"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": null,
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "charge": null,
+        "listPriceEstimateUsd": null,
+        "requestKey": null,
+        "sourceKind": "transcript-estimate",
+        "tokens": {
+          "input": 77
+        }
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:transcript-unkeyed"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "mystery-tool",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/demo",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/demo/.git",
+        "worktreePath": "/work/demo"
+      },
+      "eventId": "mystery-1",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b30/mystery-1"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": null,
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "mystery",
+        "tokens": {
+          "input": 1
+        }
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:mystery-1"
+    }
+  ],
+  "b30/cursor-local-db-branch": [
+    {
+      "acquisition": "file-import",
+      "adapterId": "cursor-local-db",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "main",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/demo/.git",
+        "worktreePath": "/work/demo"
+      },
+      "eventId": "main-1",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b30/main-1"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": "b1",
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": "rm1",
+        "sessionId": "c-main",
+        "turnId": null
+      },
+      "kind": "ai.turn",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "measurements": [
+          {
+            "category": "input",
+            "cumulativeVerified": false,
+            "currency": null,
+            "ledger": "tokens",
+            "method": "source-reported",
+            "rawCategory": "tokenCount.inputTokens",
+            "unit": "tokens",
+            "value": 10
+          },
+          {
+            "category": "output",
+            "cumulativeVerified": false,
+            "currency": null,
+            "ledger": "tokens",
+            "method": "source-reported",
+            "rawCategory": "tokenCount.outputTokens",
+            "unit": "tokens",
+            "value": 5
+          }
+        ],
+        "sourceKind": "local-db"
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:main-1"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "cursor-local-db",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/x",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/demo/.git",
+        "worktreePath": "/work/demo"
+      },
+      "eventId": "feat-1",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b30/feat-1"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": "b2",
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": "rf1",
+        "sessionId": "c-feat",
+        "turnId": null
+      },
+      "kind": "ai.turn",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "measurements": [
+          {
+            "category": "input",
+            "cumulativeVerified": false,
+            "currency": null,
+            "ledger": "tokens",
+            "method": "source-reported",
+            "rawCategory": "tokenCount.inputTokens",
+            "unit": "tokens",
+            "value": 20
+          },
+          {
+            "category": "output",
+            "cumulativeVerified": false,
+            "currency": null,
+            "ledger": "tokens",
+            "method": "source-reported",
+            "rawCategory": "tokenCount.outputTokens",
+            "unit": "tokens",
+            "value": 7
+          }
+        ],
+        "sourceKind": "local-db"
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:feat-1"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "cursor-local-db",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/x",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/demo/.git",
+        "worktreePath": "/work/demo"
+      },
+      "eventId": "feat-2",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b30/feat-2"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": "b3",
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": "c-feat",
+        "turnId": null
+      },
+      "kind": "ai.turn",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "measurements": [],
+        "sourceKind": "local-db",
+        "tokensUnavailableReason": "tokenCount absent"
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:feat-2"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "git-history",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/x",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/demo/.git",
+        "worktreePath": "/work/demo"
+      },
+      "eventId": "commit-noise",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b30/commit-noise"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": null,
+        "turnId": null
+      },
+      "kind": "git.commit",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "sha": "abc"
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:commit-noise"
+    }
+  ]
+}

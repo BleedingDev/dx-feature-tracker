@@ -1,0 +1,17 @@
+worktree /work/repo
+HEAD 1111111111111111111111111111111111111111
+branch refs/heads/main
+
+worktree /work/repo/.worktrees/feature-x
+HEAD 2222222222222222222222222222222222222222
+branch refs/heads/feature/x
+
+worktree /work/repo-detached
+HEAD 3333333333333333333333333333333333333333
+detached
+
+worktree /work/gone
+HEAD 4444444444444444444444444444444444444444
+branch refs/heads/stale
+prunable gitdir file points to non-existent location
+

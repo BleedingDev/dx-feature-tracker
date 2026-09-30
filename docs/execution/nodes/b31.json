@@ -1,0 +1,48 @@
+{
+  "id": "B31",
+  "role": "optional",
+  "status": "degraded",
+  "deliverable": "Charges versus versioned price estimates versus subscription allocation",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "ownedFiles": [
+    "packages/core/src/dx/metrics/cost/readings.ts",
+    "packages/core/src/dx/metrics/cost/price-table.ts",
+    "packages/core/src/dx/metrics/cost/metric.ts",
+    "packages/core/test/dx/b31.test.ts",
+    "packages/core/test/dx/fixtures/b31/b31-scenarios.json"
+  ],
+  "digests": {
+    "packages/core/src/dx/metrics/cost/metric.ts": "sha256:c87cc701df4a1118baae026436956e792b60be59079df4f451c1e9d3c91510eb",
+    "packages/core/src/dx/metrics/cost/price-table.ts": "sha256:9260b0446cf4ab7953398f169e02f3af87fe112b966da6f95b7c19af0268d9e2",
+    "packages/core/src/dx/metrics/cost/readings.ts": "sha256:747488920955b0d43488aefca126844d4db454864cf1d41a841d3883ba94f763",
+    "packages/core/test/dx/b31.test.ts": "sha256:6892a73750fd92a5da146e593229dc0ff5de440a2cdb5aa4225d9af8597b9fbb",
+    "packages/core/test/dx/fixtures/b31/b31-scenarios.json": "sha256:cdcff71f50091d12b6314cc6d06f4ac5c58aff001ab05683fbee0b177278e8a6"
+  },
+  "descriptorExport": "costDescriptor (id dx.metric.cost, readiness degraded), costMetric (DxMetric, no price table/plan), makeCostMetric(options) (DxMetric with a selected PriceTable and/or SubscriptionPlan), computeCost(snapshot, options), costByBranch(snapshot, options) from packages/core/src/dx/metrics/cost/metric.ts; decodePriceTable/priceReading from price-table.ts; extractReadings from readings.ts",
+  "fixtureIds": ["b31-cursor-mixed-ledgers", "b31-price-table-v1", "b31-subscription-plan"],
+  "sourceProbe": "Consumes payload conventions of existing collectors (read from source, not live): cursor-local-db measurements[] (metered usd-cents, tokens), cursor-usage-export costLedger/costUsd/tokens/requestUnits, cursor-cli tokens/requestKey, claude listPriceEstimateUsd, provider-usage charge. Not run against a live store snapshot in this node.",
+  "observedAt": "2026-09-30T12:23:40Z",
+  "checks": [
+    { "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b31.test.ts", "exit": 0, "result": "6/6 passed" },
+    { "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "result": "0 errors in B31 files; exit 1 from other owners' files (collectors/cursor-dashboard-response/parse.ts, collectors/cursor-sdk/parse.ts, collectors/opencode/collector.ts, mcp/handlers/stdio.ts)" },
+    { "cmd": "pnpm exec oxlint <B31 ts files>", "exit": 0 },
+    { "cmd": "pnpm exec oxfmt --check <B31 files>", "exit": 0 }
+  ],
+  "supportedFields": [
+    "dx.cost.charge.usd",
+    "dx.cost.metered.usd",
+    "dx.cost.list-price-estimate.source.usd",
+    "dx.cost.list-price-estimate.price-table.usd",
+    "dx.cost.subscription-allocation.usd",
+    "dx.cost.unallocated.usd"
+  ],
+  "gaps": [
+    "No default price table ships; price-table estimate is unavailable until a versioned table is explicitly selected (decodePriceTable).",
+    "Billed charges exist only when a Cursor usage CSV/dashboard export is imported; those rows are branch-unassigned until time-window correlation (not in B31).",
+    "Cursor stop-hook rawUsage (semanticsVerified=false) is ignored; never contributes tokens or money.",
+    "Overlapping sources within one ledger/branch are not summed: highest AI_SOURCE_PRECEDENCE source wins, others are named in reason (cursor-cli ranked as sdk, cursor-transcript as transcript-estimate).",
+    "Integration: A02/B35 must register makeCostMetric/costMetric and pass price table / plan options from CLI params; not wired by B31.",
+    "Not validated against a real Cursor store snapshot in this node; fixture-only evidence."
+  ]
+}

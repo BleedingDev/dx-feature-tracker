@@ -1,0 +1,45 @@
+{
+  "id": "B14",
+  "role": "optional",
+  "status": "degraded",
+  "readiness": "degraded",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "descriptor": {
+    "id": "provider-usage",
+    "export": "providerUsageDescriptor from packages/core/src/dx/collectors/provider-usage/descriptor.ts",
+    "collectorExport": "providerUsageCollector: DxCollector<FileSystem.FileSystem> from packages/core/src/dx/collectors/provider-usage/collector.ts (provide NodeFileSystem.layer)",
+    "pureParserExport": "parseProviderUsage(content: string, meta) -> Result<EventBatch, string> from packages/core/src/dx/collectors/provider-usage/parse.ts"
+  },
+  "ownedFiles": [
+    "packages/core/src/dx/collectors/provider-usage/formats.ts",
+    "packages/core/src/dx/collectors/provider-usage/descriptor.ts",
+    "packages/core/src/dx/collectors/provider-usage/parse.ts",
+    "packages/core/src/dx/collectors/provider-usage/collector.ts",
+    "packages/core/test/dx/b14.test.ts",
+    "packages/core/test/dx/fixtures/b14/openai-usage.json",
+    "packages/core/test/dx/fixtures/b14/openai-costs.json",
+    "packages/core/test/dx/fixtures/b14/anthropic-usage.json",
+    "packages/core/test/dx/fixtures/b14/anthropic-cost.json",
+    "packages/core/test/dx/fixtures/b14/manifest.json"
+  ],
+  "fixtureIds": ["b14-openai-usage", "b14-openai-costs", "b14-anthropic-usage", "b14-anthropic-cost-unsupported"],
+  "sourceProbe": "No provider usage export exists on this host and none was searched for (private-data scan forbidden). Formats modeled on public OpenAI organization usage/costs and Anthropic usage-report page shapes; fixture-tested only.",
+  "supportedFields": ["tokens.input", "tokens.cached-input", "tokens.cache-write", "tokens.output", "requests", "charge", "model", "window"],
+  "events": "kind ai.usage, acquisition file-import, payload.sourceKind provider-receipt, payload.scope provider-bucket, one event per result row",
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b14.test.ts", "exit": 0, "result": "9 passed"},
+    {"cmd": "pnpm exec oxlint <b14 source+test files>", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check <b14 source+test+fixture files>", "exit": 0},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "result": "21 errors, 0 in B14 paths (all in other owners' files at 14:10)"}
+  ],
+  "gaps": [
+    "shape-unverified: no real provider export on this host; parsing is fixture-tested only",
+    "account-aggregate: provider buckets are account/project totals, never strong branch attribution",
+    "no-auto-fetch: only an explicitly supplied file; no API keys, pagination follow-up or scan",
+    "anthropic-cost-unsupported: rejected with UnsupportedSource (amount unit unverified)",
+    "json-only: provider CSV exports not parsed",
+    "re-importing a bucket with changed totals dedupes on eventId and keeps the first import",
+    "integration (A02/A07) must register the collector and provide NodeFileSystem.layer; B14 did not edit barrels or registries"
+  ]
+}

@@ -1,0 +1,10 @@
+{"type":"system","subtype":"init","apiKeySource":"login","cwd":"/fixture/demo-repo","session_id":"sess-fixture-1","model":"Fixture Model","permissionMode":"default"}
+{"type":"user","message":{"role":"user","content":[{"type":"text","text":"SECRET_CANARY_PROMPT create hello.txt"}]},"session_id":"sess-fixture-1"}
+{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"SECRET_CANARY_ASSISTANT"}]},"session_id":"sess-fixture-1","timestamp_ms":1790000000000}
+{"type":"tool_call","subtype":"started","call_id":"call-1","tool_call":{"editToolCall":{"args":{"path":"hello.txt","streamContent":"SECRET_CANARY_ARGS"}}},"session_id":"sess-fixture-1","timestamp_ms":1790000001000}
+{"type":"tool_call","subtype":"completed","call_id":"call-1","tool_call":{"editToolCall":{"args":{"path":"hello.txt"},"result":{"success":{}}}},"session_id":"sess-fixture-1","timestamp_ms":1790000002000}
+{"type":"tool_call","subtype":"completed","call_id":"call-2","tool_call":{"shellToolCall":{"args":{"command":"ls"}}},"session_id":"sess-fixture-1","timestamp_ms":1790000003000}
+this is not json
+{"type":"result","subtype":"success","is_error":false,"duration_ms":5400,"duration_api_ms":5400,"result":"SECRET_CANARY_RESULT","session_id":"sess-fixture-1","request_id":"req-fixture-1","usage":{"inputTokens":1200,"outputTokens":340,"cacheReadTokens":8000,"cacheWriteTokens":150}}
+{"type":"system","subtype":"init","apiKeySource":"login","cwd":"/fixture/demo-repo","session_id":"sess-fixture-2","model":"Fixture Model","permissionMode":"default"}
+{"type":"result","subtype":"success","is_error":false,"duration_ms":900,"duration_api_ms":900,"result":"done","session_id":"sess-fixture-2","request_id":"req-fixture-2"}

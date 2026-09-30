@@ -1,0 +1,14 @@
+user:
+<user_query>
+fixture txt prompt
+</user_query>
+
+assistant:
+Checking the tests.
+[Tool call] Shell
+  command: pnpm test
+[Tool result] Shell
+
+assistant:
+[Tool call] StrReplace
+  path: a.ts

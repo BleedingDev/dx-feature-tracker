@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites tests="3" failures="1">
+  <testsuite name="math" tests="3" failures="1" errors="0" time="0.010">
+    <testcase classname="math" name="add" time="0.001"/>
+    <testcase classname="math" name="mul" time="0.001"/>
+    <testcase classname="math" name="div" time="0.002"><failure message="expected 2 got Infinity">AssertionError</failure></testcase>
+  </testsuite>
+</testsuites>

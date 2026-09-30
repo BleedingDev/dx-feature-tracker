@@ -1,0 +1,31 @@
+{
+  "id": "C09",
+  "status": "ready",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "cursorAgentVersion": "2026.09.28-64d2043",
+  "command": "/Users/satan/bin/owned-temp-dir --run c09-smoke -- bash docs/execution/c09/live-smoke.sh",
+  "exit": 0,
+  "snapshotId": "snap_f0125312491acba0d70f07fa0073a033",
+  "branch": "feature/c09-live",
+  "measured": {
+    "tokens.input": 15224, "tokens.output": 440, "tokens.cached-input": 64640, "tokens.cache-write": 0,
+    "requests": 1, "agent.ms": 17169, "active.ms": 18311, "branch-age.ms": 21914,
+    "commits": 1, "files-changed": 1, "lines-added": 1, "lines-deleted": 0, "tool-calls": 9
+  },
+  "unavailable": ["money.charge", "list-price-estimate", "tokens.reasoning", "tokens.total", "test-runs", "failed-commands"],
+  "mcpViaCursor": {"tool": "dx_analyze", "calls": 1, "ok": true, "answer": "15224", "matchesCli": true, "flags": "--approve-mcps --force"},
+  "findings": [
+    {"severity": "high", "owner": "A02/A07", "summary": "dx analyze --flight <branch> selects only flight_id-tagged events; collectors never set flight_id so all Cursor/Git metrics are unavailable. Repo+branch selector (no --flight) works."},
+    {"severity": "medium", "owner": "dx.flight.tool-calls metric", "summary": "cursor-cli toolCalls and cursor-hooks tool calls for the same turn appear summed (9 = 5 + 4; 0 duplicates collapsed)."},
+    {"severity": "low", "owner": "cursor-hooks collector", "summary": "Coverage gap live-capture-not-demonstrated is stale; live capture demonstrated by C09."},
+    {"severity": "low", "owner": "C13", "summary": "Headless Cursor needs --approve-mcps and --force to run MCP calls; mcp list-tools fails until approved; installed .cursor files count as untracked files."}
+  ],
+  "files": [
+    "docs/execution/c09/live-smoke.sh",
+    "docs/execution/c09/README.md",
+    "docs/execution/c09/run/",
+    "docs/execution/nodes/c09.json",
+    "docs/execution/nodes/c09.md"
+  ],
+  "gaps": ["Cursor IDE GUI not driven; client is cursor-agent CLI", "slash/skill routing untested; direct MCP tool call used", "no c09 fixture created"]
+}

@@ -1,0 +1,157 @@
+{
+  "fixtureId": "b35-mixed-branch",
+  "origin": "fixture",
+  "selector": {
+    "branch": "feature/demo",
+    "flightId": "flight-b35",
+    "repoCommonDir": "/fixture/repo/.git"
+  },
+  "originMix": [{ "origin": "fixture", "count": 12 }],
+  "snapshotCoverage": [
+    { "adapterId": "cursor-hooks", "state": "complete", "gaps": [] },
+    {
+      "adapterId": "cursor-local-db",
+      "state": "partial",
+      "gaps": [{ "code": "no-cost", "message": "local db has no charges" }]
+    }
+  ],
+  "outputs": [
+    {
+      "results": [
+        {
+          "metricId": "ai.tokens.input",
+          "unit": "tokens",
+          "value": 12000,
+          "method": "source-reported",
+          "measurement": "measured",
+          "attribution": "strong",
+          "evidenceIds": ["ev-1"]
+        },
+        {
+          "metricId": "ai.tokens.output",
+          "unit": "tokens",
+          "value": 3400,
+          "method": "source-reported",
+          "measurement": "measured",
+          "attribution": "strong",
+          "evidenceIds": ["ev-1"]
+        },
+        {
+          "metricId": "ai.tokens.reasoning",
+          "unit": "tokens",
+          "value": null,
+          "method": "source-reported",
+          "measurement": "unavailable",
+          "attribution": "unassigned",
+          "reason": "Cursor hooks do not report reasoning tokens.",
+          "evidenceIds": []
+        }
+      ],
+      "findings": []
+    },
+    {
+      "results": [
+        {
+          "metricId": "ai.cost.charge",
+          "unit": "USD",
+          "value": null,
+          "method": "source-reported",
+          "measurement": "unavailable",
+          "attribution": "unassigned",
+          "reason": "No source-reported charge in snapshot.",
+          "evidenceIds": []
+        },
+        {
+          "metricId": "ai.cost.list-price-estimate",
+          "unit": "USD",
+          "value": 0.42,
+          "method": "estimated",
+          "measurement": "estimated",
+          "attribution": "strong",
+          "evidenceIds": ["ev-1"]
+        },
+        {
+          "metricId": "ai.tool-calls",
+          "unit": "count",
+          "value": 7,
+          "method": "observed",
+          "measurement": "measured",
+          "attribution": "strong",
+          "evidenceIds": ["ev-2", "ev-3"]
+        }
+      ],
+      "findings": [
+        {
+          "findingId": "f-cost-estimate-only",
+          "rank": 2,
+          "severity": "low",
+          "summary": "Only an estimated cost is available.",
+          "metricIds": ["ai.cost.list-price-estimate"],
+          "evidenceIds": ["ev-1"]
+        },
+        {
+          "findingId": "f-test-failures",
+          "rank": 1,
+          "severity": "medium",
+          "summary": "Local tests failed twice.",
+          "metricIds": ["git.tests.failures"],
+          "evidenceIds": ["ev-4"]
+        }
+      ]
+    },
+    {
+      "results": [
+        {
+          "metricId": "git.commits",
+          "unit": "count",
+          "value": 3,
+          "method": "observed",
+          "measurement": "measured",
+          "attribution": "not-applicable",
+          "evidenceIds": ["ev-5"]
+        },
+        {
+          "metricId": "branch.time.active",
+          "unit": "ms",
+          "value": 5400000,
+          "method": "derived",
+          "measurement": "partial",
+          "attribution": "not-applicable",
+          "reason": "2 censored intervals excluded.",
+          "evidenceIds": ["ev-6"]
+        }
+      ],
+      "findings": []
+    }
+  ],
+  "dishonest": [
+    {
+      "metricId": "bad.no-reason",
+      "unit": "count",
+      "value": null,
+      "method": "observed",
+      "measurement": "measured",
+      "attribution": "unassigned",
+      "evidenceIds": []
+    },
+    {
+      "metricId": "bad.value-when-unavailable",
+      "unit": "count",
+      "value": 5,
+      "method": "observed",
+      "measurement": "unavailable",
+      "attribution": "unassigned",
+      "reason": null,
+      "evidenceIds": []
+    },
+    {
+      "metricId": "bad.estimate-as-measured",
+      "unit": "USD",
+      "value": 1.5,
+      "method": "estimated",
+      "measurement": "measured",
+      "attribution": "strong",
+      "evidenceIds": ["ev-9"]
+    }
+  ]
+}

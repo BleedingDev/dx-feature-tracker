@@ -1,0 +1,18 @@
+{
+  "fixtureId": "c02-replay-audit",
+  "owner": "C02",
+  "origin": "fixture",
+  "description": "Replay/recovery audit plan over the frozen core golden flight. Batch indexes refer to core/core-golden-flight.json. The early window includes the cursor-hooks and cursor-usage events (09:10), which arrive late in the out-of-order scenario.",
+  "sourceFixture": "core/core-golden-flight.json",
+  "canonicalOrder": [0, 1, 2, 3, 4],
+  "reverseOrder": [4, 3, 2, 1, 0],
+  "earlyArrivals": [0, 1, 2],
+  "lateArrivals": [3, 4],
+  "earlyWindowTo": "2026-09-30T09:15:00.000Z",
+  "expectations": {
+    "events": 12,
+    "earlyWindowEventsBeforeLate": 2,
+    "earlyWindowEventsAfterLate": 4,
+    "selectorFlightId": "flight-fixture-0001"
+  }
+}

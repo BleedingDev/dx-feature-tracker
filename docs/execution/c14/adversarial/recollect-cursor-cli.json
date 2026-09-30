@@ -1,0 +1,44 @@
+{
+  "adapterId": "cursor-cli",
+  "coverage": {
+    "adapterId": "cursor-cli",
+    "expectedItems": 10,
+    "gaps": [
+      {
+        "code": "no-cost-in-cli-output",
+        "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+      },
+      {
+        "code": "no-reasoning-tokens",
+        "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+      },
+      {
+        "code": "no-branch-in-cli-output",
+        "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+      },
+      {
+        "code": "may-overlap-hooks-stop",
+        "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+      },
+      {
+        "code": "rejected-lines",
+        "message": "1 line(s) were not cursor-agent JSON output and were skipped"
+      },
+      {
+        "code": "result-without-usage",
+        "message": "1 result line(s) had no usage object; tokens unavailable for them"
+      },
+      {
+        "code": "run-without-result",
+        "message": "1 session run(s) ended without a result line (aborted or truncated output)"
+      }
+    ],
+    "observedItems": 2,
+    "state": "partial",
+    "watermark": null,
+    "windowFrom": null,
+    "windowTo": null
+  },
+  "duplicates": 2,
+  "inserted": 0
+}

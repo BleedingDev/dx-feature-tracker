@@ -1,0 +1,1738 @@
+{
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "contractVersion": "dx.contracts.v1",
+  "descriptors": [
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b11-claude-session",
+        "b11-claude-degraded"
+      ],
+      "gaps": [
+        {
+          "code": "format-undocumented",
+          "message": "Claude Code session JSONL is an undocumented local format; verified against redacted fixtures only, not a live host file"
+        },
+        {
+          "code": "charge-unavailable",
+          "message": "No billed charge in the source; money requires a separate billing import"
+        },
+        {
+          "code": "explicit-file-only",
+          "message": "Imports only one explicitly selected .jsonl file; never scans ~/.claude or other directories"
+        },
+        {
+          "code": "no-incremental-cursor",
+          "message": "Each collect re-reads the whole file; the store deduplicates by deterministic eventId"
+        }
+      ],
+      "id": "collector.claude-jsonl",
+      "kind": "collector",
+      "owner": "B11",
+      "readiness": "degraded",
+      "requiredInputs": [
+        "selectedInput: path to one Claude Code session .jsonl"
+      ],
+      "supportedFields": [
+        "identity.sessionId",
+        "identity.requestId",
+        "identity.generationId",
+        "context.branch",
+        "occurredAt",
+        "payload.model",
+        "payload.tokens.input",
+        "payload.tokens.cached-input",
+        "payload.tokens.cache-write",
+        "payload.tokens.output",
+        "payload.toolCalls",
+        "payload.toolNames",
+        "payload.listPriceEstimateUsd"
+      ],
+      "version": "0.1.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b43-dashboard-complete-paged",
+        "b43-dashboard-missing-page",
+        "b43-dashboard-single-no-total",
+        "b43-dashboard-har-refused",
+        "b43-dashboard-cookie-refused"
+      ],
+      "gaps": [
+        {
+          "code": "not-demonstrated",
+          "message": "No user-exported Cursor dashboard usage response exists on this host; the collector is fixture-tested only and must not be registered as ready"
+        },
+        {
+          "code": "shape-unverified",
+          "message": "Field names (usageEventsDisplay, totalUsageEventsCount, tokenUsage.*, usageBasedCosts, requestsCosts, kind) follow publicly seen dashboard responses and are not verified against a live export"
+        },
+        {
+          "code": "request-key-unverified",
+          "message": "requestId/conversationId are read only when a row carries them; dashboard rows may carry neither, leaving time-window correlation as the only join"
+        },
+        {
+          "code": "branch-unassigned",
+          "message": "Dashboard rows carry no branch; every event is unassigned until a correlator assigns it"
+        },
+        {
+          "code": "no-credentials",
+          "message": "Imports one explicitly selected response-body JSON; never calls the dashboard, never reads cookies, and refuses HAR captures or files with cookie/token keys"
+        }
+      ],
+      "id": "collector.cursor-dashboard-response",
+      "kind": "collector",
+      "owner": "B43",
+      "readiness": "disabled",
+      "requiredInputs": [
+        "selectedInput: path to one user-saved dashboard usage response JSON (single response, array of responses, or {pages:[{request:{page,pageSize},response}]})"
+      ],
+      "supportedFields": [
+        "occurredAt",
+        "identity.requestId",
+        "identity.sessionId",
+        "payload.model",
+        "payload.maxMode",
+        "payload.rawCategory",
+        "payload.tokens.input",
+        "payload.tokens.output",
+        "payload.tokens.cached-input",
+        "payload.tokens.cache-write",
+        "payload.tokens.reasoning",
+        "payload.tokens.total",
+        "payload.rawTokens",
+        "payload.costUsd",
+        "payload.costLedger",
+        "payload.costRawField",
+        "payload.charge",
+        "payload.requestUnits",
+        "payload.requestKey",
+        "payload.batchId"
+      ],
+      "version": "0.1.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b05.agent-turns",
+        "b05.duplicate-stop",
+        "b05.tab-edit",
+        "b05.stop-usage-raw",
+        "b05.malformed"
+      ],
+      "gaps": [
+        {
+          "code": "hooks-begin-at-install",
+          "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+        },
+        {
+          "code": "stop-usage-unverified",
+          "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+        },
+        {
+          "code": "live-capture-not-demonstrated",
+          "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+        }
+      ],
+      "id": "collector.cursor-hooks",
+      "kind": "collector",
+      "owner": "B05",
+      "readiness": "degraded",
+      "requiredInputs": [
+        "cursor-hooks-spool-dir"
+      ],
+      "supportedFields": [
+        "ai.request.promptChars",
+        "ai.turn.status",
+        "ai.turn.loopCount",
+        "ai.turn.model",
+        "ai.session.durationMs",
+        "ai.tool-edit.filePath",
+        "ai.tool-edit.linesAdded",
+        "ai.tool-edit.linesRemoved",
+        "ai.tool-edit.surface",
+        "other.toolCall",
+        "other.toolName",
+        "other.durationMs",
+        "ai.usage.rawUsage"
+      ],
+      "version": "0.1.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b07-cursor-transcript-jsonl",
+        "b07-cursor-subagent-jsonl",
+        "b07-cursor-transcript-txt"
+      ],
+      "gaps": [
+        {
+          "code": "fixture-only",
+          "message": "No live Cursor transcript on this host (0 agent-transcripts dirs) and cursor-agent is not logged in; verified against documented-shape fixtures only. cursor-agent stream-json output is owned by B10 (collector/cursor-cli), not parsed here"
+        },
+        {
+          "code": "charge-unavailable",
+          "message": "Transcripts carry no billed charge; money needs a separate billing import"
+        },
+        {
+          "code": "tokens-optional",
+          "message": "Role/content transcripts usually omit usage; tokens are source-reported only when a usage object is present, else unavailable plus a labelled visible-text estimate"
+        },
+        {
+          "code": "explicit-file-only",
+          "message": "Imports one explicitly selected .jsonl or .txt file; never scans ~/.cursor"
+        },
+        {
+          "code": "markdown-export-unsupported",
+          "message": "Manual Export Transcript .md files are not parsed"
+        }
+      ],
+      "id": "collector.cursor-transcripts",
+      "kind": "collector",
+      "owner": "B07",
+      "readiness": "degraded",
+      "requiredInputs": [
+        "selectedInput: path to one Cursor ~/.cursor/projects/<slug>/agent-transcripts/<composerId>(.jsonl|.txt) file, or a subagents/<id>.jsonl child"
+      ],
+      "supportedFields": [
+        "identity.sessionId",
+        "identity.turnId",
+        "payload.model",
+        "payload.tokens.input",
+        "payload.tokens.cached-input",
+        "payload.tokens.cache-write",
+        "payload.tokens.output",
+        "payload.tokens.reasoning",
+        "payload.tokens.total",
+        "payload.unmappedUsage",
+        "payload.usageState",
+        "payload.toolCalls",
+        "payload.toolNames",
+        "payload.estimates.visibleTextTokens",
+        "payload.parentSessionId"
+      ],
+      "version": "0.1.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "auto-usage-api-pages"
+      ],
+      "gaps": [
+        {
+          "code": "auto-model-hidden",
+          "message": "Rows billed under Auto report model \"default\"; Cursor does not expose the real model behind Auto in the usage API, so it stays \"default\""
+        },
+        {
+          "code": "no-request-id",
+          "message": "Dashboard rows carry conversationId but no requestId; correlation joins on conversationId and time window"
+        },
+        {
+          "code": "branch-unassigned",
+          "message": "Dashboard rows carry no branch; every event is unassigned until a correlator assigns it"
+        }
+      ],
+      "id": "collector.cursor-usage-api",
+      "kind": "collector",
+      "owner": "AUTO-USAGE",
+      "readiness": "ready",
+      "requiredInputs": [
+        "logged-in Cursor client (cursorAuth/accessToken in the local state DB), read at runtime only; DFT_CURSOR_USAGE=off disables"
+      ],
+      "supportedFields": [
+        "occurredAt",
+        "identity.sessionId",
+        "payload.model",
+        "payload.rawCategory",
+        "payload.tokens.input",
+        "payload.tokens.output",
+        "payload.tokens.cached-input",
+        "payload.tokens.cache-write",
+        "payload.costUsd",
+        "payload.costLedger",
+        "payload.charge",
+        "payload.chargedUsd",
+        "payload.requestUnits",
+        "payload.requestKey"
+      ],
+      "version": "0.1.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b08-usage-kind-cache-split",
+        "b08-usage-legacy-flat",
+        "b08-usage-team-user",
+        "b08-usage-unsupported"
+      ],
+      "gaps": [
+        {
+          "code": "shape-unverified",
+          "message": "No real Cursor dashboard usage CSV was available on this host; column variants follow publicly seen exports and are fixture-tested only"
+        },
+        {
+          "code": "branch-unassigned",
+          "message": "Rows carry no branch, request or session identity; every row is unassigned until a correlator assigns it by time window"
+        },
+        {
+          "code": "token-category-mapping-unverified",
+          "message": "Raw column names are preserved in payload.rawTokens; normalized categories are best-effort until a semantic probe against a real export passes"
+        },
+        {
+          "code": "explicit-file-only",
+          "message": "Imports one explicitly selected .csv file; never scans Downloads, browser storage or Cursor dashboard"
+        }
+      ],
+      "id": "collector.cursor-usage-export",
+      "kind": "collector",
+      "owner": "B08",
+      "readiness": "degraded",
+      "requiredInputs": [
+        "selectedInput: path to one user-exported Cursor usage .csv"
+      ],
+      "supportedFields": [
+        "occurredAt",
+        "payload.model",
+        "payload.maxMode",
+        "payload.rawCategory",
+        "payload.tokens.input",
+        "payload.tokens.cached-input",
+        "payload.tokens.cache-write",
+        "payload.tokens.output",
+        "payload.tokens.reasoning",
+        "payload.tokens.total",
+        "payload.rawTokens",
+        "payload.costUsd",
+        "payload.costLedger",
+        "payload.charge",
+        "payload.requestUnits",
+        "payload.batchId"
+      ],
+      "version": "0.1.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b03-log-numstat",
+        "b03-live-temp-repo"
+      ],
+      "gaps": [
+        {
+          "code": "commit-time-rewritable",
+          "message": "Author/committer dates are source-reported by git and rewritten by rebase/amend; they are not recorder observations."
+        },
+        {
+          "code": "backfill-not-first-observed",
+          "message": "observedAt is the collection time of a backfill, not the moment the commit was created; first-observed ordering requires the store or B04 observation."
+        },
+        {
+          "code": "branch-creation-reflog-only",
+          "message": "Branch creation time comes only from the local reflog; expired or absent reflog leaves it unavailable."
+        }
+      ],
+      "id": "collector.git-history",
+      "kind": "collector",
+      "owner": "B03",
+      "readiness": "ready",
+      "requiredInputs": [
+        "repo path (selectedInput or context.worktreePath)"
+      ],
+      "supportedFields": [
+        "git.commit.sha",
+        "git.commit.parents",
+        "git.commit.authoredAt",
+        "git.commit.committedAt",
+        "git.commit.filesChanged",
+        "git.commit.linesAdded",
+        "git.commit.linesDeleted",
+        "git.commit.binaryFiles",
+        "git.commit.paths",
+        "git.diff.worktree.filesChanged",
+        "git.diff.worktree.linesAdded",
+        "git.diff.worktree.linesDeleted",
+        "git.diff.worktree.untrackedFiles",
+        "git.observation.branchCreatedAt",
+        "git.observation.reflogOldestAt"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b02-git-context-redacted"
+      ],
+      "gaps": [
+        {
+          "code": "base-heuristic",
+          "message": "base ref is origin/HEAD, else the first local main/master/trunk/develop; no explicit base override yet"
+        },
+        {
+          "code": "reflog-dependent-branch-creation",
+          "message": "branch creation time comes from the local reflog and is unavailable when the reflog is missing or expired"
+        }
+      ],
+      "id": "collector.git-identity",
+      "kind": "collector",
+      "owner": "B02",
+      "readiness": "ready",
+      "requiredInputs": [
+        "local Git working tree path (--repo or --input)"
+      ],
+      "supportedFields": [
+        "context.repoCommonDir",
+        "context.worktreePath",
+        "context.branch",
+        "context.headSha",
+        "payload.gitDir",
+        "payload.isLinkedWorktree",
+        "payload.detached",
+        "payload.dirty",
+        "payload.dirtyEntries",
+        "payload.baseRef",
+        "payload.baseSource",
+        "payload.baseSha",
+        "payload.onBaseBranch",
+        "payload.aheadCount",
+        "payload.branchCreatedAt",
+        "payload.branchCreatedFrom",
+        "payload.firstBranchCommitAt",
+        "payload.worktreeCount",
+        "payload.sameBranchWorktrees"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b04/porcelain-dirty-feature",
+        "b04/live-temp-repo"
+      ],
+      "gaps": [
+        {
+          "code": "observation-not-history",
+          "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+        },
+        {
+          "code": "reflog-local-retention",
+          "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+        },
+        {
+          "code": "no-ai-attribution",
+          "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+        }
+      ],
+      "id": "collector.git-observation",
+      "kind": "collector",
+      "owner": "B04",
+      "readiness": "ready",
+      "requiredInputs": [
+        "explicitly selected local Git worktree path (opt-in); read-only git status/diff/reflog"
+      ],
+      "supportedFields": [
+        "branch",
+        "headSha",
+        "upstream",
+        "ahead",
+        "behind",
+        "trackedChangedFiles",
+        "stagedFiles",
+        "untrackedFiles",
+        "conflictedFiles",
+        "uncommittedLinesAdded",
+        "uncommittedLinesDeleted",
+        "uncommittedBinaryFiles",
+        "reflog.action",
+        "reflog.createdFrom",
+        "reflog.occurredAt"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b12-codex-rollout-v2",
+        "b12-codex-rollout-legacy"
+      ],
+      "gaps": [
+        {
+          "code": "cost-unavailable",
+          "message": "Codex rollouts report tokens only; charge and list price stay unavailable."
+        },
+        {
+          "code": "branch-allocation-provisional",
+          "message": "Codex records no branch per turn; usage is allocated by working directory and is at most provisional."
+        },
+        {
+          "code": "explicit-file-only",
+          "message": "Imports one explicitly selected rollout .jsonl; never scans ~/.codex/sessions."
+        }
+      ],
+      "id": "collector/codex-session",
+      "kind": "collector",
+      "owner": "B12",
+      "readiness": "degraded",
+      "requiredInputs": [
+        "codex rollout .jsonl path (--input)"
+      ],
+      "supportedFields": [
+        "ai.session.sessionId",
+        "ai.session.cliVersion",
+        "ai.session.branchAtStart",
+        "ai.turn.model",
+        "ai.turn.durationMs",
+        "ai.turn.status",
+        "ai.turn.toolCalls",
+        "ai.turn.toolNames",
+        "ai.usage.tokens.input",
+        "ai.usage.tokens.cachedInput",
+        "ai.usage.tokens.cacheWrite",
+        "ai.usage.tokens.output",
+        "ai.usage.tokens.reasoning",
+        "ai.usage.tokens.total",
+        "ai.usage.requestKey",
+        "allocation"
+      ],
+      "version": "0.1.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b10-cursor-cli-stream-json",
+        "b10-cursor-cli-json",
+        "b10-cursor-cli-store-db"
+      ],
+      "gaps": [
+        {
+          "code": "no-cost-in-cli-output",
+          "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+        },
+        {
+          "code": "no-reasoning-tokens",
+          "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+        },
+        {
+          "code": "no-branch-in-cli-output",
+          "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+        },
+        {
+          "code": "may-overlap-hooks-stop",
+          "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+        },
+        {
+          "code": "no-live-capture",
+          "message": "Decoder follows the installed cursor-agent 2026.09.28 emitter; no live run was captured on this host (agent login required)."
+        },
+        {
+          "code": "cli-store-db-unsupported",
+          "message": "Lowercase CLI chat store.db (~/.cursor/chats) holds protobuf blobs; layout unsupported and reported as a visible gap."
+        }
+      ],
+      "id": "collector/cursor-cli",
+      "kind": "collector",
+      "owner": "B10",
+      "readiness": "degraded",
+      "requiredInputs": [
+        "user-selected file with `cursor-agent -p --output-format stream-json|json` stdout"
+      ],
+      "supportedFields": [
+        "identity.sessionId",
+        "identity.requestId",
+        "context.worktreePath",
+        "payload.model",
+        "payload.tokens.input",
+        "payload.tokens.cached-input",
+        "payload.tokens.cache-write",
+        "payload.tokens.output",
+        "payload.durationMs",
+        "payload.durationApiMs",
+        "payload.toolCalls",
+        "payload.toolNames",
+        "payload.isError"
+      ],
+      "version": "0.1.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b09-cursor-extension-activity"
+      ],
+      "gaps": [
+        {
+          "code": "producer-not-installed",
+          "message": "No recorder VS Code/Cursor extension is shipped or installed on this host; only user-selected activity JSONL exports are read."
+        },
+        {
+          "code": "no-ai-usage-via-extension-api",
+          "message": "The public VS Code extension API exposes editor/window/save/git activity only; Cursor AI tokens, cost, requests and tool calls are unavailable from this route."
+        },
+        {
+          "code": "no-ai-ownership",
+          "message": "Editor activity is not evidence of AI or human authorship; attribution stays not-applicable."
+        }
+      ],
+      "id": "collector/cursor-extension",
+      "kind": "collector",
+      "owner": "B09",
+      "readiness": "disabled",
+      "requiredInputs": [
+        "user-selected JSONL export with records of schema dx.cursor-extension.activity.v1"
+      ],
+      "supportedFields": [
+        "occurredAt",
+        "context.branch",
+        "context.headSha",
+        "context.worktreePath",
+        "identity.sessionId",
+        "payload.activity",
+        "payload.hostApp",
+        "payload.hostVersion",
+        "payload.extensionVersion",
+        "payload.fileHash"
+      ],
+      "version": "0.1.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b44-cursor-sdk-flight-record"
+      ],
+      "gaps": [
+        {
+          "code": "instrumented-traffic-only",
+          "message": "Only Cursor SDK runs whose caller appended dxfr.cursor-sdk.v1 lines (stream usage/tool_call messages, Run.wait() results, agent.getUsage() settlements) with an explicit flight.branch tag are seen. IDE, CLI and uninstrumented SDK traffic are invisible to this adapter."
+        },
+        {
+          "code": "content-omitted",
+          "message": "Assistant, user, thinking and task text plus tool args/results are never read or stored; only counters, tool names, statuses and ids."
+        },
+        {
+          "code": "reasoning-subset-of-output",
+          "message": "SDK reasoningTokens are a subset of outputTokens and totalTokens excludes reasoning; totals must not add reasoning on top of output."
+        },
+        {
+          "code": "settlement-first-import-wins",
+          "message": "Settlement cost is eventually consistent. Within one import the latest getUsage() snapshot per agent is used; a later re-import of the same run keeps the first stored event."
+        }
+      ],
+      "id": "collector/cursor-sdk",
+      "kind": "collector",
+      "owner": "B44",
+      "readiness": "disabled",
+      "requiredInputs": [
+        "user-selected JSONL flight record (dxfr.cursor-sdk.v1) written by the caller's own @cursor/sdk instrumentation, one tagged record per line"
+      ],
+      "supportedFields": [
+        "context.branch",
+        "identity.sessionId",
+        "identity.turnId",
+        "identity.requestId",
+        "payload.tokens.input",
+        "payload.tokens.output",
+        "payload.tokens.cacheRead",
+        "payload.tokens.cacheWrite",
+        "payload.tokens.reasoning",
+        "payload.charge",
+        "payload.rawCostUsd",
+        "payload.agentDurationMs",
+        "payload.runStatus",
+        "payload.toolCall",
+        "payload.toolName",
+        "payload.status"
+      ],
+      "version": "0.1.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b46-entire-delta-windows",
+        "b46-entire-cumulative-unverified"
+      ],
+      "gaps": [
+        {
+          "code": "source-absent-on-host",
+          "message": "No entire binary, ~/.entire or entire/* branch on the build host; verified against fixtures only."
+        },
+        {
+          "code": "layout-unverified",
+          "message": "Checkpoint layout follows the documented entire/checkpoints/v1 shape; not checked against a live Entire release."
+        },
+        {
+          "code": "cost-unavailable",
+          "message": "Entire checkpoints report tokens only; charge and list price stay unavailable."
+        },
+        {
+          "code": "attribution-source-heuristic",
+          "message": "Branch and line attribution are Entire's heuristic; allocation is provisional."
+        },
+        {
+          "code": "explicit-directory-only",
+          "message": "Imports one operator-extracted checkpoint directory; never initializes Entire, reads refs, or pushes."
+        }
+      ],
+      "id": "collector/entire-checkpoints",
+      "kind": "collector",
+      "owner": "B46",
+      "readiness": "degraded",
+      "requiredInputs": [
+        "directory extracted from the entire/checkpoints/v1 branch (--input)"
+      ],
+      "supportedFields": [
+        "checkpoint.id",
+        "checkpoint.rootTokenUsage (alternative ledger, not summed)",
+        "ai.session.sessionId",
+        "ai.session.agent",
+        "ai.session.model",
+        "ai.turn.transcriptWindow.toolCalls",
+        "ai.turn.transcriptWindow.toolNames",
+        "ai.usage.tokens.input",
+        "ai.usage.tokens.cachedInput",
+        "ai.usage.tokens.cacheWrite",
+        "ai.usage.tokens.output",
+        "ai.usage.apiCallCount",
+        "ai.usage.subagentTokens",
+        "ai.usage.requestKey",
+        "ai.usage.attribution (provisional)",
+        "allocation"
+      ],
+      "version": "0.1.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b45-git-ai-export"
+      ],
+      "gaps": [
+        {
+          "code": "producer-not-installed",
+          "message": "git-ai is not installed on this host (no `git ai`, no refs/notes/ai); only a user-selected export directory of <sha>.note and <sha>.stats.json files is read. The recorder never runs git-ai install/init and never fetches or pushes notes refs."
+        },
+        {
+          "code": "stats-ratio-not-retention",
+          "message": "aiAdditionShareAtCommit is the commit-time share of added lines git-ai attested to AI; it is not code retention, survival or ownership over time."
+        },
+        {
+          "code": "unattested-additions-unknown",
+          "message": "Lines without an AI attestation are not proven human. git-ai human_additions is kept as a source-reported label; the recorder reports unattributedAdditions only when source categories reconcile, otherwise null."
+        },
+        {
+          "code": "no-tokens-or-cost",
+          "message": "git-ai notes and stats carry no token counts, charges or waiting time; those stay unavailable from this adapter."
+        },
+        {
+          "code": "prompt-content-omitted",
+          "message": "Prompt messages and human_author fields are never imported; only counts, tool and model labels."
+        }
+      ],
+      "id": "collector/git-ai",
+      "kind": "collector",
+      "owner": "B45",
+      "readiness": "disabled",
+      "requiredInputs": [
+        "user-selected directory (or single file) containing `git notes --ref=ai show <sha>` output saved as <sha>.note and/or `git-ai stats <sha> --json` output saved as <sha>.stats.json"
+      ],
+      "supportedFields": [
+        "identity.commitSha",
+        "payload.record",
+        "payload.schemaVersion",
+        "payload.gitAiVersion",
+        "payload.files",
+        "payload.attestedAiLines",
+        "payload.prompts",
+        "payload.aiAdditions",
+        "payload.sourceHumanAdditions",
+        "payload.mixedAdditions",
+        "payload.diffAddedLines",
+        "payload.diffDeletedLines",
+        "payload.unattributedAdditions",
+        "payload.aiAdditionShareAtCommit"
+      ],
+      "version": "0.1.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b48-tsc-plain",
+        "b48-tsc-pretty",
+        "b48-npm-debug-log",
+        "b48-npm-timing-log",
+        "b48-vite-dev-log",
+        "b48-unrecognized"
+      ],
+      "gaps": [
+        {
+          "code": "subroute-unsupported:ide-diagnostics",
+          "message": "No stable local export of IDE Problems-panel diagnostics exists on this host; Cursor/VS Code diagnostics are not read."
+        },
+        {
+          "code": "subroute-unsupported:ide-terminal",
+          "message": "IDE integrated-terminal output is not persisted by the editor; only explicitly captured log files are imported."
+        },
+        {
+          "code": "explicit-input-only",
+          "message": "Only explicitly selected captured log files are imported; nothing tails live tools, so runs without a saved log are not observed."
+        },
+        {
+          "code": "no-hmr-latency",
+          "message": "Vite logs carry no per-update latency or dated timestamps; HMR latency stays unavailable."
+        },
+        {
+          "code": "npm-duration-requires-timing",
+          "message": "npm total duration is available only when npm ran with --timing; otherwise null with a reason."
+        }
+      ],
+      "id": "collector/local-feedback",
+      "kind": "collector",
+      "owner": "B48",
+      "readiness": "degraded",
+      "requiredInputs": [
+        "selectedInput: captured tsc output, npm debug log (~/.npm/_logs/*-debug-0.log), or Vite dev-server log (file or directory)"
+      ],
+      "supportedFields": [
+        "feedback.local.compiler.errorCount",
+        "feedback.local.compiler.warningCount",
+        "feedback.local.compiler.reportedErrorCount",
+        "feedback.local.compiler.codeCounts",
+        "feedback.local.npm-timing.command",
+        "feedback.local.npm-timing.exitCode",
+        "feedback.local.npm-timing.durationMs",
+        "feedback.local.npm-timing.timers",
+        "feedback.local.npm-timing.httpFetchCount",
+        "feedback.local.vite-hmr.readyInMs",
+        "feedback.local.vite-hmr.hmrUpdates",
+        "feedback.local.vite-hmr.pageReloads",
+        "feedback.local.vite-hmr.moduleCount"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b21-vitest-junit-pass",
+        "b21-junit-failures",
+        "b21-vitest-json",
+        "b21-command-sessions"
+      ],
+      "gaps": [
+        {
+          "code": "command-session-producer-missing",
+          "message": "No wrapper writes dx.local-test.command.v1 JSONL yet; command joins only work when such a file is supplied."
+        },
+        {
+          "code": "explicit-input-only",
+          "message": "Reports are imported only from an explicitly selected file or directory; test runs that write no report are not observed."
+        }
+      ],
+      "id": "collector/local-test",
+      "kind": "collector",
+      "owner": "B21",
+      "readiness": "degraded",
+      "requiredInputs": [
+        "selectedInput: JUnit XML, vitest/jest JSON report, or dx.local-test.command.v1 JSONL (file or directory)"
+      ],
+      "supportedFields": [
+        "test.result.tests",
+        "test.result.passed",
+        "test.result.failed",
+        "test.result.errors",
+        "test.result.skipped",
+        "test.result.durationMs",
+        "test.result.failingTests",
+        "test.result.commandSessionId",
+        "command.run.exitCode",
+        "command.run.durationMs",
+        "command.run.isTestCommand"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b22-marker-log-basic",
+        "b22-marker-log-anomalies"
+      ],
+      "gaps": [
+        {
+          "code": "user-claimed-only",
+          "message": "Markers and claims are what the user said; they are labelled user-claimed and never promoted to observed activity, AI ownership or causal savings."
+        },
+        {
+          "code": "open-intervals-censored",
+          "message": "A start/wait-start without its close stays open-ended (censored); the recorder never assumes it ended now."
+        },
+        {
+          "code": "no-automatic-waiting",
+          "message": "Waiting time exists only between explicit wait-start/wait-stop markers; it is never inferred from idle gaps."
+        }
+      ],
+      "id": "collector/manual",
+      "kind": "collector",
+      "owner": "B22",
+      "readiness": "ready",
+      "requiredInputs": [
+        "live: dx_mark { kind, flight?, label?, note? } via buildMarkerEvent",
+        "import: selectedInput = dx.manual.marker.v1 JSONL marker log"
+      ],
+      "supportedFields": [
+        "marker.start.occurredAt",
+        "marker.stop.occurredAt",
+        "marker.wait-start.occurredAt",
+        "marker.wait-stop.occurredAt",
+        "marker.claim.label",
+        "marker.*.note",
+        "marker.*.flightId",
+        "intervals.user-marked-active",
+        "intervals.user-marked-waiting"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b13-opencode-session-export",
+        "b13-opencode-partial-export"
+      ],
+      "gaps": [
+        {
+          "code": "cost-is-list-price-estimate",
+          "message": "OpenCode computes message cost from model list pricing; it is not a provider charge. A reported 0 can mean pricing unknown to OpenCode (e.g. subscription or unpriced models)."
+        },
+        {
+          "code": "no-git-branch-in-export",
+          "message": "OpenCode session exports carry a working directory but no Git branch or HEAD; branch attribution comes only from the collect context or correlation."
+        },
+        {
+          "code": "total-tokens-not-summed",
+          "message": "Token categories are kept separate; overlap semantics between output and reasoning are not verified, so no total is derived."
+        },
+        {
+          "code": "v2-export-shape-unverified",
+          "message": "Parser is fixture-tested against the OpenCode session export shape (info + messages[{info, parts}]); a real OpenCode 2.x export was not inspected on the build host (no private session data read)."
+        },
+        {
+          "code": "explicit-export-only",
+          "message": "Only a user-selected `opencode session export [--sanitize] <id>` JSON file is read; the OpenCode database is never opened."
+        }
+      ],
+      "id": "collector/opencode",
+      "kind": "collector",
+      "owner": "B13",
+      "readiness": "degraded",
+      "requiredInputs": [
+        "user-selected JSON file from `opencode session export --sanitize <sessionId>`"
+      ],
+      "supportedFields": [
+        "occurredAt",
+        "identity.sessionId",
+        "identity.generationId",
+        "identity.turnId",
+        "payload.requestKey",
+        "payload.turnKey",
+        "payload.modelId",
+        "payload.providerId",
+        "payload.tokens.input",
+        "payload.tokens.output",
+        "payload.tokens.reasoning",
+        "payload.tokens.cacheRead",
+        "payload.tokens.cacheWrite",
+        "payload.cost",
+        "payload.toolCalls",
+        "payload.toolNames",
+        "payload.durationMs"
+      ],
+      "version": "0.1.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b20-lifecycle",
+        "b20-history-zsh",
+        "b20-history-bash"
+      ],
+      "gaps": [
+        {
+          "code": "history-reconstructed",
+          "message": "Shell history import has no exit code, cwd or branch; events are reconstructed with provisional context."
+        },
+        {
+          "code": "test-counts-unavailable",
+          "message": "Test runs are classified from argv; pass/fail comes from exit status, individual test counts are unavailable."
+        }
+      ],
+      "id": "collector/shell-command",
+      "kind": "collector",
+      "owner": "B20",
+      "readiness": "ready",
+      "requiredInputs": [
+        "command lifecycle JSONL written by captureCommand (path)",
+        "optional explicitly selected shell history file (history:<path>)"
+      ],
+      "supportedFields": [
+        "command.run.argv(redacted)",
+        "command.run.exitCode",
+        "command.run.signal",
+        "command.run.startedAt",
+        "command.run.completedAt",
+        "command.run.durationMs",
+        "command.run.testCommand",
+        "test.result.outcome"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b23-worktree-porcelain",
+        "b23-live-linked-worktree"
+      ],
+      "gaps": [
+        {
+          "code": "local-only",
+          "message": "maps local worktrees by Git common dir only; no remote/GitHub repository identity (out of scope)"
+        },
+        {
+          "code": "no-case-folding",
+          "message": "paths compare case-sensitively after realpath; case-insensitive volumes rely on realpath canonicalisation of existing paths"
+        },
+        {
+          "code": "no-submodules",
+          "message": "submodule and multi-root workspaces resolve to the innermost worktree or stay multi-root/unassigned"
+        }
+      ],
+      "id": "correlation.repo",
+      "kind": "correlation",
+      "owner": "B23",
+      "readiness": "ready",
+      "requiredInputs": [
+        "absolute observed paths (hook cwd, workspace roots, edited files)",
+        "local Git common dir or any path inside a worktree"
+      ],
+      "supportedFields": [
+        "context.repoCommonDir",
+        "context.worktreePath",
+        "context.branch",
+        "context.headSha",
+        "relativePath"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "core-ai-overlap",
+        "core-branch-ambiguity",
+        "b26-conversation-branch-join"
+      ],
+      "gaps": [
+        {
+          "code": "time-window-provisional",
+          "message": "Claims without branch context or a branch-bearing conversation are placed by observed branch activity windows only; such placements stay provisional."
+        },
+        {
+          "code": "amount-shapes-limited",
+          "message": "Amounts are read from payload.measurements, payload.tokens, payload.charge and payload.costUsd+costLedger; unverified raw hook usage (semanticsVerified=false) contributes no amounts."
+        },
+        {
+          "code": "no-cumulative-differencing",
+          "message": "Cumulative counters are not differenced here; B30 accounts ledgers after cumulativeVerified."
+        }
+      ],
+      "id": "correlation/ai",
+      "kind": "correlation",
+      "owner": "B26",
+      "readiness": "ready",
+      "requiredInputs": [
+        "ai.request/ai.turn/ai.usage events",
+        "optional session:<id> -> branch mappings"
+      ],
+      "supportedFields": [
+        "overlapGroups.collapsed",
+        "overlapGroups.alternative",
+        "overlapGroups.unresolved",
+        "claims.branchAttribution",
+        "claims.requestKey",
+        "branches.units",
+        "branches.amounts",
+        "fractions.units",
+        "fractions.amounts"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b24/explicit-start-reuse",
+        "b24/detached-and-ambiguous",
+        "b24/implicit-branch-recreated"
+      ],
+      "gaps": [
+        {
+          "code": "implicit-flight-boundary",
+          "message": "Without an explicit start marker, a branch flight is provisional and only splits on explicit flights or a changed branchCreatedAt."
+        },
+        {
+          "code": "no-remote-identity",
+          "message": "GitHub/PR numeric identities are out of scope; flights are keyed by local repository common dir and branch aliases."
+        }
+      ],
+      "id": "correlation/flight",
+      "kind": "correlation",
+      "owner": "B24",
+      "readiness": "ready",
+      "requiredInputs": [
+        "context.repoCommonDir",
+        "context.branch",
+        "occurredAt",
+        "marker.start/marker.stop events (optional)"
+      ],
+      "supportedFields": [
+        "flightId",
+        "aliases",
+        "startedAt",
+        "stoppedAt",
+        "baseSha",
+        "branchCreatedAt",
+        "firstSeenAt",
+        "lastSeenAt",
+        "origin"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b06-state-vscdb-headers",
+        "b06-state-vscdb-legacy-itemtable",
+        "b06-ai-tracking"
+      ],
+      "gaps": [
+        {
+          "code": "opt-in-input",
+          "message": "Reads only an explicitly selected state.vscdb or ai-code-tracking.db through a consistent backup copy in scratchDir."
+        },
+        {
+          "code": "no-billed-charge",
+          "message": "Local DB usageData is emitted as a metered ledger; billed charge requires usage CSV or dashboard export."
+        },
+        {
+          "code": "context-meter-not-spend",
+          "message": "Context window occupancy is reported on ai.session as a context meter and is never token spend."
+        },
+        {
+          "code": "workspace-scope",
+          "message": "Composer rows are scoped to the selected repo only when tracked repos or workspace identifiers reference its path; others are excluded and counted."
+        }
+      ],
+      "id": "cursor-local-db",
+      "kind": "collector",
+      "owner": "B06",
+      "readiness": "degraded",
+      "requiredInputs": [
+        "selectedInput:sqlite-path",
+        "scratchDir"
+      ],
+      "supportedFields": [
+        "ai.session.createdAt",
+        "ai.session.lastUpdatedAt",
+        "ai.session.model",
+        "ai.session.mode",
+        "ai.session.linesAdded",
+        "ai.session.linesRemoved",
+        "ai.session.filesAdded",
+        "ai.session.filesRemoved",
+        "ai.session.contextMeter",
+        "ai.turn.role",
+        "ai.turn.toolName",
+        "ai.turn.toolStatus",
+        "ai.turn.tokens.input",
+        "ai.turn.tokens.output",
+        "ai.usage.metered.cents",
+        "ai.tool-edit.source",
+        "ai.tool-edit.model",
+        "provenance.attestation.linesBySource"
+      ],
+      "version": "0.1.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b31-cursor-mixed-ledgers",
+        "b31-price-table-v1",
+        "b31-subscription-plan"
+      ],
+      "gaps": [
+        {
+          "code": "no-default-price-table",
+          "message": "The recorder ships no built-in prices; price-table estimates need an explicitly selected versioned table and are otherwise unavailable."
+        },
+        {
+          "code": "charge-needs-billing-export",
+          "message": "Billed charges come only from an imported Cursor usage CSV/dashboard export; local Cursor DB cents are reported as metered, never as charges."
+        },
+        {
+          "code": "hooks-stop-raw-usage",
+          "message": "Cursor stop-hook rawUsage is excluded until its semantics are verified; it never contributes tokens or money."
+        },
+        {
+          "code": "usage-export-branch-unassigned",
+          "message": "Usage export rows carry no branch; their charges stay in the unassigned branch bucket until time-window correlation assigns them."
+        }
+      ],
+      "id": "dx.metric.cost",
+      "kind": "metric",
+      "owner": "B31",
+      "readiness": "degraded",
+      "requiredInputs": [
+        "ai.usage",
+        "ai.turn"
+      ],
+      "supportedFields": [
+        "dx.cost.charge.usd",
+        "dx.cost.metered.usd",
+        "dx.cost.list-price-estimate.source.usd",
+        "dx.cost.list-price-estimate.price-table.usd",
+        "dx.cost.subscription-allocation.usd",
+        "dx.cost.unallocated.usd"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "core-golden-flight",
+        "b05.agent-turns",
+        "b10-cursor-cli-stream-json"
+      ],
+      "gaps": [
+        {
+          "code": "branch-start-lower-bound",
+          "message": "Without a reflog creation entry the branch start is the earliest commit or observed activity, so branch age is a lower bound."
+        },
+        {
+          "code": "idle-gap-heuristic",
+          "message": "Activity and session spans split at idle gaps over 30 minutes; point events alone produce zero-length intervals."
+        },
+        {
+          "code": "tool-call-key-match",
+          "message": "Tool calls from different sources collapse only when they share a request or turn key; unkeyed reports are counted as-is."
+        }
+      ],
+      "id": "dx.metric.flight-time",
+      "kind": "metric",
+      "owner": "flight-time",
+      "readiness": "ready",
+      "requiredInputs": [],
+      "supportedFields": [
+        "dx.flight.branch-age.ms",
+        "dx.flight.active.ms",
+        "dx.flight.active.intervals",
+        "dx.flight.agent.ms",
+        "dx.flight.tool-calls",
+        "dx.flight.commits",
+        "dx.flight.first-commit-at",
+        "dx.flight.last-commit-at"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b34-repeated-failures",
+        "b34-clean-branch",
+        "b34-no-evidence"
+      ],
+      "gaps": [
+        {
+          "code": "no-causal-savings",
+          "message": "Findings cite repeated evidence and suggest an inspectable experiment; they never estimate time or money saved."
+        },
+        {
+          "code": "test-overlap",
+          "message": "When more than one adapter reports test results for the same run (local-test report and shell-command exit), runs may be double counted; the result is then marked partial/provisional."
+        },
+        {
+          "code": "rework-proxy",
+          "message": "Rework is only the count of agent edit events per file (ai.tool-edit); human rewrites and line-level churn are not observed here."
+        }
+      ],
+      "id": "dx.metric.friction",
+      "kind": "metric",
+      "owner": "B34",
+      "readiness": "ready",
+      "requiredInputs": [
+        "test.result",
+        "command.run",
+        "ai.tool-edit",
+        "other"
+      ],
+      "supportedFields": [
+        "test.result.status",
+        "test.result.outcome",
+        "test.result.failed",
+        "test.result.errors",
+        "test.result.failingTests",
+        "command.run.exitCode",
+        "command.run.spawnError",
+        "hook.toolCall",
+        "hook.hookEvent",
+        "hook.status",
+        "hook.toolName",
+        "ai.tool-edit.filePath"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b28-branch-snapshot",
+        "b28-live-temp-repo"
+      ],
+      "gaps": [
+        {
+          "code": "base-sha-definition",
+          "message": "baseSha = git merge-base(resolved base ref, HEAD) recorded by the git-history collector; base ref is the explicit --base ref, else the first of origin/HEAD, main, master, origin/main, origin/master that is not the current branch. Branch totals cover commits in baseSha..HEAD; merge commits carry no numstat and contribute no lines."
+        },
+        {
+          "code": "merge-lines-excluded",
+          "message": "Merge commits have no numstat from the collector; their lines are not counted in branch churn."
+        },
+        {
+          "code": "binary-lines-excluded",
+          "message": "Binary files have no line counts; they count as files changed but add no lines."
+        },
+        {
+          "code": "rewritten-history",
+          "message": "Totals describe the history visible at collection time; rebased or amended commits collected earlier remain in the store as distinct SHAs."
+        }
+      ],
+      "id": "dx.metric.git-churn",
+      "kind": "metric",
+      "owner": "B28",
+      "readiness": "ready",
+      "requiredInputs": [
+        "git-history:git.commit"
+      ],
+      "supportedFields": [
+        "dx.git.commits",
+        "dx.git.merge-commits",
+        "dx.git.lines-added",
+        "dx.git.lines-deleted",
+        "dx.git.churn-lines",
+        "dx.git.files-changed",
+        "dx.git.files-retouched",
+        "dx.git.uncommitted-lines-added",
+        "dx.git.uncommitted-lines-deleted",
+        "dx.git.uncommitted-files",
+        "dx.git.untracked-files"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b27-union-overlap",
+        "b27-censored",
+        "b27-clock-error",
+        "b27-empty",
+        "b27-branch-as-of"
+      ],
+      "gaps": [
+        {
+          "code": "lower-bound",
+          "message": "When censored or clockErrors is non-zero, totalMs covers only valid intervals and is a lower bound; consumers must display the counts."
+        },
+        {
+          "code": "unavailable-when-empty",
+          "message": "totalMs is null (unavailable), not 0, when no interval has both a known start and a non-inverted end."
+        },
+        {
+          "code": "no-clock-skew-correction",
+          "message": "Clock skew between sources is not corrected; only end-before-start inversions are detected and excluded."
+        }
+      ],
+      "id": "dx.metric.intervals",
+      "kind": "metric",
+      "owner": "B27",
+      "readiness": "ready",
+      "requiredInputs": [],
+      "supportedFields": [
+        "union.merged",
+        "union.totalMs",
+        "union.censored",
+        "union.clockErrors",
+        "sum.totalMs",
+        "sum.excluded",
+        "overlap",
+        "closeOpenIntervalAt"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b33-clean-lineage",
+        "b33-unresolved-states",
+        "b33-no-evidence",
+        "b33-source-attributed"
+      ],
+      "gaps": [
+        {
+          "code": "no-producer",
+          "message": "No collector on this host emits dx.provenance.edit.v1 ordered edit/preimage line-hash evidence or dx.provenance.checkpoint.v1 checkpoints; the metric is fixture-tested only and reports unavailable on real snapshots."
+        },
+        {
+          "code": "formatting-detection",
+          "message": "Formatting-only and rename changes are recognised only when the producer flags them; otherwise they surface as unresolved changes."
+        },
+        {
+          "code": "heuristic-similarity",
+          "message": "Heuristic semantic-similarity survival is not implemented and is always reported unsupported."
+        }
+      ],
+      "id": "dx.metric.provenance",
+      "kind": "metric",
+      "owner": "B33",
+      "readiness": "disabled",
+      "requiredInputs": [
+        "dx.provenance.edit.v1",
+        "dx.provenance.checkpoint.v1"
+      ],
+      "supportedFields": [
+        "dx.provenance.ai-line-survival.strict",
+        "dx.provenance.ai-lines-introduced.observed",
+        "dx.provenance.ai-lines-rewritten-by-human.observed",
+        "dx.provenance.unresolved-files",
+        "dx.provenance.ai-line-share.source-attributed",
+        "dx.provenance.ai-line-survival.heuristic-similarity"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b30/hook-db-entire-duplicate",
+        "b30/sdk-csv-overlap",
+        "b30/cursor-local-db-branch"
+      ],
+      "gaps": [
+        {
+          "code": "hook-usage-unverified",
+          "message": "Cursor stop-hook usage stays uncovered until its field semantics are verified (payload.semanticsVerified)."
+        },
+        {
+          "code": "cumulative-not-differenced",
+          "message": "Cumulative usage windows are never differenced; rows are summed only as emitted per request/turn."
+        },
+        {
+          "code": "aggregate-branch-allocation",
+          "message": "Aggregate ledgers (usage CSV, provider buckets) carry no branch; they are alternatives, not branch totals."
+        }
+      ],
+      "id": "dx.metrics.ai-usage",
+      "kind": "metric",
+      "owner": "B30",
+      "readiness": "ready",
+      "requiredInputs": [
+        "ai.usage",
+        "ai.turn"
+      ],
+      "supportedFields": [
+        "tokens.input",
+        "tokens.cached-input",
+        "tokens.cache-write",
+        "tokens.output",
+        "tokens.reasoning",
+        "tokens.total",
+        "money.charge",
+        "money.metered",
+        "money.list-price-estimate",
+        "money.unallocated",
+        "requests",
+        "duplicates",
+        "uncovered",
+        "unresolved",
+        "alternative-ledgers"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b35-mixed-branch",
+        "b35-permuted-branch",
+        "b35-dishonest-inputs",
+        "b35-empty"
+      ],
+      "gaps": [
+        {
+          "code": "no-arithmetic",
+          "message": "The composer never recomputes or sums metric values; per-branch totals must come from metric owners."
+        },
+        {
+          "code": "snapshot-persistence",
+          "message": "selectAnalyzeSnapshot reads manifests through EventStore; persisting a new manifest is the capability handler's job."
+        }
+      ],
+      "id": "dx.report.analyze",
+      "kind": "report",
+      "owner": "B35",
+      "readiness": "ready",
+      "requiredInputs": [
+        "StoreSnapshot",
+        "MetricOutput[]"
+      ],
+      "supportedFields": [
+        "metrics",
+        "findings",
+        "coverage",
+        "notes",
+        "snapshot",
+        "flightId"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b37-secrets",
+        "b37-content-withheld",
+        "b37-bounded-ref",
+        "b37-unknown-ids",
+        "b37-snapshot-pinning"
+      ],
+      "gaps": [
+        {
+          "code": "no-raw-content",
+          "message": "dx_evidence never returns raw prompts, transcripts, diffs or command text; content-bearing fields are withheld with their length only."
+        },
+        {
+          "code": "pattern-redaction",
+          "message": "Secret redaction is pattern based (tokens, keys, JWT, credentials, emails, home paths); unknown secret formats in non-content metadata strings may pass."
+        }
+      ],
+      "id": "dx.report.evidence",
+      "kind": "report",
+      "owner": "B37",
+      "readiness": "ready",
+      "requiredInputs": [
+        "EventStore snapshot"
+      ],
+      "supportedFields": [
+        "adapterId",
+        "evidenceId",
+        "excerpt",
+        "origin",
+        "redacted",
+        "ref"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b36-mixed-lanes",
+        "b36-permuted-lanes",
+        "b36-uncertain-ordering"
+      ],
+      "gaps": [
+        {
+          "code": "lane-granularity",
+          "message": "Lanes are one per adapterId (source lane); no per-session or per-agent sub-lanes."
+        },
+        {
+          "code": "summary-redaction",
+          "message": "Entry summaries echo only numeric/boolean payload fields plus non-observed value methods; free text stays in dx_evidence."
+        },
+        {
+          "code": "cursor-offset",
+          "message": "Cursor is an offset bound to an immutable snapshotId; a cursor for a different snapshot is rejected as InvalidInput."
+        }
+      ],
+      "id": "dx.report.explain",
+      "kind": "report",
+      "owner": "B36",
+      "readiness": "ready",
+      "requiredInputs": [
+        "EventStore",
+        "SnapshotSelector"
+      ],
+      "supportedFields": [
+        "entries",
+        "lanes",
+        "nextCursor",
+        "snapshotId",
+        "total",
+        "orderingUncertain"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b39-branch-flight"
+      ],
+      "gaps": [
+        {
+          "code": "no-branch-input",
+          "message": "Frozen dx_analyze/dx_explain inputs carry flight and repo only; per-branch selection needs a resolveSelector that maps repo to repoCommonDir plus current branch."
+        },
+        {
+          "code": "disclosures-in-analyze-only",
+          "message": "Snapshot disclosures appear in AnalyzeReport.notes; explain and evidence outputs have no notes field, so unknown evidence IDs are omitted rather than listed."
+        },
+        {
+          "code": "explain-latest-unpersisted",
+          "message": "dx_explain and dx_evidence are read-only: without snapshotId they read an unpersisted latest snapshot; run dx_analyze first to pin one."
+        }
+      ],
+      "id": "dx.surface.mcp-query-handlers",
+      "kind": "surface",
+      "owner": "B39",
+      "readiness": "ready",
+      "requiredInputs": [
+        "EventStore",
+        "ModuleDescriptor[]",
+        "DxMetric[]"
+      ],
+      "supportedFields": [
+        "dx_status",
+        "dx_analyze",
+        "dx_explain",
+        "dx_evidence"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b14-openai-usage",
+        "b14-openai-costs",
+        "b14-anthropic-usage",
+        "b14-anthropic-cost-unsupported"
+      ],
+      "gaps": [
+        {
+          "code": "shape-unverified",
+          "message": "Formats follow the public OpenAI organization usage/costs and Anthropic usage-report page shapes; no real export was available on this host, so parsing is fixture-tested only."
+        },
+        {
+          "code": "account-aggregate",
+          "message": "Provider usage is an account/project time bucket, not a branch or request; events carry scope provider-bucket and must not be treated as strong branch attribution."
+        },
+        {
+          "code": "no-auto-fetch",
+          "message": "Only an explicitly supplied file is read. No API keys, account-wide fetch, pagination follow-up or directory scan."
+        },
+        {
+          "code": "anthropic-cost-unsupported",
+          "message": "Anthropic cost-report exports are rejected as unsupported because their amount unit is not verified here."
+        },
+        {
+          "code": "json-only",
+          "message": "CSV provider exports are not parsed by this module."
+        }
+      ],
+      "id": "provider-usage",
+      "kind": "collector",
+      "owner": "B14",
+      "readiness": "degraded",
+      "requiredInputs": [
+        "explicit --input path to a provider usage or cost JSON page export"
+      ],
+      "supportedFields": [
+        "tokens.input",
+        "tokens.cached-input",
+        "tokens.cache-write",
+        "tokens.output",
+        "requests",
+        "charge",
+        "model",
+        "window"
+      ],
+      "version": "0.1.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "core-golden-flight",
+        "core-ai-overlap",
+        "core-unavailable-sources",
+        "b01-replay-reordered"
+      ],
+      "gaps": [
+        {
+          "code": "no_snapshot_expiry",
+          "message": "Snapshots never expire during this run; expired_snapshot is reported only when member events were removed from the store."
+        },
+        {
+          "code": "registry_check_by_caller",
+          "message": "The store checks the contract digest; descriptor and metric-version compatibility of a stored manifest is checked by the analyze owner against the live registry."
+        }
+      ],
+      "id": "service/event-store-sqlite",
+      "kind": "service",
+      "owner": "B01",
+      "readiness": "ready",
+      "requiredInputs": [
+        "store path (--store, DX_STORE or default)"
+      ],
+      "supportedFields": [
+        "append.inserted",
+        "append.duplicates",
+        "snapshot.events",
+        "snapshot.coverage",
+        "snapshot.manifest",
+        "getSnapshot",
+        "latestSnapshotId",
+        "snapshotCount",
+        "spool.drain"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "contractVersion": "dx.contracts.v1",
+      "fixtureIds": [
+        "b38-branch-flight"
+      ],
+      "gaps": [
+        {
+          "code": "registration-external",
+          "message": "Handlers only; argv parsing, CLI/MCP registration and store opening are composed by A02/A07."
+        },
+        {
+          "code": "explicit-source-only",
+          "message": "collect runs exactly one explicitly selected collector; nothing is auto-discovered or scanned."
+        },
+        {
+          "code": "manifest-descriptors-empty",
+          "message": "Snapshot manifests keep the store's enabledDescriptors/metricDefinitions (empty); metric identity is carried by report metrics."
+        }
+      ],
+      "id": "surface/cli-commands",
+      "kind": "surface",
+      "owner": "B38",
+      "readiness": "ready",
+      "requiredInputs": [
+        "EventStoreService",
+        "storePath",
+        "DxCollector[]",
+        "DxMetric[]"
+      ],
+      "supportedFields": [
+        "start.eventId",
+        "collect.inserted",
+        "collect.spooledTo",
+        "import.inserted",
+        "analyze.snapshotId",
+        "analyze.reportPath",
+        "explain.snapshot-unavailable",
+        "status.cachedReport.reportPath",
+        "status.latestSnapshotId",
+        "status.snapshotCount"
+      ],
+      "version": "1.0.0"
+    }
+  ],
+  "snapshotCount": 1,
+  "storePath": "/private/var/folders/l5/j97t559s5ljgmjc_ylqn1jmh0000gn/T/c16-live.y7f16c8_/store/events.sqlite"
+}

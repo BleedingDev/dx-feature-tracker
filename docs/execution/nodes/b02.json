@@ -1,0 +1,39 @@
+{
+  "id": "B02",
+  "status": "ready",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "ownedFiles": [
+    "packages/core/src/dx/collectors/git-identity/git-runner.ts",
+    "packages/core/src/dx/collectors/git-identity/identity.ts",
+    "packages/core/src/dx/collectors/git-identity/collector.ts",
+    "packages/core/test/dx/b02.test.ts",
+    "packages/core/test/dx/fixtures/b02/git-context-redacted.json"
+  ],
+  "exports": {
+    "collector (R=never, provides NodeServices)": "gitIdentityCollector from packages/core/src/dx/collectors/git-identity/collector.ts",
+    "collector (R=ChildProcessSpawner|Crypto)": "gitIdentityCollectorEffect",
+    "descriptor": "gitIdentityDescriptor (id collector.git-identity, readiness ready, owner B02)",
+    "adapterId": "git-identity (GIT_IDENTITY_ADAPTER_ID in git-runner.ts)",
+    "pure helpers": ["resolveGitIdentity", "buildGitContextBatch", "gitContextUpstreamKey", "parseBranchCreation", "parseWorktreeList", "parseGitVersion", "sha256"]
+  },
+  "input": "CollectInput.selectedInput (repo path) or context.worktreePath; else InvalidInput. Non-repo -> SourceUnavailable.",
+  "output": "EventBatch with one git.context event (acquisition git, origin from input), coverage complete|partial with unavailable:<field> gaps, cursor = upstreamKey",
+  "fixtureIds": ["b02-git-context-redacted"],
+  "sourceProbe": "git 2.56.0 on host (sourceVersion taken from `git --version`); tests exercise real git in temp repos",
+  "supportedFields": ["context.repoCommonDir", "context.worktreePath", "context.branch", "context.headSha", "payload.gitDir", "payload.isLinkedWorktree", "payload.detached", "payload.dirty", "payload.dirtyEntries", "payload.baseRef", "payload.baseSource", "payload.baseSha", "payload.onBaseBranch", "payload.aheadCount", "payload.branchCreatedAt", "payload.branchCreatedFrom", "payload.firstBranchCommitAt", "payload.worktreeCount", "payload.sameBranchWorktrees", "payload.unavailable"],
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b02.test.ts", "exit": 0, "result": "8/8 passed"},
+    {"cmd": "pnpm exec oxlint --type-aware <b02 files>", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check <b02 files + fixture>", "exit": 0},
+    {"cmd": "tsc -p <scratch tsconfig extending tsconfig.base.json, files=[test/dx/b02.test.ts]>", "exit": 0, "note": "whole-package tsc currently fails on another owner's syntax errors in src/dx/collectors/cursor-local-db/map-rows.ts; none in B02 files"}
+  ],
+  "gaps": [
+    "Base ref is heuristic: origin/HEAD, else first local main/master/trunk/develop; no explicit --base override in CollectInput.",
+    "branchCreatedAt comes from the local reflog; unavailable (reported as gap) when reflog is missing/expired or for cloned branches. `git switch -c` records createdFrom=HEAD, not the base name.",
+    "firstBranchCommitAt uses author date (rewritable). Commit/numstat detail belongs to B03.",
+    "Payload contains absolute local paths (gitDir, worktreePath); fine for the local store, redact before sharing.",
+    "Integration (A02/A07) must register gitIdentityCollector; B02 did not touch the barrel/registry.",
+    "Process incident: one oxfmt invocation with a mis-expanded file argument may have formatted files outside B02 scope (~14:09 CEST). oxfmt is formatting-only; owners may see 'file changed on disk' notices."
+  ]
+}

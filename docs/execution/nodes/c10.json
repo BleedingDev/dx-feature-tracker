@@ -1,0 +1,47 @@
+{
+  "id": "C10",
+  "role": "verification",
+  "status": "ready",
+  "deliverable": "Synthetic secrets/prompts/tool instructions redact and never execute",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "ownedFiles": [
+    "packages/core/test/dx/audits/c10.test.ts",
+    "packages/core/test/dx/fixtures/c10/c10-hook-payloads.json",
+    "packages/core/test/dx/fixtures/c10/c10-transcript.jsonl",
+    "docs/execution/c10/findings.md"
+  ],
+  "digests": {
+    "packages/core/test/dx/audits/c10.test.ts": "sha256:e16bf0ee75ac474b3084bf5c708f2b435878095e9d1c400aa5654d83e861bb05",
+    "packages/core/test/dx/fixtures/c10/c10-hook-payloads.json": "sha256:233bad87f883f9ddc55484e07ae5ab1f933d23c770274417605f31cd5ea5ca9c",
+    "packages/core/test/dx/fixtures/c10/c10-transcript.jsonl": "sha256:53b6122e9e2645a8b256b02c91643b84f1877934f5509d2fe795ed8c8080efe2"
+  },
+  "descriptorExport": null,
+  "fixtureIds": [
+    "c10-prompt-secret-injection",
+    "c10-shell-tool-instruction",
+    "c10-shell-env-prefixed-secret",
+    "c10-after-shell-output",
+    "c10-mcp-tool-input",
+    "c10-file-edit-content",
+    "c10-stop-usage",
+    "c10-transcript.jsonl"
+  ],
+  "sourceProbe": "synthetic fixtures only (origin: fixture); audited modules: cursor-hooks handler/sanitize/decode, cursor-transcripts parse, reports/evidence redact/resolve",
+  "checks": [
+    { "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/audits/c10.test.ts", "exit": 0, "result": "13 passed, 3 expected-fail (known findings)" },
+    { "cmd": "pnpm exec oxlint packages/core/test/dx/audits/c10.test.ts", "exit": 0 },
+    { "cmd": "pnpm exec oxfmt --check <c10 files>", "exit": 0 },
+    { "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "result": "0 errors in C10 files; 1 error in src/dx/collectors/opencode/collector.ts (not owned)" }
+  ],
+  "findings": [
+    { "severity": "high", "owner": "B05 (cursor-hooks)", "file": "packages/core/src/dx/collectors/cursor-hooks/sanitize.ts", "summary": "commandBin = first whitespace token, so `GITHUB_TOKEN=<secret> gh ...` stores the secret verbatim in spool and event payload", "test": "KNOWN FINDING: env-prefixed shell secret must not reach commandBin (it.fails)" },
+    { "severity": "medium", "owner": "B37", "file": "packages/core/src/dx/reports/evidence/redact.ts", "summary": "credential-pair regex uses \\b before `secret`, so AWS_SECRET_ACCESS_KEY= / GITHUB_TOKEN= style labels are not redacted", "test": "KNOWN FINDING B37: compound secret labels ... (it.fails)" },
+    { "severity": "low", "owner": "B37", "file": "packages/core/src/dx/reports/evidence/redact.ts", "summary": "bare unlabelled AWS secret access key passes pattern redaction (already disclosed B37 gap)", "test": "KNOWN FINDING B37: bare unlabelled AWS secret ... (it.fails)" }
+  ],
+  "gaps": [
+    "Cursor local DB, usage export, dashboard-response, extension, SDK and non-Cursor adapters not audited; G02/A08 must rerun on actual enabled set",
+    "filePath/workspaceRoots keep absolute local paths in the local store (only evidence output collapses home)",
+    "reason/status/finalStatus stored raw, unbounded"
+  ]
+}

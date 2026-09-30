@@ -1,0 +1,11 @@
+{
+  "owner": "B14",
+  "origin": "fixture",
+  "note": "Synthetic, redacted provider export pages modeled on public OpenAI organization usage/costs and Anthropic usage/cost report shapes. No real account data.",
+  "fixtures": {
+    "b14-openai-usage": "openai-usage.json",
+    "b14-openai-costs": "openai-costs.json",
+    "b14-anthropic-usage": "anthropic-usage.json",
+    "b14-anthropic-cost-unsupported": "anthropic-cost.json"
+  }
+}

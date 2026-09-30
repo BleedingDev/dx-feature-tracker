@@ -1,0 +1,34 @@
+{
+  "id": "B24",
+  "status": "ready",
+  "contract": { "version": "dx.contracts.v1", "digest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090" },
+  "ownedFiles": [
+    "packages/core/src/dx/correlation/flight/flight-id.ts",
+    "packages/core/src/dx/correlation/flight/registry.ts",
+    "packages/core/src/dx/correlation/flight/correlator.ts",
+    "packages/core/test/dx/b24.test.ts",
+    "packages/core/test/dx/fixtures/b24/explicit-start-reuse.json",
+    "packages/core/test/dx/fixtures/b24/detached-and-ambiguous.json",
+    "packages/core/test/dx/fixtures/b24/implicit-branch-recreated.json"
+  ],
+  "exports": {
+    "descriptor": "flightCorrelationDescriptor (id correlation/flight, kind correlation, readiness ready) from packages/core/src/dx/correlation/flight/correlator.ts",
+    "correlator": "flightCorrelator: DxCorrelator",
+    "helpers": ["correlateFlights(events, mappings) -> { correlations, registry }", "buildFlightRegistry", "deriveFlightId", "isFlightUuid"]
+  },
+  "fixtureIds": ["b24/explicit-start-reuse", "b24/detached-and-ambiguous", "b24/implicit-branch-recreated"],
+  "fixtureOrigin": "synthetic",
+  "sourceProbe": "none (pure correlation over normalized events; no source access)",
+  "checks": [
+    { "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b24.test.ts", "exit": 0, "result": "4/4 passed" },
+    { "cmd": "pnpm exec oxlint <owned ts files>", "exit": 0 },
+    { "cmd": "pnpm exec oxfmt --check <owned ts files>", "exit": 0 },
+    { "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json (filtered to owned paths)", "exit": null, "result": "no diagnostics in owned paths" }
+  ],
+  "supportedFields": ["flightId", "aliases", "label", "startedAt", "stoppedAt", "baseSha", "branchCreatedAt", "firstSeenAt", "lastSeenAt", "origin (explicit|implicit)", "startEventId", "stopEventId"],
+  "gaps": [
+    "Implicit (no start marker) branch flights are provisional and split only on explicit flights or a changed payload.branchCreatedAt (git-identity git.context); merge detection is not used as a boundary.",
+    "No remote (GitHub/PR) identity: out of product scope.",
+    "Integration (A02/A07) must register flightCorrelator and stamp/join flightId for per-branch reports; not done by B24 (barrel not owned)."
+  ]
+}

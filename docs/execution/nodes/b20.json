@@ -1,0 +1,45 @@
+{
+  "id": "B20",
+  "status": "ready",
+  "role": "optional",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "ownedFiles": [
+    "packages/core/src/dx/collectors/shell-command/record.ts",
+    "packages/core/src/dx/collectors/shell-command/history.ts",
+    "packages/core/src/dx/collectors/shell-command/capture.ts",
+    "packages/core/src/dx/collectors/shell-command/collector.ts",
+    "packages/core/test/dx/b20.test.ts",
+    "packages/core/test/dx/fixtures/b20/lifecycle.jsonl",
+    "packages/core/test/dx/fixtures/b20/history-zsh.txt",
+    "packages/core/test/dx/fixtures/b20/history-bash.txt",
+    "packages/core/test/dx/fixtures/b20/README.md"
+  ],
+  "exports": {
+    "collector": "shellCommandCollector (DxCollector<Crypto.Crypto | FileSystem.FileSystem>) from packages/core/src/dx/collectors/shell-command/collector.ts",
+    "descriptor": "shellCommandDescriptor (id collector/shell-command, readiness ready)",
+    "adapterId": "command-capture (matches A04 core fixtures)",
+    "capture": "captureCommand({argv, context, cwd, logPath}) -> CommandLifecycleRecord; requires Crypto | ChildProcessSpawner | FileSystem (all in NodeServices.layer)",
+    "exitStatus": "shellExitStatus(record) -> exit code, 128+signo for signals, 127 for spawn errors",
+    "helpers": "isTestCommand, redactArgv, programOf, parseShellHistory"
+  },
+  "fixtureIds": ["b20-lifecycle", "b20-history-zsh", "b20-history-bash"],
+  "sourceProbe": "Lifecycle JSONL version dx.shell-command.v1 written by captureCommand; shell history zsh EXTENDED_HISTORY and bash HISTTIMEFORMAT/plain lines. Real child processes exercised in test (exit 3, SIGTERM, ENOENT).",
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b20.test.ts", "exit": 0, "result": "6/6 passed"},
+    {"cmd": "pnpm exec oxlint <5 owned ts files>", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check <5 owned ts files>", "exit": 0},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json (filtered to owned paths)", "exit": "0 errors in owned files; whole-package exit nonzero from other owners' in-progress files"}
+  ],
+  "supportedFields": [
+    "command.run: argv (redacted, <=32 args), program, exitCode, signal, spawnError, status, startedAt, completedAt, durationMs, cwdRelative, testCommand, contextSource",
+    "test.result: outcome passed|failed (derived from exit status), durationMs; failedTests/passedTests null"
+  ],
+  "gaps": [
+    "Integration (A02/A07) must register shellCommandCollector and add a `dx run -- <argv>` surface that calls captureCommand then exits with shellExitStatus; not in B20 scope.",
+    "Test counts are unavailable (only exit status); no reporter parsing.",
+    "Shell history import has no exit status, cwd or branch; events carry provisional input context and reconstructed=true.",
+    "Runs with a start record but no end record are not emitted; cursor holds before them (a crashed wrapper leaves a permanent gap reported in coverage).",
+    "Redaction is heuristic (secret-named flags/env, >=32-char token-like values, URL credentials)."
+  ]
+}

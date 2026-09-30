@@ -1,0 +1,14 @@
+install 0
+collect-git 0
+collect-hooks 0
+collect-cli 0
+collect-test-operator 1
+collect-gitobs 0
+collect-transcripts-imported 0
+recollect-cli 0
+analyze1 0
+analyze2-same-snapshot 0
+explain-snapshot 0
+evidence-follow 0
+status 0
+uninstall 0

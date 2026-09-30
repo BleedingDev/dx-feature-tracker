@@ -1,0 +1,48 @@
+{
+  "id": "B22",
+  "owner": "native worker B22",
+  "role": "core",
+  "status": "ready",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "deliveredAt": "2026-09-30T14:16+02:00",
+  "ownedFiles": [
+    "packages/core/src/dx/collectors/manual/marker.ts",
+    "packages/core/src/dx/collectors/manual/intervals.ts",
+    "packages/core/src/dx/collectors/manual/collector.ts",
+    "packages/core/test/dx/b22.test.ts",
+    "packages/core/test/dx/fixtures/b22/marker-log-basic.jsonl",
+    "packages/core/test/dx/fixtures/b22/marker-log-anomalies.jsonl"
+  ],
+  "descriptorExport": {
+    "module": "packages/core/src/dx/collectors/manual/collector.ts",
+    "collector": "manualCollector (DxCollector<FileSystem.FileSystem>; provide NodeServices.layer), adapterId manual",
+    "descriptor": "manualDescriptor (id collector/manual, readiness ready)",
+    "liveMark": "buildMarkerEvent(request {kind, occurredAt, flight?, label?, note?}, {acquisition:'manual', context, observedAt, origin}) in marker.ts -> Effect<DxEventEnvelope, InvalidInput>; for the dx_mark capability handler (A02/A07 appends it via EventStore and returns {eventId, flightId: event.context.flightId})",
+    "intervals": "pairMarkerIntervals(events) in intervals.ts -> per flight {active, waiting: Interval[], claims, anomalies}",
+    "logLine": "toMarkerLogLine(request, branch) serializes a dx.manual.marker.v1 JSONL line"
+  },
+  "fixtureIds": ["b22-marker-log-basic", "b22-marker-log-anomalies"],
+  "sourceProbe": "No external source: markers are produced by the recorder itself (dx_mark) or by a dx.manual.marker.v1 JSONL log. Fixtures are hand-written, origin=fixture.",
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b22.test.ts", "exit": 0, "result": "8 passed"},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json (filtered to manual/ and b22)", "exit": "no diagnostics in owned files"},
+    {"cmd": "pnpm exec oxlint <owned files>", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check <owned files>", "exit": 0}
+  ],
+  "events": {
+    "marker.start|stop|wait-start|wait-stop|claim": "acquisition manual (live) or file-import; payload {markerKind, flightId, label|null, note|null, claim, method:'user-claimed'}; occurredAt method observed (live recorder clock) or user-claimed (imported log); label/note fieldSemantics user-claimed; context.flightId always set"
+  },
+  "rules": [
+    "flightId: explicit flight > context.flightId > branch:<sha12(repoCommonDir)>:<branch> (or branch:<branch>) > InvalidInput",
+    "claim requires a non-empty label; label <=120, note <=500, flight <=200 chars; control chars stripped; otherwise InvalidInput",
+    "eventId deterministic: sha256(manual, upstreamKey, kind), upstreamKey = flight:kind:iso:contentHash16; re-import dedupes",
+    "Pairing per flight in time order; unmatched close -> startMs null, unclosed/reopened open -> endMs null (censored, never assumed now) with an anomaly gap"
+  ],
+  "gaps": [
+    "dx_mark capability handler/CLI wiring and registry registration belong to integration (A02/A07/A08); B22 only provides buildMarkerEvent and the descriptor.",
+    "Markers and claims are user-claimed; metrics must keep them separate from observed activity and must not treat them as AI ownership or savings.",
+    "Waiting time exists only between explicit wait markers; nothing infers waiting from idle gaps.",
+    "Imported logs: bad lines become coverage gaps (line-unparseable / line-invalid), coverage partial."
+  ]
+}

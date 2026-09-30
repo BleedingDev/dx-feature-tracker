@@ -1,0 +1,16 @@
+{
+  "backups": [
+    "/private/var/folders/l5/j97t559s5ljgmjc_ylqn1jmh0000gn/T/c14-rehearse.7v_8ojnq/live/.cursor/mcp.json.dx-backup-2026-09-30T13-02-40-459Z",
+    "/private/var/folders/l5/j97t559s5ljgmjc_ylqn1jmh0000gn/T/c14-rehearse.7v_8ojnq/live/.cursor/hooks.json.dx-backup-2026-09-30T13-02-40-459Z"
+  ],
+  "changed": [
+    "/private/var/folders/l5/j97t559s5ljgmjc_ylqn1jmh0000gn/T/c14-rehearse.7v_8ojnq/live/.cursor/mcp.json",
+    "/private/var/folders/l5/j97t559s5ljgmjc_ylqn1jmh0000gn/T/c14-rehearse.7v_8ojnq/live/.cursor/hooks.json",
+    "/private/var/folders/l5/j97t559s5ljgmjc_ylqn1jmh0000gn/T/c14-rehearse.7v_8ojnq/live/.cursor/skills/dx-analyze",
+    "/private/var/folders/l5/j97t559s5ljgmjc_ylqn1jmh0000gn/T/c14-rehearse.7v_8ojnq/live/.cursor/skills/dx-explain",
+    "/private/var/folders/l5/j97t559s5ljgmjc_ylqn1jmh0000gn/T/c14-rehearse.7v_8ojnq/live/.git/info/exclude"
+  ],
+  "notes": [
+    "hook spool (.dx-flight-recorder/) and the event store are user data and were kept"
+  ]
+}

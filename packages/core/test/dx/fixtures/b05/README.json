@@ -1,0 +1,11 @@
+{
+  "origin": "fixture",
+  "note": "Synthetic payloads shaped after Cursor hooks docs and the event names registered in this host's ~/.cursor/hooks.json (names only). Values are invented; stop-usage-raw keys are hypothetical and exist to prove raw capture, not to assert Cursor emits them.",
+  "fixtures": {
+    "b05.agent-turns": "agent-turns.jsonl",
+    "b05.duplicate-stop": "duplicate-stop.jsonl",
+    "b05.tab-edit": "tab-edit.jsonl",
+    "b05.stop-usage-raw": "stop-usage-raw.jsonl",
+    "b05.malformed": "malformed.jsonl"
+  }
+}

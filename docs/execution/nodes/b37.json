@@ -1,0 +1,84 @@
+{
+  "id": "B37",
+  "role": "core",
+  "status": "ready",
+  "deliverable": "Redaction and bounded original source links/refs",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "ownedFiles": [
+    "packages/core/src/dx/reports/evidence/redact.ts",
+    "packages/core/src/dx/reports/evidence/resolve.ts",
+    "packages/core/src/dx/reports/evidence/descriptor.ts",
+    "packages/core/test/dx/b37.test.ts",
+    "packages/core/test/dx/fixtures/b37/b37-events.json"
+  ],
+  "digests": {
+    "packages/core/src/dx/reports/evidence/redact.ts": "sha256:8414950da914cbb5aa6d640a1fedd8e183efcbcf730a47771845412be1f65d02",
+    "packages/core/src/dx/reports/evidence/resolve.ts": "sha256:7982ca9448f113a5cb7f0fe52f16b5da24e635683e77293c6aee42e7cd92746a",
+    "packages/core/src/dx/reports/evidence/descriptor.ts": "sha256:dcd45c1cec44fd01956606ecdd124644cefb5e0b03873c68696e1f9060433df5",
+    "packages/core/test/dx/b37.test.ts": "sha256:526463fae52d892f160cec253aa95fbb29fd23a74edf8551521dc2bf67c02b0f",
+    "packages/core/test/dx/fixtures/b37/b37-events.json": "sha256:1fb3e9641d9e905036878030851aa01d6e5f8dbb437cfe64eaf6b784337661a2"
+  },
+  "descriptorExport": "evidenceReportDescriptor from packages/core/src/dx/reports/evidence/descriptor.ts; id dx.report.evidence, kind report, readiness ready",
+  "exports": {
+    "resolve.ts": [
+      "lookupEvidence(store, {evidenceIds, snapshotId, asOf, selector, mode?}) -> Effect<EvidenceResolution, StoreFailure | SnapshotNotFound>",
+      "resolveEvidence(snapshot, evidenceIds, mode?) -> EvidenceResolution (pure)",
+      "toEvidenceItem",
+      "MAX_EVIDENCE_IDS=100"
+    ],
+    "redact.ts": [
+      "redactText",
+      "boundRef",
+      "excerptPayload",
+      "truncate",
+      "MAX_REF_CHARS=240",
+      "MAX_EXCERPT_CHARS=512",
+      "MAX_FIELD_CHARS=120",
+      "MAX_EXCERPT_FIELDS=24"
+    ]
+  },
+  "fixtureIds": [
+    "b37-secrets",
+    "b37-content-withheld",
+    "b37-bounded-ref",
+    "b37-unknown-ids",
+    "b37-snapshot-pinning"
+  ],
+  "sourceProbe": "No source probe: B37 is a pure report module over EventStore snapshots (any adapter). Evidence IDs resolve by eventId, falling back to evidence.hash.",
+  "observedAt": "2026-09-30T12:22:00Z",
+  "checks": [
+    {
+      "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b37.test.ts",
+      "exit": 0,
+      "result": "11/11 passed"
+    },
+    {
+      "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json",
+      "exit": 1,
+      "result": "0 errors in B37 files; 7 errors in other owners' files (collectors/opencode/collector.ts, mcp/handlers/stdio.ts, test/dx/b40.test.ts)"
+    },
+    {
+      "cmd": "pnpm exec oxlint <B37 files>",
+      "exit": 0
+    },
+    {
+      "cmd": "pnpm exec oxfmt --check <B37 files>",
+      "exit": 0
+    }
+  ],
+  "supportedFields": [
+    "EvidenceItem.adapterId",
+    "EvidenceItem.evidenceId",
+    "EvidenceItem.excerpt (metadata-only, redacted, bounded)",
+    "EvidenceItem.origin",
+    "EvidenceItem.redacted",
+    "EvidenceItem.ref (bounded, url credentials/query stripped, home collapsed)"
+  ],
+  "integration": "A02/A07: implement dx_evidence with lookupEvidence(EventStore, ...); map DxEvidenceInput {evidenceIds, snapshotId?, asOf?} -> request; output {items}. EvidenceResolution.missing and .disclosures are not in the frozen DxEvidenceOutput; surface them via stderr/notes or an additive optional field via A03.",
+  "gaps": [
+    "Frozen DxEvidenceOutput has only items; missing IDs and snapshot disclosures need an additive optional output field (A03) or CLI-side rendering.",
+    "Secret redaction is pattern-based; unknown secret formats in non-content metadata strings could pass. Content-bearing keys (prompt, text, command, stdout, diff, ...) are always withheld with length only.",
+    "No raw-content opt-in mode implemented; dx_evidence never returns raw content."
+  ]
+}

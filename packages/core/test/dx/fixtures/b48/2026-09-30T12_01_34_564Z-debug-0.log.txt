@@ -1,0 +1,10 @@
+0 verbose cli /home/dev/.proto/tools/node/26.10.0/bin/node /home/dev/.proto/tools/npm/11.19.1/bin/npm-cli.js
+1 info using npm@11.19.1
+2 info using node@v26.10.0
+3 silly config load:file:/home/dev/.npmrc
+4 verbose title npm view @anthropic-ai/claude-code@latest version
+5 verbose argv "view" "@anthropic-ai/claude-code@latest" "version" "--prefer-online"
+6 http fetch GET 200 https://registry.npmjs.org/@anthropic-ai%2fclaude-code 97ms (cache revalidated)
+7 verbose cwd /home/dev
+8 verbose exit 0
+9 info ok

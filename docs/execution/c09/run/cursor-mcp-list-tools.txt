@@ -1,0 +1,1 @@
+Failed to list tools: Failed to load MCP 'rat-stack': MCP server "rat-stack" has not been approved

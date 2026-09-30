@@ -1,0 +1,65 @@
+{
+  "fixtureId": "b24/detached-and-ambiguous",
+  "origin": "synthetic",
+  "events": [
+    {
+      "id": "start-a",
+      "kind": "marker.start",
+      "at": "2026-09-05T10:00:00Z",
+      "repo": "/r/one/.git",
+      "branch": "fix/x"
+    },
+    {
+      "id": "start-b",
+      "kind": "marker.start",
+      "at": "2026-09-05T10:00:00Z",
+      "repo": "/r/two/.git",
+      "branch": "fix/x"
+    },
+    {
+      "id": "no-repo",
+      "kind": "ai.usage",
+      "at": "2026-09-05T11:00:00Z",
+      "repo": null,
+      "branch": "fix/x"
+    },
+    {
+      "id": "repo-one",
+      "kind": "ai.usage",
+      "at": "2026-09-05T11:00:00Z",
+      "repo": "/r/one/.git",
+      "branch": "fix/x"
+    },
+    {
+      "id": "detached",
+      "kind": "git.context",
+      "at": "2026-09-05T11:30:00Z",
+      "repo": "/r/one/.git",
+      "branch": "HEAD",
+      "payload": { "detached": true }
+    },
+    {
+      "id": "detached-null",
+      "kind": "git.context",
+      "at": "2026-09-05T11:31:00Z",
+      "repo": "/r/one/.git",
+      "branch": null,
+      "payload": { "detached": true }
+    },
+    {
+      "id": "stop-ambiguous",
+      "kind": "marker.stop",
+      "at": "2026-09-05T12:00:00Z",
+      "repo": null,
+      "branch": "fix/x"
+    },
+    {
+      "id": "pinned-unknown",
+      "kind": "ai.usage",
+      "at": "2026-09-05T12:30:00Z",
+      "repo": "/r/one/.git",
+      "branch": "fix/x",
+      "flightId": "00000000-0000-5000-8000-000000000000"
+    }
+  ]
+}

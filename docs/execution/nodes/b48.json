@@ -1,0 +1,51 @@
+{
+  "node": "B48",
+  "role": "optional",
+  "status": "degraded",
+  "contract": {
+    "version": "dx.contracts.v1",
+    "digest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090"
+  },
+  "ownedFiles": [
+    "packages/core/src/dx/collectors/local-feedback/collector.ts",
+    "packages/core/src/dx/collectors/local-feedback/registry.ts",
+    "packages/core/src/dx/collectors/local-feedback/tsc.ts",
+    "packages/core/src/dx/collectors/local-feedback/npm-log.ts",
+    "packages/core/src/dx/collectors/local-feedback/vite-log.ts",
+    "packages/core/test/dx/b48.test.ts",
+    "packages/core/test/dx/fixtures/b48/"
+  ],
+  "exports": {
+    "collector": "localFeedbackCollector (DxCollector<FileSystem.FileSystem>) from packages/core/src/dx/collectors/local-feedback/collector.ts",
+    "descriptor": "localFeedbackDescriptor",
+    "adapterId": "local-feedback",
+    "registry": "LOCAL_FEEDBACK_ADAPTERS = [npm-debug-log@1.0.0, vite-dev-log@1.0.0, tsc-text@1.0.0]"
+  },
+  "descriptor": {
+    "id": "collector/local-feedback",
+    "kind": "collector",
+    "readiness": "degraded",
+    "eventKind": "feedback.local"
+  },
+  "fixtureIds": ["b48-tsc-plain", "b48-tsc-pretty", "b48-npm-debug-log", "b48-npm-timing-log", "b48-vite-dev-log", "b48-unrecognized"],
+  "subroutes": {
+    "compiler": "supported (tsc plain + pretty/ANSI; format verified against local tsc 7.0.2 output)",
+    "npm-timing": "supported (npm 11 debug log; format verified against a host ~/.npm/_logs debug log; total duration only with --timing)",
+    "vite-hmr": "supported from fixture only (no Vite app on this host); counts only, latency unavailable",
+    "ide-diagnostics": "unsupported (reported as gap subroute-unsupported:ide-diagnostics)",
+    "ide-terminal": "unsupported (reported as gap subroute-unsupported:ide-terminal)"
+  },
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b48.test.ts", "exit": 0, "result": "14 passed"},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json (filtered to B48 paths)", "exit": 1, "result": "0 errors in B48 files; exit 1 from other owners' files (b06, b12, cursor-usage-export, opencode)"},
+    {"cmd": "pnpm exec oxlint <B48 files>", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check <B48 files>", "exit": 0}
+  ],
+  "gaps": [
+    "Not registered in integration registry/barrel (A02/A07 own it); dx_collect source 'local-feedback' needs wiring there.",
+    "IDE Problems-panel diagnostics and integrated-terminal output: no stable local export; unsupported.",
+    "Vite HMR latency and dated timestamps unavailable from logs; tsc output has no timestamp (occurredAt null).",
+    "Imports only explicitly selected captured files (.log/.txt in a directory); does not tail live tools.",
+    "Events carry no AI attribution, tokens or cost; branch comes only from CollectInput.context."
+  ]
+}

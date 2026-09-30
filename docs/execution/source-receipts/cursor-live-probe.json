@@ -1,0 +1,273 @@
+{
+  "schema": "dxfr.source-receipts/v1",
+  "owner": "A09",
+  "observedAt": "2026-09-30T12:42:30Z",
+  "buildCandidate": {
+    "gitHead": "2e78dc98f56044897dc4178331388120fb27966d",
+    "workingTreeDirty": true,
+    "cliDistSha256Prefix": "4c39549492a2d28c",
+    "coreDistBuiltAt": "2026-09-30T14:36:36+02:00",
+    "contractVersion": "dx.contracts.v1",
+    "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090"
+  },
+  "host": {
+    "os": "Darwin 25.6.0 arm64",
+    "cursorAgent": "2026.09.28-64d2043",
+    "cursorAgentAuth": "logged in (account redacted)"
+  },
+  "store": "owned scratch DX_STORE=<owned-temp>/store/events.sqlite (deleted after run by owned-temp-dir)",
+  "demoRepo": "<owned-temp>/a09-demo, fresh git init, main -> branch feature/a09-cost-probe; project .cursor/hooks.json only (14 events -> `node <repo>/apps/cli/dist/cli.js dx hook`); ~/.cursor/hooks.json untouched",
+  "cliPrefix": "node <repo>/apps/cli/dist/cli.js",
+  "runWindow": {
+    "agentStart": "2026-09-30T12:41:41Z",
+    "agentEnd": "2026-09-30T12:42:24Z",
+    "analyzeAt": "2026-09-30T12:42:27.834Z"
+  },
+  "script": "a09probe.sh run under /Users/satan/bin/owned-temp-dir --run a09-probe (cleaned: status=cleaned)",
+  "receipts": [
+    {
+      "source": "collector.cursor-hooks",
+      "route": "live prospective hooks",
+      "state": "ready",
+      "input": {
+        "kind": "spool dir <demo>/.dx-flight-recorder/cursor-hooks-spool",
+        "files": 35
+      },
+      "command": "dx collect --source collector.cursor-hooks --repo <demo> --input <spool>",
+      "exit": 0,
+      "inserted": 31,
+      "duplicates": 0,
+      "coverage": "complete 35/35",
+      "recollect": {
+        "exit": 0,
+        "inserted": 0,
+        "duplicates": 31
+      },
+      "supportedFields": [
+        "session lifecycle",
+        "tool/shell/file-edit hook metadata",
+        "branch/HEAD from hook cwd"
+      ],
+      "missing": [
+        "tokens/cost (stop-hook usage unverified, not summed)"
+      ],
+      "note": "Descriptor gap 'live-capture-not-demonstrated' is now contradicted by this live run; B05 may drop it."
+    },
+    {
+      "source": "collector/cursor-cli",
+      "route": "cursor-agent -p --output-format stream-json (saved stdout)",
+      "state": "ready",
+      "input": {
+        "sha256": "8a02e6159070c80d038ca00ae8ca23f2456e328c12372b15e180d0dd11044ad4",
+        "lines": 73,
+        "shape": {
+          "result:success": 1,
+          "tool_call:completed": 7,
+          "assistant": 5,
+          "usageKeys": [
+            "inputTokens",
+            "outputTokens",
+            "cacheReadTokens",
+            "cacheWriteTokens"
+          ]
+        }
+      },
+      "agentExit": 0,
+      "command": "dx collect --source collector/cursor-cli --repo <demo> --input <stream.jsonl>",
+      "exit": 0,
+      "inserted": 1,
+      "duplicates": 0,
+      "coverage": "partial 1/73 (only the result line is an ai.usage row)",
+      "recollect": {
+        "exit": 0,
+        "inserted": 0,
+        "duplicates": 1
+      },
+      "supportedFields": [
+        "input",
+        "output",
+        "cacheRead->cached-input",
+        "cacheWrite",
+        "session_id",
+        "request_id",
+        "duration_ms"
+      ],
+      "missing": [
+        "reasoning tokens",
+        "charge/price",
+        "branch (taken from collect context)"
+      ],
+      "semantics": "per-request totals from the result event, not cumulative"
+    },
+    {
+      "source": "collector.cursor-transcripts",
+      "route": "~/.cursor/projects/<slug>/agent-transcripts/<id>.jsonl, read-only copy",
+      "state": "degraded",
+      "input": {
+        "sha256": "f20d26785ac75deecafd142b4007ade8077271011a3eb5aeb6930b1e4e1240dc"
+      },
+      "command": "dx collect --source collector.cursor-transcripts --repo <demo> --input <copy>",
+      "exit": 0,
+      "inserted": 1,
+      "coverage": "partial",
+      "gaps": [
+        "usage-unavailable",
+        "timestamps-absent",
+        "malformed-lines(1)",
+        "charge-unavailable"
+      ],
+      "note": "Adds a session/turn row only; no tokens. Not needed when stream-json is saved."
+    },
+    {
+      "source": "collector.git-history",
+      "state": "ready",
+      "input": {
+        "kind": "demo worktree",
+        "commitsOnBranch": 1
+      },
+      "command": "dx collect --source collector.git-history --repo <demo> --input <demo>",
+      "exit": 0,
+      "inserted": 3,
+      "coverage": "complete 1/1"
+    },
+    {
+      "source": "collector.git-observation",
+      "state": "ready",
+      "input": {
+        "kind": "demo worktree"
+      },
+      "command": "dx collect --source collector.git-observation --repo <demo> --input <demo>",
+      "exit": 0,
+      "inserted": 3,
+      "coverage": "partial (sampled; reflog local)",
+      "note": "Provides untracked/uncommitted state and branch creation from reflog."
+    },
+    {
+      "source": "collector/local-test",
+      "state": "ready",
+      "input": [
+        {
+          "who": "cursor-agent (inside the agent run)",
+          "kind": "node --test junit",
+          "sha256": "12ee653efa7b461d2b1efa52d5dd9cfe20f7e359882980f0e032caca8226943a"
+        },
+        {
+          "who": "probe operator",
+          "kind": "node --test junit",
+          "sha256": "42ad6eb33c40aaddf15c1dd871576eac2d9d984a80fb78042c94901798872a3b",
+          "exit": 0
+        }
+      ],
+      "command": "dx collect --source collector/local-test --repo <demo> --input <junit.xml>",
+      "exit": [
+        0,
+        0
+      ],
+      "inserted": 2,
+      "coverage": "complete",
+      "gaps": [
+        "command-sessions-absent"
+      ]
+    },
+    {
+      "source": "cursor-local-db",
+      "route": "~/.cursor/ai-tracking/ai-code-tracking.db via node:sqlite backup() copy",
+      "state": "failed-via-cli",
+      "input": {
+        "backupSha256": "e5d756ca2bbfa394d2c7f59106e28d5b34aec61c8d0acc14a722a58eb1055e48",
+        "backupExit": 0
+      },
+      "command": "dx collect --source cursor-local-db --repo <demo> --input <backup.db>",
+      "exit": 1,
+      "error": "InvalidInput: cursor-local-db requires scratchDir for a consistent backup copy",
+      "note": "The built CLI has no flag to pass scratchDir. A07 reached this collector only in-process. Gap for A02 (CLI wiring) / owner of cursor-local-db."
+    },
+    {
+      "source": "cursor usage CSV / dashboard export / cost",
+      "state": "not-attempted",
+      "reason": "No user-exported usage CSV or dashboard response exists on this host; not fabricated. Money stays unavailable."
+    },
+    {
+      "source": "GitHub/CI",
+      "state": "out-of-scope",
+      "reason": "Product focus excludes CI/PR evidence."
+    }
+  ],
+  "analyze": {
+    "command": "dx analyze --repo <demo>",
+    "runs": [
+      {
+        "exit": 0
+      },
+      {
+        "exit": 0
+      }
+    ],
+    "sameSnapshot": true,
+    "snapshotId": "snap_a81dd198e6e72d9f2e14944882cb2f49",
+    "eventWatermark": "events:41:cc3b48d12ee695b61d40b5982ac4ce2a",
+    "selector": {
+      "branch": "feature/a09-cost-probe"
+    },
+    "originMix": {
+      "imported": 41
+    },
+    "metrics": {
+      "dx.ai-usage.requests": 1,
+      "dx.ai-usage.tokens.input": 139,
+      "dx.ai-usage.tokens.cached-input": 20864,
+      "dx.ai-usage.tokens.cache-write": 0,
+      "dx.ai-usage.tokens.output": 25,
+      "dx.ai-usage.tokens.reasoning": null,
+      "dx.ai-usage.tokens.total": null,
+      "dx.cost.charge.usd": null,
+      "dx.cost.list-price-estimate.price-table.usd": null,
+      "dx.cost.metered.usd": null,
+      "dx.friction.test-runs": 2,
+      "dx.friction.test-failures": 0,
+      "dx.friction.tool-call-failure-rate": 0,
+      "dx.friction.reworked-files": 0,
+      "dx.friction.failed-commands": null,
+      "dx.git.commits": 1,
+      "dx.git.files-changed": 2,
+      "dx.git.lines-added": 16,
+      "dx.git.lines-deleted": 0,
+      "dx.git.untracked-files": 1
+    },
+    "nullMeans": "unavailable (not zero)"
+  },
+  "explain": {
+    "command": "DX_REPO=<demo> dx explain --limit 200",
+    "exit": 0,
+    "total": 41,
+    "lanes": [
+      "cursor-cli",
+      "cursor-hooks",
+      "cursor-transcripts",
+      "git-history",
+      "git-observation",
+      "local-test"
+    ],
+    "kinds": {
+      "other": 27,
+      "git.observation": 4,
+      "ai.session": 2,
+      "ai.tool-edit": 2,
+      "test.result": 2,
+      "ai.usage": 2,
+      "git.commit": 1,
+      "git.diff": 1
+    },
+    "finding": "`dx explain --flight feature/a09-cost-probe` exits 0 with 0 entries: --flight expects a flight ID, not a branch. Branch explain works via cwd/DX_REPO."
+  },
+  "redaction": {
+    "rawPromptsCommitted": false,
+    "check": "grep of all CLI outputs for prompt substrings -> no match",
+    "inputsReferencedBy": "sha256 only; all inputs deleted with the owned temp dir"
+  },
+  "notDemonstrated": [
+    "branch time / active intervals metrics: dx.metric.intervals descriptor is ready but analyze emitted no interval metric ids",
+    "reasoning tokens (no Cursor source reports them)",
+    "any money value"
+  ]
+}

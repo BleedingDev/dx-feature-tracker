@@ -1,0 +1,42 @@
+{
+  "id": "B38",
+  "status": "ready",
+  "owner": "native worker B38",
+  "contract": { "version": "dx.contracts.v1", "digest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090" },
+  "ownedFiles": [
+    "packages/core/src/dx/cli/commands/context.ts",
+    "packages/core/src/dx/cli/commands/start.ts",
+    "packages/core/src/dx/cli/commands/collect.ts",
+    "packages/core/src/dx/cli/commands/analyze.ts",
+    "packages/core/src/dx/cli/commands/explain.ts",
+    "packages/core/src/dx/cli/commands/status.ts",
+    "packages/core/src/dx/cli/commands/report-cache.ts",
+    "packages/core/src/dx/cli/commands/descriptor.ts",
+    "packages/core/test/dx/b38.test.ts",
+    "packages/core/test/dx/fixtures/b38/branch-flight.batch.json",
+    "packages/core/test/dx/fixtures/b38/branch-flight-late.batch.json"
+  ],
+  "descriptorExport": "cliCommandsDescriptor (packages/core/src/dx/cli/commands/descriptor.ts), id surface/cli-commands, readiness ready",
+  "fixtureIds": ["b38-branch-flight"],
+  "exports": {
+    "start.ts": "runStart(env, {context, flight?, label?, occurredAt?})",
+    "collect.ts": "runCollect(env, collectors, {context, source, input, scratchDir?}), runImportSpool(env), findCollector",
+    "analyze.ts": "runAnalyze(env, metrics, {selector, snapshotId, asOf}) -> {report, reportPath, snapshotId, mode, disclosures}",
+    "explain.ts": "runExplain(env, {selector, snapshotId, asOf, cursor, limit}) -> status ok | snapshot-unavailable(unknown|expired|incompatible)",
+    "status.ts": "runStatus(env, descriptors, selector) -> StatusReport + cachedReport + latestSnapshotId + coverage",
+    "context.ts": "DxCommandEnv {store, storePath}, selectorFromContext(context, window?)",
+    "report-cache.ts": "reportPathFor, writeCachedReport, readLatestReportPointer (<storeDir>/reports/<snapshotId>.analyze.json + latest.json)"
+  },
+  "checks": [
+    { "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b38.test.ts", "exit": 0, "result": "5 passed" },
+    { "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json (filtered to b38/cli/commands)", "exit": "nonzero from others' files", "result": "0 diagnostics in B38 files" },
+    { "cmd": "pnpm exec oxlint packages/core/test/dx/b38.test.ts packages/core/src/dx/cli/commands", "exit": 0 },
+    { "cmd": "pnpm exec oxfmt --check <B38 files>", "exit": 0 }
+  ],
+  "gaps": [
+    "Handlers only: A02/A07 must register argv/MCP commands, open the store via B01 resolveStorePath/openSqliteEventStore, and pass the collector registry and metric list.",
+    "No live Cursor capture demonstrated by B38; collect runs whatever collector A02 registers (cursor-hooks / cursor-local-db owners).",
+    "Snapshot manifests keep the store's empty enabledDescriptors/metricDefinitions to stay immutable across metric set changes.",
+    "Core tsc for the whole package currently fails in other owners' files (opencode collector, mcp/handlers/stdio, b40 test)."
+  ]
+}

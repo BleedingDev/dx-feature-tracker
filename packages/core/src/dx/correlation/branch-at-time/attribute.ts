@@ -1,0 +1,416 @@
+import { Option, Schema } from "effect";
+
+import type {
+  Correlation,
+  CorrelationMapping,
+  DxCorrelator,
+} from "../../contracts/services.js";
+import { CONTRACT_VERSION } from "../../contracts/version.js";
+import type { AttributionState } from "../../model/common.js";
+import type { ModuleDescriptor } from "../../model/descriptor.js";
+import type { DxEventEnvelope } from "../../model/event.js";
+import { DescriptorIdSchema, EvidenceIdSchema } from "../../model/ids.js";
+import { DEFAULT_BRANCH_AT_OPTIONS, branchAt } from "./timeline.js";
+import type {
+  BranchAtMethod,
+  BranchAtOptions,
+  WorktreeTimeline,
+} from "./timeline.js";
+
+export const BRANCH_AT_TIME_VERSION = "1.0.0";
+
+export const BRANCH_AT_TIME_TARGET_KIND = "branch";
+
+export type HistoricalBasis =
+  | "scored-commit"
+  | "worktree-at-time"
+  | "linked-request"
+  | "live-capture"
+  | "unassigned";
+
+export interface HistoricalAttribution {
+  readonly attribution: AttributionState;
+  readonly basis: HistoricalBasis;
+  readonly branch: string | null;
+  readonly collectedBranch: string | null;
+  readonly confidence: number;
+  readonly eventId: string;
+  readonly method: BranchAtMethod | "commit-hash" | "request-link" | "hook";
+  readonly reason: string;
+}
+
+export interface HistoricalAttributionInput {
+  readonly commitBranches: ReadonlyMap<string, string>;
+  readonly options?: BranchAtOptions;
+  readonly timelines: readonly WorktreeTimeline[];
+}
+
+export interface HistoricalAttributionResult {
+  readonly attributions: readonly HistoricalAttribution[];
+  readonly events: readonly DxEventEnvelope[];
+}
+
+const LIVE_ACQUISITIONS = new Set(["hook", "command-capture"]);
+
+const WORKSPACE_FIELDS = [
+  "workspacePath",
+  "worktreePath",
+  "cwd",
+  "workspaceRoot",
+] as const;
+
+const PayloadPathsSchema = Schema.Struct({
+  cwd: Schema.optional(Schema.NullOr(Schema.String)),
+  workspacePath: Schema.optional(Schema.NullOr(Schema.String)),
+  workspaceRoot: Schema.optional(Schema.NullOr(Schema.String)),
+  worktreePath: Schema.optional(Schema.NullOr(Schema.String)),
+});
+
+const decodePaths = Schema.decodeUnknownOption(PayloadPathsSchema);
+
+const payloadPaths = (event: DxEventEnvelope): readonly string[] =>
+  Option.match(decodePaths(event.payload), {
+    onNone: () => [],
+    onSome: (paths) =>
+      WORKSPACE_FIELDS.flatMap((field) => {
+        const value = paths[field] ?? null;
+
+        return value === null || value === "" ? [] : [value];
+      }),
+  });
+
+const isAiEvent = (event: DxEventEnvelope): boolean =>
+  event.kind.startsWith("ai.") || event.kind === "provenance.attestation";
+
+const normalizePath = (path: string): string => path.replace(/\/+$/u, "");
+
+const within = (path: string, root: string): boolean => {
+  const p = normalizePath(path);
+  const r = normalizePath(root);
+
+  return p === r || p.startsWith(`${r}/`);
+};
+
+const pathsOf = (event: DxEventEnvelope): readonly string[] => {
+  const fromPayload = payloadPaths(event);
+
+  return [
+    ...(event.context.worktreePath === null
+      ? []
+      : [event.context.worktreePath]),
+    ...fromPayload,
+  ];
+};
+
+const timelineFor = (
+  event: DxEventEnvelope,
+  timelines: readonly WorktreeTimeline[]
+): WorktreeTimeline | null => {
+  const matches = pathsOf(event).flatMap((path) =>
+    timelines.filter((t) => within(path, t.worktree))
+  );
+
+  return (
+    matches.toSorted((a, b) => b.worktree.length - a.worktree.length)[0] ?? null
+  );
+};
+
+const linkKeysOf = (event: DxEventEnvelope): readonly string[] => [
+  ...(event.identity.requestId === null
+    ? []
+    : [`request:${event.identity.requestId}`]),
+  ...(event.identity.generationId === null
+    ? []
+    : [`generation:${event.identity.generationId}`]),
+  ...(event.identity.sessionId === null
+    ? []
+    : [`session:${event.identity.sessionId}`]),
+];
+
+const timeOf = (event: DxEventEnvelope): number | null => {
+  if (event.occurredAt === null) {
+    return null;
+  }
+
+  const ms = Date.parse(event.occurredAt);
+
+  return Number.isNaN(ms) ? null : ms;
+};
+
+type Resolver = (event: DxEventEnvelope) => HistoricalAttribution | null;
+
+const base = (event: DxEventEnvelope) => ({
+  collectedBranch: event.context.branch,
+  eventId: event.eventId,
+});
+
+const byScoredCommit =
+  (commitBranches: ReadonlyMap<string, string>): Resolver =>
+  (event) => {
+    const sha = event.identity.commitSha;
+    const branch = sha === null ? undefined : commitBranches.get(sha);
+
+    return branch === undefined || sha === null
+      ? null
+      : {
+          ...base(event),
+          attribution: "strong",
+          basis: "scored-commit",
+          branch,
+          confidence: 0.9,
+          method: "commit-hash",
+          reason: `AI lines scored against commit ${sha.slice(0, 12)}, which is on ${branch} only`,
+        };
+  };
+
+const byLiveCapture: Resolver = (event) =>
+  LIVE_ACQUISITIONS.has(event.acquisition) && event.context.branch !== null
+    ? {
+        ...base(event),
+        attribution: "strong",
+        basis: "live-capture",
+        branch: event.context.branch,
+        confidence: 1,
+        method: "hook",
+        reason: "captured live with the branch checked out at that moment",
+      }
+    : null;
+
+const byWorktreeAtTime =
+  (
+    timelines: readonly WorktreeTimeline[],
+    options: BranchAtOptions
+  ): Resolver =>
+  (event) => {
+    const at = timeOf(event);
+    const timeline = timelineFor(event, timelines);
+
+    if (at === null || timeline === null) {
+      return null;
+    }
+
+    const resolved = branchAt(timeline, at, options);
+
+    return resolved.method === "unknown"
+      ? null
+      : {
+          ...base(event),
+          attribution: resolved.attribution,
+          basis: "worktree-at-time",
+          branch: resolved.branch,
+          confidence: resolved.confidence,
+          method: resolved.method,
+          reason: resolved.reason,
+        };
+  };
+
+const unassigned = (
+  event: DxEventEnvelope,
+  reason: string
+): HistoricalAttribution => ({
+  ...base(event),
+  attribution: "unassigned",
+  basis: "unassigned",
+  branch: null,
+  confidence: 0,
+  method: "unknown",
+  reason,
+});
+
+const withBranch = (
+  event: DxEventEnvelope,
+  found: HistoricalAttribution
+): DxEventEnvelope => ({
+  ...event,
+  context: { ...event.context, branch: found.branch },
+  payload: {
+    ...event.payload,
+    historicalBranch: {
+      attribution: found.attribution,
+      basis: found.basis,
+      collectedBranch: found.collectedBranch,
+      confidence: found.confidence,
+      method: found.method,
+    },
+  },
+});
+
+export const attributeHistoricalBranches = (
+  events: readonly DxEventEnvelope[],
+  input: HistoricalAttributionInput
+): HistoricalAttributionResult => {
+  const options = input.options ?? DEFAULT_BRANCH_AT_OPTIONS;
+
+  const direct: readonly Resolver[] = [
+    byLiveCapture,
+    byScoredCommit(input.commitBranches),
+    byWorktreeAtTime(input.timelines, options),
+  ];
+
+  const resolveDirect = (event: DxEventEnvelope) => {
+    for (const resolve of direct) {
+      const found = resolve(event);
+
+      if (found !== null) {
+        return found;
+      }
+    }
+
+    return null;
+  };
+
+  const first = new Map<string, HistoricalAttribution | null>(
+    events.flatMap((event) =>
+      isAiEvent(event) ? [[event.eventId, resolveDirect(event)] as const] : []
+    )
+  );
+
+  const linked = new Map<string, HistoricalAttribution>();
+
+  for (const event of events) {
+    const found = first.get(event.eventId);
+
+    if (found?.branch !== null && found?.branch !== undefined) {
+      for (const key of linkKeysOf(event)) {
+        const prior = linked.get(key);
+
+        if (prior === undefined || prior.confidence < found.confidence) {
+          linked.set(key, found);
+        }
+      }
+    }
+  }
+
+  const attributions: HistoricalAttribution[] = [];
+
+  const rewritten = events.map((event) => {
+    if (!isAiEvent(event)) {
+      return event;
+    }
+
+    const own = first.get(event.eventId) ?? null;
+
+    const viaLink =
+      own === null
+        ? linkKeysOf(event)
+            .map((key) => linked.get(key))
+            .find((a) => a !== undefined)
+        : undefined;
+
+    const found =
+      own ??
+      (viaLink === undefined
+        ? unassigned(
+            event,
+            timeOf(event) === null
+              ? "event has no timestamp"
+              : "no worktree path, scored commit or linked request/conversation id"
+          )
+        : {
+            ...base(event),
+            attribution: "provisional" as const,
+            basis: "linked-request" as const,
+            branch: viaLink.branch,
+            confidence: Math.min(viaLink.confidence, 0.8),
+            method: "request-link" as const,
+            reason: `shares a request/conversation id with ${viaLink.eventId} (${viaLink.basis})`,
+          });
+
+    attributions.push(found);
+
+    return withBranch(event, found);
+  });
+
+  return { attributions, events: rewritten };
+};
+
+export const historicalBranchDescriptor: ModuleDescriptor = {
+  contractVersion: CONTRACT_VERSION,
+  fixtureIds: ["branch-at-time/scripted-checkouts"],
+  gaps: [
+    {
+      code: "reflog-retention",
+      message:
+        "HEAD reflog entries expire (git default 90 days, 30 for unreachable); older instants fall back to provisional commit-graph evidence or stay unassigned.",
+    },
+    {
+      code: "csv-without-workspace",
+      message:
+        "Usage CSV rows carry no workspace; they are attributed only through a local event with the same request/conversation id, else unassigned.",
+    },
+    {
+      code: "commit-graph-exclusive-only",
+      message:
+        "Commit-graph evidence uses commits reachable from one local branch only; shared history and deleted branches give no evidence.",
+    },
+  ],
+  id: DescriptorIdSchema.make("correlation/branch-at-time"),
+  kind: "correlation",
+  owner: "backfill",
+  readiness: "degraded",
+  requiredInputs: [
+    "worktree HEAD reflog",
+    "occurredAt",
+    "context.worktreePath or payload workspace path",
+  ],
+  supportedFields: ["branch", "method", "confidence", "basis"],
+  version: BRANCH_AT_TIME_VERSION,
+};
+
+export const makeHistoricalBranchCorrelator = (
+  input: HistoricalAttributionInput
+): DxCorrelator => ({
+  correlate: (
+    events: readonly DxEventEnvelope[],
+    _mappings: readonly CorrelationMapping[]
+  ): readonly Correlation[] =>
+    attributeHistoricalBranches(events, input).attributions.map((a) => ({
+      attribution: a.attribution,
+      eventId: a.eventId,
+      evidenceIds: [EvidenceIdSchema.make(a.eventId)],
+      reason: `${a.basis}/${a.method} confidence ${a.confidence}: ${a.reason}`,
+      target: a.branch,
+      targetKind: BRANCH_AT_TIME_TARGET_KIND,
+    })),
+  descriptor: historicalBranchDescriptor,
+});
+
+export interface BranchAttributionSummary {
+  readonly branch: string | null;
+  readonly byBasis: ReadonlyMap<HistoricalBasis, number>;
+  readonly byMethod: ReadonlyMap<HistoricalAttribution["method"], number>;
+  readonly events: number;
+  readonly movedFromCollectedBranch: number;
+}
+
+const tally = <K extends string>(items: readonly K[]) => {
+  const counts = new Map<K, number>();
+
+  for (const item of items) {
+    counts.set(item, (counts.get(item) ?? 0) + 1);
+  }
+
+  return counts;
+};
+
+export const summarizeAttribution = (
+  attributions: readonly HistoricalAttribution[]
+): readonly BranchAttributionSummary[] => {
+  const byBranch = new Map<string | null, HistoricalAttribution[]>();
+
+  for (const a of attributions) {
+    byBranch.set(a.branch, [...(byBranch.get(a.branch) ?? []), a]);
+  }
+
+  return [...byBranch.entries()]
+    .toSorted(([a], [b]) => (a ?? "￿").localeCompare(b ?? "￿"))
+    .map(([branch, members]) => ({
+      branch,
+      byBasis: tally(members.map((m) => m.basis)),
+      byMethod: tally(members.map((m) => m.method)),
+      events: members.length,
+      movedFromCollectedBranch: members.filter(
+        (m) => m.collectedBranch !== m.branch
+      ).length,
+    }));
+};

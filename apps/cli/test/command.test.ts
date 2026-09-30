@@ -13,8 +13,9 @@ describe("command registration", () => {
       expect(names).toContain(capability.contract.name);
     }
 
+    expect(names).toContain("dx");
     expect(
       rootCommand.subcommands.flatMap((group) => group.commands)
-    ).toHaveLength(capabilities.length + 4);
+    ).toHaveLength(capabilities.length + 5);
   });
 });

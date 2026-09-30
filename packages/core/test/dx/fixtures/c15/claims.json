@@ -1,0 +1,72 @@
+{
+  "schema": "dxfr-c15-claims/v1",
+  "owner": "C15",
+  "pitch": "Cursor helps developers write code. The tracker shows how their development actually went.",
+  "productSeparation": "The recorder reports observed, source-reported and explicitly estimated facts per Git branch. It does not claim causal savings, productivity gains, human waiting time or AI code ownership. CI/CD and GitHub are out of scope.",
+  "forbiddenMetricPattern": "sav(ed|ings)|productivity|roi\\b|human[-.]?wait|waiting|speedup|ai-owned",
+  "forbiddenCopyPattern": "(time|hours|money|cost) saved|savings of|productivity (gain|boost|increase)|\\bROI\\b|\\d+x faster|human waiting|per shipped feature|ai[- ]written code",
+  "allowedNegationPattern": "\\b(never|not|no|without|unavailable|unsupported)\\b|no-causal",
+  "scannedSourceRoots": ["apps/cli/src", "packages/core/src/dx"],
+  "claims": [
+    {
+      "id": "tokens",
+      "readme": "Token usage: input, output, reasoning, cached",
+      "verdict": "supported-live-partial",
+      "evidence": "docs/execution/c14/live/analyze.json: input 25599, output 1381, cached-input 122880 equal the cursor-agent stream result.usage; reasoning unavailable (cursor-agent does not report it); total unavailable by design (no aggregate ledger)."
+    },
+    {
+      "id": "money",
+      "readme": "AI cost: actual API spending",
+      "verdict": "unavailable-live",
+      "evidence": "Live cursor-agent reports no charge; dx.cost.charge.usd unavailable with reason 'Not zero'. Price-table estimate is method=price-table:cursor@2026-09 and stays unavailable because the model was not in the table. A charge needs a user-selected Cursor usage CSV/dashboard export."
+    },
+    {
+      "id": "branch",
+      "readme": "Track AI usage per feature or branch",
+      "verdict": "supported-live",
+      "evidence": "Selector repo+branch feature/c14-live; branch comes from collect context (cursor-cli gap no-branch-in-cli-output is disclosed)."
+    },
+    {
+      "id": "tool-calls",
+      "readme": "Tool calls",
+      "verdict": "supported-live-overcounted",
+      "evidence": "dx.flight.tool-calls=24 vs 12 completed calls in the stream (C09 finding 2 / C14 gap). Do not quote this number in the demo until fixed."
+    },
+    {
+      "id": "code-changes",
+      "readme": "Files and lines changed",
+      "verdict": "supported-live",
+      "evidence": "dx.git.files-changed 2, lines +16/-0, commits 1 (live); C07 golden +48/-8 over 2 files."
+    },
+    {
+      "id": "tests",
+      "readme": "Test runs, failures, iterations",
+      "verdict": "supported-local",
+      "evidence": "local-test junit: live 1 run/0 failures; adversarial 1 run/1 failure. Only locally selected junit files; no CI."
+    },
+    {
+      "id": "rework",
+      "readme": "Rework: how much code had to be changed again",
+      "verdict": "partial",
+      "evidence": "git.files-retouched and friction.reworked-files exist but disagree on the adversarial flight (1 vs 0, C14 gap). No 'Rework %' metric exists; README's 27% figure is illustrative only."
+    },
+    {
+      "id": "time",
+      "readme": "Development time / agent activity over time",
+      "verdict": "supported-live",
+      "evidence": "Separate metrics: branch-age (wall clock, partial while unmerged), active.ms (idle-gap intervals), agent.ms (merged agent intervals). None is labelled human waiting."
+    },
+    {
+      "id": "per-shipped-feature",
+      "readme": "$3.82 / shipped feature",
+      "verdict": "not-supported",
+      "evidence": "No merge/ship detection beyond local git; no charge in live flight. README example table is illustrative, not recorder output."
+    },
+    {
+      "id": "live-capture",
+      "readme": "Works with Cursor",
+      "verdict": "supported-cli-only",
+      "evidence": "Real cursor-agent run with project .cursor/hooks.json installed and uninstalled; ~/.cursor/hooks.json hash unchanged. Cursor IDE not exercised."
+    }
+  ]
+}

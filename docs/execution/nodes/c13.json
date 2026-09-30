@@ -1,0 +1,66 @@
+{
+  "id": "C13",
+  "status": "ready",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "contractVersion": "dx.contracts.v1",
+  "ownedFiles": [
+    "scripts/dx-install.ts",
+    "packages/core/test/dx/c13.test.ts",
+    "docs/install.md",
+    "docs/execution/install-config.json",
+    "docs/execution/nodes/c13.json",
+    "docs/execution/nodes/c13.md"
+  ],
+  "exports": ["install", "uninstall", "readManifest", "main", "hookCommandFor", "mcpEntryFor", "configRootFor", "HOOK_EVENTS", "MCP_SERVER_NAME", "SKILL_NAMES", "InstallError"],
+  "descriptorExport": null,
+  "fixtureIds": ["c13-owned-tmp-config-root (generated per test in os.tmpdir, removed afterEach)"],
+  "checks": [
+    { "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/c13.test.ts", "exit": 0, "result": "4 passed" },
+    { "cmd": "pnpm exec oxlint scripts/dx-install.ts packages/core/test/dx/c13.test.ts", "exit": 0 },
+    { "cmd": "pnpm exec oxfmt --check scripts/dx-install.ts packages/core/test/dx/c13.test.ts docs/install.md", "exit": 0 },
+    { "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json | grep -E 'c13|dx-install'", "exit": 0, "result": "no diagnostics in C13 files (the script is type-checked through the c13 test import)" },
+    { "cmd": "owned-temp-dir --run c13-cursor-demo -- demo.sh (live Cursor capture, see c13.md)", "exit": 0 }
+  ],
+  "liveProof": {
+    "date": "2026-09-30T14:44+02:00",
+    "host": "cursor-agent logged in; project hooks only, ~/.cursor untouched",
+    "flow": "git init demo repo in owned temp dir -> branch feature/dx-demo -> dx-install install --store <tmp> -> cursor-agent -p --trust --force --output-format json (created a file and ran ls) -> commit -> dx collect cursor-hooks + cursor-cli + git-history -> dx analyze --repo -> dx-install uninstall",
+    "hookSpoolFiles": 7,
+    "collect": { "cursor-hooks": "complete 7/7", "cursor-cli": "partial 1", "git-history": "complete 1" },
+    "analyzeRepoScope": {
+      "tokens.input": 14746,
+      "tokens.output": 350,
+      "tokens.cached-input": 24832,
+      "tokens.cache-write": 0,
+      "tokens.reasoning": null,
+      "requests": 1,
+      "money.charge": null,
+      "flight.tool-calls": 3,
+      "flight.agent.ms": 11003,
+      "flight.active.ms": 11003,
+      "flight.branch-age.ms": 13954,
+      "git.commits": 1,
+      "git.files-changed": 6,
+      "git.lines-added": 204,
+      "friction.tool-call-failure-rate": 0.333
+    },
+    "uninstall": "exit 0; hooks.json and mcp.json it created were removed, backups kept"
+  },
+  "supportedFields": [
+    "mcp.json mcpServers.rat-stack {command,args,env.DX_REPO,env.DX_STORE?}",
+    "hooks.json recorder hook on 11 events",
+    ".cursor/skills/dx-analyze, dx-explain",
+    ".git/info/exclude .dx-flight-recorder/",
+    "ownership manifest + per-file backups",
+    "uninstall of owned entries only"
+  ],
+  "gaps": [
+    "Flight-scoped queries do not resolve a branch name: `dx analyze --flight feature/dx-demo` returns null metrics and `dx explain --flight feature/dx-demo` returns 0 entries, even though `dx analyze --repo` shows the captured data. Correlation/A02 must document or resolve the flight id for a branch (owner: correlation/flight + A02).",
+    "The hook spool records decoded as hookEvent 'unknown' in a quick summary (record keys: capturedAt, git, hook, recordHash, spoolVersion). The collector itself reported complete 7/7, so this may be only my summary reading the wrong field. B05 should confirm the per-event kinds.",
+    "Money: Cursor sources gave no charge; cost stays null (unavailable). Reasoning tokens stay null.",
+    "In the demo the commit also included the installer's .cursor files (manifest, backups, mcp.json with absolute paths), which inflated git files/lines for the branch. Users should commit or exclude .cursor/ deliberately; the installer only excludes the spool.",
+    "The hook/MCP node path defaults to the node that ran the installer; run it from the recorder root so proto selects 24.18.0 (the demo ran from another cwd and recorded node 26.10.0, which still worked).",
+    "Uninstall leaves an empty .cursor/skills folder behind.",
+    "The MCP server was installed but Cursor IDE MCP/skill discovery was not exercised here (C09/C17)."
+  ]
+}

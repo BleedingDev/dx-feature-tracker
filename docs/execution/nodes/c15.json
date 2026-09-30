@@ -1,0 +1,27 @@
+{
+  "id": "C15",
+  "status": "ready",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "ownedFiles": [
+    "docs/execution/c15/audit-claims.sh",
+    "packages/core/test/dx/fixtures/c15/claims.json",
+    "docs/execution/nodes/c15.json",
+    "docs/execution/nodes/c15.md"
+  ],
+  "checks": [
+    { "cmd": "/Users/satan/bin/owned-temp-dir --run c15-audit -- bash docs/execution/c15/audit-claims.sh", "exit": 0, "result": "26 pass, 0 fail (C14 live + adversarial analyze/explain, source copy scan)" },
+    { "cmd": "negative: same audit on a copy of live analyze.json with charge=0, a time-saved metric and an unlabelled estimate", "exit": 1, "result": "4 fail, as expected" }
+  ],
+  "findings": [
+    { "owner": "flight-time/C09", "severity": "high", "summary": "dx.flight.tool-calls=24 on the live flight vs 12 completed calls in the stream; do not quote tool calls in the demo until fixed." },
+    { "owner": "cursor-cli collector", "severity": "medium", "summary": "Real cursor-agent stream events are stored with origin 'imported'; the only 'live' origin event is the manual marker.start. Live capture is real, but originMix alone does not prove it." },
+    { "owner": "README/product copy", "severity": "medium", "summary": "README example table ($3.82, 27% rework, $/shipped feature) is illustrative. The recorder has no rework % metric, no ship detection and no live charge; label it as an example or replace it with real recorder output." },
+    { "owner": "friction/git", "severity": "low", "summary": "git.files-retouched=1 but friction.reworked-files=0 on the adversarial flight (from C14)." }
+  ],
+  "gaps": [
+    "Money is unavailable from live cursor-agent; a charge needs a user-selected Cursor usage CSV or dashboard export.",
+    "Reasoning tokens are unavailable from cursor-agent.",
+    "The audit checks the recorded C14 outputs; rerun it with new analyze/explain paths after C14 is rerun.",
+    "The checker is a node heredoc inside a .sh, so oxlint does not cover it (same pattern as C14)."
+  ]
+}

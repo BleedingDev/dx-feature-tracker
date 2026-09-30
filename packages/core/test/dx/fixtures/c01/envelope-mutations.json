@@ -1,0 +1,267 @@
+{
+  "fixtureId": "c01-envelope-mutations",
+  "owner": "C01",
+  "origin": "fixture",
+  "contractVersion": "dx.contracts.v1",
+  "description": "Single-field mutations of core-golden-flight batch 0 event 0. 'reject' rows must fail DxEventEnvelopeSchema decode; 'accept' rows document current schema laxness (audit findings), not desired behaviour.",
+  "baseFixture": "core-golden-flight",
+  "baseEventIndex": 0,
+  "envelopeMutations": [
+    {
+      "id": "schema-version-v2",
+      "op": "set",
+      "path": ["schemaVersion"],
+      "value": "dx.event.v2",
+      "expect": "reject",
+      "reason": "unknown envelope version"
+    },
+    {
+      "id": "schema-version-v0",
+      "op": "set",
+      "path": ["schemaVersion"],
+      "value": "dx.event.v0",
+      "expect": "reject",
+      "reason": "older unknown envelope version"
+    },
+    {
+      "id": "schema-version-missing",
+      "op": "delete",
+      "path": ["schemaVersion"],
+      "expect": "reject",
+      "reason": "envelope without version"
+    },
+    {
+      "id": "schema-version-null",
+      "op": "set",
+      "path": ["schemaVersion"],
+      "value": null,
+      "expect": "reject",
+      "reason": "null version"
+    },
+    {
+      "id": "event-id-missing",
+      "op": "delete",
+      "path": ["eventId"],
+      "expect": "reject",
+      "reason": "no stable event id"
+    },
+    {
+      "id": "adapter-id-null",
+      "op": "set",
+      "path": ["adapterId"],
+      "value": null,
+      "expect": "reject",
+      "reason": "adapterId is required"
+    },
+    {
+      "id": "kind-unknown",
+      "op": "set",
+      "path": ["kind"],
+      "value": "cursor.magic",
+      "expect": "reject",
+      "reason": "event kind outside the frozen vocabulary"
+    },
+    {
+      "id": "origin-unknown",
+      "op": "set",
+      "path": ["origin"],
+      "value": "production",
+      "expect": "reject",
+      "reason": "origin outside live|imported|replay|fixture|synthetic"
+    },
+    {
+      "id": "origin-missing",
+      "op": "delete",
+      "path": ["origin"],
+      "expect": "reject",
+      "reason": "origin cannot be omitted (fixture must never masquerade)"
+    },
+    {
+      "id": "acquisition-unknown",
+      "op": "set",
+      "path": ["acquisition"],
+      "value": "scrape",
+      "expect": "reject",
+      "reason": "unknown acquisition"
+    },
+    {
+      "id": "precision-unknown",
+      "op": "set",
+      "path": ["occurredAtPrecision"],
+      "value": "nanosecond",
+      "expect": "reject",
+      "reason": "unknown time precision"
+    },
+    {
+      "id": "observed-at-null",
+      "op": "set",
+      "path": ["observedAt"],
+      "value": null,
+      "expect": "reject",
+      "reason": "observedAt is required"
+    },
+    {
+      "id": "occurred-at-null",
+      "op": "set",
+      "path": ["occurredAt"],
+      "value": null,
+      "expect": "accept",
+      "reason": "missing occurredAt is legal and stays unavailable"
+    },
+    {
+      "id": "context-missing",
+      "op": "delete",
+      "path": ["context"],
+      "expect": "reject",
+      "reason": "flight context is required"
+    },
+    {
+      "id": "context-branch-number",
+      "op": "set",
+      "path": ["context", "branch"],
+      "value": 42,
+      "expect": "reject",
+      "reason": "branch must be string or null"
+    },
+    {
+      "id": "context-branch-missing",
+      "op": "delete",
+      "path": ["context", "branch"],
+      "expect": "reject",
+      "reason": "nullable fields must be explicit null, not absent"
+    },
+    {
+      "id": "identity-attempt-fraction",
+      "op": "set",
+      "path": ["identity", "githubAttempt"],
+      "value": 1.5,
+      "expect": "reject",
+      "reason": "attempt must be an integer"
+    },
+    {
+      "id": "identity-missing",
+      "op": "delete",
+      "path": ["identity"],
+      "expect": "reject",
+      "reason": "identity block is required"
+    },
+    {
+      "id": "evidence-bounded-string",
+      "op": "set",
+      "path": ["evidence", "bounded"],
+      "value": "yes",
+      "expect": "reject",
+      "reason": "bounded must be boolean"
+    },
+    {
+      "id": "evidence-missing",
+      "op": "delete",
+      "path": ["evidence"],
+      "expect": "reject",
+      "reason": "evidence ref is required"
+    },
+    {
+      "id": "payload-array",
+      "op": "set",
+      "path": ["payload"],
+      "value": ["x"],
+      "expect": "reject",
+      "reason": "payload must be a record"
+    },
+    {
+      "id": "payload-null",
+      "op": "set",
+      "path": ["payload"],
+      "value": null,
+      "expect": "reject",
+      "reason": "payload must be a record"
+    },
+    {
+      "id": "field-semantics-bad-method",
+      "op": "set",
+      "path": ["fieldSemantics"],
+      "value": [
+        {
+          "field": "tokens.input",
+          "method": "guessed",
+          "note": null,
+          "rawName": null,
+          "unit": "tokens"
+        }
+      ],
+      "expect": "reject",
+      "reason": "value method outside the discriminator set"
+    },
+    {
+      "id": "field-semantics-missing-method",
+      "op": "set",
+      "path": ["fieldSemantics"],
+      "value": [
+        {
+          "field": "tokens.input",
+          "note": null,
+          "rawName": null,
+          "unit": "tokens"
+        }
+      ],
+      "expect": "reject",
+      "reason": "an estimated or reported value must declare its method"
+    },
+    {
+      "id": "field-semantics-estimated",
+      "op": "set",
+      "path": ["fieldSemantics"],
+      "value": [
+        {
+          "field": "cost.usd",
+          "method": "estimated",
+          "note": "price-table",
+          "rawName": null,
+          "unit": "usd"
+        }
+      ],
+      "expect": "accept",
+      "reason": "estimates are legal when labelled with method=estimated"
+    },
+    {
+      "id": "source-version-null",
+      "op": "set",
+      "path": ["sourceVersion"],
+      "value": null,
+      "expect": "accept",
+      "reason": "unknown source version is legal as null"
+    },
+    {
+      "id": "finding-observed-at-not-iso",
+      "op": "set",
+      "path": ["observedAt"],
+      "value": "yesterday",
+      "expect": "accept",
+      "reason": "FINDING: IsoTimestampSchema is a plain string; non-ISO timestamps are not rejected"
+    },
+    {
+      "id": "finding-event-id-free-form",
+      "op": "set",
+      "path": ["eventId"],
+      "value": "not-a-hash",
+      "expect": "accept",
+      "reason": "FINDING: eventId is not checked for the sha256: form"
+    },
+    {
+      "id": "finding-excess-field",
+      "op": "set",
+      "path": ["tokensGuess"],
+      "value": 123,
+      "expect": "accept",
+      "reason": "FINDING: unknown top-level fields are silently stripped, not rejected"
+    },
+    {
+      "id": "finding-empty-adapter-id",
+      "op": "set",
+      "path": ["adapterId"],
+      "value": "",
+      "expect": "accept",
+      "reason": "FINDING: empty adapterId is accepted"
+    }
+  ]
+}

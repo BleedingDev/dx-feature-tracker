@@ -1,0 +1,5 @@
+{"schema":"dx.local-test.command.v1","sessionId":"cmd-1","argv":["pnpm","vitest","run","--reporter=junit","API_TOKEN=abc123"],"cwd":"/fixture/repo","branch":"feature/cart","headSha":"1111111111111111111111111111111111111111","startedAt":"2026-09-30T10:15:00.000Z","endedAt":"2026-09-30T10:15:04.000Z","exitCode":1,"reports":["junit-failures.xml"]}
+{"schema":"dx.local-test.command.v1","sessionId":"cmd-2","argv":["pnpm","test"],"cwd":"/fixture/repo","branch":"feature/cart","startedAt":"2026-09-30T11:00:00.000Z","endedAt":"2026-09-30T11:00:40.000Z","exitCode":0}
+{"schema":"dx.local-test.command.v1","sessionId":"cmd-3","argv":["git","status"],"startedAt":"2026-09-30T11:05:00.000Z"}
+not json
+{"schema":"other","sessionId":"x","argv":["ls"]}

@@ -1,0 +1,92 @@
+{
+ "label": "LIVE FLIGHT (real cursor-agent)",
+ "snapshotId": "snap_b59b5ecb1b0620672d2be3340fd647ff",
+ "perBranch": {
+  "dx.ai-usage.tokens.input": 25599,
+  "dx.ai-usage.tokens.output": 1381,
+  "dx.ai-usage.tokens.cached-input": 122880,
+  "dx.ai-usage.tokens.reasoning": null,
+  "dx.ai-usage.requests": 1,
+  "dx.cost.charge.usd": null,
+  "dx.flight.tool-calls": 24,
+  "dx.flight.agent.ms": 33007,
+  "dx.flight.active.ms": 34035,
+  "dx.flight.branch-age.ms": 36930,
+  "dx.flight.commits": 1,
+  "dx.git.files-changed": 2,
+  "dx.git.lines-added": 16,
+  "dx.git.lines-deleted": 0,
+  "dx.friction.test-runs": 1,
+  "dx.friction.test-failures": 0,
+  "dx.friction.reworked-files": 0
+ },
+ "streamToolCallsCompleted": 12,
+ "passed": 10,
+ "failed": 0,
+ "results": [
+  {
+   "name": "cursor-agent exit 0",
+   "pass": true,
+   "detail": null
+  },
+  {
+   "name": "every install/collect/analyze/explain/uninstall step exit 0",
+   "pass": true,
+   "detail": null
+  },
+  {
+   "name": "real hook spool files captured",
+   "pass": true,
+   "detail": "19"
+  },
+  {
+   "name": "stream result carried usage",
+   "pass": true,
+   "detail": {
+    "inputTokens": 25599,
+    "outputTokens": 1381,
+    "cacheReadTokens": 122880,
+    "cacheWriteTokens": 0
+   }
+  },
+  {
+   "name": "analyze tokens.input == Cursor-reported inputTokens",
+   "pass": true,
+   "detail": [
+    25599,
+    25599
+   ]
+  },
+  {
+   "name": "analyze tokens.output == Cursor-reported outputTokens",
+   "pass": true,
+   "detail": [
+    1381,
+    1381
+   ]
+  },
+  {
+   "name": "analyze tokens.cached-input == cacheReadTokens",
+   "pass": true,
+   "detail": [
+    122880,
+    122880
+   ]
+  },
+  {
+   "name": "money unavailable (cursor-agent reports no charge)",
+   "pass": true,
+   "detail": null
+  },
+  {
+   "name": "branch commit observed",
+   "pass": true,
+   "detail": 1
+  },
+  {
+   "name": "explain timeline non-empty",
+   "pass": true,
+   "detail": 27
+  }
+ ]
+}

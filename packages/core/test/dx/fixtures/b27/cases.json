@@ -1,0 +1,132 @@
+{
+  "schema": "dx.b27.interval-cases.v1",
+  "note": "Synthetic interval fixtures (ms since epoch). No real user data.",
+  "cases": [
+    {
+      "id": "b27-union-overlap",
+      "intervals": [
+        {
+          "startMs": 1000,
+          "endMs": 5000,
+          "evidenceIds": ["ev:a"],
+          "label": "cursor-session"
+        },
+        {
+          "startMs": 3000,
+          "endMs": 7000,
+          "evidenceIds": ["ev:b", "ev:a"],
+          "label": "cursor-session"
+        },
+        {
+          "startMs": 7000,
+          "endMs": 8000,
+          "evidenceIds": ["ev:c"],
+          "label": "cursor-session"
+        },
+        {
+          "startMs": 10000,
+          "endMs": 12000,
+          "evidenceIds": ["ev:d"],
+          "label": "cursor-session"
+        }
+      ],
+      "expect": {
+        "union": {
+          "censored": 0,
+          "clockErrors": 0,
+          "totalMs": 9000,
+          "merged": [
+            {
+              "startMs": 1000,
+              "endMs": 8000,
+              "evidenceIds": ["ev:a", "ev:b", "ev:c"]
+            },
+            { "startMs": 10000, "endMs": 12000, "evidenceIds": ["ev:d"] }
+          ]
+        },
+        "sum": { "totalMs": 11000, "excluded": 0 }
+      }
+    },
+    {
+      "id": "b27-censored",
+      "intervals": [
+        {
+          "startMs": null,
+          "endMs": 5000,
+          "evidenceIds": ["ev:e"],
+          "label": "agent-run"
+        },
+        {
+          "startMs": 2000,
+          "endMs": null,
+          "evidenceIds": ["ev:f"],
+          "label": "agent-run"
+        },
+        {
+          "startMs": 6000,
+          "endMs": 9000,
+          "evidenceIds": ["ev:g"],
+          "label": "agent-run"
+        }
+      ],
+      "expect": {
+        "union": {
+          "censored": 2,
+          "clockErrors": 0,
+          "totalMs": 3000,
+          "merged": [
+            { "startMs": 6000, "endMs": 9000, "evidenceIds": ["ev:g"] }
+          ]
+        },
+        "sum": { "totalMs": 3000, "excluded": 2 }
+      }
+    },
+    {
+      "id": "b27-clock-error",
+      "intervals": [
+        {
+          "startMs": 9000,
+          "endMs": 4000,
+          "evidenceIds": ["ev:h"],
+          "label": "tool-call"
+        },
+        {
+          "startMs": 100,
+          "endMs": 100,
+          "evidenceIds": ["ev:i"],
+          "label": "tool-call"
+        }
+      ],
+      "expect": {
+        "union": {
+          "censored": 0,
+          "clockErrors": 1,
+          "totalMs": 0,
+          "merged": [{ "startMs": 100, "endMs": 100, "evidenceIds": ["ev:i"] }]
+        },
+        "sum": { "totalMs": 0, "excluded": 1 }
+      }
+    },
+    {
+      "id": "b27-empty",
+      "intervals": [
+        {
+          "startMs": null,
+          "endMs": null,
+          "evidenceIds": [],
+          "label": "unknown"
+        },
+        { "startMs": 5, "endMs": 1, "evidenceIds": [], "label": "unknown" }
+      ],
+      "expect": {
+        "union": {
+          "censored": 1,
+          "clockErrors": 1,
+          "totalMs": null,
+          "merged": []
+        },
+        "sum": { "totalMs": null, "excluded": 2 }
+      }
+    }
+  ]
+}

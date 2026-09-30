@@ -1,0 +1,84 @@
+{
+  "id": "B04",
+  "status": "ready",
+  "readiness": "ready",
+  "role": "optional",
+  "contract": {
+    "version": "dx.contracts.v1",
+    "digest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090"
+  },
+  "files": [
+    "packages/core/src/dx/collectors/git-observation/collector.ts",
+    "packages/core/src/dx/collectors/git-observation/git-runner.ts",
+    "packages/core/src/dx/collectors/git-observation/parse.ts",
+    "packages/core/test/dx/b04.test.ts",
+    "packages/core/test/dx/fixtures/b04/porcelain-dirty-feature.json"
+  ],
+  "exports": {
+    "collector": "gitObservationCollector: DxCollector<ChildProcessSpawner> (collector.ts)",
+    "descriptor": "gitObservationDescriptor id collector.git-observation (collector.ts)",
+    "injectable": "makeGitObservationCollector(runGit), collectGitObservation(runGit, input)",
+    "adapterId": "git-observation"
+  },
+  "requires": "ChildProcessSpawner (NodeServices.layer from @effect/platform-node) at composition",
+  "fixtureIds": [
+    "b04/porcelain-dirty-feature",
+    "b04/live-temp-repo"
+  ],
+  "sourceProbe": "git version 2.56.0 (/opt/homebrew/bin/git); read-only commands with GIT_OPTIONAL_LOCKS=0: version, rev-parse, status --porcelain=v2 -z, diff HEAD --numstat -z, hash-object (no -w), log -g",
+  "events": {
+    "kind": "git.observation",
+    "payload.observationKind": [
+      "working-tree",
+      "branch-reflog"
+    ]
+  },
+  "supportedFields": [
+    "branch",
+    "headSha",
+    "upstream",
+    "ahead",
+    "behind",
+    "trackedChangedFiles",
+    "stagedFiles",
+    "untrackedFiles",
+    "conflictedFiles",
+    "uncommittedLinesAdded",
+    "uncommittedLinesDeleted",
+    "uncommittedBinaryFiles",
+    "worktreeFingerprint",
+    "reflog.action",
+    "reflog.createdFrom",
+    "reflog.occurredAt"
+  ],
+  "checks": [
+    {
+      "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b04.test.ts",
+      "exit": 0,
+      "result": "7 passed"
+    },
+    {
+      "cmd": "pnpm exec oxlint <b04 files>",
+      "exit": 0
+    },
+    {
+      "cmd": "pnpm exec oxfmt --check <b04 files>",
+      "exit": 0
+    },
+    {
+      "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json",
+      "exit": 1,
+      "note": "0 diagnostics in B04 files; errors only in codex, git-identity, local-feedback, opencode collectors (other owners) at 14:11"
+    }
+  ],
+  "gaps": [
+    "observation-not-history: state sampled only at collect time",
+    "reflog-local-retention: reflog local and gc-expired",
+    "no-ai-attribution",
+    "untracked file line counts not measured (count only)",
+    "fingerprint-unavailable when >200 changed paths",
+    "createdFrom is git's reflog text (e.g. HEAD for git switch -c), not a resolved base branch",
+    "overlaps B02 git-identity branch creation; integration should prefer one for branch start",
+    "not registered in barrel/registry (A02/A07 own that)"
+  ]
+}

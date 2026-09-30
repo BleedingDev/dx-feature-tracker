@@ -1,0 +1,14 @@
+{
+  "owner": "C06",
+  "purpose": "Unsupported layout/version fixtures for the Cursor source version audit. Synthetic; no real prompts, content or identities.",
+  "fixtures": {
+    "c06.usage-export.unknown-header": "usage-export-unknown-header.csv",
+    "c06.usage-export.no-token-or-cost": "usage-export-no-token-or-cost.csv",
+    "c06.transcript.unknown-jsonl-layout": "transcript-unknown-layout.jsonl",
+    "c06.transcript.unknown-txt-layout": "transcript-unknown-layout.txt",
+    "c06.hooks.future-spool-version": "spool-future-version.json",
+    "c06.hooks.future-hook-event": "generated in test via buildSpoolRecord (hookEvent=futureHookEvent, cursorVersion=99.0.0)",
+    "c06.local-db.unknown-schema": "generated in test in an owned temp dir (table future_layout_v9)",
+    "c06.local-db.itemtable-layout": "generated in test in an owned temp dir (ItemTable + cursorDiskKV, empty)"
+  }
+}

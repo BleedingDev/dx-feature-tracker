@@ -1,0 +1,22 @@
+{
+  "checkpoint_id": "0f1e2d3c4b5a",
+  "strategy": "manual-commit",
+  "branch": "feature/entire-demo",
+  "checkpoints_count": 2,
+  "files_touched": ["src/a.ts", "test/a.test.ts"],
+  "sessions": [
+    {
+      "metadata": "/0f/1e2d3c4b5a/0/metadata.json"
+    },
+    {
+      "metadata": "/0f/1e2d3c4b5a/1/metadata.json"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 700,
+    "cache_read_tokens": 4000,
+    "cache_creation_tokens": 50,
+    "output_tokens": 350,
+    "api_call_count": 3
+  }
+}

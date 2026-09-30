@@ -1,0 +1,8 @@
+recorder_head 2e78dc98f56044897dc4178331388120fb27966d
+recorder_dirty_paths 223
+cli_dist_sha256 4c39549492a2d28c4a53e3de4e0641fe9b154a91f0e6f81aa57099a01b430ba6
+installer_sha256 4bc956fda622e1946ccee0a42424853a6b0dd86657f1f659d592f71e0245b2c4
+node v24.18.0
+cursor_agent 2026.09.28-64d2043
+dx_cli_version rat-stack v0.1.0
+operator_role cursor-validation-owner(C17 agent)

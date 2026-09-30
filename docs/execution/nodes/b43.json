@@ -1,0 +1,85 @@
+{
+  "id": "B43",
+  "role": "optional",
+  "status": "disabled",
+  "deliverable": "Validate explicit user-owned dashboard-response JSON exports, request/conversation keys, cost fields and pagination completeness; no cookie/HAR credentials.",
+  "ownedFiles": [
+    "packages/core/src/dx/collectors/cursor-dashboard-response/parse.ts",
+    "packages/core/src/dx/collectors/cursor-dashboard-response/descriptor.ts",
+    "packages/core/src/dx/collectors/cursor-dashboard-response/collector.ts",
+    "packages/core/test/dx/b43.test.ts",
+    "packages/core/test/dx/fixtures/b43/",
+    "docs/execution/nodes/b43.json",
+    "docs/execution/nodes/b43.md"
+  ],
+  "frozenContract": {
+    "version": "dx.contracts.v1",
+    "digest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+    "digestOf": "packages/core/src/dx/contracts/version.ts CONTRACT_DIGEST",
+    "docSha256": "2701e1aa3687aea5eb80420a1fbc87866eef332bc54e9311c8f61d4b99b9519d"
+  },
+  "descriptorExport": {
+    "module": "packages/core/src/dx/collectors/cursor-dashboard-response/collector.ts",
+    "descriptor": "cursorDashboardResponseDescriptor (descriptor.ts)",
+    "collector": "cursorDashboardResponseCollector",
+    "collectorRequirements": "FileSystem.FileSystem | Crypto.Crypto (NodeServices.layer)",
+    "descriptorId": "collector.cursor-dashboard-response",
+    "adapterId": "cursor-dashboard-response",
+    "readiness": "disabled"
+  },
+  "fixtureIds": [
+    "b43-dashboard-complete-paged",
+    "b43-dashboard-missing-page",
+    "b43-dashboard-single-no-total",
+    "b43-dashboard-har-refused",
+    "b43-dashboard-cookie-refused"
+  ],
+  "sourceProbe": {
+    "observedAt": "2026-09-30T12:27:00Z",
+    "results": [
+      { "cmd": "none", "exit": null, "result": "No user-selected dashboard response export was provided; producing one requires the logged-in cursor.com dashboard (session cookie), which this node must not touch." }
+    ],
+    "conclusion": "Input not demonstrated on this host. Collector is fixture-tested only; descriptor readiness is disabled."
+  },
+  "supportedFormats": {
+    "single": "one response body {totalUsageEventsCount, usageEventsDisplay[]} (usageEvents[] also accepted)",
+    "array": "array of response bodies or of {request:{page,pageSize}, response}",
+    "pages": "{pages:[{request:{page,pageSize}, response}]}",
+    "refused": "HAR ({log:{entries}}) and any file containing cookie/authorization/token keys -> UnsupportedSource; not-JSON or unrecognized shape -> UnsupportedSource"
+  },
+  "supportedFields": [
+    "occurredAt (epoch ms/s or zoned ISO; unzoned rows rejected)",
+    "identity.requestId",
+    "identity.sessionId (conversationId|composerId)",
+    "payload.model",
+    "payload.maxMode",
+    "payload.rawCategory",
+    "payload.tokens.{input,output,cached-input,cache-write,reasoning,total}",
+    "payload.rawTokens",
+    "payload.costUsd (tokenUsage.totalCents/100, else usageBasedCosts)",
+    "payload.costRawField",
+    "payload.costLedger (charge|metered|not-charged|unallocated)",
+    "payload.charge (charge ledger only)",
+    "payload.requestUnits (requestsCosts)",
+    "payload.requestKey",
+    "payload.tokenBased",
+    "payload.batchId",
+    "coverage.expectedItems (totalUsageEventsCount), gaps pagination-unknown|pagination-incomplete (missing pages)|duplicate-rows|rejected-rows|request-key-unavailable|branch-unassigned"
+  ],
+  "checks": [
+    { "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b43.test.ts", "exit": 0, "result": "5/5 passed" },
+    { "cmd": "pnpm exec oxlint <4 owned ts files>", "exit": 0 },
+    { "cmd": "pnpm exec oxfmt --check <4 owned ts files>", "exit": 0 },
+    { "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "result": "0 errors in B43 files; remaining errors only in others' files (opencode collector, test/dx/audits/c03, c07)" }
+  ],
+  "gaps": [
+    "Not demonstrated: no real dashboard response export on this host; integration must not register it as ready.",
+    "Field names follow publicly seen cursor.com dashboard responses; unverified against a live export.",
+    "requestId/conversationId are read only if rows carry them; real rows may have neither, leaving time-window correlation as the only join to a branch.",
+    "Rows carry no branch; all events are attribution 'unassigned'.",
+    "A row whose field has the wrong type makes the whole document unrecognized (schema decode at the boundary), rather than rejecting only that row.",
+    "No tool-call counts from this source (payload.toolCalls null).",
+    "Never calls the dashboard API, never reads cookies/browser storage."
+  ],
+  "dependencyProposals": []
+}

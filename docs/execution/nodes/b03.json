@@ -1,0 +1,43 @@
+{
+  "id": "B03",
+  "status": "ready",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "ownedFiles": [
+    "packages/core/src/dx/collectors/git-history/git-history.ts",
+    "packages/core/src/dx/collectors/git-history/parse.ts",
+    "packages/core/test/dx/b03.test.ts",
+    "packages/core/test/dx/fixtures/b03/log-numstat.txt",
+    "packages/core/test/dx/fixtures/b03/worktree-numstat.txt",
+    "packages/core/test/dx/fixtures/b03/reflog.txt"
+  ],
+  "exports": {
+    "module": "packages/core/src/dx/collectors/git-history/git-history.ts",
+    "collector": "gitHistoryCollector",
+    "descriptor": "gitHistoryDescriptor (id collector.git-history, readiness ready)",
+    "adapterId": "git-history",
+    "function": "collectGitHistory(input, { baseRef?, observedAt?, runner? })",
+    "runner": "nodeGitRunner (read-only git via execFileSync, GIT_OPTIONAL_LOCKS=0)"
+  },
+  "fixtureIds": ["b03-log-numstat", "b03-live-temp-repo"],
+  "sourceProbe": "git version (sourceVersion on every event); live test builds a throwaway repo in os.tmpdir and removes it in afterAll",
+  "events": {
+    "git.commit": "one per commit in merge-base(base, HEAD)..HEAD; upstreamKey branch:<branch>:commit:<sha>; occurredAt = committer date (source-reported), observedAt = collection time; payload authoredAt, committedAt, parents, isMerge, filesChanged, linesAdded, linesDeleted, binaryFiles, paths (<=200), timeBasis, observationMode=backfill",
+    "git.diff": "uncommitted worktree vs HEAD (numstat + untracked count); occurredAt null; upstreamKey includes a digest so each changed state is a new event",
+    "git.observation": "oldest reflog entry of refs/heads/<branch>; branchCreatedAt only when entry is 'branch: Created from X', otherwise null with reason"
+  },
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b03.test.ts", "exit": 0, "result": "8/8 passed"},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json (filtered to git-history|b03)", "exit": "1 overall from other owners' files; 0 diagnostics in B03 files"},
+    {"cmd": "pnpm exec oxlint <b03 files>", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check <b03 files>", "exit": 0}
+  ],
+  "gaps": [
+    "Base branch auto-detected from origin/HEAD, main, master, origin/main, origin/master; other trunk names need options.baseRef (not yet exposed through CollectInput/CLI).",
+    "Merge commits carry no numstat (numstatAvailable=false).",
+    "Commit dates are rewritable by rebase/amend; first-observed ordering needs the store or B04.",
+    "Branch creation from reflog only; 'Created from HEAD' is reported literally.",
+    "Not registered in the dx barrel/registry (A02/A07 own integration).",
+    "Rework (same file touched across commits) is derivable from payload.paths but computed by metric owners, not here."
+  ]
+}

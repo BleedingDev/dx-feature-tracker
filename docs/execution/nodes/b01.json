@@ -1,0 +1,41 @@
+{
+  "id": "B01",
+  "owner": "native worker B01",
+  "role": "core",
+  "status": "ready",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "ownedFiles": [
+    "packages/core/src/dx/storage/sqlite-event-store.ts",
+    "packages/core/src/dx/storage/migrations.ts",
+    "packages/core/src/dx/storage/store-path.ts",
+    "packages/core/src/dx/storage/spool.ts",
+    "packages/core/src/dx/storage/descriptor.ts",
+    "packages/core/test/dx/b01.test.ts",
+    "packages/core/test/dx/fixtures/b01/replay-reordered.json"
+  ],
+  "exports": {
+    "packages/core/src/dx/storage/sqlite-event-store.ts": ["SqliteEventStoreLayer(options)", "openSqliteEventStore(options)", "makeSqliteEventStore(options)", "SqliteEventStoreOptions {path, kind: live|replay, busyTimeoutMs?}", "OpenedEventStore", "SNAPSHOT_ERROR_CODES", "selectorKey", "eventWatermark", "snapshotIdFor"],
+    "packages/core/src/dx/storage/store-path.ts": ["resolveStorePath({store, replay, env, home}) -> {path, kind, source}", "spoolDirFor(storePath)", "StoreKind"],
+    "packages/core/src/dx/storage/spool.ts": ["writeSpoolBatch(spoolDir, batch)", "drainSpool(store, spoolDir) -> {files, inserted, duplicates, rejected}"],
+    "packages/core/src/dx/storage/descriptor.ts": ["eventStoreDescriptor (service/event-store-sqlite, readiness ready)", "EVENT_STORE_DESCRIPTOR_ID"],
+    "packages/core/src/dx/storage/migrations.ts": ["STORE_MIGRATIONS", "STORE_SCHEMA_VERSION = 1"]
+  },
+  "fixtureIds": ["core-golden-flight", "core-unavailable-sources", "b01-replay-reordered"],
+  "sourceProbe": "node:sqlite DatabaseSync on Node 24.18.0 (A01 probe); WAL journal, PRAGMA user_version migrations, BEGIN IMMEDIATE single-writer transactions, busy timeout default 5000 ms",
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b01.test.ts", "exit": 0, "result": "8/8 tests passed"},
+    {"cmd": "pnpm exec oxlint packages/core/src/dx/storage/*.ts packages/core/test/dx/b01.test.ts", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check packages/core/src/dx/storage/*.ts packages/core/test/dx/b01.test.ts", "exit": 0},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "result": "0 diagnostics in B01 files; 5 errors in other owners' collectors (codex, local-feedback, opencode) at 14:11"}
+  ],
+  "supportedFields": ["append.inserted", "append.duplicates", "snapshot(selector)", "getSnapshot(id)", "putSnapshotManifest", "latestSnapshotId(selector)", "coverage(selector)", "snapshotCount", "storePath", "spool drain"],
+  "gaps": [
+    "Not registered in the dx barrel or CLI composition: A02/A07 must provide SqliteEventStoreLayer({ path: resolveStorePath(...).path, kind }) and register eventStoreDescriptor.",
+    "SnapshotNotFound has no code field in contracts v1, so unknown_snapshot / expired_snapshot / incompatible_snapshot are the message prefix (SNAPSHOT_ERROR_CODES).",
+    "Store checks contract digest only; descriptor/metric-version registry compatibility of a stored manifest must be checked by the analyze owner.",
+    "putSnapshotManifest requires manifest.eventWatermark to equal the store's current watermark for that selector (fails StoreError 'watermark_changed:'), so analyze must snapshot() then put without an append in between.",
+    "No snapshot expiry during this run; expired_snapshot only when member events are removed.",
+    "Cursor hook spool writers are not B01's: hook scripts may use writeSpoolBatch or write *.batch.json EventBatch files into spoolDirFor(storePath); collect must call drainSpool."
+  ]
+}

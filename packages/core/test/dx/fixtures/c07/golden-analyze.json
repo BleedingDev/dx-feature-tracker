@@ -1,0 +1,381 @@
+{
+  "branch": "feature/fixture-flight",
+  "eventIds": [
+    "sha256:2f8f648bf2cdf4422d166334e8d8801c674bf66b5216edb8a3a11a31afac3b96",
+    "sha256:336647026d66d45a4b6a066abd89ec9eaf52a7861cc98376ea95fdb2383e9b1e",
+    "sha256:37ca1b806e8eb6ed5fad045b46dee696ee3da05746aa65d3098d1caddd811bb8",
+    "sha256:3c8a82e8be2671c4637b16fc5ebadc3f42c4fe9b4d1c945f2bdc59cecbca7807",
+    "sha256:52d9c4feafb7122c6833228c45e62e8c0225756229002b635916f9d5a20c8a4e",
+    "sha256:5d551ccb8a64c15febd6e4141b3dbaf4280ef2d73d0bcdbe47ca3268449b925d",
+    "sha256:6453637f6a9514e0b25b4ab5727eaec4eedb3dafe77ae7a4fa0c05a9c88c5a1c",
+    "sha256:65221a4f6a49890a59765bca69d2e0d38658fa9d95477ff62970ce109d8f35e6",
+    "sha256:a3a21b39fad0249105ee4e16f6b7e0448e3b74fb02ab76ec9f93549c99878063",
+    "sha256:b66b78129a5c12901c8031236fabc0a7e60a743be38af80f901851b36d178116",
+    "sha256:b980bf12d613da76b8a2b50bc4f9803aa60e10bbac3afcbfdf8dbb5d10b0dc3b",
+    "sha256:f23fbb42e9aa75e9168f7430650d3ca37fed5dfd7c7c136e70290f785a4e43d9",
+    "sha256:feb403b01f31e499e5535cf4dd03b7191b2d9109629148f908d8c8be97dbbab0"
+  ],
+  "lanes": [
+    "cursor-hooks",
+    "cursor-usage-csv",
+    "git",
+    "git-history",
+    "local-test",
+    "marker"
+  ],
+  "metrics": [
+    {
+      "evidenceCount": 0,
+      "measurement": "measured",
+      "method": "derived",
+      "metricId": "dx.ai-usage.duplicate-rows-collapsed",
+      "reasoned": false,
+      "value": 0
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "measured",
+      "method": "derived",
+      "metricId": "dx.ai-usage.uncovered-events",
+      "reasoned": false,
+      "value": 0
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "measured",
+      "method": "derived",
+      "metricId": "dx.ai-usage.unresolved-rows",
+      "reasoned": false,
+      "value": 0
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "derived",
+      "metricId": "dx.cost.subscription-allocation.usd",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "estimated",
+      "metricId": "dx.cost.list-price-estimate.price-table.usd",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "estimated",
+      "metricId": "dx.cost.list-price-estimate.source.usd",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.friction.failed-commands",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.friction.reworked-files",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.friction.tool-call-failure-rate",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.git.uncommitted-files",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.git.uncommitted-lines-added",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.git.uncommitted-lines-deleted",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.git.untracked-files",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.provenance.ai-line-survival.strict",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.provenance.ai-lines-introduced.observed",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.provenance.ai-lines-rewritten-by-human.observed",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.provenance.unresolved-files",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.alternative.tokens.total",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.money.charge",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.money.list-price-estimate",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.money.metered",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.money.unallocated",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.tokens.cache-write",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.tokens.reasoning",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.tokens.total",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.cost.charge.usd",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.cost.metered.usd",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.cost.unallocated.usd",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.provenance.ai-line-share.source-attributed",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 0,
+      "measurement": "unsupported",
+      "method": "estimated",
+      "metricId": "dx.provenance.ai-line-survival.heuristic-similarity",
+      "reasoned": true,
+      "value": null
+    },
+    {
+      "evidenceCount": 1,
+      "measurement": "measured",
+      "method": "derived",
+      "metricId": "dx.ai-usage.requests",
+      "reasoned": false,
+      "value": 1
+    },
+    {
+      "evidenceCount": 1,
+      "measurement": "measured",
+      "method": "observed",
+      "metricId": "dx.friction.test-failures",
+      "reasoned": false,
+      "value": 1
+    },
+    {
+      "evidenceCount": 1,
+      "measurement": "measured",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.tokens.cached-input",
+      "reasoned": false,
+      "value": 800
+    },
+    {
+      "evidenceCount": 1,
+      "measurement": "measured",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.tokens.input",
+      "reasoned": false,
+      "value": 1200
+    },
+    {
+      "evidenceCount": 1,
+      "measurement": "measured",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.tokens.output",
+      "reasoned": false,
+      "value": 350
+    },
+    {
+      "evidenceCount": 2,
+      "measurement": "measured",
+      "method": "observed",
+      "metricId": "dx.friction.test-failure-rate",
+      "reasoned": false,
+      "value": 0.5
+    },
+    {
+      "evidenceCount": 2,
+      "measurement": "measured",
+      "method": "observed",
+      "metricId": "dx.friction.test-runs",
+      "reasoned": false,
+      "value": 2
+    },
+    {
+      "evidenceCount": 2,
+      "measurement": "measured",
+      "method": "observed",
+      "metricId": "dx.git.churn-lines",
+      "reasoned": false,
+      "value": 56
+    },
+    {
+      "evidenceCount": 2,
+      "measurement": "measured",
+      "method": "observed",
+      "metricId": "dx.git.commits",
+      "reasoned": false,
+      "value": 2
+    },
+    {
+      "evidenceCount": 2,
+      "measurement": "measured",
+      "method": "observed",
+      "metricId": "dx.git.files-changed",
+      "reasoned": false,
+      "value": 2
+    },
+    {
+      "evidenceCount": 2,
+      "measurement": "measured",
+      "method": "observed",
+      "metricId": "dx.git.files-retouched",
+      "reasoned": false,
+      "value": 1
+    },
+    {
+      "evidenceCount": 2,
+      "measurement": "measured",
+      "method": "observed",
+      "metricId": "dx.git.lines-added",
+      "reasoned": false,
+      "value": 48
+    },
+    {
+      "evidenceCount": 2,
+      "measurement": "measured",
+      "method": "observed",
+      "metricId": "dx.git.lines-deleted",
+      "reasoned": false,
+      "value": 8
+    },
+    {
+      "evidenceCount": 2,
+      "measurement": "measured",
+      "method": "observed",
+      "metricId": "dx.git.merge-commits",
+      "reasoned": false,
+      "value": 0
+    }
+  ],
+  "unavailableCoverage": ["entire:disabled", "opencode:unsupported"]
+}

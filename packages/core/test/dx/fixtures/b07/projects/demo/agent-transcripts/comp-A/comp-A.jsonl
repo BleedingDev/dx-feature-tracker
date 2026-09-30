@@ -1,0 +1,6 @@
+{"role":"user","message":{"content":[{"type":"text","text":"<user_query>fixture prompt one</user_query>"}]}}
+{"role":"assistant","message":{"content":[{"type":"text","text":"Reading files now."},{"type":"tool_use","name":"ReadFile","input":{"path":"README.md"}}]}}
+{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Shell","input":{"command":"pnpm test"}},{"type":"tool_use","name":"ReadFile","input":{"path":"a.ts"}}]}}
+{"role":"user","message":{"content":[{"type":"text","text":"<user_query>fixture prompt two</user_query>"}]}}
+{"role":"assistant","model":"fixture-model","usage":{"inputTokens":1200,"outputTokens":300,"cacheReadTokens":800,"contextWindowTokens":200000},"message":{"content":"Done with edits."}}
+{"role":"assistant","message":{"content":[{"type":"text","text":"trunc

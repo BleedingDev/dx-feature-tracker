@@ -1,0 +1,42 @@
+{
+  "fixtureId": "b24/implicit-branch-recreated",
+  "origin": "synthetic",
+  "events": [
+    {
+      "id": "ctx-1",
+      "kind": "git.context",
+      "at": "2026-09-10T09:00:00Z",
+      "repo": "/r/app/.git",
+      "branch": "feat/cost",
+      "payload": {
+        "branchCreatedAt": "2026-09-10T08:00:00Z",
+        "baseSha": "base111"
+      }
+    },
+    {
+      "id": "use-1",
+      "kind": "ai.usage",
+      "at": "2026-09-10T10:00:00Z",
+      "repo": "/r/app/.git",
+      "branch": "feat/cost"
+    },
+    {
+      "id": "ctx-2",
+      "kind": "git.context",
+      "at": "2026-09-12T09:00:00Z",
+      "repo": "/r/app/.git",
+      "branch": "feat/cost",
+      "payload": {
+        "branchCreatedAt": "2026-09-12T08:30:00Z",
+        "baseSha": "base222"
+      }
+    },
+    {
+      "id": "use-2",
+      "kind": "ai.usage",
+      "at": "2026-09-12T10:00:00Z",
+      "repo": "/r/app/.git",
+      "branch": "feat/cost"
+    }
+  ]
+}

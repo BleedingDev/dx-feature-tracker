@@ -1,0 +1,224 @@
+{
+  "origin": "fixture",
+  "note": "Synthetic fixture shaped like real collector payloads (cursor-local-db, cursor-cli, cursor-usage-export, claude). Not live data; prices below are fixture values, not real vendor prices.",
+  "priceTable": {
+    "fixtureId": "b31-price-table-v1",
+    "table": {
+      "currency": "USD",
+      "effectiveFrom": "2026-09-01T00:00:00Z",
+      "id": "fixture-prices",
+      "models": {
+        "gpt-5": { "cached-input": 0.125, "input": 1.25, "output": 10 }
+      },
+      "source": "b31 fixture (not vendor prices)",
+      "unit": "usd-per-million-tokens",
+      "version": "2026-09-01"
+    }
+  },
+  "subscription": {
+    "fixtureId": "b31-subscription-plan",
+    "plan": {
+      "amountUsd": 20,
+      "basis": "requests",
+      "periodFrom": "2026-09-01T00:00:00Z",
+      "periodTo": "2026-10-01T00:00:00Z",
+      "periodUsageTotal": null,
+      "planId": "fixture-pro-monthly"
+    }
+  },
+  "events": {
+    "fixtureId": "b31-cursor-mixed-ledgers",
+    "items": [
+      {
+        "id": "ldb-usage-a",
+        "adapterId": "cursor-local-db",
+        "kind": "ai.usage",
+        "branch": "feat/a",
+        "occurredAt": "2026-09-15T10:00:00Z",
+        "payload": {
+          "sourceKind": "local-db",
+          "model": "gpt-5",
+          "requests": 8,
+          "measurements": [
+            {
+              "category": "other",
+              "cumulativeVerified": false,
+              "currency": "USD",
+              "ledger": "metered",
+              "method": "source-reported",
+              "rawCategory": "usageData.costInCents",
+              "unit": "usd-cents",
+              "value": 250
+            }
+          ]
+        }
+      },
+      {
+        "id": "ldb-turn-a",
+        "adapterId": "cursor-local-db",
+        "kind": "ai.turn",
+        "branch": "feat/a",
+        "occurredAt": "2026-09-15T10:01:00Z",
+        "payload": {
+          "sourceKind": "local-db",
+          "model": "gpt-5",
+          "measurements": [
+            {
+              "category": "input",
+              "cumulativeVerified": false,
+              "currency": null,
+              "ledger": "tokens",
+              "method": "source-reported",
+              "rawCategory": "tokenCount.inputTokens",
+              "unit": "tokens",
+              "value": 1000
+            },
+            {
+              "category": "output",
+              "cumulativeVerified": false,
+              "currency": null,
+              "ledger": "tokens",
+              "method": "source-reported",
+              "rawCategory": "tokenCount.outputTokens",
+              "unit": "tokens",
+              "value": 500
+            }
+          ]
+        }
+      },
+      {
+        "id": "cli-a",
+        "adapterId": "cursor-cli",
+        "kind": "ai.usage",
+        "branch": "feat/a",
+        "occurredAt": "2026-09-15T10:02:00Z",
+        "payload": {
+          "sourceKind": "cursor-cli",
+          "model": "gpt-5",
+          "requestKey": "source:cursor-cli:request:r1",
+          "charge": null,
+          "listPriceEstimateUsd": null,
+          "tokens": {
+            "input": 2000,
+            "output": 1000,
+            "cached-input": 400,
+            "cache-write": null,
+            "reasoning": null,
+            "total": null
+          },
+          "toolCalls": 3
+        }
+      },
+      {
+        "id": "cli-a-dup",
+        "adapterId": "cursor-cli",
+        "kind": "ai.usage",
+        "branch": "feat/a",
+        "occurredAt": "2026-09-15T10:02:00Z",
+        "payload": {
+          "sourceKind": "cursor-cli",
+          "model": "gpt-5",
+          "requestKey": "source:cursor-cli:request:r1",
+          "charge": null,
+          "listPriceEstimateUsd": null,
+          "tokens": {
+            "input": 2000,
+            "output": 1000,
+            "cached-input": 400,
+            "cache-write": null,
+            "reasoning": null,
+            "total": null
+          },
+          "toolCalls": 3
+        }
+      },
+      {
+        "id": "csv-charge",
+        "adapterId": "cursor-usage-export",
+        "kind": "ai.usage",
+        "branch": null,
+        "occurredAt": "2026-09-16T09:00:00Z",
+        "payload": {
+          "sourceKind": "usage-csv",
+          "model": "gpt-5",
+          "costLedger": "charge",
+          "costUsd": 1.25,
+          "charge": 1.25,
+          "currency": "USD",
+          "requestUnits": 2,
+          "requestKey": null,
+          "tokens": { "input": 3000, "output": 100 }
+        }
+      },
+      {
+        "id": "csv-not-charged",
+        "adapterId": "cursor-usage-export",
+        "kind": "ai.usage",
+        "branch": null,
+        "occurredAt": "2026-09-16T09:05:00Z",
+        "payload": {
+          "sourceKind": "usage-csv",
+          "model": "gpt-5",
+          "costLedger": "not-charged",
+          "costUsd": 0.4,
+          "charge": null,
+          "currency": "USD",
+          "requestUnits": 1,
+          "requestKey": null,
+          "tokens": {}
+        }
+      },
+      {
+        "id": "csv-included",
+        "adapterId": "cursor-usage-export",
+        "kind": "ai.usage",
+        "branch": null,
+        "occurredAt": "2026-09-16T09:10:00Z",
+        "payload": {
+          "sourceKind": "usage-csv",
+          "model": "gpt-5",
+          "costLedger": "metered",
+          "costUsd": 0.3,
+          "charge": null,
+          "currency": "USD",
+          "requestUnits": 1,
+          "requestKey": null,
+          "tokens": {}
+        }
+      },
+      {
+        "id": "claude-b",
+        "adapterId": "claude",
+        "kind": "ai.usage",
+        "branch": "feat/b",
+        "occurredAt": "2026-09-17T12:00:00Z",
+        "payload": {
+          "sourceKind": "claude-jsonl",
+          "model": "claude-x",
+          "charge": null,
+          "listPriceEstimateUsd": 0.77,
+          "tokens": { "input": 100, "output": 50 }
+        }
+      },
+      {
+        "id": "eur-b",
+        "adapterId": "provider-usage",
+        "kind": "ai.usage",
+        "branch": "feat/b",
+        "occurredAt": "2026-09-17T12:30:00Z",
+        "payload": {
+          "sourceKind": "provider-receipt",
+          "charge": { "currency": "EUR", "value": 5 }
+        }
+      },
+      {
+        "id": "git-noise",
+        "adapterId": "git-history",
+        "kind": "git.commit",
+        "branch": "feat/a",
+        "occurredAt": "2026-09-17T13:00:00Z",
+        "payload": { "charge": 999 }
+      }
+    ]
+  }
+}

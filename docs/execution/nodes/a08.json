@@ -1,0 +1,23 @@
+{
+  "id": "A08",
+  "role": "optional",
+  "status": "degraded",
+  "finishedAt": "2026-09-30T14:25+02:00",
+  "files": [
+    "packages/core/src/dx/registry/admission.ts",
+    "packages/core/test/dx/integration/a08-admission.test.ts"
+  ],
+  "exports": ["admitDescriptors", "enabledDescriptorRefs", "snapshotCompatible", "eligibleNodes"],
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/integration/a08-admission.test.ts", "exit": 0, "tests": "4 passed"},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json (filtered to registry/ and integration/)", "exit": "0 errors in A08 paths"},
+    {"cmd": "pnpm exec oxlint packages/core/src/dx/registry packages/core/test/dx/integration", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check (own files)", "exit": 0}
+  ],
+  "notWired": ["apps/cli/src/cli.ts", "apps/cli/src/command.ts", "apps/cli/src/surfaces.ts", "packages/core/src/dx/index.ts", "packages/core/src/dx/capabilities.ts", "packages/core/src/dx/composition.ts"],
+  "gaps": [
+    "Not wired into composition/CLI/barrel: those files are A02/A07 concurrent scope and G02 baton had not passed (no a02/a07/g02 handoff at 14:22). Integrator imports admitDescriptors from packages/core/src/dx/registry/admission.js directly (no barrel: oxlint no-barrel-file).",
+    "No live receipt: A08 produces no source evidence itself; live Cursor capture belongs to collector nodes.",
+    "Safe to exclude: new isolated files only; removing them breaks nothing."
+  ]
+}

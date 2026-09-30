@@ -1,0 +1,41 @@
+{
+  "id": "B41",
+  "role": "optional",
+  "status": "disabled",
+  "deliverable": "Ratstack flight page using report JSON and capability table (report contract only)",
+  "ownedFiles": ["docs/execution/nodes/b41.json", "docs/execution/nodes/b41.md"],
+  "ownedPathsNotCreated": ["apps/web/src/features/dx/b41/", "apps/web/test/dx/b41.test.ts"],
+  "frozenContract": {
+    "version": "dx.contracts.v1",
+    "digest": "sha256:2701e1aa3687aea5eb80420a1fbc87866eef332bc54e9311c8f61d4b99b9519d",
+    "digestOf": "docs/execution/contracts-v1.md",
+    "reportSchemaVersion": "dx.report.v1"
+  },
+  "descriptor": {
+    "contractVersion": "dx.contracts.v1",
+    "fixtureIds": [],
+    "gaps": [
+      { "code": "host-app-absent", "message": "apps/web was removed from the workspace by A01 (docs/execution/commands.json workspace.apps_web_decision); no web host, tsconfig, package or test runner exists for the flight page." },
+      { "code": "out-of-product-focus", "message": "Product surface is the local CLI/MCP cost tracker; the report JSON is already reachable via dx_analyze/dx_status capabilities." }
+    ],
+    "id": "dx.surface.web-flight",
+    "kind": "surface",
+    "owner": "B41",
+    "readiness": "disabled",
+    "requiredInputs": ["AnalyzeReport (dx.report.v1)", "StatusReport.descriptors"],
+    "supportedFields": [],
+    "version": "0.0.0"
+  },
+  "descriptorExport": null,
+  "observedAt": "2026-09-30T12:08:00Z",
+  "checks": [
+    { "cmd": "test -d apps/web", "exit": 1, "result": "apps/web absent at HEAD 2e78dc9" },
+    { "cmd": "node -e \"JSON.parse(require('fs').readFileSync('docs/execution/nodes/b41.json','utf8'))\"", "exit": 0 }
+  ],
+  "gaps": [
+    "No code written: creating apps/web/ source would sit outside every package/tsconfig yet fall under root `ultracite check` and `oxfmt --check .` (root lint), risking the shared gate for an unhostable page.",
+    "Descriptor above is handoff data only, not a registered/tested TS export; integration (A02/A07) should not register it.",
+    "Re-enable path: restore an apps/web package (A01 decision) and render AnalyzeReport + StatusReport.descriptors read-only; renderers must not recompute arithmetic."
+  ],
+  "dependencyProposals": []
+}

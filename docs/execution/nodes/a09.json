@@ -1,0 +1,31 @@
+{
+  "id": "A09",
+  "status": "ready",
+  "files": [
+    "docs/execution/source-receipts/cursor-live-probe.json",
+    "docs/execution/source-receipts/README.md",
+    "docs/execution/source-receipts/probe.sh",
+    "docs/execution/nodes/a09.md",
+    "docs/execution/nodes/a09.json"
+  ],
+  "checks": [
+    { "cmd": "cursor-agent -p --output-format stream-json --force --trust <task> (attempt 2)", "exit": 0 },
+    { "cmd": "dx collect --source collector.cursor-hooks", "exit": 0 },
+    { "cmd": "dx collect --source collector/cursor-cli", "exit": 0 },
+    { "cmd": "dx collect --source collector.cursor-transcripts", "exit": 0 },
+    { "cmd": "dx collect --source collector.git-history", "exit": 0 },
+    { "cmd": "dx collect --source collector.git-observation", "exit": 0 },
+    { "cmd": "dx collect --source collector/local-test (x2)", "exit": 0 },
+    { "cmd": "dx collect --source cursor-local-db", "exit": 1 },
+    { "cmd": "dx analyze --repo <demo> (x2, same snapshot)", "exit": 0 },
+    { "cmd": "DX_REPO=<demo> dx explain --limit 200", "exit": 0 }
+  ],
+  "gaps": [
+    "cursor-local-db via CLI exits 1: requires scratchDir, no CLI flag",
+    "dx explain --flight <branch> returns 0 entries (flight id expected)",
+    "no interval/branch-time metrics in analyze output",
+    "no money source on host (no usage CSV/dashboard export); cost unavailable",
+    "reasoning tokens unavailable from all Cursor sources",
+    "B05 coverage gap live-capture-not-demonstrated is stale"
+  ]
+}

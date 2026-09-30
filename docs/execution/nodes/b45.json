@@ -1,0 +1,77 @@
+{
+  "id": "B45",
+  "role": "optional",
+  "status": "disabled",
+  "deliverable": "Import versioned stats and authorship-note attestations without initialization/pushing; unknown additions remain unknown and stats ratio is not retention.",
+  "ownedFiles": [
+    "packages/core/src/dx/collectors/git-ai/parse.ts",
+    "packages/core/src/dx/collectors/git-ai/collector.ts",
+    "packages/core/test/dx/b45.test.ts",
+    "packages/core/test/dx/fixtures/b45/export/",
+    "docs/execution/nodes/b45.json",
+    "docs/execution/nodes/b45.md"
+  ],
+  "frozenContract": {
+    "version": "dx.contracts.v1",
+    "digest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+    "digestOf": "packages/core/src/dx/contracts/version.ts CONTRACT_DIGEST",
+    "docSha256": "2701e1aa3687aea5eb80420a1fbc87866eef332bc54e9311c8f61d4b99b9519d"
+  },
+  "descriptorExport": {
+    "module": "packages/core/src/dx/collectors/git-ai/collector.ts",
+    "descriptor": "gitAiDescriptor",
+    "collector": "gitAiCollector",
+    "collectorRequirements": "FileSystem.FileSystem | Path.Path (NodeServices.layer)",
+    "descriptorId": "collector/git-ai",
+    "adapterId": "git-ai",
+    "readiness": "disabled"
+  },
+  "fixtureIds": ["b45-git-ai-export"],
+  "sourceProbe": {
+    "observedAt": "2026-09-30T12:06:00Z",
+    "results": [
+      { "cmd": "which git-ai", "exit": 1, "result": "not found" },
+      { "cmd": "git ai --version", "exit": 1, "result": "'ai' is not a git command" },
+      { "cmd": "ls ~/.git-ai", "exit": 1, "result": "absent" }
+    ],
+    "conclusion": "No git-ai producer on this host; no real input to demonstrate. Module is fixture-tested only."
+  },
+  "supportedFormats": {
+    "authorshipNote": "`git notes --ref=ai show <sha>` text saved as <sha>.note; schema_version authorship/3.x only (others -> unsupported-schema-version gap)",
+    "stats": "`git-ai stats <sha> --json` saved as <sha>.stats.json (ai_additions, human_additions, git_diff_added_lines required)"
+  },
+  "supportedFields": [
+    "identity.commitSha",
+    "payload.record",
+    "payload.schemaVersion",
+    "payload.gitAiVersion",
+    "payload.files",
+    "payload.attestedAiLines",
+    "payload.prompts",
+    "payload.aiAdditions",
+    "payload.sourceHumanAdditions",
+    "payload.mixedAdditions",
+    "payload.diffAddedLines",
+    "payload.diffDeletedLines",
+    "payload.unattributedAdditions",
+    "payload.aiAdditionShareAtCommit"
+  ],
+  "checks": [
+    { "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b45.test.ts", "exit": 0, "result": "7/7 passed" },
+    { "cmd": "pnpm exec oxlint <3 owned ts files>", "exit": 0 },
+    { "cmd": "pnpm exec oxfmt --check <3 owned ts files>", "exit": 0 },
+    { "cmd": "tsc --noEmit -p <temporary tsconfig extending tsconfig.base.json including only owned files>", "exit": 0, "result": "0 errors; 1 suggestion (allOfMapToForEach, non-failing)" },
+    { "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "result": "errors only in files owned by others (codex, git-identity, local-feedback, opencode collectors); none in git-ai/b45" }
+  ],
+  "gaps": [
+    "git-ai not installed on this host: readiness disabled; integration must not register it as ready.",
+    "No live git notes read: adapter never runs git-ai, never reads/fetches/pushes refs/notes/ai; user must export notes/stats files explicitly.",
+    "Events have occurredAt null (notes/stats carry no timestamp); commit time must come from git-history correlation by commitSha.",
+    "No tokens, cost or waiting time from this source; time_waiting_for_ai is intentionally not imported (unit unverified).",
+    "aiAdditionShareAtCommit is commit-time only, never retention; payload.retention is always null.",
+    "unattributedAdditions is null when source categories do not reconcile; git-ai human_additions kept only as source label.",
+    "Prompt messages and human_author are dropped.",
+    "Fixture format is synthetic, modelled on git-ai authorship/3.0.0 as documented upstream; not validated against a real git-ai export on this host."
+  ],
+  "dependencyProposals": []
+}

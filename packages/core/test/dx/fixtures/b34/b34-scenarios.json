@@ -1,0 +1,227 @@
+{
+  "origin": "fixture",
+  "scenarios": [
+    {
+      "fixtureId": "b34-repeated-failures",
+      "branch": "feature/checkout",
+      "events": [
+        {
+          "id": "t1",
+          "adapterId": "dx.local-test",
+          "kind": "test.result",
+          "payload": {
+            "status": "failed",
+            "failed": 1,
+            "errors": 0,
+            "passed": 9,
+            "tests": 10,
+            "failingTests": ["cart > totals rounding"]
+          }
+        },
+        {
+          "id": "t2",
+          "adapterId": "dx.local-test",
+          "kind": "test.result",
+          "payload": {
+            "status": "failed",
+            "failed": 2,
+            "errors": 0,
+            "passed": 8,
+            "tests": 10,
+            "failingTests": ["cart > totals rounding", "cart > tax"]
+          }
+        },
+        {
+          "id": "t3",
+          "adapterId": "dx.local-test",
+          "kind": "test.result",
+          "payload": {
+            "status": "failed",
+            "failed": 1,
+            "errors": 0,
+            "passed": 9,
+            "tests": 10,
+            "failingTests": ["cart > totals rounding"]
+          }
+        },
+        {
+          "id": "t4",
+          "adapterId": "dx.local-test",
+          "kind": "test.result",
+          "payload": {
+            "status": "passed",
+            "failed": 0,
+            "errors": 0,
+            "passed": 10,
+            "tests": 10,
+            "failingTests": []
+          }
+        },
+        {
+          "id": "c1",
+          "adapterId": "dx.shell-command",
+          "kind": "command.run",
+          "payload": { "program": "tsc", "exitCode": 2 }
+        },
+        {
+          "id": "c2",
+          "adapterId": "dx.shell-command",
+          "kind": "command.run",
+          "payload": { "program": "tsc", "exitCode": 2 }
+        },
+        {
+          "id": "c3",
+          "adapterId": "dx.shell-command",
+          "kind": "command.run",
+          "payload": { "program": "git", "exitCode": 0 }
+        },
+        {
+          "id": "h1",
+          "adapterId": "cursor-hooks",
+          "kind": "other",
+          "payload": {
+            "hookEvent": "postToolUseFailure",
+            "toolCall": true,
+            "toolName": "Shell"
+          }
+        },
+        {
+          "id": "h2",
+          "adapterId": "cursor-hooks",
+          "kind": "other",
+          "payload": {
+            "hookEvent": "postToolUseFailure",
+            "toolCall": true,
+            "toolName": "Shell"
+          }
+        },
+        {
+          "id": "h3",
+          "adapterId": "cursor-hooks",
+          "kind": "other",
+          "payload": {
+            "hookEvent": "postToolUseFailure",
+            "toolCall": true,
+            "toolName": "Read"
+          }
+        },
+        {
+          "id": "h4",
+          "adapterId": "cursor-hooks",
+          "kind": "other",
+          "payload": {
+            "hookEvent": "postToolUse",
+            "toolCall": true,
+            "toolName": "Read"
+          }
+        },
+        {
+          "id": "h5",
+          "adapterId": "cursor-hooks",
+          "kind": "other",
+          "payload": {
+            "hookEvent": "postToolUse",
+            "toolCall": true,
+            "toolName": "Edit"
+          }
+        },
+        {
+          "id": "e1",
+          "adapterId": "cursor-hooks",
+          "kind": "ai.tool-edit",
+          "payload": { "hookEvent": "afterFileEdit", "filePath": "src/cart.ts" }
+        },
+        {
+          "id": "e2",
+          "adapterId": "cursor-hooks",
+          "kind": "ai.tool-edit",
+          "payload": { "hookEvent": "afterFileEdit", "filePath": "src/cart.ts" }
+        },
+        {
+          "id": "e3",
+          "adapterId": "cursor-hooks",
+          "kind": "ai.tool-edit",
+          "payload": { "hookEvent": "afterFileEdit", "filePath": "src/cart.ts" }
+        },
+        {
+          "id": "e4",
+          "adapterId": "cursor-hooks",
+          "kind": "ai.tool-edit",
+          "payload": { "hookEvent": "afterFileEdit", "filePath": "src/cart.ts" }
+        },
+        {
+          "id": "e5",
+          "adapterId": "cursor-hooks",
+          "kind": "ai.tool-edit",
+          "payload": { "hookEvent": "afterFileEdit", "filePath": "src/cart.ts" }
+        },
+        {
+          "id": "e6",
+          "adapterId": "cursor-hooks",
+          "kind": "ai.tool-edit",
+          "payload": { "hookEvent": "afterFileEdit", "filePath": "src/tax.ts" }
+        }
+      ]
+    },
+    {
+      "fixtureId": "b34-clean-branch",
+      "branch": "feature/clean",
+      "events": [
+        {
+          "id": "t1",
+          "adapterId": "dx.shell-command",
+          "kind": "test.result",
+          "payload": {
+            "outcome": "passed",
+            "failedTests": null,
+            "passedTests": null
+          }
+        },
+        {
+          "id": "t2",
+          "adapterId": "dx.shell-command",
+          "kind": "test.result",
+          "payload": {
+            "outcome": "passed",
+            "failedTests": null,
+            "passedTests": null
+          }
+        },
+        {
+          "id": "t3",
+          "adapterId": "dx.shell-command",
+          "kind": "test.result",
+          "payload": { "note": "no outcome reported" }
+        },
+        {
+          "id": "h1",
+          "adapterId": "cursor-hooks",
+          "kind": "other",
+          "payload": {
+            "hookEvent": "postToolUse",
+            "toolCall": true,
+            "toolName": "Read"
+          }
+        },
+        {
+          "id": "e1",
+          "adapterId": "cursor-hooks",
+          "kind": "ai.tool-edit",
+          "payload": { "hookEvent": "afterFileEdit", "filePath": "src/a.ts" }
+        }
+      ]
+    },
+    {
+      "fixtureId": "b34-no-evidence",
+      "branch": null,
+      "events": [
+        {
+          "id": "s1",
+          "adapterId": "cursor-hooks",
+          "kind": "ai.session",
+          "payload": { "hookEvent": "sessionStart" }
+        }
+      ]
+    }
+  ]
+}

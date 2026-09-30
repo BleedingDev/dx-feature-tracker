@@ -1,0 +1,103 @@
+{
+  "origin": "fixture",
+  "fixtureId": "b36-mixed-lanes",
+  "note": "Synthetic fixture: Cursor hooks, git and local test lanes on one branch. Not live evidence.",
+  "events": [
+    {
+      "id": "evt-git-commit-1",
+      "adapterId": "git-history",
+      "kind": "git.commit",
+      "occurredAt": "2026-09-30T10:05:00.000Z",
+      "precision": "second",
+      "payload": {
+        "filesChanged": 3,
+        "linesAdded": 40,
+        "linesDeleted": 2,
+        "message": "SECRET-COMMIT-MESSAGE"
+      }
+    },
+    {
+      "id": "evt-cursor-usage-1",
+      "adapterId": "cursor-hooks",
+      "kind": "ai.usage",
+      "occurredAt": "2026-09-30T10:01:00.000Z",
+      "precision": "exact",
+      "payload": {
+        "inputTokens": 1200,
+        "outputTokens": 300,
+        "prompt": "SECRET-PROMPT-TEXT"
+      },
+      "semantics": [{ "field": "inputTokens", "method": "source-reported" }]
+    },
+    {
+      "id": "evt-cursor-tool-1",
+      "adapterId": "cursor-hooks",
+      "kind": "ai.tool-edit",
+      "occurredAt": "2026-09-30T10:02:00.000Z",
+      "precision": "exact",
+      "payload": { "linesChanged": 12 }
+    },
+    {
+      "id": "evt-test-1",
+      "adapterId": "local-test",
+      "kind": "test.result",
+      "occurredAt": "2026-09-30T10:05:00.000Z",
+      "precision": "second",
+      "payload": { "failed": 1, "passed": 9, "command": "pnpm test --secret" }
+    },
+    {
+      "id": "evt-feedback-1",
+      "adapterId": "local-feedback",
+      "kind": "feedback.local",
+      "occurredAt": "2026-09-30T10:03:00.000Z",
+      "precision": "minute",
+      "payload": { "score": 4 }
+    },
+    {
+      "id": "evt-cursor-session-untimed",
+      "adapterId": "cursor-local-db",
+      "kind": "ai.session",
+      "occurredAt": null,
+      "precision": "unknown",
+      "payload": { "requests": 5 }
+    },
+    {
+      "id": "evt-cost-estimate",
+      "adapterId": "cursor-hooks",
+      "kind": "ai.usage",
+      "occurredAt": "2026-09-30T10:04:00.000Z",
+      "precision": "exact",
+      "payload": { "costUsd": 0.042 },
+      "semantics": [{ "field": "costUsd", "method": "estimated" }]
+    }
+  ],
+  "expect": {
+    "order": [
+      "evt-cursor-usage-1",
+      "evt-cursor-tool-1",
+      "evt-feedback-1",
+      "evt-cost-estimate",
+      "evt-git-commit-1",
+      "evt-test-1",
+      "evt-cursor-session-untimed"
+    ],
+    "uncertain": [
+      "evt-feedback-1",
+      "evt-git-commit-1",
+      "evt-test-1",
+      "evt-cursor-session-untimed"
+    ],
+    "lanes": [
+      "cursor-hooks",
+      "cursor-local-db",
+      "git-history",
+      "local-feedback",
+      "local-test"
+    ],
+    "forbiddenInSummaries": [
+      "SECRET-PROMPT-TEXT",
+      "SECRET-COMMIT-MESSAGE",
+      "pnpm test --secret"
+    ]
+  }
+}

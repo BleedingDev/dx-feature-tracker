@@ -1,0 +1,201 @@
+{
+ "id": "A07",
+ "status": "degraded",
+ "generated": "2026-09-30T14:38+02:00",
+ "summary": "Live Cursor capture demonstrated end to end. Project-level .cursor/hooks.json in an owned scratch repo (branch feature/a07-live-demo) plus a real logged-in 'cursor-agent -p --output-format stream-json' run. Hook spool (B05), cursor-cli stream (B10), agent transcript (B07) and a backup copy of ai-code-tracking.db (B06) were collected through the real collectors into a real SQLite store, attributed to the branch, analyzed and explained. Source-reported tokens reach the per-branch report. The A07 composition/CLI wiring was not done because A02 holds the integration baton.",
+ "owned_files_written": [
+  "packages/core/test/dx/integration/a07-live-cursor.test.ts",
+  "packages/core/test/dx/integration/fixtures/a07-live/spool/*.json (20 sanitized hook spool records, paths rewritten to /tmp/a07-demo)",
+  "packages/core/test/dx/integration/fixtures/a07-live/cursor-cli.stream.jsonl (init, tool_call completed without args, result with text redacted)",
+  "docs/execution/nodes/a07.json",
+  "docs/execution/nodes/a07.md"
+ ],
+ "incident": "At 14:30:34 A07 overwrote A02's in-progress packages/core/src/dx/composition.ts after the scheduler started A07 early. At 14:31:40 A07 rewrote it to the API that index.ts and capabilities.ts import (contextForRepo, selectorForContext, gitSelectorResolver, hookSpoolDirFor, DxStoreOptions, resolveDxStore, dxStoreLayer, runCursorHook), plus commandLogPath and autoSources. Core tsc reports 0 errors. A02 should verify it or re-apply its own version. No other shared file was touched.",
+ "live_run": {
+  "cursor_agent_status": "Logged in (exit 0)",
+  "cursor_agent_exit": 0,
+  "request_id": "6cae283f-4b57-4449-ba6f-33ed59ec5506",
+  "session_id": "487a09d4-1638-4add-a548-db653635a61b",
+  "branch": "feature/a07-live-demo",
+  "hook_spool_records": 20,
+  "user_hooks_json_touched": false,
+  "collected": [
+   {
+    "source": "collector.git-history",
+    "events": 2,
+    "inserted": 2,
+    "duplicates": 0,
+    "coverage": "complete",
+    "gaps": []
+   },
+   {
+    "source": "collector.cursor-hooks",
+    "events": 17,
+    "inserted": 17,
+    "duplicates": 0,
+    "coverage": "complete",
+    "gaps": [
+     "hooks-begin-at-install",
+     "stop-usage-unverified",
+     "live-capture-not-demonstrated"
+    ]
+   },
+   {
+    "source": "collector/cursor-cli",
+    "events": 1,
+    "inserted": 1,
+    "duplicates": 0,
+    "coverage": "partial",
+    "gaps": [
+     "no-cost-in-cli-output",
+     "no-reasoning-tokens",
+     "no-branch-in-cli-output"
+    ]
+   },
+   {
+    "source": "collector.cursor-transcripts",
+    "events": 1,
+    "inserted": 1,
+    "duplicates": 0,
+    "coverage": "partial",
+    "gaps": [
+     "charge-unavailable",
+     "malformed-lines",
+     "usage-unavailable"
+    ]
+   },
+   {
+    "source": "cursor-local-db",
+    "events": 8,
+    "inserted": 8,
+    "duplicates": 0,
+    "coverage": "partial",
+    "gaps": [
+     "layout",
+     "scope-excluded",
+     "no-billed-charge"
+    ]
+   }
+  ],
+  "metrics": {
+   "dx.ai-usage.money.charge": {
+    "value": null,
+    "measurement": "unavailable",
+    "method": "source-reported"
+   },
+   "dx.ai-usage.requests": {
+    "value": 1,
+    "measurement": "measured",
+    "method": "derived"
+   },
+   "dx.ai-usage.tokens.cache-write": {
+    "value": 0,
+    "measurement": "measured",
+    "method": "source-reported"
+   },
+   "dx.ai-usage.tokens.cached-input": {
+    "value": 66304,
+    "measurement": "measured",
+    "method": "source-reported"
+   },
+   "dx.ai-usage.tokens.input": {
+    "value": 34384,
+    "measurement": "measured",
+    "method": "source-reported"
+   },
+   "dx.ai-usage.tokens.output": {
+    "value": 710,
+    "measurement": "measured",
+    "method": "source-reported"
+   },
+   "dx.ai-usage.tokens.reasoning": {
+    "value": null,
+    "measurement": "unavailable",
+    "method": "source-reported"
+   },
+   "dx.ai-usage.tokens.total": {
+    "value": null,
+    "measurement": "unavailable",
+    "method": "source-reported"
+   },
+   "dx.ai-usage.uncovered-events": {
+    "value": 0,
+    "measurement": "measured",
+    "method": "derived"
+   },
+   "dx.cost.charge.usd": {
+    "value": null,
+    "measurement": "unavailable",
+    "method": "source-reported"
+   },
+   "dx.friction.tool-call-failure-rate": {
+    "value": 0.125,
+    "measurement": "measured",
+    "method": "observed"
+   },
+   "dx.git.uncommitted-files": {
+    "value": 1,
+    "measurement": "measured",
+    "method": "observed"
+   },
+   "dx.git.uncommitted-lines-added": {
+    "value": 1,
+    "measurement": "measured",
+    "method": "observed"
+   },
+   "dx.git.uncommitted-lines-deleted": {
+    "value": 0,
+    "measurement": "measured",
+    "method": "observed"
+   }
+  },
+  "explain": {
+   "status": "ok",
+   "timelineKinds": {
+    "git.observation": 1,
+    "ai.session": 2,
+    "other": 12,
+    "ai.tool-edit": 11,
+    "ai.usage": 2,
+    "git.diff": 1
+   }
+  }
+ },
+ "note_on_coordinator_numbers": "The coordinator cited 15482 input / 84608 cached / 623 output on feature/a07-live-cursor. Those numbers are not from this run. A07's run (request 6cae283f, branch feature/a07-live-demo) reports 34384 input / 66304 cached-input / 0 cache-write / 710 output, and the charge is unavailable.",
+ "checks": [
+  {
+   "argv": "pnpm --filter @rat-stack/core exec vitest run test/dx/integration/a07-live-cursor.test.ts",
+   "exit": 0,
+   "result": "1 passed"
+  },
+  {
+   "argv": "pnpm exec oxlint packages/core/test/dx/integration/a07-live-cursor.test.ts",
+   "exit": 0
+  },
+  {
+   "argv": "pnpm exec oxfmt packages/core/test/dx/integration/a07-live-cursor.test.ts",
+   "exit": 0
+  },
+  {
+   "argv": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json",
+   "exit": 0,
+   "errors": 0
+  }
+ ],
+ "gaps": [
+  "No built-CLI e2e yet (dx collect/analyze through apps/cli/dist/cli.js), because CLI wiring belongs to A02. The test drives the same handlers (runCollect, runAnalyze, runExplain) and the real collectors in-process.",
+  "No built hook entrypoint in the repo. The live demo used a scratch hook.mjs that calls handleCursorHook from a scratch tsc build. A02/C13 must ship a 'dx hook cursor' command (runCursorHook) and register it in the project .cursor/hooks.json.",
+  "Money: cursor-agent CLI, hooks, transcripts and ai-code-tracking.db report no charge, so charge stays unavailable. Cost needs a usage CSV (B08) or the SDK (B44).",
+  "cursor-agent does not report reasoning tokens, so they stay unavailable.",
+  "Stop hooks in this run carried no usage. Per-request tokens come only from a saved cursor-agent stream-json output.",
+  "ai-code-tracking.db is global, not repo-scoped. Its 8 ai.tool-edit rows got the collect-context branch, which is correct only when collected for the active repo and time window.",
+  "In the live run dx.git.commits=0 because the agent's edits were not committed (uncommitted-files=1). The fixture test commits and asserts commits=1.",
+  "The B05/B10/B07 descriptors still carry 'live-capture-not-demonstrated'. Their owners can now remove it, citing this run."
+ ],
+ "requests_for_A02_G01": [
+  "CLI: add a 'dx hook cursor' subcommand that passes stdin to runCursorHook(stdin, process.cwd()), prints the returned stdout and always exits 0.",
+  "CLI: with no --source, 'dx collect' should use composition.autoSources (git-history, hook spool, commands.jsonl).",
+  "CLI: support 'dx collect --source collector/cursor-cli --input <stream.jsonl>', and optionally a wrapper that tees cursor-agent stream-json to <storeDir>/cursor-cli/<session>.jsonl.",
+  "Keep cursorCliCollector admitted in registry.ts (it is already in allCollectors)."
+ ]
+}

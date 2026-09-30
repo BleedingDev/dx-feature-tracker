@@ -1,0 +1,55 @@
+{
+  "id": "B30",
+  "owner": "native worker B30",
+  "role": "core",
+  "status": "ready",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "deliveredAt": "2026-09-30T14:25+02:00",
+  "ownedFiles": [
+    "packages/core/src/dx/metrics/ai-usage/normalize.ts",
+    "packages/core/src/dx/metrics/ai-usage/ledger.ts",
+    "packages/core/src/dx/metrics/ai-usage/metric.ts",
+    "packages/core/test/dx/b30.test.ts",
+    "packages/core/test/dx/fixtures/b30/usage-scenarios.json"
+  ],
+  "descriptorExport": {
+    "module": "packages/core/src/dx/metrics/ai-usage/metric.ts",
+    "metric": "aiUsageMetric: DxMetric (descriptor aiUsageDescriptor, id dx.metrics.ai-usage, kind metric, readiness ready)",
+    "pure": "ledger.ts: accountAiUsage(events) -> AiUsageAccount, accountAiUsageByBranch(events) -> Map<branch, AiUsageAccount> (UNASSIGNED_BRANCH='(no branch)'); normalize.ts: normalizeAiUsage, matchKeysOf, sourceKindFrom"
+  },
+  "metricIds": [
+    "dx.ai-usage.tokens.{input,cached-input,cache-write,output,reasoning,total}",
+    "dx.ai-usage.money.{charge,metered,list-price-estimate,unallocated}",
+    "dx.ai-usage.requests",
+    "dx.ai-usage.duplicate-rows-collapsed",
+    "dx.ai-usage.uncovered-events",
+    "dx.ai-usage.unresolved-rows",
+    "dx.ai-usage.alternative.tokens.total"
+  ],
+  "fixtureIds": ["b30/hook-db-entire-duplicate", "b30/sdk-csv-overlap", "b30/cursor-local-db-branch", "b11/claude-session.jsonl (read-only producer check)"],
+  "sourceProbe": "Consumes ai.usage and ai.turn(with payload.measurements) envelopes as emitted by the in-tree collectors: cursor-local-db (payload.measurements, usd-cents metered), cursor-hooks (rawUsage + semanticsVerified), cursor-usage-export (charge/costLedger/costUsd/tokens, aggregate), cursor-transcripts, claude-jsonl, codex-session, entire, opencode, provider-usage (scope provider-bucket). Real producer output of parseClaudeJsonl on the b11 fixture is accounted with zero uncovered events.",
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b30.test.ts", "exit": 0, "result": "6 passed"},
+    {"cmd": "pnpm exec oxlint <b30 files>", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check <b30 files>", "exit": 0},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "note": "0 diagnostics in B30 files; non-zero exit comes from other owners' files at time of run"}
+  ],
+  "supportedFields": ["tokens by category (source-reported/estimated method kept)", "money ledgers charge/metered/list-price-estimate/unallocated (USD)", "requests", "duplicates collapsed", "uncovered events", "unresolved overlap", "aggregate alternative ledgers", "per-branch accounting"],
+  "accounting": {
+    "matchKeys": "request:<identity.requestId>; session:<sessionId>:id:<requestId|generationId>; union-find across sources",
+    "precedence": "AI_SOURCE_PRECEDENCE applied per (ledger, category, currency) slot inside a collapsed group",
+    "aggregate": "usage-csv rows without request key and provider-bucket rows are alternative ledgers, never summed with detail",
+    "unkeyed": "detail rows without keys are counted only when no other source reports the same slot; otherwise unresolved + unassigned",
+    "hooks": "stop-hook rawUsage with semanticsVerified!=true is uncovered; normalizedCategories summed only when verified",
+    "cumulative": "no differencing performed"
+  },
+  "gaps": [
+    "Cursor stop-hook usage stays uncovered until a probe sets semanticsVerified (B-hooks owner).",
+    "Cumulative usage windows are not differenced.",
+    "Aggregate ledgers (usage CSV, provider buckets) have no branch allocation; time-window correlation not implemented here.",
+    "Agent/tool-call counts are not part of this metric (payload.toolCalls not summed) to avoid double counting with hook/tool events.",
+    "Registration in the metric registry / dx barrel is owned by A02/A07; not done here.",
+    "Not yet exercised against a live Cursor store snapshot (no live store present at delivery time)."
+  ]
+}

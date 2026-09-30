@@ -1,0 +1,97 @@
+{
+  "fixtureId": "c07-late-collect",
+  "origin": "fixture",
+  "description": "Synthetic event collected AFTER the first analyze of core-golden-flight: one more Cursor usage row on the same branch. Used to prove a pinned snapshotId never shows it.",
+  "batches": [
+    {
+      "coverage": {
+        "adapterId": "cursor-usage-csv",
+        "expectedItems": 1,
+        "gaps": [],
+        "observedItems": 1,
+        "state": "complete",
+        "watermark": "c07-late",
+        "windowFrom": "2026-09-30T09:00:00.000Z",
+        "windowTo": "2026-09-30T11:00:00.000Z"
+      },
+      "cursor": null,
+      "events": [
+        {
+          "acquisition": "file-import",
+          "adapterId": "cursor-usage-csv",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0001",
+            "headSha": "1111111111111111111111111111111111111111",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:c07-late-usage-0002",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:c07-late-usage-0002-hash",
+            "ref": "fixture://c07/cursor-usage-csv/csv:row:2"
+          },
+          "fieldSemantics": [
+            {
+              "field": "tokens.input",
+              "method": "source-reported",
+              "note": null,
+              "rawName": "Input (w/o Cache Write)",
+              "unit": "tokens"
+            },
+            {
+              "field": "tokens.cached-input",
+              "method": "source-reported",
+              "note": null,
+              "rawName": "Cache Read",
+              "unit": "tokens"
+            },
+            {
+              "field": "tokens.output",
+              "method": "source-reported",
+              "note": null,
+              "rawName": "Output Tokens",
+              "unit": "tokens"
+            },
+            {
+              "field": "charge",
+              "method": "source-reported",
+              "note": "charge column empty in export: unavailable, not zero",
+              "rawName": "Cost",
+              "unit": "USD"
+            }
+          ],
+          "identity": {
+            "commitSha": null,
+            "generationId": null,
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": "req-c07-late",
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "ai.usage",
+          "observedAt": "2026-09-30T12:30:00.000Z",
+          "occurredAt": "2026-09-30T10:25:00.000Z",
+          "occurredAtPrecision": "minute",
+          "origin": "fixture",
+          "payload": {
+            "sourceKind": "usage-csv",
+            "tokens": {
+              "input": 999,
+              "cached-input": 111,
+              "output": 77
+            },
+            "charge": null
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "csv:row:2"
+        }
+      ]
+    }
+  ]
+}

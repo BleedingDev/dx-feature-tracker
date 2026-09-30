@@ -1,0 +1,286 @@
+{
+  "origin": "fixture",
+  "contractVersion": "dx.contracts.v1",
+  "note": "Line hashes are opaque placeholders (h-*), never source content.",
+  "scenarios": [
+    {
+      "fixtureId": "b33-clean-lineage",
+      "coverage": "complete",
+      "events": [
+        {
+          "id": "e1",
+          "payload": {
+            "provenance": "dx.provenance.edit.v1",
+            "filePath": "src/a.ts",
+            "sequence": 1,
+            "actor": "ai",
+            "beforeLineHashes": ["h-1", "h-2"],
+            "afterLineHashes": ["h-1", "h-a1", "h-a2", "h-a3", "h-2"]
+          }
+        },
+        {
+          "id": "e2",
+          "payload": {
+            "provenance": "dx.provenance.edit.v1",
+            "filePath": "src/a.ts",
+            "sequence": 2,
+            "actor": "human",
+            "beforeLineHashes": ["h-1", "h-a1", "h-a2", "h-a3", "h-2"],
+            "afterLineHashes": ["h-1", "h-a1", "h-x", "h-a3", "h-2"]
+          }
+        },
+        {
+          "id": "e3",
+          "payload": {
+            "provenance": "dx.provenance.edit.v1",
+            "filePath": "src/b.ts",
+            "sequence": 1,
+            "actor": "ai",
+            "beforeLineHashes": [],
+            "afterLineHashes": ["h-b1", "h-b2"]
+          }
+        },
+        {
+          "id": "c1",
+          "occurredAt": "2026-09-30T12:00:00.000Z",
+          "payload": {
+            "provenance": "dx.provenance.checkpoint.v1",
+            "checkpoint": "commit:abc123",
+            "filePath": "src/a.ts",
+            "lineHashes": ["h-1", "h-a1", "h-x", "h-a3", "h-2"]
+          }
+        },
+        {
+          "id": "c2",
+          "occurredAt": "2026-09-30T12:00:00.000Z",
+          "payload": {
+            "provenance": "dx.provenance.checkpoint.v1",
+            "checkpoint": "commit:abc123",
+            "filePath": "src/b.ts",
+            "lineHashes": ["h-b2"]
+          }
+        }
+      ],
+      "expect": {
+        "survival": 0.6,
+        "numerator": 3,
+        "denominator": 5,
+        "introduced": 5,
+        "humanRewritten": 1,
+        "unresolvedFiles": 0,
+        "measurement": "measured",
+        "checkpoint": "commit:abc123"
+      }
+    },
+    {
+      "fixtureId": "b33-unresolved-states",
+      "coverage": "complete",
+      "events": [
+        {
+          "id": "u1",
+          "payload": {
+            "provenance": "dx.provenance.edit.v1",
+            "filePath": "src/ok.ts",
+            "sequence": 1,
+            "actor": "ai",
+            "beforeLineHashes": ["h-1"],
+            "afterLineHashes": ["h-1", "h-ok"]
+          }
+        },
+        {
+          "id": "u2",
+          "payload": {
+            "provenance": "dx.provenance.edit.v1",
+            "filePath": "src/missing.ts",
+            "sequence": 1,
+            "actor": "ai",
+            "beforeLineHashes": null,
+            "afterLineHashes": ["h-m"]
+          }
+        },
+        {
+          "id": "u3",
+          "payload": {
+            "provenance": "dx.provenance.edit.v1",
+            "filePath": "src/concurrent.ts",
+            "sequence": 1,
+            "actor": "ai",
+            "beforeLineHashes": [],
+            "afterLineHashes": ["h-c1"]
+          }
+        },
+        {
+          "id": "u4",
+          "payload": {
+            "provenance": "dx.provenance.edit.v1",
+            "filePath": "src/concurrent.ts",
+            "sequence": 1,
+            "actor": "ai",
+            "beforeLineHashes": [],
+            "afterLineHashes": ["h-c2"]
+          }
+        },
+        {
+          "id": "u5",
+          "payload": {
+            "provenance": "dx.provenance.edit.v1",
+            "filePath": "src/gap.ts",
+            "sequence": 1,
+            "actor": "ai",
+            "beforeLineHashes": [],
+            "afterLineHashes": ["h-g1"]
+          }
+        },
+        {
+          "id": "u6",
+          "payload": {
+            "provenance": "dx.provenance.edit.v1",
+            "filePath": "src/gap.ts",
+            "sequence": 2,
+            "actor": "ai",
+            "beforeLineHashes": ["h-other"],
+            "afterLineHashes": ["h-g2"]
+          }
+        },
+        {
+          "id": "u7",
+          "payload": {
+            "provenance": "dx.provenance.edit.v1",
+            "filePath": "src/dup.ts",
+            "sequence": 1,
+            "actor": "ai",
+            "beforeLineHashes": ["h-d", "h-d"],
+            "afterLineHashes": ["h-d"]
+          }
+        },
+        {
+          "id": "u8",
+          "payload": {
+            "provenance": "dx.provenance.edit.v1",
+            "filePath": "src/retry.ts",
+            "sequence": 1,
+            "actor": "ai",
+            "retryOf": "tool-call-7",
+            "beforeLineHashes": [],
+            "afterLineHashes": ["h-r"]
+          }
+        },
+        {
+          "id": "u9",
+          "payload": {
+            "provenance": "dx.provenance.edit.v1",
+            "filePath": "src/nock.ts",
+            "sequence": 1,
+            "actor": "ai",
+            "beforeLineHashes": [],
+            "afterLineHashes": ["h-n"]
+          }
+        },
+        {
+          "id": "cu1",
+          "occurredAt": "2026-09-30T12:00:00.000Z",
+          "payload": {
+            "provenance": "dx.provenance.checkpoint.v1",
+            "checkpoint": "commit:def456",
+            "filePath": "src/ok.ts",
+            "lineHashes": ["h-1", "h-ok"]
+          }
+        },
+        {
+          "id": "cu2",
+          "occurredAt": "2026-09-30T12:00:00.000Z",
+          "payload": {
+            "provenance": "dx.provenance.checkpoint.v1",
+            "checkpoint": "commit:def456",
+            "filePath": "src/missing.ts",
+            "lineHashes": ["h-m"]
+          }
+        },
+        {
+          "id": "cu3",
+          "occurredAt": "2026-09-30T12:00:00.000Z",
+          "payload": {
+            "provenance": "dx.provenance.checkpoint.v1",
+            "checkpoint": "commit:def456",
+            "filePath": "src/concurrent.ts",
+            "lineHashes": ["h-c1"]
+          }
+        },
+        {
+          "id": "cu4",
+          "occurredAt": "2026-09-30T12:00:00.000Z",
+          "payload": {
+            "provenance": "dx.provenance.checkpoint.v1",
+            "checkpoint": "commit:def456",
+            "filePath": "src/gap.ts",
+            "lineHashes": ["h-g2"]
+          }
+        },
+        {
+          "id": "cu5",
+          "occurredAt": "2026-09-30T12:00:00.000Z",
+          "payload": {
+            "provenance": "dx.provenance.checkpoint.v1",
+            "checkpoint": "commit:def456",
+            "filePath": "src/dup.ts",
+            "lineHashes": ["h-d"]
+          }
+        },
+        {
+          "id": "cu6",
+          "occurredAt": "2026-09-30T12:00:00.000Z",
+          "payload": {
+            "provenance": "dx.provenance.checkpoint.v1",
+            "checkpoint": "commit:def456",
+            "filePath": "src/retry.ts",
+            "lineHashes": ["h-r"]
+          }
+        }
+      ],
+      "expect": {
+        "survival": 1,
+        "numerator": 1,
+        "denominator": 1,
+        "introduced": 1,
+        "humanRewritten": 0,
+        "unresolvedFiles": 6,
+        "measurement": "partial",
+        "checkpoint": "commit:def456",
+        "reasons": [
+          "ambiguous-repeated-lines",
+          "concurrent-edits",
+          "missing-checkpoint",
+          "missing-preimage",
+          "tool-retry",
+          "unknown-change"
+        ]
+      }
+    },
+    {
+      "fixtureId": "b33-no-evidence",
+      "coverage": "none",
+      "events": [],
+      "expect": { "survival": null, "measurement": "unavailable" }
+    },
+    {
+      "fixtureId": "b33-source-attributed",
+      "coverage": "complete",
+      "events": [
+        {
+          "id": "s1",
+          "payload": {
+            "provenance": "dx.provenance.source-attributed.v1",
+            "sourceName": "cursor-ai-code-tracking",
+            "aiLines": 30,
+            "totalLines": 120
+          }
+        }
+      ],
+      "expect": {
+        "survival": null,
+        "measurement": "unavailable",
+        "sourceAttributed": 0.25
+      }
+    }
+  ]
+}

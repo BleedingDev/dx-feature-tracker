@@ -1,0 +1,42 @@
+{
+  "schema": "dx-install/v1",
+  "owner": "C13",
+  "script": "scripts/dx-install.ts",
+  "invoke": "node scripts/dx-install.ts <install|uninstall|status> --target <project> [--store <file>] [--no-hooks] [--config-root <dir>] [--cli <file>] [--node <file>]",
+  "configRootDefault": "<target>/.cursor",
+  "neverTouches": ["~/.cursor/hooks.json", "~/.cursor/mcp.json"],
+  "mcp": {
+    "file": "mcp.json",
+    "serverName": "rat-stack",
+    "command": "<node>",
+    "args": ["<recorder>/apps/cli/dist/cli.js", "mcp"],
+    "env": { "DX_REPO": "<target>", "DX_STORE": "<store, only with --store>" }
+  },
+  "hooks": {
+    "file": "hooks.json",
+    "command": "<node> <recorder>/apps/cli/dist/cli.js dx hook",
+    "events": [
+      "sessionStart",
+      "sessionEnd",
+      "beforeSubmitPrompt",
+      "stop",
+      "postToolUse",
+      "postToolUseFailure",
+      "afterFileEdit",
+      "afterTabFileEdit",
+      "afterShellExecution",
+      "afterMCPExecution",
+      "afterAgentResponse"
+    ],
+    "spool": "<target>/.dx-flight-recorder/cursor-hooks-spool",
+    "gitExcludeLine": ".dx-flight-recorder/"
+  },
+  "skills": ["dx-analyze", "dx-explain"],
+  "manifest": "dx-flight-recorder.install.json",
+  "backupSuffix": ".dx-backup-<iso-timestamp>",
+  "checks": {
+    "test": "pnpm --filter @rat-stack/core exec vitest run test/dx/c13.test.ts",
+    "typecheck": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json (covers scripts/dx-install.ts via the c13 test import)",
+    "lint": "pnpm exec oxlint scripts/dx-install.ts packages/core/test/dx/c13.test.ts"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "id": "B40",
+  "status": "ready",
+  "scope": "Cursor skill files plus static routing checks. Real Cursor invocation belongs to C09/C17, and installing into the demo project belongs to C13.",
+  "contract": { "version": "dx.contracts.v1", "doc": "docs/execution/contracts-v1.md", "sha256": "2701e1aa3687aea5eb80420a1fbc87866eef332bc54e9311c8f61d4b99b9519d", "report": "dx.report.v1" },
+  "ownedFiles": [
+    ".cursor/skills/dx-analyze/SKILL.md",
+    ".cursor/skills/dx-explain/SKILL.md",
+    "packages/core/test/dx/b40.test.ts"
+  ],
+  "descriptorExport": null,
+  "fixtureIds": [],
+  "routing": {
+    "dx-analyze": { "tool": "dx_analyze", "server": "rat-stack", "inputs": ["flight", "repo", "snapshotId", "asOf"], "preflight": "dx_status", "followUp": ["dx_explain", "dx_evidence"], "neverCalls": ["dx_collect", "dx_mark"] },
+    "dx-explain": { "tool": "dx_explain", "server": "rat-stack", "inputs": ["flight", "snapshotId", "asOf", "cursor", "limit"], "preflight": "dx_status", "followUp": ["dx_evidence", "dx_analyze"], "neverCalls": ["dx_collect", "dx_mark"] }
+  },
+  "checks": [
+    { "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b40.test.ts", "exit": 0, "result": "12 passed" },
+    { "cmd": "pnpm exec oxlint packages/core/test/dx/b40.test.ts", "exit": 0 },
+    { "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json (filtered to b40)", "exit": 0, "result": "0 b40 errors" },
+    { "cmd": "pnpm exec oxfmt --check .cursor/skills/dx-analyze/SKILL.md .cursor/skills/dx-explain/SKILL.md packages/core/test/dx/b40.test.ts", "exit": 0 }
+  ],
+  "gaps": [
+    "Static only. C09/C17 must still prove that Cursor discovers and invokes these skills.",
+    "C13 must install the skills into the demo repo and configure the rat-stack MCP server (node <repo>/apps/cli/dist/cli.js mcp) in project .cursor/mcp.json.",
+    "The skills do not document a CLI fallback because the dx CLI subcommand names were not verified here."
+  ],
+  "headAtCheck": "2e78dc9"
+}

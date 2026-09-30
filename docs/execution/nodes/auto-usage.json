@@ -1,0 +1,75 @@
+{
+  "node": "auto-usage",
+  "status": "done",
+  "finishedAt": "2026-09-30T15:12+02:00",
+  "decisions": ["D10", "D11"],
+  "files": {
+    "created": [
+      "packages/core/src/dx/collectors/cursor-usage-api/session.ts",
+      "packages/core/src/dx/collectors/cursor-usage-api/client.ts",
+      "packages/core/src/dx/collectors/cursor-usage-api/collector.ts",
+      "packages/core/src/dx/collectors/cursor-usage-api/descriptor.ts",
+      "packages/core/src/dx/metrics/cost/price-catalog/slug.ts",
+      "packages/core/src/dx/metrics/cost/price-catalog/catalog.ts",
+      "packages/core/src/dx/metrics/cost/price-catalog/provider.ts",
+      "packages/core/test/dx/auto-usage.test.ts",
+      "packages/core/test/dx/fixtures/auto-usage/api-pages.json"
+    ],
+    "sharedEdits": [
+      "packages/core/src/dx/registry/registry.ts: import + cursorUsageApiCollector in allCollectors",
+      "packages/core/src/dx/composition.ts: autoSources adds collector.cursor-usage-api only when the store lives under ~/.dft (the per-user global store), so temp-store tests never reach the network"
+    ]
+  },
+  "endpoints": {
+    "used": "POST https://cursor.com/api/dashboard/get-filtered-usage-events body {teamId:0,startDate:<ms string>,endDate:<ms string>,page,pageSize:100}",
+    "probedReadOnly": [
+      "POST https://cursor.com/api/dashboard/get-aggregated-usage-events (200; aggregations,totalInputTokens,totalOutputTokens,totalCacheReadTokens,totalCostCents)",
+      "GET https://cursor.com/api/usage?user=<id> (200; legacy request counters)"
+    ],
+    "auth": "cookie WorkosCursorSessionToken=<userId>%3A%3A<accessToken>; accessToken = ItemTable cursorAuth/accessToken in Cursor globalStorage/state.vscdb (node:sqlite backup into an owned mkdtemp dir, removed in release); userId = JWT sub after the last '|'",
+    "priceCatalog": ["https://models.dev/api.json (primary)", "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json (fallback)"]
+  },
+  "liveProof": {
+    "at": "2026-09-30T15:06+02:00",
+    "window": "last 7 days",
+    "events": 149,
+    "coverage": "complete (expected 149 = observed 149)",
+    "occurredFrom": "2026-09-28T21:57:04Z",
+    "occurredTo": "2026-09-30T13:04:11Z",
+    "models": {"default": 26, "grok-bot-default": 123},
+    "kinds": {"USAGE_EVENT_KIND_CUSTOM_SUBSCRIPTION": 26, "USAGE_EVENT_KIND_FREE_CREDIT": 123},
+    "ledgers": {"charge": 26, "metered": 123},
+    "tokenCategories": ["input", "output", "cached-input"],
+    "costUsdSumTokenUsageTotalCents": 12.63,
+    "chargedUsdSumChargedCents": 1.98,
+    "rowsWithRequestId": 0,
+    "rowsWithConversationId": 149,
+    "distinctConversations": 28,
+    "autoRealModelReported": false,
+    "a07Join": "a07.json cursor-agent session_id matches a dashboard conversationId (1/1); a07 request_id does not appear (dashboard rows carry no requestId). c09 carries no ids to compare.",
+    "incremental": "second run started at stored lastTimestamp - 1h: 26 rows, all 26 event ids identical to the first run",
+    "tokenLeak": false,
+    "rowFieldNames": ["timestamp", "model", "kind", "customSubscriptionName", "requestsCosts", "usageBasedCosts", "isTokenBasedCall", "tokenUsage", "owningUser", "cursorTokenFee", "isChargeable", "serviceAccountId", "isHeadless", "chargedCents", "conversationId", "subscriptionProductId"],
+    "tokenUsageFieldNames": ["inputTokens", "outputTokens", "cacheReadTokens", "totalCents"]
+  },
+  "livePriceCatalog": {
+    "origin": "fresh models.dev", "tableId": "models.dev", "version": "2026-09-30", "models": 233,
+    "examples": {
+      "claude-opus-5-5-high-thinking": "claude-opus-5-5 (bundled Cursor rate wins: in 4 / out 20)",
+      "gemini-3.8-flash": "priced", "grok-4.6": "priced", "composer-2.5": "priced (bundled)",
+      "default": "unavailable: Auto has no fixed model",
+      "grok-bot-default": "unavailable: no catalog entry, not guessed"
+    }
+  },
+  "validation": {
+    "vitest": "test/dx/auto-usage.test.ts 10/10; with b43, p1-prices, integration/a02-spine, integration/a07-rebuild: 25/25",
+    "oxlint": "0 findings on own files + composition.ts + registry.ts",
+    "oxfmt": "--check clean on own files + composition.ts + registry.ts",
+    "tsc": "core tsc: 0 errors in own files (suggestions only)"
+  },
+  "openForIntegrator": [
+    "defaultPriceProvider(home?) returns Effect<{origin, table, warnings}>; expandForModels(table, observedSlugs) adds raw Cursor slugs as keys so the existing priceReading lookup prices them. Not wired into registry costMetric (static, synchronous) nor apps/cli (not owned); P1-WIRE should call it where defaultCostOptions() is built.",
+    "Events carry an empty FlightContext (account-level). Repo views must show them only when B26 joins them by conversationId; --all-repos / a usage view should show the unjoined rest.",
+    "descriptor fixtureIds lists auto-usage-api-pages; add to the fixture index if the gate requires it."
+  ]
+}

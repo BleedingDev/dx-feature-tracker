@@ -1,0 +1,48 @@
+{
+  "id": "B13",
+  "role": "optional",
+  "status": "degraded",
+  "deliverable": "OpenCode exported session/token import",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "ownedFiles": [
+    "packages/core/src/dx/collectors/opencode/collector.ts",
+    "packages/core/test/dx/b13.test.ts",
+    "packages/core/test/dx/fixtures/b13/opencode-session-export.json",
+    "packages/core/test/dx/fixtures/b13/opencode-partial-export.json",
+    "packages/core/test/dx/fixtures/b13/opencode-wrong-shape.json"
+  ],
+  "exports": {
+    "module": "packages/core/src/dx/collectors/opencode/collector.ts",
+    "collector": "opencodeCollector (DxCollector<FileSystem.FileSystem>)",
+    "descriptor": "opencodeDescriptor (id collector/opencode, readiness degraded)",
+    "adapterId": "OPENCODE_ADAPTER_ID = \"opencode\"",
+    "pure": ["parseOpencodeExport(text, input, observedAt)", "importOpencodeExport(decoded, input, observedAt)"]
+  },
+  "fixtureIds": ["b13-opencode-session-export", "b13-opencode-partial-export"],
+  "sourceProbe": {
+    "binary": "/opt/homebrew/bin/opencode",
+    "version": "opencode v2.0.20",
+    "exportCommand": "opencode session export --sanitize <sessionId> > file.json",
+    "privateDataRead": false,
+    "note": "No real session was exported or read; the OpenCode DB is never opened. Real 2.x export shape unverified."
+  },
+  "events": {
+    "ai.session": "one per export: messageCount, assistant/user counts, directory, parentSessionId, updatedAt",
+    "ai.usage": "one per assistant message: tokens input/output/reasoning/cacheRead/cacheWrite (source-reported, null when absent), total null, cost {value, currency USD, ledger list-price-estimate, method estimated}, toolCalls + toolNames from tool parts, durationMs, modelId, providerId, requestKey source:opencode:session:<sid>:turn:<messageId>, turnKey"
+  },
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b13.test.ts", "exit": 0, "result": "5 passed"},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json (filtered to opencode/b13)", "exit": "n/a (package exit 1 from other owners' files)", "result": "0 diagnostics in B13 files"},
+    {"cmd": "node_modules/.bin/oxlint <B13 files>", "exit": 0},
+    {"cmd": "node_modules/.bin/oxfmt --check <B13 files>", "exit": 0}
+  ],
+  "gaps": [
+    "Real OpenCode 2.x session export shape not verified on host (no private data read); unknown shape fails with UnsupportedSource.",
+    "Cost is OpenCode's list-price estimate, not a charge; 0 may mean unpriced model.",
+    "Export has no Git branch/HEAD; branch comes from collect context or correlation.",
+    "No derived total tokens (output/reasoning overlap unverified).",
+    "Not registered: integration owner (A02/A07) must add opencodeCollector to the collector registry and CLI --source opencode.",
+    "Incoming cursor is ignored; dedupe relies on deterministic event IDs."
+  ]
+}

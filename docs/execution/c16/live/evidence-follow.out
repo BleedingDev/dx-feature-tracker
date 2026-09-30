@@ -1,0 +1,44 @@
+{
+  "items": [
+    {
+      "adapterId": "git-history",
+      "evidenceId": "sha256:3ef6e796038717d7287784cebf471d91b7535f5a9804539f7ad7bc3472d7b31e",
+      "excerpt": "branchCreatedAt=2026-09-30T13:06:52.000Z; branchCreatedAtReason=null; createdFrom=HEAD; observation=branch-created; reflogEntries=1; reflogOldestAt=2026-09-30T13:06:52.000Z; startSha=59ec8f12f41a81748582e20eb75d6f493982ec49",
+      "origin": "imported",
+      "redacted": false,
+      "ref": "git:reflog:feature/c17-real-flight"
+    },
+    {
+      "adapterId": "git-observation",
+      "evidenceId": "f740b87bca43e8de92c84ef8802e685bf86a185f9866f320c90fe6d43e8ccf4c",
+      "excerpt": "action=branch; branch=feature/c17-real-flight; createdFrom=HEAD; newSha=59ec8f12f41a81748582e20eb75d6f493982ec49; observationKind=branch-reflog",
+      "origin": "imported",
+      "redacted": false,
+      "ref": "git-observation:reflog:109e229fae67e6b7:feature/c17-real-flight:59ec8f12f41a81748582e20eb75d6f493982ec49:2026-09-30T13:06:52.000Z:branch"
+    },
+    {
+      "adapterId": "cursor-hooks",
+      "evidenceId": "sha256:0f1eb5b854f43a1f0e420c3e256d92cbeb0ed65c2a6e5a1a7e94784bcae98694",
+      "excerpt": "attachmentCount=null; commandBin=null; commandHash=null; composerMode=null; cursorVersion=2026.09.28-64d2043; durationMs=null; editCount=null; filePath=null; finalStatus=null; hookEvent=sessionStart; isBackgroundAgent=false; linesAdded=null; linesRemoved=null; loopCount=null; model=default; presentKeys=[array:10]; promptChars=null; rawUsagePresent=false; reason=null; status=null; supportedHookEvent=true; surface=agent; toolCall=false; toolName=null",
+      "origin": "imported",
+      "redacted": true,
+      "ref": "cursor-hooks-spool:bd8331b45902974096eb9ff9cc115b7a1c2ab236225d567459009d68d2362214"
+    },
+    {
+      "adapterId": "cursor-hooks",
+      "evidenceId": "sha256:f8ffade2969df3e34aa89b68466a7c6f9202a4801d7934fbde476f551cbc20fd",
+      "excerpt": "attachmentCount=null; commandBin=null; commandHash=null; composerMode=null; cursorVersion=2026.09.28-64d2043; durationMs=194.262; editCount=null; filePath=/private/var/folders/l5/j97t559s5ljgmjc_ylqn1jmh0000gn/T/c16-live.y7f16c8_/c17-demo; finalStatus=null; hookEvent=postToolUse; isBackgroundAgent=null; linesAdded=null; linesRemoved=null; loopCount=null; model=default; presentKeys=[array:14]; promptChars=null; rawUsagePresent=false; reason=null; status=null; supportedHookEvent=true; surface=agent; toolCall…",
+      "origin": "imported",
+      "redacted": true,
+      "ref": "cursor-hooks-spool:91a79edbb566d7db2753439ce6562c9db2678677b51c0dee3e446480e29427ff"
+    },
+    {
+      "adapterId": "cursor-hooks",
+      "evidenceId": "sha256:76090490dd64231d8480167b9aaef1e63463b991bcdb1b25aab0771a43880efe",
+      "excerpt": "attachmentCount=null; commandBin=null; commandHash=null; composerMode=null; cursorVersion=2026.09.28-64d2043; durationMs=508.226; editCount=null; filePath=~/.claude/plugins/cache/tracedecay/tracedecay/0.0.74/skills/using-tracedecay/SKILL.md; finalStatus=null; hookEvent=postToolUse; isBackgroundAgent=null; linesAdded=null; linesRemoved=null; loopCount=null; model=default; presentKeys=[array:14]; promptChars=null; rawUsagePresent=false; reason=null; status=null; supportedHookEvent=true; surface=agent; toolCa…",
+      "origin": "imported",
+      "redacted": true,
+      "ref": "cursor-hooks-spool:81dff5c55aed41e4fc6bf49d799760cef5cbb85ce80e60a4f389430d49e0019f"
+    }
+  ]
+}

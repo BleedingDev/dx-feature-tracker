@@ -1,0 +1,50 @@
+{
+  "capturedAt": "2026-09-30T12:32:43.690Z",
+  "git": {
+    "branch": "feature/a07-live-demo",
+    "headSha": "429e6d337d843cb27dd69128e1c5c192bc7de443",
+    "repoCommonDir": "/tmp/a07-demo/.git",
+    "worktreePath": "/tmp/a07-demo"
+  },
+  "hook": {
+    "attachmentCount": null,
+    "commandBin": null,
+    "commandHash": null,
+    "composerMode": null,
+    "conversationId": "487a09d4-1638-4add-a548-db653635a61b",
+    "cursorVersion": "2026.09.28-64d2043",
+    "durationMs": null,
+    "editCount": null,
+    "filePath": null,
+    "finalStatus": null,
+    "generationId": "487a09d4-1638-4add-a548-db653635a61b",
+    "hookEvent": "sessionStart",
+    "isBackgroundAgent": false,
+    "linesAdded": null,
+    "linesRemoved": null,
+    "loopCount": null,
+    "model": "default",
+    "presentKeys": [
+      "conversation_id",
+      "cursor_version",
+      "generation_id",
+      "hook_event_name",
+      "is_background_agent",
+      "model",
+      "session_id",
+      "transcript_path",
+      "user_email",
+      "workspace_roots"
+    ],
+    "promptChars": null,
+    "rawUsage": [],
+    "reason": null,
+    "sessionId": "487a09d4-1638-4add-a548-db653635a61b",
+    "status": null,
+    "toolName": null,
+    "toolUseId": null,
+    "workspaceRoots": ["/tmp/a07-demo"]
+  },
+  "recordHash": "c08cd813bc1823301f360d8b23a9335681147ba8ea50b4e84bec16a436fda1bf",
+  "spoolVersion": "dxfr.cursor-hook-spool.v1"
+}

@@ -1,0 +1,40 @@
+{
+  "node": "B09",
+  "role": "optional",
+  "status": "disabled",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "ownedFiles": [
+    "packages/core/src/dx/collectors/cursor-extension/collector.ts",
+    "packages/core/test/dx/b09.test.ts",
+    "packages/core/test/dx/fixtures/b09/activity.jsonl"
+  ],
+  "exports": {
+    "module": "packages/core/src/dx/collectors/cursor-extension/collector.js",
+    "descriptor": "cursorExtensionDescriptor (id collector/cursor-extension, readiness disabled)",
+    "collector": "cursorExtensionCollector: DxCollector<FileSystem.FileSystem> (needs NodeServices.layer or any FileSystem layer)",
+    "parser": "parseCursorExtensionActivity(text, input, observedAt): EventBatch (pure)",
+    "recordSchema": "dx.cursor-extension.activity.v1"
+  },
+  "fixtureIds": ["b09-cursor-extension-activity"],
+  "sourceProbe": {
+    "cursorIde": "present 3.22.12 (from docs/execution/source-probes.json source.cursor.ide)",
+    "recorderExtension": "absent: no recorder VS Code/Cursor extension exists or is installed; no producer of dx.cursor-extension.activity.v1 on this host"
+  },
+  "feasibility": "Supported route = a user-installed VS Code extension using public APIs (window.onDidChangeWindowState, workspace.onDidSaveTextDocument, window.onDidChangeActiveTextEditor, vscode.git extension API for branch/HEAD) appending JSONL records. This yields editor focus/save/branch activity only. Public extension API exposes no Cursor AI tokens, cost, requests or tool calls.",
+  "supportedFields": ["occurredAt", "context.branch", "context.headSha", "context.worktreePath", "identity.sessionId", "payload.activity", "payload.hostApp", "payload.hostVersion", "payload.extensionVersion", "payload.fileHash"],
+  "gaps": [
+    "producer-not-installed: extension producer not built/shipped; readiness disabled; do not register",
+    "no-ai-usage-via-extension-api: tokens/cost/requests/tool calls unavailable from this route",
+    "no-ai-ownership: editor activity is not authorship evidence",
+    "events use kind 'other' with payload.category 'ide.activity' because contract v1 has no IDE activity kind (additive kind would be A03's call)"
+  ],
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b09.test.ts", "exit": 0, "result": "6 passed"},
+    {"cmd": "pnpm exec oxlint <b09 files>", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check <b09 files>", "exit": 0},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "result": "0 errors in B09 files; nonzero from other owners' files"}
+  ],
+  "integration": "Not registered anywhere (disabled). If A02 lists disabled descriptors in status, import cursorExtensionDescriptor directly. No barrel/registry edits made.",
+  "dependencies_needed": []
+}

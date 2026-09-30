@@ -1,6 +1,10 @@
+// @effect-diagnostics-next-line nodeBuiltinImport:off -- The Cursor hook entrypoint reads its JSON payload from stdin (fd 0) synchronously, with no Effect runtime work before responding.
+import { readFileSync } from "node:fs";
+
 import { toCommand } from "@rat-stack/capability";
 import { capabilities, formatFileStats, inspectFile } from "@rat-stack/core";
-import { Console, Effect, Layer } from "effect";
+import { runCursorHook } from "@rat-stack/core/dx";
+import { Console, DateTime, Effect, Layer } from "effect";
 import { Command, Flag } from "effect/unstable/cli";
 
 import {
@@ -8,6 +12,8 @@ import {
   DEVTOOLS_MCP_PATH,
   codeMode,
   devtoolsWebServer,
+  dxCapabilities,
+  dxStoreLive,
   http,
   mcpServer,
   webServer,
@@ -109,6 +115,51 @@ const catalogCommand = Command.make(
   )
 );
 
+const dxCommandNames = {
+  dx_analyze: "analyze",
+  dx_chats: "chats",
+  dx_collect: "collect",
+  dx_evidence: "evidence",
+  dx_explain: "explain",
+  dx_history: "history",
+  dx_mark: "mark",
+  dx_status: "status",
+} as const;
+
+const dxCapabilityCommands = dxCapabilities.map((capability) =>
+  toCommand(capability, {
+    name: dxCommandNames[capability.contract.name],
+  }).pipe(Command.provide(dxStoreLive))
+);
+
+const readStdin = (): string => {
+  try {
+    return readFileSync(0, "utf-8");
+  } catch {
+    return "";
+  }
+};
+
+const dxHookCommand = Command.make("hook", {}, () =>
+  DateTime.now.pipe(
+    Effect.map((now) =>
+      runCursorHook(readStdin(), process.cwd(), DateTime.toDate(now))
+    ),
+    Effect.flatMap((result) => Console.log(result.stdout))
+  )
+).pipe(
+  Command.withDescription(
+    "Cursor project hook entrypoint: read one hook JSON payload on stdin, spool sanitized metadata locally, print the hook response"
+  )
+);
+
+const dxCommand = Command.make("dx").pipe(
+  Command.withDescription(
+    "DX Flight Recorder: record and analyze local AI engineering cost per Git branch"
+  ),
+  Command.withSubcommands([...dxCapabilityCommands, dxHookCommand])
+);
+
 export const rootCommand = Command.make("rat-stack").pipe(
   Command.withDescription("Agent-first file inspection: CLI, REST, and MCP"),
   Command.withSubcommands([
@@ -117,6 +168,7 @@ export const rootCommand = Command.make("rat-stack").pipe(
     openapiCommand,
     serveCommand,
     mcpCommand,
+    dxCommand,
   ])
 );
 

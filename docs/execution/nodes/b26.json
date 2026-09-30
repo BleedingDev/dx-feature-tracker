@@ -1,0 +1,46 @@
+{
+  "id": "B26",
+  "owner": "native worker B26",
+  "role": "core",
+  "status": "ready",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "deliveredAt": "2026-09-30T14:20+02:00",
+  "ownedFiles": [
+    "packages/core/src/dx/correlation/ai/claim.ts",
+    "packages/core/src/dx/correlation/ai/overlap.ts",
+    "packages/core/src/dx/correlation/ai/branch-join.ts",
+    "packages/core/src/dx/correlation/ai/fractions.ts",
+    "packages/core/src/dx/correlation/ai/descriptor.ts",
+    "packages/core/src/dx/correlation/ai/correlator.ts",
+    "packages/core/test/dx/b26.test.ts",
+    "packages/core/test/dx/fixtures/b26/conversation-branch-join.json"
+  ],
+  "descriptorExport": {
+    "module": "packages/core/src/dx/correlation/ai/correlator.ts",
+    "correlator": "aiCorrelator (DxCorrelator; pure, no requirements)",
+    "full": "correlateAi(events, mappings?) -> AiCorrelationResult { claims, overlapGroups, alternatives, branches, fractions }",
+    "descriptor": "aiCorrelationDescriptor (id correlation/ai, kind correlation, readiness ready) in descriptor.ts",
+    "mappings": "CorrelationMapping { key: 'session:<sessionId>', value: '<branch>' } forces a strong conversation->branch join"
+  },
+  "fixtureIds": ["core-ai-overlap", "core-branch-ambiguity", "b26-conversation-branch-join"],
+  "sourceProbe": "None needed: pure correlation over normalized envelopes. Payload shapes were read from the in-tree producers (cursor-hooks, cursor-local-db, cursor-usage-export, cursor-cli) and decoded with Effect Schema views.",
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b26.test.ts", "exit": 0, "result": "12 passed"},
+    {"cmd": "pnpm exec oxlint packages/core/src/dx/correlation/ai/ packages/core/test/dx/b26.test.ts", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check <owned files>", "exit": 0},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "result": "0 diagnostics in B26 files; the non-zero exit comes from other owners' files at 14:20"}
+  ],
+  "supportedFields": [
+    "overlapGroups (collapsed on a shared requestId/turn key, preferred by AI_SOURCE_PRECEDENCE; alternative for aggregate ledgers; unresolved for id-less claims within 60s of another source)",
+    "claims[].attribution/branch/branchEvidenceIds/reason (branch join), requestAttribution/requestKey, role (preferred|duplicate|single|unresolved|alternative), bucket",
+    "branches[].strongUnits/provisionalUnits/amounts[<ledger>:<category|currency>]",
+    "fractions.units and fractions.amounts: strong/provisional/unallocated/unresolved/total and allocatedFraction (null plus a reason when total is 0)"
+  ],
+  "gaps": [
+    "Time-window placement uses the min/max span of branch events with full context (branch, worktree and head). It is only provisional and does not use B27 interval unions.",
+    "Amounts are read only from payload.measurements[], payload.tokens{}, payload.charge and payload.costUsd with costLedger. Raw hook usage with semanticsVerified=false adds no amounts.",
+    "Estimated amounts stay under separate 'estimated:' keys. The module does no cumulative differencing (that is B30).",
+    "Proof uses fixtures only. The module is not yet registered by A02/A07 and has not run against a live Cursor store in this node."
+  ]
+}

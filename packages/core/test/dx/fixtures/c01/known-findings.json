@@ -1,0 +1,6 @@
+{
+  "fixtureId": "c01-known-findings",
+  "owner": "C01",
+  "description": "Metric modules that currently emit null-valued MetricResults with an empty coverage array on core fixtures. Owners should remove their entry once results cite SourceCoverage.",
+  "nullWithoutCoverage": ["git-churn", "provenance"]
+}

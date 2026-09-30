@@ -1,0 +1,5 @@
+[96msrc/app.ts[0m:[93m3[0m:[93m7[0m - [91merror[0m[90m TS2345: [0mArgument of type number is not assignable to parameter of type string.
+
+3 const x: string = 1;
+
+Found 1 error in src/app.ts[90m:3[0m

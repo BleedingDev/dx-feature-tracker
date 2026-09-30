@@ -1,0 +1,36 @@
+{
+  "id": "C05",
+  "owner": "native worker C05",
+  "role": "verification",
+  "status": "degraded",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "deliveredAt": "2026-09-30T14:29+02:00",
+  "ownedFiles": [
+    "packages/core/test/dx/audits/c05.test.ts",
+    "packages/core/test/dx/fixtures/c05/accounting-audit.json",
+    "docs/execution/c05/accounting-audit.md"
+  ],
+  "descriptorExport": null,
+  "fixtureIds": [
+    "c05/cache-categories", "c05/duplicate-import-keyed", "c05/duplicate-import-unkeyed",
+    "c05/mixed-branches", "c05/absent-values", "c05/explicit-zero",
+    "c05/keyed-csv-vs-sdk", "c05/stop-db-entire-dashboard"
+  ],
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/audits/c05.test.ts", "exit": 0, "result": "10 passed"},
+    {"cmd": "pnpm exec oxlint packages/core/test/dx/audits/c05.test.ts", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check packages/core/test/dx/audits/c05.test.ts packages/core/test/dx/fixtures/c05/accounting-audit.json", "exit": 0},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "result": "0 diagnostics in C05 files; errors belong to other owners"}
+  ],
+  "defects": [
+    {"owner": "B30", "where": "ledger.ts accountAiUsage", "summary": "unkeyed event imported twice summed twice", "observed": 18, "expected": 9},
+    {"owner": "B30", "where": "ledger.ts accountAiUsageByBranch", "summary": "branch split before dedup double counts cross-branch request", "observed": 207, "expected": 107},
+    {"owner": "B30", "where": "normalize.ts matchKeysOf", "summary": "request:<id> and session:<s>:id:<id> keys never union", "observed": 1000, "expected": 500}
+  ],
+  "gaps": [
+    "Defects pinned, not fixed (outside C05 write scope).",
+    "No source declares whether input tokens include cached tokens; per-slot precedence can mix semantics.",
+    "Not rerun against a live Cursor ledger; G02 must rerun."
+  ]
+}

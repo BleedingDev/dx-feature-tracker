@@ -1,0 +1,56 @@
+{
+  "id": "B12",
+  "status": "degraded",
+  "role": "optional",
+  "deliverable": "Consented Codex session usage import with session allocation uncertainty",
+  "owned_files": [
+    "packages/core/src/dx/collectors/codex/parse.ts",
+    "packages/core/src/dx/collectors/codex/collector.ts",
+    "packages/core/test/dx/b12.test.ts",
+    "packages/core/test/dx/fixtures/b12/codex-rollout-v2.jsonl",
+    "packages/core/test/dx/fixtures/b12/codex-rollout-legacy.jsonl",
+    "packages/core/test/dx/fixtures/b12/not-codex.jsonl",
+    "docs/execution/nodes/b12.json",
+    "docs/execution/nodes/b12.md"
+  ],
+  "contract_digest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "contract_version": "dx.contracts.v1",
+  "descriptor_export": {
+    "module": "packages/core/src/dx/collectors/codex/collector.ts",
+    "collector": "codexSessionCollector (DxCollector<FileSystem.FileSystem>; provide NodeServices.layer)",
+    "descriptor": "codexSessionDescriptor",
+    "descriptor_id": "collector/codex-session",
+    "adapter_id": "codex-session",
+    "readiness": "degraded",
+    "pure_parser": "parseCodexSession(text, { context, evidenceName, observedAt, origin }) in parse.ts"
+  },
+  "fixture_ids": ["b12-codex-rollout-v2", "b12-codex-rollout-legacy"],
+  "source_probe": {
+    "host_input_present": true,
+    "method": "key-shape probe only (no content printed) of one explicitly chosen rollout per format; parser run returned counts only",
+    "current_format": "Codex CLI 0.159.0 rollout: session_meta, turn_context, event_msg(task_started/task_complete/turn_aborted/token_count), response_item(function_call/custom_tool_call), token_usage_record{response_id, usage}",
+    "current_result": "1 ai.session, 13 ai.turn, 129 ai.usage, 120 tool calls, coverage complete, 0 malformed, 0 duplicate response IDs",
+    "legacy_format": "Codex CLI 0.60.1 rollout: session_meta.git{branch, commit_hash}; no token data present in any 2025 file on this host, so the legacy token_count delta path is fixture-only"
+  },
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b12.test.ts", "exit": 0, "result": "6/6 passed"},
+    {"cmd": "pnpm exec oxlint packages/core/test/dx/b12.test.ts packages/core/src/dx/collectors/codex/", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check packages/core/src/dx/collectors/codex/*.ts packages/core/test/dx/b12.test.ts", "exit": 0},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "result": "0 errors in B12 files; remaining errors are in cursor-transcripts, cursor-usage-export, manual/marker, opencode (other owners)"}
+  ],
+  "supported_fields": [
+    "ai.session: sessionId, cliVersion, originator, source, modelProvider, branchAtStart, commitAtStart, turnCount, toolCalls, usageRecords",
+    "ai.turn: turnId, turnKey, model, effort, startedAt, completedAt, durationMs (agent run time, not human waiting), status completed|aborted|open, toolCalls, toolNames",
+    "ai.usage: requestId=response_id, requestKey source:codex-session:request:<response_id>, tokens input/cachedInput/cacheWrite/output/reasoning/total (source-reported, raw names kept), model",
+    "payload.allocation {state provisional|unassigned, reason} on every event; payload.cost = unavailable"
+  ],
+  "gaps": [
+    "Cost/charge always unavailable: rollouts carry no price or billing; no list-price estimate is made.",
+    "Branch allocation is at most provisional (cwd inside flight worktree and start branch not contradicting); never strong. Codex records no branch per turn.",
+    "input_tokens includes cached_input_tokens and output_tokens includes reasoning (fieldSemantics notes this); consumers must not add subsets.",
+    "Legacy rollouts without token_usage_record fall back to token_count last_token_usage deltas with no request ID (requestKey null, unassigned for overlap); only fixture-verified on this host.",
+    "Imports one explicitly selected .jsonl (--input); no directory discovery of ~/.codex/sessions.",
+    "Not registered: integration registry/barrel belongs to A02/A07/A08; collector needs FileSystem (NodeServices.layer).",
+    "Cursor ignores CollectCursor input; re-import is idempotent via deterministic event IDs (active sessions can be re-imported as they grow)."
+  ]
+}

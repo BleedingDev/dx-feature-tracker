@@ -1,0 +1,437 @@
+{
+  "fixtureId": "b26-conversation-branch-join",
+  "owner": "B26",
+  "origin": "fixture",
+  "description": "Synthetic redacted fixture. Conversation s1 has one branch-bearing hook event and one branchless local-db turn (session join -> provisional); s2 is mapped explicitly to feature/b (strong); one usage-export row lies inside only the feature/a activity window (time window -> provisional) and one lies outside every window (unallocated); conversation s3 spans feature/a and feature/b so its branchless usage stays unassigned.",
+  "mappings": [
+    {
+      "key": "session:s2",
+      "value": "feature/b"
+    }
+  ],
+  "eventNames": {
+    "git-context-feature-b": "sha256:e467cc666d634b9ef0b4658812ae18b9ad7392d32f3188336a315be2c3652333",
+    "s1-request-branch": "sha256:27c232837dba4329134c960e8698f7c1e10eaf23c4c7070a2c703a31699c1862",
+    "s1-turn-no-branch": "sha256:084dbef10e55efb2fe4beb726d6bfe8c15e66bdcb1b6757edd159496e4c5eb07",
+    "s2-cli-mapped": "sha256:8ed99d0cde39eec0c2d71e4c60688b8f5d92295bb407133e6477d5d48325cee7",
+    "csv-in-window": "sha256:3532411fa90122c5783c5753e51dd0b045e6913640bdfec8433e5d72c586933d",
+    "csv-out-of-window": "sha256:286aca2dfa0eea1d2d8247add9cd05932c3e416ae744554eb8e77315619aea6c",
+    "s3-turn-a": "sha256:5b35a60cf92e5461bdf340a187ac6d68b35137b72ce831c2d4974ab3ed72653c",
+    "s3-turn-b": "sha256:7b3fe20f29320e5463abff2d03fb33d58fff4689d3475c8b73922845eef32ac9",
+    "s3-usage-no-branch": "sha256:b1e7f957230297349d99bf4bf0ed8c39ef00561a5752c0472b4d452be6cfe2ef"
+  },
+  "events": [
+    {
+      "acquisition": "file-import",
+      "adapterId": "git",
+      "adapterVersion": "fixture-1.0.0",
+      "context": {
+        "branch": "feature/b",
+        "flightId": null,
+        "headSha": "1111111111111111111111111111111111111111",
+        "repoCommonDir": "/redacted/repos/sample-app/.git",
+        "worktreePath": "/redacted/repos/sample-app"
+      },
+      "eventId": "sha256:e467cc666d634b9ef0b4658812ae18b9ad7392d32f3188336a315be2c3652333",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b26/git/ctx:b"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": null,
+        "turnId": null
+      },
+      "kind": "git.context",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T10:00:00.000Z",
+      "occurredAtPrecision": "second",
+      "origin": "fixture",
+      "payload": {
+        "detached": false
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": "fixture-1",
+      "upstreamKey": "ctx:b"
+    },
+    {
+      "acquisition": "hook",
+      "adapterId": "cursor-hooks",
+      "adapterVersion": "fixture-1.0.0",
+      "context": {
+        "branch": "feature/a",
+        "flightId": null,
+        "headSha": "1111111111111111111111111111111111111111",
+        "repoCommonDir": "/redacted/repos/sample-app/.git",
+        "worktreePath": "/redacted/repos/sample-app"
+      },
+      "eventId": "sha256:27c232837dba4329134c960e8698f7c1e10eaf23c4c7070a2c703a31699c1862",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b26/cursor-hooks/s1:g1"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": "g1",
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": "s1",
+        "turnId": null
+      },
+      "kind": "ai.request",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T09:00:00.000Z",
+      "occurredAtPrecision": "second",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "hooks-stop"
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": "fixture-1",
+      "upstreamKey": "s1:g1"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "cursor-local-db",
+      "adapterVersion": "fixture-1.0.0",
+      "context": {
+        "branch": null,
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/redacted/repos/sample-app/.git",
+        "worktreePath": null
+      },
+      "eventId": "sha256:084dbef10e55efb2fe4beb726d6bfe8c15e66bdcb1b6757edd159496e4c5eb07",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b26/cursor-local-db/s1:g2"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": "g2",
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": "s1",
+        "turnId": null
+      },
+      "kind": "ai.turn",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T09:10:00.000Z",
+      "occurredAtPrecision": "second",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "local-db",
+        "measurements": [
+          {
+            "category": "input",
+            "cumulativeVerified": false,
+            "currency": null,
+            "ledger": "tokens",
+            "method": "source-reported",
+            "rawCategory": "tokenCount.inputTokens",
+            "unit": "tokens",
+            "value": 500
+          },
+          {
+            "category": "output",
+            "cumulativeVerified": false,
+            "currency": null,
+            "ledger": "tokens",
+            "method": "source-reported",
+            "rawCategory": "tokenCount.outputTokens",
+            "unit": "tokens",
+            "value": 50
+          }
+        ]
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": "fixture-1",
+      "upstreamKey": "s1:g2"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "cursor-cli",
+      "adapterVersion": "fixture-1.0.0",
+      "context": {
+        "branch": null,
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/redacted/repos/sample-app/.git",
+        "worktreePath": null
+      },
+      "eventId": "sha256:8ed99d0cde39eec0c2d71e4c60688b8f5d92295bb407133e6477d5d48325cee7",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b26/cursor-cli/r9"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": "r9",
+        "sessionId": "s2",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "second",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "cursor-cli",
+        "charge": null,
+        "tokens": {
+          "input": 300,
+          "output": 30,
+          "cached-input": 100
+        }
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": "fixture-1",
+      "upstreamKey": "r9"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "cursor-usage-export",
+      "adapterVersion": "fixture-1.0.0",
+      "context": {
+        "branch": null,
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/redacted/repos/sample-app/.git",
+        "worktreePath": null
+      },
+      "eventId": "sha256:3532411fa90122c5783c5753e51dd0b045e6913640bdfec8433e5d72c586933d",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b26/cursor-usage-export/csv:1"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": null,
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T09:05:00.000Z",
+      "occurredAtPrecision": "second",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "usage-csv",
+        "costUsd": 0.12,
+        "costLedger": "charge",
+        "tokens": {
+          "input": 800,
+          "output": 80
+        }
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": "fixture-1",
+      "upstreamKey": "csv:1"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "cursor-usage-export",
+      "adapterVersion": "fixture-1.0.0",
+      "context": {
+        "branch": null,
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/redacted/repos/sample-app/.git",
+        "worktreePath": null
+      },
+      "eventId": "sha256:286aca2dfa0eea1d2d8247add9cd05932c3e416ae744554eb8e77315619aea6c",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b26/cursor-usage-export/csv:2"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": null,
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T20:00:00.000Z",
+      "occurredAtPrecision": "second",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "usage-csv",
+        "costUsd": 0.05,
+        "costLedger": "charge",
+        "tokens": {
+          "input": 200,
+          "output": 20
+        }
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": "fixture-1",
+      "upstreamKey": "csv:2"
+    },
+    {
+      "acquisition": "hook",
+      "adapterId": "cursor-hooks",
+      "adapterVersion": "fixture-1.0.0",
+      "context": {
+        "branch": "feature/a",
+        "flightId": null,
+        "headSha": "1111111111111111111111111111111111111111",
+        "repoCommonDir": "/redacted/repos/sample-app/.git",
+        "worktreePath": "/redacted/repos/sample-app"
+      },
+      "eventId": "sha256:5b35a60cf92e5461bdf340a187ac6d68b35137b72ce831c2d4974ab3ed72653c",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b26/cursor-hooks/s3:g1"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": "g1",
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": "s3",
+        "turnId": null
+      },
+      "kind": "ai.turn",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T09:20:00.000Z",
+      "occurredAtPrecision": "second",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "hooks-stop"
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": "fixture-1",
+      "upstreamKey": "s3:g1"
+    },
+    {
+      "acquisition": "hook",
+      "adapterId": "cursor-hooks",
+      "adapterVersion": "fixture-1.0.0",
+      "context": {
+        "branch": "feature/b",
+        "flightId": null,
+        "headSha": "1111111111111111111111111111111111111111",
+        "repoCommonDir": "/redacted/repos/sample-app/.git",
+        "worktreePath": "/redacted/repos/sample-app"
+      },
+      "eventId": "sha256:7b3fe20f29320e5463abff2d03fb33d58fff4689d3475c8b73922845eef32ac9",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b26/cursor-hooks/s3:g2"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": "g2",
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": "s3",
+        "turnId": null
+      },
+      "kind": "ai.turn",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T10:05:00.000Z",
+      "occurredAtPrecision": "second",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "hooks-stop"
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": "fixture-1",
+      "upstreamKey": "s3:g2"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "cursor-local-db",
+      "adapterVersion": "fixture-1.0.0",
+      "context": {
+        "branch": null,
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/redacted/repos/sample-app/.git",
+        "worktreePath": null
+      },
+      "eventId": "sha256:b1e7f957230297349d99bf4bf0ed8c39ef00561a5752c0472b4d452be6cfe2ef",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://b26/cursor-local-db/s3:usage"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": "s3",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T10:30:00.000Z",
+      "occurredAtPrecision": "second",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "local-db",
+        "measurements": [
+          {
+            "category": "other",
+            "cumulativeVerified": false,
+            "currency": "USD",
+            "ledger": "metered",
+            "method": "source-reported",
+            "rawCategory": "usageData.costInCents",
+            "unit": "usd-cents",
+            "value": 40
+          }
+        ]
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": "fixture-1",
+      "upstreamKey": "s3:usage"
+    }
+  ]
+}

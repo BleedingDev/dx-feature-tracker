@@ -1,0 +1,4 @@
+{"type": "user", "message": {"content": "fix bug"}}
+{"type": "assistant", "message": {"content": [{"type": "text", "text": "ok"}, {"type": "tool_use", "name": "Read", "input": {}}]}}
+{"type": "user", "message": {"content": [{"type": "tool_result", "content": "x"}]}}
+{"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Edit", "input": {}}]}}

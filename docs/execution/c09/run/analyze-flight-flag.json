@@ -1,0 +1,4207 @@
+{
+  "coverage": [
+    {
+      "adapterId": "cursor-cli",
+      "expectedItems": 31,
+      "gaps": [
+        {
+          "code": "no-cost-in-cli-output",
+          "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+        },
+        {
+          "code": "no-reasoning-tokens",
+          "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+        },
+        {
+          "code": "no-branch-in-cli-output",
+          "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+        },
+        {
+          "code": "may-overlap-hooks-stop",
+          "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+        }
+      ],
+      "observedItems": 1,
+      "state": "partial",
+      "watermark": "2026-09-30T12:55:23.310Z",
+      "windowFrom": "2026-09-30T12:55:23.310Z",
+      "windowTo": "2026-09-30T12:55:23.310Z"
+    },
+    {
+      "adapterId": "cursor-hooks",
+      "expectedItems": 9,
+      "gaps": [
+        {
+          "code": "hooks-begin-at-install",
+          "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+        },
+        {
+          "code": "stop-usage-unverified",
+          "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+        },
+        {
+          "code": "live-capture-not-demonstrated",
+          "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+        }
+      ],
+      "observedItems": 9,
+      "state": "complete",
+      "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+      "windowFrom": "2026-09-30T12:55:09.151Z",
+      "windowTo": "2026-09-30T12:55:24.657Z"
+    },
+    {
+      "adapterId": "git-history",
+      "expectedItems": 1,
+      "gaps": [],
+      "observedItems": 1,
+      "state": "complete",
+      "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+      "windowFrom": "2026-09-30T12:55:25.000Z",
+      "windowTo": "2026-09-30T12:55:25.000Z"
+    },
+    {
+      "adapterId": "git-observation",
+      "expectedItems": null,
+      "gaps": [
+        {
+          "code": "observation-not-history",
+          "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+        },
+        {
+          "code": "reflog-local-retention",
+          "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+        },
+        {
+          "code": "no-ai-attribution",
+          "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+        }
+      ],
+      "observedItems": 3,
+      "state": "partial",
+      "watermark": "2026-09-30T12:55:26.330Z",
+      "windowFrom": "2026-09-30T12:55:05.000Z",
+      "windowTo": "2026-09-30T12:55:26.330Z"
+    },
+    {
+      "adapterId": "manual",
+      "expectedItems": 1,
+      "gaps": [],
+      "observedItems": 1,
+      "state": "complete",
+      "watermark": null,
+      "windowFrom": "2026-09-30T12:55:06.689Z",
+      "windowTo": "2026-09-30T12:55:06.689Z"
+    }
+  ],
+  "findings": [],
+  "flightId": "feature/c09-live",
+  "metrics": [
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Sum of all token categories in aggregate ledgers (usage export/provider buckets). Alternative view; never added to detail totals.",
+        "id": "dx.ai-usage.alternative.tokens.total",
+        "unit": "tokens",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.alternative.tokens.total",
+      "numerator": null,
+      "reason": "no aggregate usage ledger selected",
+      "unit": "tokens",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Usage rows dropped because another source or emission reported the same request/turn with equal or higher precedence.",
+        "id": "dx.ai-usage.duplicate-rows-collapsed",
+        "unit": "rows",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "derived",
+      "metricId": "dx.ai-usage.duplicate-rows-collapsed",
+      "numerator": null,
+      "reason": "snapshot contains no AI usage events",
+      "unit": "rows",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Source-reported billed charge in USD.",
+        "id": "dx.ai-usage.money.charge",
+        "unit": "usd",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.money.charge",
+      "numerator": null,
+      "reason": "no selected source reported a charge amount in USD",
+      "unit": "usd",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "List-price estimate in USD (method=estimated); never a billed charge.",
+        "id": "dx.ai-usage.money.list-price-estimate",
+        "unit": "usd",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.money.list-price-estimate",
+      "numerator": null,
+      "reason": "no selected source reported a list-price-estimate amount in USD",
+      "unit": "usd",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Source-reported metered usage value in USD; not necessarily billed.",
+        "id": "dx.ai-usage.money.metered",
+        "unit": "usd",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.money.metered",
+      "numerator": null,
+      "reason": "no selected source reported a metered amount in USD",
+      "unit": "usd",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Source-reported USD amounts whose billing status is unknown.",
+        "id": "dx.ai-usage.money.unallocated",
+        "unit": "usd",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.money.unallocated",
+      "numerator": null,
+      "reason": "no selected source reported a unallocated amount in USD",
+      "unit": "usd",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Distinct AI requests/turns carrying usage after overlap collapse.",
+        "id": "dx.ai-usage.requests",
+        "unit": "requests",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "derived",
+      "metricId": "dx.ai-usage.requests",
+      "numerator": null,
+      "reason": "snapshot contains no AI usage events",
+      "unit": "requests",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "AI cache-write tokens after request/turn deduplication and source precedence; aggregate and unresolved ledgers excluded.",
+        "id": "dx.ai-usage.tokens.cache-write",
+        "unit": "tokens",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.tokens.cache-write",
+      "numerator": null,
+      "reason": "no selected source reported cache-write tokens",
+      "unit": "tokens",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "AI cached-input tokens after request/turn deduplication and source precedence; aggregate and unresolved ledgers excluded.",
+        "id": "dx.ai-usage.tokens.cached-input",
+        "unit": "tokens",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.tokens.cached-input",
+      "numerator": null,
+      "reason": "no selected source reported cached-input tokens",
+      "unit": "tokens",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "AI input tokens after request/turn deduplication and source precedence; aggregate and unresolved ledgers excluded.",
+        "id": "dx.ai-usage.tokens.input",
+        "unit": "tokens",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.tokens.input",
+      "numerator": null,
+      "reason": "no selected source reported input tokens",
+      "unit": "tokens",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "AI output tokens after request/turn deduplication and source precedence; aggregate and unresolved ledgers excluded.",
+        "id": "dx.ai-usage.tokens.output",
+        "unit": "tokens",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.tokens.output",
+      "numerator": null,
+      "reason": "no selected source reported output tokens",
+      "unit": "tokens",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "AI reasoning tokens after request/turn deduplication and source precedence; aggregate and unresolved ledgers excluded.",
+        "id": "dx.ai-usage.tokens.reasoning",
+        "unit": "tokens",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.tokens.reasoning",
+      "numerator": null,
+      "reason": "no selected source reported reasoning tokens",
+      "unit": "tokens",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "AI total tokens after request/turn deduplication and source precedence; aggregate and unresolved ledgers excluded.",
+        "id": "dx.ai-usage.tokens.total",
+        "unit": "tokens",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.ai-usage.tokens.total",
+      "numerator": null,
+      "reason": "no selected source reported total tokens",
+      "unit": "tokens",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Usage-bearing events that could not be accounted (unverified semantics or unknown source).",
+        "id": "dx.ai-usage.uncovered-events",
+        "unit": "events",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "derived",
+      "metricId": "dx.ai-usage.uncovered-events",
+      "numerator": null,
+      "reason": "snapshot contains no AI usage events",
+      "unit": "events",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Overlap groups without a request/turn key kept unassigned instead of summed.",
+        "id": "dx.ai-usage.unresolved-rows",
+        "unit": "rows",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "derived",
+      "metricId": "dx.ai-usage.unresolved-rows",
+      "numerator": null,
+      "reason": "snapshot contains no AI usage events",
+      "unit": "rows",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Billed charges reported by the source (usage export or dashboard). Never includes metered, estimated or allocated amounts.",
+        "id": "dx.cost.charge.usd",
+        "unit": "USD",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.cost.charge.usd",
+      "numerator": null,
+      "reason": "No billed charge in the selected sources; import a Cursor usage CSV or dashboard export. Not zero.",
+      "unit": "USD",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Recorder estimate: source-reported tokens times a selected versioned price table. Method discriminator price-table:<id>@<version> is in reason.",
+        "id": "dx.cost.list-price-estimate.price-table.usd",
+        "unit": "USD",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "estimated",
+      "metricId": "dx.cost.list-price-estimate.price-table.usd",
+      "numerator": null,
+      "reason": "No versioned price table selected; the recorder ships no default prices.",
+      "unit": "USD",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "List-price estimate computed by the source client itself (for example Claude Code costUSD). An estimate, never a charge.",
+        "id": "dx.cost.list-price-estimate.source.usd",
+        "unit": "USD",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "estimated",
+      "metricId": "dx.cost.list-price-estimate.source.usd",
+      "numerator": null,
+      "reason": "No source-computed list-price estimate in the selected sources.",
+      "unit": "USD",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Source-reported metered value (for example Cursor local usageData cents or Included usage rows). Not a billed charge.",
+        "id": "dx.cost.metered.usd",
+        "unit": "USD",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.cost.metered.usd",
+      "numerator": null,
+      "reason": "No source-reported metered amount in the selected sources.",
+      "unit": "USD",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Share of a user-declared subscription amount allocated by observed usage basis in the plan period. Derived, not billed per request.",
+        "id": "dx.cost.subscription-allocation.usd",
+        "unit": "USD",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "derived",
+      "metricId": "dx.cost.subscription-allocation.usd",
+      "numerator": null,
+      "reason": "No subscription plan declared; allocation needs a user-declared plan amount and period.",
+      "unit": "USD",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Source money amounts whose ledger (billed, included or not charged) the source does not state.",
+        "id": "dx.cost.unallocated.usd",
+        "unit": "USD",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "source-reported",
+      "metricId": "dx.cost.unallocated.usd",
+      "numerator": null,
+      "reason": "No source amount with an unstated ledger.",
+      "unit": "USD",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": "branch:feature/c09-live",
+      "coverage": [
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Number of merged active development intervals on the branch.",
+        "id": "dx.flight.active.intervals",
+        "unit": "intervals",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [
+        "a7a40aeedcfca51a4b2b579731bde9ed3478691393877ef133097f949b842bbb"
+      ],
+      "measurement": "measured",
+      "method": "derived",
+      "metricId": "dx.flight.active.intervals",
+      "numerator": null,
+      "reason": "1 interval(s); idle gap 30 min",
+      "unit": "intervals",
+      "value": 1
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": "branch:feature/c09-live",
+      "coverage": [
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Union of active development intervals: activity bursts (commits, AI, markers, commands; split at idle gaps over 30 min) merged with agent intervals; overlaps count once.",
+        "id": "dx.flight.active.ms",
+        "unit": "ms",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [
+        "a7a40aeedcfca51a4b2b579731bde9ed3478691393877ef133097f949b842bbb"
+      ],
+      "measurement": "measured",
+      "method": "derived",
+      "metricId": "dx.flight.active.ms",
+      "numerator": null,
+      "reason": "1 interval(s); idle gap 30 min",
+      "unit": "ms",
+      "value": 0
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": "branch:feature/c09-live",
+      "coverage": [
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Union of AI agent intervals: explicit turn/run durations (durationMs, startedAt/completedAt) plus per-session activity spans split at idle gaps over 30 min; overlapping sessions and sources count once.",
+        "id": "dx.flight.agent.ms",
+        "unit": "ms",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "derived",
+      "metricId": "dx.flight.agent.ms",
+      "numerator": null,
+      "reason": "no AI duration evidence on the branch: no turn/run durations and no session with two or more timestamped events (hooks, cursor-cli, transcripts, sessions)",
+      "unit": "ms",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": "branch:feature/c09-live",
+      "coverage": [
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Branch lifetime from creation (reflog creation entry, else the earliest of first branch-only commit, oldest reflog entry or first observed activity) until PR merge, else until the snapshot as-of time.",
+        "id": "dx.flight.branch-age.ms",
+        "unit": "ms",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [
+        "a7a40aeedcfca51a4b2b579731bde9ed3478691393877ef133097f949b842bbb"
+      ],
+      "measurement": "partial",
+      "method": "derived",
+      "metricId": "dx.flight.branch-age.ms",
+      "numerator": null,
+      "reason": "start=first-observed-activity@2026-09-30T12:55:06.689Z; end=as-of@2026-09-30T12:55:26.613Z; no reflog creation entry; value is a lower bound; branch not merged; open until as-of",
+      "unit": "ms",
+      "value": 19924
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": "branch:feature/c09-live",
+      "coverage": [
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Distinct commits observed on the branch.",
+        "id": "dx.flight.commits",
+        "unit": "commits",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "measured",
+      "method": "observed",
+      "metricId": "dx.flight.commits",
+      "numerator": null,
+      "reason": "git-history collected completely and found no commits beyond the base ref",
+      "unit": "commits",
+      "value": 0
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": "branch:feature/c09-live",
+      "coverage": [
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Earliest commit time on the branch (author date, else committer date).",
+        "id": "dx.flight.first-commit-at",
+        "unit": "epoch-ms",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "derived",
+      "metricId": "dx.flight.first-commit-at",
+      "numerator": null,
+      "reason": "git-history collected completely and found no commits beyond the base ref",
+      "unit": "epoch-ms",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": "branch:feature/c09-live",
+      "coverage": [
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Latest commit time on the branch (author date, else committer date).",
+        "id": "dx.flight.last-commit-at",
+        "unit": "epoch-ms",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "derived",
+      "metricId": "dx.flight.last-commit-at",
+      "numerator": null,
+      "reason": "git-history collected completely and found no commits beyond the base ref",
+      "unit": "epoch-ms",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": "branch:feature/c09-live",
+      "coverage": [
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "AI tool calls, deduplicated across sources by request/turn match keys; per key group the highest-precedence source wins. Session-level totals are used only for sessions with no per-turn data.",
+        "id": "dx.flight.tool-calls",
+        "unit": "calls",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "derived",
+      "metricId": "dx.flight.tool-calls",
+      "numerator": null,
+      "reason": "no tool-call evidence on the branch (hooks postToolUse, cursor-cli toolCalls, transcripts, sessions)",
+      "unit": "calls",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Captured command runs with a non-zero exit code or spawn error.",
+        "id": "dx.friction.failed-commands",
+        "unit": "runs",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.friction.failed-commands",
+      "numerator": null,
+      "reason": "no captured command runs in the snapshot",
+      "unit": "runs",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Files edited by the agent at least 5 times (observable rework).",
+        "id": "dx.friction.reworked-files",
+        "unit": "files",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.friction.reworked-files",
+      "numerator": null,
+      "reason": "no agent file-edit events in the snapshot",
+      "unit": "files",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Failed local test runs divided by test runs with a known outcome.",
+        "id": "dx.friction.test-failure-rate",
+        "unit": "ratio",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.friction.test-failure-rate",
+      "numerator": null,
+      "reason": "no local test results in the snapshot",
+      "unit": "ratio",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Local test runs whose reported counts, status or exit outcome show a failure.",
+        "id": "dx.friction.test-failures",
+        "unit": "runs",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.friction.test-failures",
+      "numerator": null,
+      "reason": "no local test results in the snapshot",
+      "unit": "runs",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Local test runs (test.result events) observed in the snapshot.",
+        "id": "dx.friction.test-runs",
+        "unit": "runs",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.friction.test-runs",
+      "numerator": null,
+      "reason": "no local test results in the snapshot",
+      "unit": "runs",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "cursor-cli",
+          "expectedItems": 31,
+          "gaps": [
+            {
+              "code": "no-cost-in-cli-output",
+              "message": "cursor-agent print output reports no charge or price; money stays unavailable from this source."
+            },
+            {
+              "code": "no-reasoning-tokens",
+              "message": "cursor-agent usage reports input/output/cacheRead/cacheWrite only; reasoning tokens are unavailable."
+            },
+            {
+              "code": "no-branch-in-cli-output",
+              "message": "CLI output carries cwd but no Git branch; branch comes from the collect context only."
+            },
+            {
+              "code": "may-overlap-hooks-stop",
+              "message": "The same turn may also be reported by Cursor Stop hooks; correlation must collapse by session/request, never sum."
+            }
+          ],
+          "observedItems": 1,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:23.310Z",
+          "windowFrom": "2026-09-30T12:55:23.310Z",
+          "windowTo": "2026-09-30T12:55:23.310Z"
+        },
+        {
+          "adapterId": "cursor-hooks",
+          "expectedItems": 9,
+          "gaps": [
+            {
+              "code": "hooks-begin-at-install",
+              "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+            },
+            {
+              "code": "stop-usage-unverified",
+              "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+            },
+            {
+              "code": "live-capture-not-demonstrated",
+              "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+            }
+          ],
+          "observedItems": 9,
+          "state": "complete",
+          "watermark": "001790772924657-3ce9b55e51f71a59cd98cd6c.json",
+          "windowFrom": "2026-09-30T12:55:09.151Z",
+          "windowTo": "2026-09-30T12:55:24.657Z"
+        },
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        },
+        {
+          "adapterId": "git-observation",
+          "expectedItems": null,
+          "gaps": [
+            {
+              "code": "observation-not-history",
+              "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+            },
+            {
+              "code": "reflog-local-retention",
+              "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+            },
+            {
+              "code": "no-ai-attribution",
+              "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+            }
+          ],
+          "observedItems": 3,
+          "state": "partial",
+          "watermark": "2026-09-30T12:55:26.330Z",
+          "windowFrom": "2026-09-30T12:55:05.000Z",
+          "windowTo": "2026-09-30T12:55:26.330Z"
+        },
+        {
+          "adapterId": "manual",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": null,
+          "windowFrom": "2026-09-30T12:55:06.689Z",
+          "windowTo": "2026-09-30T12:55:06.689Z"
+        }
+      ],
+      "definition": {
+        "description": "Failed agent tool calls (postToolUseFailure or failed status) divided by observed agent tool calls.",
+        "id": "dx.friction.tool-call-failure-rate",
+        "unit": "ratio",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.friction.tool-call-failure-rate",
+      "numerator": null,
+      "reason": "no agent tool-call hook events in the snapshot (denominator is zero)",
+      "unit": "ratio",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        }
+      ],
+      "definition": {
+        "description": "Committed lines added plus lines deleted in baseSha..HEAD.",
+        "id": "dx.git.churn-lines",
+        "unit": "lines",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "partial",
+      "method": "observed",
+      "metricId": "dx.git.churn-lines",
+      "numerator": null,
+      "reason": null,
+      "unit": "lines",
+      "value": 0
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        }
+      ],
+      "definition": {
+        "description": "Distinct commits in baseSha..HEAD, merges included.",
+        "id": "dx.git.commits",
+        "unit": "commits",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "partial",
+      "method": "observed",
+      "metricId": "dx.git.commits",
+      "numerator": null,
+      "reason": null,
+      "unit": "commits",
+      "value": 0
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        }
+      ],
+      "definition": {
+        "description": "Distinct paths touched by non-merge commits in baseSha..HEAD.",
+        "id": "dx.git.files-changed",
+        "unit": "files",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "partial",
+      "method": "observed",
+      "metricId": "dx.git.files-changed",
+      "numerator": null,
+      "reason": null,
+      "unit": "files",
+      "value": 0
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        }
+      ],
+      "definition": {
+        "description": "Distinct paths touched by two or more non-merge commits on the branch. An observable rework signal only; it does not claim who reworked or why.",
+        "id": "dx.git.files-retouched",
+        "unit": "files",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "partial",
+      "method": "observed",
+      "metricId": "dx.git.files-retouched",
+      "numerator": null,
+      "reason": null,
+      "unit": "files",
+      "value": 0
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        }
+      ],
+      "definition": {
+        "description": "Sum of git numstat added lines over non-merge commits in baseSha..HEAD; binary files excluded.",
+        "id": "dx.git.lines-added",
+        "unit": "lines",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "partial",
+      "method": "observed",
+      "metricId": "dx.git.lines-added",
+      "numerator": null,
+      "reason": null,
+      "unit": "lines",
+      "value": 0
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        }
+      ],
+      "definition": {
+        "description": "Sum of git numstat deleted lines over non-merge commits in baseSha..HEAD; binary files excluded.",
+        "id": "dx.git.lines-deleted",
+        "unit": "lines",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "partial",
+      "method": "observed",
+      "metricId": "dx.git.lines-deleted",
+      "numerator": null,
+      "reason": null,
+      "unit": "lines",
+      "value": 0
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        }
+      ],
+      "definition": {
+        "description": "Distinct merge commits in baseSha..HEAD.",
+        "id": "dx.git.merge-commits",
+        "unit": "commits",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "partial",
+      "method": "observed",
+      "metricId": "dx.git.merge-commits",
+      "numerator": null,
+      "reason": null,
+      "unit": "commits",
+      "value": 0
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        }
+      ],
+      "definition": {
+        "description": "Tracked files changed in the latest observed uncommitted worktree diff against HEAD.",
+        "id": "dx.git.uncommitted-files",
+        "unit": "files",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.git.uncommitted-files",
+      "numerator": null,
+      "reason": "no uncommitted worktree snapshot in selection (clean tree or not collected)",
+      "unit": "files",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        }
+      ],
+      "definition": {
+        "description": "Lines added in the latest observed uncommitted worktree diff against HEAD.",
+        "id": "dx.git.uncommitted-lines-added",
+        "unit": "lines",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.git.uncommitted-lines-added",
+      "numerator": null,
+      "reason": "no uncommitted worktree snapshot in selection (clean tree or not collected)",
+      "unit": "lines",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        }
+      ],
+      "definition": {
+        "description": "Lines deleted in the latest observed uncommitted worktree diff against HEAD.",
+        "id": "dx.git.uncommitted-lines-deleted",
+        "unit": "lines",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.git.uncommitted-lines-deleted",
+      "numerator": null,
+      "reason": "no uncommitted worktree snapshot in selection (clean tree or not collected)",
+      "unit": "lines",
+      "value": null
+    },
+    {
+      "asOf": "2026-09-30T12:55:26.613Z",
+      "attribution": "not-applicable",
+      "checkpoint": null,
+      "coverage": [
+        {
+          "adapterId": "git-history",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "b6d492ae590cceea41dc1a2f493ae017be582ba5",
+          "windowFrom": "2026-09-30T12:55:25.000Z",
+          "windowTo": "2026-09-30T12:55:25.000Z"
+        }
+      ],
+      "definition": {
+        "description": "Untracked, non-ignored files in the latest observed worktree snapshot.",
+        "id": "dx.git.untracked-files",
+        "unit": "files",
+        "version": "1.0.0"
+      },
+      "denominator": null,
+      "evidenceIds": [],
+      "measurement": "unavailable",
+      "method": "observed",
+      "metricId": "dx.git.untracked-files",
+      "numerator": null,
+      "reason": "no uncommitted worktree snapshot in selection (clean tree or not collected)",
+      "unit": "files",
+      "value": null
+    }
+  ],
+  "notes": [
+    "No snapshotId requested; analyzed latest snapshot snap_e2a3ef1e1959691933dc354519a13e0f.",
+    "Persisted snapshot metadata snap_e2a3ef1e1959691933dc354519a13e0f; reuse it with snapshotId for explain/evidence.",
+    "Snapshot snap_e2a3ef1e1959691933dc354519a13e0f at watermark events:1:f98ace3ceb216f4e574ceb51529317af; selector repo=/private/var/folders/l5/j97t559s5ljgmjc_ylqn1jmh0000gn/T/c09-smoke.fmm_i8bj/demo/.git, flight=feature/c09-live.",
+    "Source cursor-cli coverage partial (gaps: may-overlap-hooks-stop, no-branch-in-cli-output, no-cost-in-cli-output, no-reasoning-tokens).",
+    "Source git-observation coverage partial (gaps: no-ai-attribution, observation-not-history, reflog-local-retention).",
+    "Metric dx.ai-usage.alternative.tokens.total unavailable: no aggregate usage ledger selected",
+    "Metric dx.ai-usage.duplicate-rows-collapsed unavailable: snapshot contains no AI usage events",
+    "Metric dx.ai-usage.money.charge unavailable: no selected source reported a charge amount in USD",
+    "Metric dx.ai-usage.money.list-price-estimate unavailable: no selected source reported a list-price-estimate amount in USD",
+    "Metric dx.ai-usage.money.metered unavailable: no selected source reported a metered amount in USD",
+    "Metric dx.ai-usage.money.unallocated unavailable: no selected source reported a unallocated amount in USD",
+    "Metric dx.ai-usage.requests unavailable: snapshot contains no AI usage events",
+    "Metric dx.ai-usage.tokens.cache-write unavailable: no selected source reported cache-write tokens",
+    "Metric dx.ai-usage.tokens.cached-input unavailable: no selected source reported cached-input tokens",
+    "Metric dx.ai-usage.tokens.input unavailable: no selected source reported input tokens",
+    "Metric dx.ai-usage.tokens.output unavailable: no selected source reported output tokens",
+    "Metric dx.ai-usage.tokens.reasoning unavailable: no selected source reported reasoning tokens",
+    "Metric dx.ai-usage.tokens.total unavailable: no selected source reported total tokens",
+    "Metric dx.ai-usage.uncovered-events unavailable: snapshot contains no AI usage events",
+    "Metric dx.ai-usage.unresolved-rows unavailable: snapshot contains no AI usage events",
+    "Metric dx.cost.charge.usd unavailable: No billed charge in the selected sources; import a Cursor usage CSV or dashboard export. Not zero.",
+    "Metric dx.cost.list-price-estimate.price-table.usd unavailable: No versioned price table selected; the recorder ships no default prices.",
+    "Metric dx.cost.list-price-estimate.source.usd unavailable: No source-computed list-price estimate in the selected sources.",
+    "Metric dx.cost.metered.usd unavailable: No source-reported metered amount in the selected sources.",
+    "Metric dx.cost.subscription-allocation.usd unavailable: No subscription plan declared; allocation needs a user-declared plan amount and period.",
+    "Metric dx.cost.unallocated.usd unavailable: No source amount with an unstated ledger.",
+    "Metric dx.flight.agent.ms@branch:feature/c09-live unavailable: no AI duration evidence on the branch: no turn/run durations and no session with two or more timestamped events (hooks, cursor-cli, transcripts, sessions)",
+    "Metric dx.flight.branch-age.ms@branch:feature/c09-live is partial: start=first-observed-activity@2026-09-30T12:55:06.689Z; end=as-of@2026-09-30T12:55:26.613Z; no reflog creation entry; value is a lower bound; branch not merged; open until as-of",
+    "Metric dx.flight.first-commit-at@branch:feature/c09-live unavailable: git-history collected completely and found no commits beyond the base ref",
+    "Metric dx.flight.last-commit-at@branch:feature/c09-live unavailable: git-history collected completely and found no commits beyond the base ref",
+    "Metric dx.flight.tool-calls@branch:feature/c09-live unavailable: no tool-call evidence on the branch (hooks postToolUse, cursor-cli toolCalls, transcripts, sessions)",
+    "Metric dx.friction.failed-commands unavailable: no captured command runs in the snapshot",
+    "Metric dx.friction.reworked-files unavailable: no agent file-edit events in the snapshot",
+    "Metric dx.friction.test-failure-rate unavailable: no local test results in the snapshot",
+    "Metric dx.friction.test-failures unavailable: no local test results in the snapshot",
+    "Metric dx.friction.test-runs unavailable: no local test results in the snapshot",
+    "Metric dx.friction.tool-call-failure-rate unavailable: no agent tool-call hook events in the snapshot (denominator is zero)",
+    "Metric dx.git.churn-lines is partial.",
+    "Metric dx.git.commits is partial.",
+    "Metric dx.git.files-changed is partial.",
+    "Metric dx.git.files-retouched is partial.",
+    "Metric dx.git.lines-added is partial.",
+    "Metric dx.git.lines-deleted is partial.",
+    "Metric dx.git.merge-commits is partial.",
+    "Metric dx.git.uncommitted-files unavailable: no uncommitted worktree snapshot in selection (clean tree or not collected)",
+    "Metric dx.git.uncommitted-lines-added unavailable: no uncommitted worktree snapshot in selection (clean tree or not collected)",
+    "Metric dx.git.uncommitted-lines-deleted unavailable: no uncommitted worktree snapshot in selection (clean tree or not collected)",
+    "Metric dx.git.untracked-files unavailable: no uncommitted worktree snapshot in selection (clean tree or not collected)"
+  ],
+  "schemaVersion": "dx.report.v1",
+  "snapshot": {
+    "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+    "contractVersion": "dx.contracts.v1",
+    "createdAt": "2026-09-30T12:55:26.613Z",
+    "enabledDescriptors": [
+      {
+        "id": "collector.claude-jsonl",
+        "version": "0.1.0"
+      },
+      {
+        "id": "collector.cursor-hooks",
+        "version": "0.1.0"
+      },
+      {
+        "id": "collector.cursor-transcripts",
+        "version": "0.1.0"
+      },
+      {
+        "id": "collector.cursor-usage-export",
+        "version": "0.1.0"
+      },
+      {
+        "id": "collector.git-history",
+        "version": "1.0.0"
+      },
+      {
+        "id": "collector.git-identity",
+        "version": "1.0.0"
+      },
+      {
+        "id": "collector.git-observation",
+        "version": "1.0.0"
+      },
+      {
+        "id": "collector/codex-session",
+        "version": "0.1.0"
+      },
+      {
+        "id": "collector/cursor-cli",
+        "version": "0.1.0"
+      },
+      {
+        "id": "collector/entire-checkpoints",
+        "version": "0.1.0"
+      },
+      {
+        "id": "collector/local-feedback",
+        "version": "1.0.0"
+      },
+      {
+        "id": "collector/local-test",
+        "version": "1.0.0"
+      },
+      {
+        "id": "collector/manual",
+        "version": "1.0.0"
+      },
+      {
+        "id": "collector/opencode",
+        "version": "0.1.0"
+      },
+      {
+        "id": "collector/shell-command",
+        "version": "1.0.0"
+      },
+      {
+        "id": "correlation.repo",
+        "version": "1.0.0"
+      },
+      {
+        "id": "correlation/ai",
+        "version": "1.0.0"
+      },
+      {
+        "id": "correlation/flight",
+        "version": "1.0.0"
+      },
+      {
+        "id": "cursor-local-db",
+        "version": "0.1.0"
+      },
+      {
+        "id": "dx.metric.cost",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.metric.flight-time",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.metric.friction",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.metric.git-churn",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.metric.intervals",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.metrics.ai-usage",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.report.analyze",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.report.evidence",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.report.explain",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.surface.mcp-query-handlers",
+        "version": "1.0.0"
+      },
+      {
+        "id": "provider-usage",
+        "version": "0.1.0"
+      },
+      {
+        "id": "service/event-store-sqlite",
+        "version": "1.0.0"
+      },
+      {
+        "id": "surface/cli-commands",
+        "version": "1.0.0"
+      }
+    ],
+    "eventWatermark": "events:1:f98ace3ceb216f4e574ceb51529317af",
+    "metricDefinitions": [
+      {
+        "id": "dx.ai-usage.alternative.tokens.total",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.ai-usage.duplicate-rows-collapsed",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.ai-usage.money.charge",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.ai-usage.money.list-price-estimate",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.ai-usage.money.metered",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.ai-usage.money.unallocated",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.ai-usage.requests",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.ai-usage.tokens.cache-write",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.ai-usage.tokens.cached-input",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.ai-usage.tokens.input",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.ai-usage.tokens.output",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.ai-usage.tokens.reasoning",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.ai-usage.tokens.total",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.ai-usage.uncovered-events",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.ai-usage.unresolved-rows",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.cost.charge.usd",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.cost.list-price-estimate.price-table.usd",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.cost.list-price-estimate.source.usd",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.cost.metered.usd",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.cost.subscription-allocation.usd",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.cost.unallocated.usd",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.flight.active.intervals",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.flight.active.ms",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.flight.agent.ms",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.flight.branch-age.ms",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.flight.commits",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.flight.first-commit-at",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.flight.last-commit-at",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.flight.tool-calls",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.friction.failed-commands",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.friction.reworked-files",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.friction.test-failure-rate",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.friction.test-failures",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.friction.test-runs",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.friction.tool-call-failure-rate",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.git.churn-lines",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.git.commits",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.git.files-changed",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.git.files-retouched",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.git.lines-added",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.git.lines-deleted",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.git.merge-commits",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.git.uncommitted-files",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.git.uncommitted-lines-added",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.git.uncommitted-lines-deleted",
+        "version": "1.0.0"
+      },
+      {
+        "id": "dx.git.untracked-files",
+        "version": "1.0.0"
+      }
+    ],
+    "originMix": [
+      {
+        "count": 1,
+        "origin": "live"
+      }
+    ],
+    "selector": {
+      "branch": null,
+      "flightId": "feature/c09-live",
+      "from": null,
+      "repoCommonDir": "/private/var/folders/l5/j97t559s5ljgmjc_ylqn1jmh0000gn/T/c09-smoke.fmm_i8bj/demo/.git",
+      "to": null
+    },
+    "snapshotId": "snap_e2a3ef1e1959691933dc354519a13e0f"
+  }
+}

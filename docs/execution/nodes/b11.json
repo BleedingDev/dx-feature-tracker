@@ -1,0 +1,38 @@
+{
+  "id": "B11",
+  "role": "optional",
+  "status": "degraded",
+  "readiness": "degraded",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "ownedFiles": [
+    "packages/core/src/dx/collectors/claude/parse.ts",
+    "packages/core/src/dx/collectors/claude/collector.ts",
+    "packages/core/test/dx/b11.test.ts",
+    "packages/core/test/dx/fixtures/b11/claude-session.jsonl",
+    "packages/core/test/dx/fixtures/b11/claude-degraded.jsonl"
+  ],
+  "exports": {
+    "collector": "claudeJsonlCollector: DxCollector<FileSystem.FileSystem | Crypto.Crypto> (packages/core/src/dx/collectors/claude/collector.ts); NodeServices.layer provides both",
+    "descriptor": "claudeJsonlDescriptor (id collector.claude-jsonl, readiness degraded)",
+    "probe": "probeClaudeJsonl(path) -> ProbeReceipt (non-content: lines, coverage state, Claude Code version)",
+    "parser": "parseClaudeJsonl(text, options) (packages/core/src/dx/collectors/claude/parse.ts)"
+  },
+  "adapterId": "claude-jsonl",
+  "fixtureIds": ["b11-claude-session", "b11-claude-degraded"],
+  "sourceProbe": "No live host file probed: the plan forbids private-data scans of ~/.claude. Probe is fixture-verified (version 2.1.0 detected from fixture).",
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b11.test.ts", "exit": 0, "result": "6/6 passed"},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json (filtered to B11 paths)", "exit": null, "result": "0 diagnostics in B11 paths; whole-package exit is non-zero because of other owners' files"},
+    {"cmd": "pnpm exec oxlint <B11 files>", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check <B11 files>", "exit": 0}
+  ],
+  "supportedFields": ["identity.sessionId", "identity.requestId", "identity.generationId", "context.branch", "occurredAt", "payload.model", "payload.tokens.{input,cached-input,cache-write,output}", "payload.toolCalls", "payload.toolNames", "payload.listPriceEstimateUsd"],
+  "gaps": [
+    "Charge is always null: Claude JSONL has no billed cost. The legacy costUSD field goes to listPriceEstimateUsd with method estimated, never to charge.",
+    "The format is undocumented. Verified only against redacted fixtures written from the known Claude Code layout, not against a live file.",
+    "Imports one explicitly selected file only. No directory discovery and no incremental cursor: each run re-reads the file and the store deduplicates by deterministic eventId.",
+    "Integration is not done: A02/A07 must register claudeJsonlCollector and route dx_collect source=claude-jsonl to it. The collector needs FileSystem and Crypto, both provided by NodeServices.layer.",
+    "No dependency was needed."
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "id": "B27",
+  "status": "ready",
+  "contract": {"version": "dx.contracts.v1", "digest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090"},
+  "files": [
+    "packages/core/src/dx/metrics/intervals/intervals.ts",
+    "packages/core/test/dx/b27.test.ts",
+    "packages/core/test/dx/fixtures/b27/cases.json"
+  ],
+  "exports": {
+    "module": "packages/core/src/dx/metrics/intervals/intervals.ts",
+    "symbols": ["intervalHelpers", "intervalsDescriptor", "unionIntervals", "sumIntervals", "overlapIntervals", "classifyInterval", "closeOpenIntervalAt", "INTERVALS_VERSION"],
+    "descriptor": {"id": "dx.metric.intervals", "kind": "metric", "readiness": "ready"},
+    "barrel": "not edited; A02 should add: export * from \"./metrics/intervals/intervals.js\""
+  },
+  "fixtureIds": ["b27-union-overlap", "b27-censored", "b27-clock-error", "b27-empty", "b27-branch-as-of"],
+  "semantics": {
+    "censored": "null or non-finite start/end; excluded from arithmetic, counted",
+    "clockError": "known end < known start; excluded, counted",
+    "zeroLength": "valid, contributes 0",
+    "union": "overlapping and touching intervals merge; evidenceIds deduplicated; totalMs null if no valid interval (lower bound when censored/clockErrors > 0)",
+    "sum": "plain sum of valid durations (overlaps counted per interval, e.g. agent time); excluded = censored + clockErrors; totalMs null if no valid interval",
+    "overlap": "null if either input is censored or a clock error; else max(0, min(end) - max(start))",
+    "closeOpenIntervalAt": "closes a known-start/open-end interval at asOfMs (branch start -> now), label suffixed '@as-of'; otherwise returns the input unchanged"
+  },
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b27.test.ts", "exit": 0, "result": "6/6 passed"},
+    {"cmd": "pnpm exec oxlint <2 owned ts files>", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check <2 owned ts files>", "exit": 0},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json (filtered to owned paths)", "exit": "0 diagnostics in owned files"}
+  ],
+  "gaps": [
+    "Clock skew between sources is not corrected; only inversions are detected.",
+    "Not yet exported from the dx barrel (A02 owns it).",
+    "Pure helper module: no source probe needed; consumers (B29 etc.) must surface censored/clockErrors counts alongside totals."
+  ]
+}

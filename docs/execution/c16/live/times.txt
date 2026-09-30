@@ -1,0 +1,11 @@
+branch_created 2026-09-30T13:06:52Z
+agent_start 2026-09-30T13:06:52Z
+agent_exit_1 1
+agent_exit_2 1
+agent_end 2026-09-30T13:07:31Z
+commit_exit 1
+operator_test_exit 1
+spool_files 16
+transcript_found yes
+snapshot snap_1737b1cfd067dc0a39f1fbbe83c97f83
+evidence_ids_followed ["sha256:3ef6e796038717d7287784cebf471d91b7535f5a9804539f7ad7bc3472d7b31e","f740b87bca43e8de92c84ef8802e685bf86a185f9866f320c90fe6d43e8ccf4c","sha256:0f1eb5b854f43a1f0e420c3e256d92cbeb0ed65c2a6e5a1a7e94784bcae98694","sha256:f8ffade2969df3e34aa89b68466a7c6f9202a4801d7934fbde476f551cbc20fd","sha256:76090490dd64231d8480167b9aaef1e63463b991bcdb1b25aab0771a43880efe"]

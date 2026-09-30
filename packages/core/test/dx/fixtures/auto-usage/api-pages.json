@@ -1,0 +1,64 @@
+{
+  "fixture": "synthetic auto-usage fixture shaped like the live get-filtered-usage-events response; not a live observation",
+  "pages": [
+    {
+      "totalUsageEventsCount": 3,
+      "usageEventsDisplay": [
+        {
+          "timestamp": "1790740800000",
+          "model": "default",
+          "kind": "USAGE_EVENT_KIND_CUSTOM_SUBSCRIPTION",
+          "requestsCosts": 4.6,
+          "usageBasedCosts": "-",
+          "isTokenBasedCall": true,
+          "tokenUsage": {
+            "inputTokens": 1200,
+            "outputTokens": 300,
+            "cacheReadTokens": 9000,
+            "totalCents": 11.4
+          },
+          "owningUser": "fixture-user",
+          "cursorTokenFee": 0,
+          "isChargeable": true,
+          "isHeadless": false,
+          "chargedCents": 11.41,
+          "conversationId": "conv-fixture-1"
+        },
+        {
+          "timestamp": "1790744400000",
+          "model": "claude-opus-5-5-high-thinking",
+          "kind": "USAGE_EVENT_KIND_FREE_CREDIT",
+          "requestsCosts": 1,
+          "isTokenBasedCall": true,
+          "tokenUsage": {
+            "inputTokens": 500,
+            "outputTokens": 100,
+            "totalCents": 2
+          },
+          "isChargeable": false,
+          "chargedCents": 0,
+          "conversationId": "conv-fixture-2"
+        }
+      ]
+    },
+    {
+      "totalUsageEventsCount": 3,
+      "usageEventsDisplay": [
+        {
+          "timestamp": "1790748000000",
+          "model": "grok-bot-default",
+          "kind": "USAGE_EVENT_KIND_FREE_CREDIT",
+          "isTokenBasedCall": true,
+          "tokenUsage": {
+            "inputTokens": 10,
+            "outputTokens": 5,
+            "totalCents": 0
+          },
+          "isChargeable": false,
+          "chargedCents": 0,
+          "conversationId": "conv-fixture-3"
+        }
+      ]
+    }
+  ]
+}

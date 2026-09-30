@@ -1,0 +1,1 @@
+{"type":"result","subtype":"success","is_error":false,"duration_ms":2100,"duration_api_ms":2100,"result":"SECRET_CANARY_RESULT","session_id":"sess-fixture-3","request_id":"req-fixture-3","usage":{"inputTokens":10,"outputTokens":0,"cacheReadTokens":0,"cacheWriteTokens":0}}

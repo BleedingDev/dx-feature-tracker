@@ -1,0 +1,36 @@
+{
+  "id": "B10",
+  "status": "degraded",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "ownedFiles": [
+    "packages/core/src/dx/collectors/cursor-cli/collector.ts",
+    "packages/core/test/dx/b10.test.ts",
+    "packages/core/test/dx/fixtures/b10/stream.jsonl",
+    "packages/core/test/dx/fixtures/b10/result.json",
+    "packages/core/test/dx/fixtures/b10/store.db"
+  ],
+  "exports": ["cursorCliDescriptor", "cursorCliCollector", "parseCursorCliOutput", "CURSOR_CLI_ADAPTER_ID", "CURSOR_CLI_FIXTURE_IDS"],
+  "descriptor": { "id": "collector/cursor-cli", "readiness": "degraded", "adapterId": "cursor-cli" },
+  "fixtureIds": ["b10-cursor-cli-stream-json", "b10-cursor-cli-json", "b10-cursor-cli-store-db"],
+  "sourceProbe": {
+    "cursorAgentVersion": "2026.09.28-64d2043",
+    "emitterVerifiedFrom": "~/.local/share/cursor-agent/versions/2026.09.28-64d2043/6949.index.js (result line: type,subtype,is_error,duration_ms,duration_api_ms,result,session_id,request_id,usage{inputTokens,outputTokens,cacheReadTokens,cacheWriteTokens})",
+    "liveRun": { "command": "cursor-agent -p --output-format stream-json --trust --force <prompt> (scratch repo)", "exit": 1, "stderr": "Authentication required. Please run 'agent login' first" },
+    "lowercaseCliStore": "~/.cursor/chats absent on this host"
+  },
+  "checks": [
+    { "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b10.test.ts", "exit": 0, "result": "6 passed" },
+    { "cmd": "pnpm exec oxlint packages/core/src/dx/collectors/cursor-cli/collector.ts packages/core/test/dx/b10.test.ts", "exit": 0 },
+    { "cmd": "pnpm exec oxfmt --check <b10 files>", "exit": 0 },
+    { "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json | grep cursor-cli|b10", "exit": 0, "result": "0 errors in B10 files" }
+  ],
+  "gaps": [
+    "No live capture: cursor-agent is not logged in on this host (exit 1). Fixtures are synthetic and follow the installed emitter's source shape.",
+    "No cost from CLI output; charge and listPriceEstimateUsd stay null.",
+    "No reasoning tokens; no branch in output (branch comes from collect context).",
+    "CLI SQLite chat store (protobuf blobs) is detected and reported as unsupported coverage, not decoded.",
+    "AiSourceKind has no 'cursor-cli'; payload.requestKey uses source:cursor-cli:request:<id> built directly. A03 should add 'cursor-cli' to AiSourceKindSchema/AI_SOURCE_PRECEDENCE (additive).",
+    "May overlap hooks-stop for the same turn; B26/B30 must collapse by session/request, never sum."
+  ]
+}

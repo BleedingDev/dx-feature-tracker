@@ -1,0 +1,32 @@
+{
+  "id": "C16",
+  "status": "degraded",
+  "summary": "Final release verdict delivered: NO-GO for the current working tree. The final fence fails on core build, typecheck, check and test plus lint, caused by new untracked cursor-usage-api, price-catalog and auto-usage.test.ts files added at 15:01-15:04. The tree was still changing during the fence. The C15 claims audit (26/0) and the C14 adversarial replay pass. The only passed gate is G00 (2e78dc9). G01-G03 receipts are missing. By product evidence the state is degraded-live and unfenced. The C16 live rerun captured real hook events, but cursor-agent hit the Cursor usage limit.",
+  "verdict": "no-go (current tree); last passed artifact = G00 @ 2e78dc9 (scaffold + frozen contracts only)",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "candidate": { "head": "2e78dc98f56044897dc4178331388120fb27966d", "dirtyPaths": 258, "digestAt150531": "sha256:bcba2c463075f2a2c85adf3105d1acc1369d5b95c7c83820f1c794d1d729698b", "fenceDigestBefore": "sha256:4c0cad93f7bef4eb1c01114591ef1aa0082f40d479c4d8621807311fabeaa689", "fenceDigestAfter": "sha256:55dbe92f9295a8b2ec2d8e7509bba9cfde24eec6b7e0e468862f6dd3f9279728", "treeStable": false },
+  "ownedFiles": ["docs/execution/c16/README.md", "docs/execution/c16/final-fence.sh", "docs/execution/c16/fence-receipt.json", "docs/execution/c16/fence-continue-15-06.log", "docs/execution/c16/live/"],
+  "checks": [
+    { "cmd": "pnpm exec turbo run check test build", "at": "15:05:55", "exit": 2 },
+    { "cmd": "pnpm exec turbo run check test build --continue", "at": "15:06:03", "exit": 2, "failed": "//#lint, core build/check/test/typecheck, cli test" },
+    { "cmd": "owned-temp-dir --run c16-adv -- bash docs/execution/c14/rehearse.sh adversarial", "at": "15:06:24", "exit": 0 },
+    { "cmd": "owned-temp-dir --run c16-audit -- bash docs/execution/c15/audit-claims.sh", "at": "15:06:30", "exit": 0, "result": "26 pass, 0 fail" },
+    { "cmd": "C17_OUT=docs/execution/c16/live owned-temp-dir --run c16-live -- bash docs/execution/c17/run.sh", "at": "15:06:52", "exit": 1, "note": "cursor-agent exit 1 x2: Cursor usage limit; recorder steps 13/14 exit 0 (collect-test-operator 1: no test file)" },
+    { "cmd": "owned-temp-dir --run c16-fence -- bash docs/execution/c16/final-fence.sh", "at": "15:08:31", "exit": 1, "failed": "//#lint, core build/check/test/typecheck" }
+  ],
+  "userCursorHooksSha256": "162231fef1c5dc5a98fb83f3583d6fba38f0c09517e208f0f3b9899fbbffc57c (unchanged)",
+  "routeMatrix": {
+    "cursor-hooks(B05/A07)": "real (degraded)", "cursor-transcripts(B07)": "imported", "cursor-usage-csv(B08)": "fixture",
+    "cursor-cli(B10)": "real, stored origin=imported", "git": "real", "local-test(B21)": "real (selected file)",
+    "cost(B31)": "real -> unavailable (no Cursor charge)", "B09,B33,B41-B45": "disabled", "B11-B14,B46,B48": "fixture", "CI/PR/GitHub": "not-attempted (out of scope)"
+  },
+  "aiRouteGroupRule": "not met: no B05/B07/B08 route is 'ready'; B05 real capture exists but degraded",
+  "gaps": [
+    "Core build/typecheck/lint red due to untracked cursor-usage-api, price-catalog, auto-usage.test.ts (owners fix or root disposition before 15:17)",
+    "G01/G02/G03 receipts absent in docs/execution/phases",
+    "Live rerun blocked by Cursor account usage limit; latest successful live flights are C14 live (15:02) and C17 (14:47) on unfenced trees",
+    "Tool-call overcount (16 tool calls with zero agent work in C16 live)",
+    "cursor-cli events stored origin=imported; --flight <branch> resolves to empty metrics",
+    "C14's rehearse.sh adversarial rewrote docs/execution/c14/adversarial/* (same deterministic inputs)"
+  ]
+}

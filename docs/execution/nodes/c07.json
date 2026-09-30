@@ -1,0 +1,74 @@
+{
+  "id": "C07",
+  "role": "verification",
+  "status": "ready",
+  "deliverable": "Golden analyze/explain, unavailable fields visible, evidence joins",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "ownedFiles": [
+    "packages/core/test/dx/audits/c07.test.ts",
+    "packages/core/test/dx/fixtures/c07/golden-analyze.json",
+    "packages/core/test/dx/fixtures/c07/branch-extras.json",
+    "packages/core/test/dx/fixtures/c07/late-collect.json"
+  ],
+  "digests": {
+    "packages/core/test/dx/audits/c07.test.ts": "sha256:8f506bf949c8695845a9bea73e41b8368e21b61a70df0c8e18df658760eb4176",
+    "packages/core/test/dx/fixtures/c07/golden-analyze.json": "sha256:c127d9442d534d9131ab2048a0837730a91b7a9be5a4447b48ef343175b66a80",
+    "packages/core/test/dx/fixtures/c07/branch-extras.json": "sha256:400bb91a2271811e90ab53a493604e50cc7b1da1f4d80a46be3d7eb257302785",
+    "packages/core/test/dx/fixtures/c07/late-collect.json": "sha256:55cae4bc79d0f06fc6dd29f1eb898327e4198b2ba1cfe0007241d6e591844761"
+  },
+  "descriptorExport": "none (verification node; exercises dx.report.analyze, dx_explain timeline and dx.report.evidence)",
+  "fixtureIds": [
+    "core-golden-flight (A04, github-actions dropped)",
+    "core-unavailable-sources (A04, github-actions and cursor-usage-csv batches dropped)",
+    "c07-branch-extras",
+    "c07-late-collect",
+    "c07 golden-analyze.json"
+  ],
+  "sourceProbe": "No live source. Real SqliteEventStore (replay kind) in an owned mkdtemp dir, removed in afterAll.",
+  "checks": [
+    {
+      "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/audits/c07.test.ts",
+      "exit": 0,
+      "result": "5/5 passed"
+    },
+    {
+      "cmd": "pnpm exec oxlint packages/core/test/dx/audits/c07.test.ts",
+      "exit": 0
+    },
+    {
+      "cmd": "pnpm exec oxfmt --check <c07 test + fixtures>",
+      "exit": 0
+    },
+    {
+      "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json (filtered to c07)",
+      "exit": "non-zero from other owners; 0 diagnostics in c07 files"
+    }
+  ],
+  "verified": [
+    "Golden per-branch analyze on feature/fixture-flight: tokens input 1200 / cached-input 800 / output 350 (source-reported), requests 1, commits 2, lines +48/-8, files 2, test runs 2 / failures 1; charge, metered, list-price estimates, reasoning and cache-write tokens stay unavailable with reasons",
+    "Analyze is identical (snapshotId and metrics) under reversed and duplicated appends when batches do not carry conflicting coverage for one adapter",
+    "Every null metric has a non-value state and reason; no unavailable/unsupported/disabled metric has a value; no estimate is labelled measured; charge metrics are null; non-complete adapters (entire, opencode) are named in notes",
+    "Every metric, finding and timeline evidence ID resolves via resolveEvidence in the same snapshot with zero missing; excerpts contain no home paths",
+    "Final audit: analyze -> collect a late Cursor usage row -> explain and lookupEvidence with the original snapshotId return the original 13 facts and report the late event as unknown-in-snapshot; re-analyze of the pinned snapshot reproduces identical metrics; latest explain includes the late event, returns a new snapshotId and discloses 'Evidence changed'; an unknown snapshotId fails SnapshotNotFound for both explain and evidence"
+  ],
+  "findings": [
+    {
+      "owner": "A04 (fixture spine) / B03 git metric",
+      "severity": "high",
+      "summary": "core-golden-flight emits git.commit under adapterId 'git' with payload {filesChanged, insertions, deletions}, but the git-history collector and dx.git.* metrics use adapterId 'git-history' and {linesAdded, linesDeleted, sha, numstatAvailable}. Against the canonical golden fixture, dx.git.commits is unavailable although fixture expectations say commitCount 2. C07 covers commits via its own c07-branch-extras fixture shaped like the real collector."
+    },
+    {
+      "owner": "B01 (SqliteEventStore)",
+      "severity": "medium",
+      "summary": "When two appended batches carry coverage for the same adapterId (e.g. cursor-usage-csv complete in one batch, none in another), snapshot coverage is last-append-wins. Reversed append order gives the same snapshotId but different coverage, so the same snapshotId can yield different metrics. snapshotId should cover coverage or coverage merging should be order-independent. C07 avoids the conflict in its golden input; not fixed here."
+    }
+  ],
+  "gaps": [
+    "No live Cursor capture exercised by C07; golden input is synthetic fixtures (origin fixture).",
+    "dx.ai-usage.tokens.total is unavailable even when input/output/cached-input are measured (reported as-is, locked in golden).",
+    "Expired-snapshot path (members removed) not exercised here; B01 covers it in b01.test.ts.",
+    "Explain disclosures and evidence missing/disclosures have no field in the frozen output schemas (B36/B37 gaps), so CLI/MCP integration must render them.",
+    "CI/PR adapters are deliberately dropped from the golden input (out of product scope)."
+  ]
+}

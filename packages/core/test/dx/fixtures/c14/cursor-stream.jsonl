@@ -1,0 +1,10 @@
+{"type":"system","subtype":"init","session_id":"c14-sess-A","model":"fixture-model","cwd":"__DEMO__","apiKeySource":"login"}
+{"type":"tool_call","subtype":"started","session_id":"c14-sess-A","call_id":"c1","tool_call":{"shellToolCall":{"args":{"command":"echo C14-PROMPT-CANARY"}}}}
+{"type":"tool_call","subtype":"completed","session_id":"c14-sess-A","call_id":"c1","tool_call":{"shellToolCall":{"args":{"command":"echo C14-PROMPT-CANARY"}}}}
+{"type":"result","subtype":"success","session_id":"c14-sess-A","request_id":"c14-req-A","duration_ms":4000,"is_error":false,"result":"C14-PROMPT-CANARY","usage":{"inputTokens":1000,"outputTokens":200,"cacheReadTokens":3000,"cacheWriteTokens":0}}
+{"type":"result","subtype":"success","session_id":"c14-sess-A","request_id":"c14-req-A","duration_ms":4000,"is_error":false,"result":"C14-PROMPT-CANARY","usage":{"inputTokens":1000,"outputTokens":200,"cacheReadTokens":3000,"cacheWriteTokens":0}}
+{"type":"system","subtype":"init","session_id":"c14-sess-B","model":"fixture-model","cwd":"__DEMO__"}
+{"type":"result","subtype":"success","session_id":"c14-sess-B","request_id":"c14-req-B","duration_ms":1000,"is_error":false,"result":"no usage here"}
+{"type":"system","subtype":"init","session_id":"c14-sess-C","model":"fixture-model","cwd":"__DEMO__"}
+{"type":"tool_call","subtype":"started","session_id":"c14-sess-C","call_id":"c9","tool_call":{"readToolCall":{"args":{}}}}
+{"type":"result","subtype":"success","session_id":"c14-sess-C","usage":{"inputTokens":99999

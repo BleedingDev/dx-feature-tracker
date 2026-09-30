@@ -1,0 +1,37 @@
+{
+  "id": "B39",
+  "status": "ready",
+  "contract": { "version": "dx.contracts.v1", "digest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090" },
+  "files": [
+    "packages/core/src/dx/mcp/handlers/analyze.ts",
+    "packages/core/src/dx/mcp/handlers/capabilities.ts",
+    "packages/core/src/dx/mcp/handlers/deps.ts",
+    "packages/core/src/dx/mcp/handlers/descriptor.ts",
+    "packages/core/src/dx/mcp/handlers/evidence.ts",
+    "packages/core/src/dx/mcp/handlers/explain.ts",
+    "packages/core/src/dx/mcp/handlers/selector.ts",
+    "packages/core/src/dx/mcp/handlers/status.ts",
+    "packages/core/src/dx/mcp/handlers/stdio.ts",
+    "packages/core/test/dx/b39.test.ts",
+    "packages/core/test/dx/fixtures/b39/events.json"
+  ],
+  "exports": {
+    "capabilities.ts": "makeDxQueryCapabilities(deps) -> [dx_status, dx_analyze, dx_explain, dx_evidence] Capability tuple (requires EventStore)",
+    "descriptor.ts": "mcpQueryHandlersDescriptor (dx.surface.mcp-query-handlers, surface, ready)",
+    "deps.ts": "DxHandlerDeps { descriptors, metrics, resolveSelector? }, SelectorResolver",
+    "stdio.ts": "stderrConsole, isolateStdout"
+  },
+  "fixtureIds": ["b39-branch-flight"],
+  "checks": [
+    { "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b39.test.ts", "exit": 0, "result": "6/6 passed" },
+    { "cmd": "pnpm exec oxlint packages/core/src/dx/mcp/handlers packages/core/test/dx/b39.test.ts", "exit": 0 },
+    { "cmd": "pnpm exec oxfmt --check <B39 files>", "exit": 0 },
+    { "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "note": "no diagnostics in B39 files; errors belong to other owners" }
+  ],
+  "gaps": [
+    "Frozen inputs lack a branch field; integration should pass a git-aware resolveSelector (repo -> repoCommonDir + branch) for per-branch reports.",
+    "explain/evidence outputs have no notes field; disclosures surface only in AnalyzeReport.notes.",
+    "explain/evidence without snapshotId read an unpersisted latest snapshot (read-only contracts).",
+    "A02/A07 must register makeDxQueryCapabilities in the capability list and provide the EventStore layer; not done here (shared files)."
+  ]
+}

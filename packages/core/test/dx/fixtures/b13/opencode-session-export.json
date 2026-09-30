@@ -1,0 +1,79 @@
+{
+  "info": {
+    "id": "ses_fixture0001",
+    "version": "fixture-2.0.0",
+    "projectID": "prj_fixture",
+    "directory": "/redacted/repos/sample-app",
+    "title": "[redacted]",
+    "time": { "created": 1790758800000, "updated": 1790759400000 }
+  },
+  "messages": [
+    {
+      "info": {
+        "id": "msg_fixture0001",
+        "sessionID": "ses_fixture0001",
+        "role": "user",
+        "time": { "created": 1790758800000 }
+      },
+      "parts": [{ "type": "text", "text": "[redacted]" }]
+    },
+    {
+      "info": {
+        "id": "msg_fixture0002",
+        "sessionID": "ses_fixture0001",
+        "role": "assistant",
+        "modelID": "fixture-model",
+        "providerID": "fixture-provider",
+        "cost": 0.0125,
+        "tokens": {
+          "input": 1200,
+          "output": 300,
+          "reasoning": 40,
+          "cache": { "read": 800, "write": 0 }
+        },
+        "time": { "created": 1790758801000, "completed": 1790758831000 }
+      },
+      "parts": [
+        { "type": "step-start" },
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "call_1",
+          "state": { "status": "completed" }
+        },
+        {
+          "type": "tool",
+          "tool": "edit",
+          "callID": "call_2",
+          "state": { "status": "completed" }
+        },
+        {
+          "type": "tool",
+          "tool": "bash",
+          "callID": "call_3",
+          "state": { "status": "error" }
+        },
+        { "type": "text", "text": "[redacted]" },
+        { "type": "step-finish" }
+      ]
+    },
+    {
+      "info": {
+        "id": "msg_fixture0003",
+        "sessionID": "ses_fixture0001",
+        "role": "assistant",
+        "modelID": "fixture-model",
+        "providerID": "fixture-provider",
+        "cost": 0,
+        "tokens": {
+          "input": 500,
+          "output": 120,
+          "reasoning": 0,
+          "cache": { "read": 0, "write": 64 }
+        },
+        "time": { "created": 1790758900000, "completed": 1790758910000 }
+      },
+      "parts": [{ "type": "text", "text": "[redacted]" }]
+    }
+  ]
+}

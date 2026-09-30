@@ -1,0 +1,10 @@
+{
+  "fixtureId": "b04/porcelain-dirty-feature",
+  "origin": "fixture",
+  "note": "Hand-authored git output shapes (status --porcelain=v2 -z, diff --numstat -z, log -g format %H%x1f%gd%x1f%gs); not observed from a real repository.",
+  "gitVersion": "git version 2.56.0\n",
+  "revParse": "/fixture/repo\n/fixture/repo/.git\n",
+  "status": "# branch.oid 1111111111111111111111111111111111111111\u0000# branch.head feature/cost-tracker\u0000# branch.upstream origin/feature/cost-tracker\u0000# branch.ab +2 -1\u00001 .M N... 100644 100644 100644 aaaaaaa aaaaaaa src/a.ts\u00001 M. N... 100644 100644 100644 bbbbbbb bbbbbbb src/b.ts\u00002 R. N... 100644 100644 100644 ccccccc ccccccc R100 src/new.ts\u0000src/old.ts\u0000u UU N... 100644 100644 100644 100644 ddddddd eeeeeee fffffff src/conflict.ts\u0000? notes/todo.md\u0000? scratch.txt\u0000",
+  "numstat": "12\t3\tsrc/a.ts\u00005\t0\tsrc/b.ts\u00000\t0\t\u0000src/old.ts\u0000src/new.ts\u0000-\t-\tassets/logo.png\u0000",
+  "reflog": "1111111111111111111111111111111111111111\u001ffeature/cost-tracker@{2026-09-30T14:02:00+02:00}\u001fcommit: add tracker with private message text\n2222222222222222222222222222222222222222\u001ffeature/cost-tracker@{2026-09-30T13:40:10+02:00}\u001fcommit (amend): secret words\n3333333333333333333333333333333333333333\u001ffeature/cost-tracker@{2026-09-30T13:20:00+02:00}\u001freset: moving to HEAD~1\n4444444444444444444444444444444444444444\u001ffeature/cost-tracker@{2026-09-30T13:00:00+02:00}\u001fbranch: Created from main\nnot-a-sha\u001fbroken\u001fgarbage\n"
+}

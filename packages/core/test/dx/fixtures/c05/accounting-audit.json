@@ -1,0 +1,787 @@
+{
+  "c05/cache-categories": [
+    {
+      "acquisition": "file-import",
+      "adapterId": "claude-jsonl",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/c05",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/c05/.git",
+        "worktreePath": "/work/c05"
+      },
+      "eventId": "cache-1",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://c05/cache-1"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": "rc1",
+        "sessionId": "sc",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "claude-jsonl",
+        "tokens": {
+          "input": 100,
+          "cacheRead": 400,
+          "cacheWrite": 50,
+          "output": 20,
+          "reasoning": 7
+        }
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:cache-1"
+    }
+  ],
+  "c05/duplicate-import-keyed": [
+    {
+      "acquisition": "file-import",
+      "adapterId": "cursor-local-db",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/c05",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/c05/.git",
+        "worktreePath": "/work/c05"
+      },
+      "eventId": "dup-keyed",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://c05/dup-keyed"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": "rk1",
+        "sessionId": "sk",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "local-db",
+        "tokens": {
+          "input": 10,
+          "output": 4
+        },
+        "costLedger": "metered",
+        "costUsd": 0.02,
+        "currency": "USD"
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:dup-keyed"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "cursor-local-db",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/c05",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/c05/.git",
+        "worktreePath": "/work/c05"
+      },
+      "eventId": "dup-keyed",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://c05/dup-keyed"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": "rk1",
+        "sessionId": "sk",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "local-db",
+        "tokens": {
+          "input": 10,
+          "output": 4
+        },
+        "costLedger": "metered",
+        "costUsd": 0.02,
+        "currency": "USD"
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:dup-keyed"
+    }
+  ],
+  "c05/duplicate-import-unkeyed": [
+    {
+      "acquisition": "file-import",
+      "adapterId": "cursor-local-db",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/c05",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/c05/.git",
+        "worktreePath": "/work/c05"
+      },
+      "eventId": "dup-unkeyed",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://c05/dup-unkeyed"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": null,
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "local-db",
+        "tokens": {
+          "input": 9,
+          "output": 3
+        }
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:dup-unkeyed"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "cursor-local-db",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/c05",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/c05/.git",
+        "worktreePath": "/work/c05"
+      },
+      "eventId": "dup-unkeyed",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://c05/dup-unkeyed"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": null,
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "local-db",
+        "tokens": {
+          "input": 9,
+          "output": 3
+        }
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:dup-unkeyed"
+    }
+  ],
+  "c05/mixed-branches": [
+    {
+      "acquisition": "file-import",
+      "adapterId": "sdk-fixture",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/a",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/c05/.git",
+        "worktreePath": "/work/c05"
+      },
+      "eventId": "mb-sdk",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://c05/mb-sdk"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": "rm",
+        "sessionId": "sm",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "sdk",
+        "tokens": {
+          "input": 100,
+          "output": 10
+        }
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:mb-sdk"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "cursor-local-db",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "main",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/c05/.git",
+        "worktreePath": "/work/c05"
+      },
+      "eventId": "mb-db",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://c05/mb-db"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": "rm",
+        "sessionId": "sm",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "local-db",
+        "tokens": {
+          "input": 100,
+          "output": 10
+        }
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:mb-db"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "sdk-fixture",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/a",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/c05/.git",
+        "worktreePath": "/work/c05"
+      },
+      "eventId": "mb-feature-only",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://c05/mb-feature-only"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": "rf",
+        "sessionId": "sm",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "sdk",
+        "tokens": {
+          "input": 5,
+          "output": 1
+        }
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:mb-feature-only"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "sdk-fixture",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": null,
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/c05/.git",
+        "worktreePath": "/work/c05"
+      },
+      "eventId": "mb-detached",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://c05/mb-detached"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": "rd",
+        "sessionId": "sm",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "sdk",
+        "tokens": {
+          "input": 2
+        }
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:mb-detached"
+    }
+  ],
+  "c05/absent-values": [
+    {
+      "acquisition": "file-import",
+      "adapterId": "sdk-fixture",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/c05",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/c05/.git",
+        "worktreePath": "/work/c05"
+      },
+      "eventId": "absent-1",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://c05/absent-1"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": "ra1",
+        "sessionId": "sa",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "sdk",
+        "tokens": {
+          "input": null,
+          "output": null
+        },
+        "charge": null,
+        "listPriceEstimateUsd": null
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:absent-1"
+    }
+  ],
+  "c05/explicit-zero": [
+    {
+      "acquisition": "file-import",
+      "adapterId": "sdk-fixture",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/c05",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/c05/.git",
+        "worktreePath": "/work/c05"
+      },
+      "eventId": "zero-1",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://c05/zero-1"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": "rz1",
+        "sessionId": "sz",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "sdk",
+        "tokens": {
+          "input": 0,
+          "output": 0
+        },
+        "charge": 0,
+        "currency": "USD"
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:zero-1"
+    }
+  ],
+  "c05/keyed-csv-vs-sdk": [
+    {
+      "acquisition": "file-import",
+      "adapterId": "sdk-fixture",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/c05",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/c05/.git",
+        "worktreePath": "/work/c05"
+      },
+      "eventId": "kc-sdk",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://c05/kc-sdk"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": "rk",
+        "sessionId": "skc",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "sdk",
+        "tokens": {
+          "input": 30,
+          "output": 8
+        },
+        "charge": 0.1,
+        "currency": "USD"
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:kc-sdk"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "cursor-usage-export",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/c05",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/c05/.git",
+        "worktreePath": "/work/c05"
+      },
+      "eventId": "kc-csv",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://c05/kc-csv"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": null,
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "usage-csv",
+        "requestKey": "rk",
+        "tokens": {
+          "input": 30,
+          "output": 8
+        },
+        "charge": 0.1,
+        "currency": "USD"
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:kc-csv"
+    }
+  ],
+  "c05/stop-db-entire-dashboard": [
+    {
+      "acquisition": "hook",
+      "adapterId": "cursor-hooks",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/c05",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/c05/.git",
+        "worktreePath": "/work/c05"
+      },
+      "eventId": "x-hook",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://c05/x-hook"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": "r9",
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": "conv9",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "hooks-stop",
+        "semanticsVerified": true,
+        "normalizedCategories": {
+          "input": 500,
+          "output": 60
+        },
+        "rawUsage": {}
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:x-hook"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "cursor-local-db",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/c05",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/c05/.git",
+        "worktreePath": "/work/c05"
+      },
+      "eventId": "x-db",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://c05/x-db"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": "r9",
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": "conv9",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "local-db",
+        "tokens": {
+          "input": 500,
+          "output": 60
+        }
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:x-db"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "entire",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/c05",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/c05/.git",
+        "worktreePath": "/work/c05"
+      },
+      "eventId": "x-entire",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://c05/x-entire"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": "r9",
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": "conv9",
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "entire",
+        "tokens": {
+          "input": 500,
+          "output": 60
+        }
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:x-entire"
+    },
+    {
+      "acquisition": "file-import",
+      "adapterId": "cursor-dashboard",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/c05",
+        "flightId": null,
+        "headSha": null,
+        "repoCommonDir": "/work/c05/.git",
+        "worktreePath": "/work/c05"
+      },
+      "eventId": "x-dashboard",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture://c05/x-dashboard"
+      },
+      "fieldSemantics": [],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": "r9",
+        "sessionId": null,
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "sourceKind": "dashboard-json",
+        "tokens": {
+          "input": 500,
+          "output": 60
+        },
+        "charge": 0.3,
+        "currency": "USD"
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": null,
+      "upstreamKey": "fixture:x-dashboard"
+    }
+  ]
+}

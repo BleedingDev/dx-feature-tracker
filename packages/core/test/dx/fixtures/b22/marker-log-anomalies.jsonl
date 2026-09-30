@@ -1,0 +1,9 @@
+{"schema":"dx.manual.marker.v1","kind":"stop","at":"2026-09-30T09:00:00.000Z","flight":"flight-a"}
+not json
+{"schema":"other.v1","kind":"start","at":"2026-09-30T09:01:00.000Z","flight":"flight-a"}
+{"schema":"dx.manual.marker.v1","kind":"claim","at":"2026-09-30T09:02:00.000Z","flight":"flight-a"}
+{"schema":"dx.manual.marker.v1","kind":"launch","at":"2026-09-30T09:03:00.000Z","flight":"flight-a"}
+{"schema":"dx.manual.marker.v1","kind":"start","at":"yesterday","flight":"flight-a"}
+{"schema":"dx.manual.marker.v1","kind":"start","at":"2026-09-30T09:10:00.000Z","flight":"flight-a"}
+{"schema":"dx.manual.marker.v1","kind":"start","at":"2026-09-30T09:10:00.000Z","flight":"flight-a"}
+{"schema":"dx.manual.marker.v1","kind":"wait-start","at":"2026-09-30T09:30:00.000Z","flight":"flight-a"}

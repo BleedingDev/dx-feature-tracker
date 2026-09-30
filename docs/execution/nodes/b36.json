@@ -1,0 +1,41 @@
+{
+  "id": "B36",
+  "status": "ready",
+  "deliverable": "Stable timeline, source lanes, uncertain ordering and pagination (dx_explain core)",
+  "contract": {
+    "version": "dx.contracts.v1",
+    "digest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+    "output": "ExplainTimelineSchema (packages/core/src/dx/model/report.ts, unchanged)"
+  },
+  "ownedFiles": [
+    "packages/core/src/dx/reports/explain/timeline.ts",
+    "packages/core/src/dx/reports/explain/explain.ts",
+    "packages/core/test/dx/b36.test.ts",
+    "packages/core/test/dx/fixtures/b36/timeline.json"
+  ],
+  "exports": {
+    "packages/core/src/dx/reports/explain/explain.ts": ["explainTimeline", "explainReportDescriptor", "ExplainRequest", "ExplainResult", "EXPLAIN_REPORT_VERSION"],
+    "packages/core/src/dx/reports/explain/timeline.ts": ["buildTimeline", "compareEvents", "laneOf", "summarize", "encodeCursor", "decodeCursor", "resolveLimit", "DEFAULT_EXPLAIN_LIMIT", "MAX_EXPLAIN_LIMIT"]
+  },
+  "descriptor": { "id": "dx.report.explain", "kind": "report", "readiness": "ready", "version": "1.0.0" },
+  "fixtureIds": ["b36-mixed-lanes", "b36-permuted-lanes", "b36-uncertain-ordering"],
+  "checks": [
+    { "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b36.test.ts", "exit": 0, "result": "10 passed" },
+    { "cmd": "pnpm exec oxlint <b36 ts files>", "exit": 0 },
+    { "cmd": "pnpm exec oxfmt --check <b36 files>", "exit": 0 },
+    { "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "note": "0 errors in B36 files; failures only in other owners' files (git-ai, opencode collectors, reports/evidence/redact.ts, b06/b30/b33/b37 tests) at 14:21 CEST" }
+  ],
+  "integration": {
+    "for": "A02/A07 capability handler for dx_explain",
+    "call": "explainTimeline(store, { selector, snapshotId, asOf, cursor, limit }) -> Effect<ExplainResult, StoreFailure | SnapshotNotFound | InvalidInput>; return result.timeline as ExplainTimeline; surface result.disclosures (stderr/notes) since ExplainTimelineSchema has no notes field",
+    "barrel": "not edited; A02 should export from packages/core/src/dx/reports/explain/explain.ts"
+  },
+  "gaps": [
+    "Lanes are one per adapterId; no per-session/agent sub-lanes.",
+    "Summaries echo only finite numeric/boolean payload fields and non-observed value methods; free text (prompts, commands, commit messages) stays behind dx_evidence.",
+    "Cursor is an offset bound to an immutable snapshotId (format b36v1:<offset>:<snapshotId>); foreign or malformed cursors fail InvalidInput.",
+    "ExplainTimelineSchema has no disclosures field; latest/changed-evidence disclosures are returned beside the timeline and must be rendered by the handler.",
+    "Snapshot selection reuses B35 selectAnalyzeSnapshot; unknown/expired snapshotId fails SnapshotNotFound (never replaced by latest).",
+    "No live Cursor capture exercised by this node; it consumes whatever events the store holds (fixture-tested only)."
+  ]
+}

@@ -1,0 +1,3 @@
+#1790758800
+cargo test -p core
+ls -la

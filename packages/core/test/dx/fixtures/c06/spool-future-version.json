@@ -1,0 +1,12 @@
+{
+  "capturedAt": "2026-09-30T10:00:00.000Z",
+  "git": {
+    "branch": "feature/c06",
+    "headSha": null,
+    "repoCommonDir": null,
+    "worktreePath": null
+  },
+  "hook": { "hookEvent": "stop" },
+  "recordHash": "c06future",
+  "spoolVersion": "dxfr.cursor-hook-spool.v2"
+}

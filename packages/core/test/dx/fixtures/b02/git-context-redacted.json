@@ -1,0 +1,81 @@
+{
+  "coverage": {
+    "adapterId": "git-identity",
+    "expectedItems": 1,
+    "gaps": [],
+    "observedItems": 1,
+    "state": "complete",
+    "watermark": "context:/redacted/repos/sample-app:2222222222222222222222222222222222222222:feature/fixture-flight:1111111111111111111111111111111111111111",
+    "windowFrom": "2026-09-30T12:00:00.000Z",
+    "windowTo": "2026-09-30T12:00:00.000Z"
+  },
+  "cursor": {
+    "adapterId": "git-identity",
+    "value": "context:/redacted/repos/sample-app:2222222222222222222222222222222222222222:feature/fixture-flight:1111111111111111111111111111111111111111"
+  },
+  "events": [
+    {
+      "acquisition": "git",
+      "adapterId": "git-identity",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/fixture-flight",
+        "flightId": null,
+        "headSha": "2222222222222222222222222222222222222222",
+        "repoCommonDir": "/redacted/repos/sample-app/.git",
+        "worktreePath": "/redacted/repos/sample-app"
+      },
+      "eventId": "sha256:eceb19c34d358965dd074bb6d298fa3a99aed8972ab51f3a2ae75c7d321233d1",
+      "evidence": {
+        "bounded": true,
+        "hash": "sha256:1cc468abcc43ac29bd0c6585dec6f9b0c59582b1487f55ea29083fd8cf1fc7a7",
+        "ref": "git://context:/redacted/repos/sample-app:2222222222222222222222222222222222222222:feature/fixture-flight:1111111111111111111111111111111111111111"
+      },
+      "fieldSemantics": [
+        {
+          "field": "baseSha",
+          "method": "derived",
+          "note": "merge-base of HEAD and baseRef",
+          "rawName": "git merge-base",
+          "unit": null
+        }
+      ],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": null,
+        "sessionId": null,
+        "turnId": null
+      },
+      "kind": "git.context",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T12:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "fixture",
+      "payload": {
+        "aheadCount": 1,
+        "baseRef": "main",
+        "baseSha": "1111111111111111111111111111111111111111",
+        "baseSource": "local-default",
+        "branchCreatedAt": "2026-09-30T09:00:00.000Z",
+        "branchCreatedFrom": "main",
+        "detached": false,
+        "dirty": false,
+        "dirtyEntries": 0,
+        "firstBranchCommitAt": "2026-09-30T09:30:00.000Z",
+        "gitDir": "/redacted/repos/sample-app/.git",
+        "isLinkedWorktree": false,
+        "onBaseBranch": false,
+        "sameBranchWorktrees": 1,
+        "unavailable": [],
+        "worktreeCount": 1
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": "2.50.1",
+      "upstreamKey": "context:/redacted/repos/sample-app:2222222222222222222222222222222222222222:feature/fixture-flight:1111111111111111111111111111111111111111"
+    }
+  ]
+}

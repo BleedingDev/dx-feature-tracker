@@ -1,0 +1,64 @@
+{
+  "coverage": {
+    "adapterId": "b38-fixture",
+    "expectedItems": 1,
+    "gaps": [],
+    "observedItems": 1,
+    "state": "complete",
+    "watermark": "4",
+    "windowFrom": "2026-09-30T11:00:00.000Z",
+    "windowTo": "2026-09-30T11:00:00.000Z"
+  },
+  "cursor": null,
+  "events": [
+    {
+      "acquisition": "file-import",
+      "adapterId": "b38-fixture",
+      "adapterVersion": "1.0.0",
+      "context": {
+        "branch": "feature/b38-demo",
+        "flightId": null,
+        "headSha": "abc123",
+        "repoCommonDir": "/fixture/repo/.git",
+        "worktreePath": "/fixture/repo"
+      },
+      "eventId": "b38-fixture-event-4",
+      "evidence": {
+        "bounded": true,
+        "hash": null,
+        "ref": "fixture:b38:4"
+      },
+      "fieldSemantics": [
+        {
+          "field": "payload.inputTokens",
+          "method": "source-reported",
+          "note": null,
+          "rawName": null,
+          "unit": "tokens"
+        }
+      ],
+      "identity": {
+        "commitSha": null,
+        "generationId": null,
+        "githubAttempt": null,
+        "githubRunId": null,
+        "prNumber": null,
+        "requestId": "req-4",
+        "sessionId": null,
+        "turnId": null
+      },
+      "kind": "ai.usage",
+      "observedAt": "2026-09-30T12:00:00.000Z",
+      "occurredAt": "2026-09-30T11:00:00.000Z",
+      "occurredAtPrecision": "exact",
+      "origin": "imported",
+      "payload": {
+        "inputTokens": 50,
+        "outputTokens": 10
+      },
+      "schemaVersion": "dx.event.v1",
+      "sourceVersion": "fixture",
+      "upstreamKey": "b38:4"
+    }
+  ]
+}

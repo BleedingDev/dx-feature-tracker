@@ -1,0 +1,44 @@
+{
+  "id": "C03",
+  "status": "ready",
+  "role": "verification",
+  "contract": { "version": "dx.contracts.v1", "digest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090" },
+  "ownedFiles": ["packages/core/test/dx/audits/c03.test.ts"],
+  "descriptorExport": null,
+  "fixtureIds": [],
+  "sourceProbe": "live git on this host via B02 gitRunFor; scoped temp repos only (makeTempDirectoryScoped), no user repos read",
+  "checks": [
+    { "cmd": "pnpm exec vitest run test/dx/audits/c03.test.ts (cwd packages/core)", "exit": 0, "result": "8/8 passed" },
+    { "cmd": "pnpm exec oxlint packages/core/test/dx/audits/c03.test.ts", "exit": 0 },
+    { "cmd": "pnpm exec oxfmt --check packages/core/test/dx/audits/c03.test.ts", "exit": 0 },
+    { "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "result": "9 errors, none in audits/c03.test.ts (other owners' files)" }
+  ],
+  "verified": {
+    "linkedWorktrees": "shared repoCommonDir, distinct worktreePath/branch; B23 maps an edited file in a linked worktree to that worktree's branch; paths spanning two worktrees are not assigned; B24 gives distinct provisional flights; removing a worktree leaves the survivor's identity intact",
+    "branchReuse": "delete+recreate with a later reflog time yields a new branchCreatedAt and a second implicit flight",
+    "branchRename": "reflog creation time and head survive `git branch -m`; implicit flights split on rename; explicit marker.start + alias:<new> mapping keeps one strong flight",
+    "rebase": "headSha and baseSha move to the new main tip, branchCreatedAt stable, same implicit flight",
+    "forks": "clones with the same branch and head have different repoCommonDir, eventIds and flights; fork files do not resolve against the upstream repo map; clone baseSource=origin-head",
+    "detachedHead": "branch null, coverage partial, flight attribution unassigned (primary and linked detached worktree); B23 assignment 'detached'",
+    "unbornHead": "collector succeeds with branch kept, headSha null, coverage partial with unavailable:headSha; repoMapForPath resolves"
+  },
+  "findings": [
+    {
+      "severity": "medium",
+      "owner": "B02",
+      "summary": "git.context upstreamKey (worktreePath:headSha:branch:baseSha) omits branchCreatedAt, so a branch deleted and recreated at the same HEAD emits the same eventId as its first life; an idempotent store drops the second event and B24 never splits the reused branch into a new flight.",
+      "evidence": "c03.test.ts 'FINDING: branch reuse at the same HEAD collides on eventId' asserts the collision (flip the assertion once B02 adds branchCreatedAt to the key)"
+    },
+    {
+      "severity": "low",
+      "owner": "B24/A02",
+      "summary": "A plain branch rename without a user alias mapping splits one piece of work into two provisional flights, though branchCreatedAt is identical across the rename; B24 could treat equal (repo, branchCreatedAt) as continuity.",
+      "evidence": "c03.test.ts rename test"
+    }
+  ],
+  "gaps": [
+    "Branch reuse split depends on reflog timestamps (1s resolution); reuse within the same second is indistinguishable.",
+    "No committed fixtures: audit drives live temp git repos only.",
+    "Cross-fork identity (same work across fork and upstream) is intentionally not unified; out of scope with GitHub/PR identity."
+  ]
+}

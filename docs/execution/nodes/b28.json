@@ -1,0 +1,36 @@
+{
+  "id": "B28",
+  "status": "ready",
+  "deliverable": "Commit/file/churn summary with base-SHA definition",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "ownedFiles": [
+    "packages/core/src/dx/metrics/git/metric.ts",
+    "packages/core/src/dx/metrics/git/summary.ts",
+    "packages/core/test/dx/b28.test.ts",
+    "packages/core/test/dx/fixtures/b28/log-numstat.txt",
+    "packages/core/test/dx/fixtures/b28/worktree-numstat.txt",
+    "packages/core/test/dx/fixtures/b28/reflog.txt"
+  ],
+  "exports": {
+    "packages/core/src/dx/metrics/git/metric.ts": ["gitChurnMetric (DxMetric)", "gitChurnDescriptor", "computeGitChurn", "gitChurnDefinitions", "GIT_CHURN_METRIC_VERSION", "GIT_CHURN_FIXTURE_IDS"],
+    "packages/core/src/dx/metrics/git/summary.ts": ["summarizeGitChurn", "commitFacts", "BASE_SHA_DEFINITION", "GIT_CHURN_SOURCE_ADAPTER_ID", "GitChurnSummary"]
+  },
+  "descriptor": {"id": "dx.metric.git-churn", "kind": "metric", "owner": "B28", "readiness": "ready", "requiredInputs": ["git-history:git.commit"]},
+  "fixtureIds": ["b28-branch-snapshot", "b28-live-temp-repo"],
+  "sourceProbe": "consumes B03 collector.git-history events (git 2.56.0 on host); live test builds a real temp repo and runs collectGitHistory with the node git runner",
+  "supportedFields": ["dx.git.commits", "dx.git.merge-commits", "dx.git.lines-added", "dx.git.lines-deleted", "dx.git.churn-lines", "dx.git.files-changed", "dx.git.files-retouched", "dx.git.uncommitted-lines-added", "dx.git.uncommitted-lines-deleted", "dx.git.uncommitted-files", "dx.git.untracked-files"],
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b28.test.ts", "exit": 0, "result": "6 passed"},
+    {"cmd": "pnpm exec oxlint <B28 files>", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check <B28 files>", "exit": 0},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "note": "0 errors in B28 files; failures only in src/dx/collectors/opencode/collector.ts and src/dx/reports/explain/timeline.ts (other owners)"}
+  ],
+  "gaps": [
+    "Not registered: integration owner (A02/A07) must add gitChurnMetric to the metric registry/barrel.",
+    "Per-branch scoping relies on the snapshot selector; a multi-branch snapshot is reported partial with a union of distinct commits.",
+    "Merge commits and binary files contribute no lines (collector has no numstat for them); disclosed in reason.",
+    "Clean worktree yields no git.diff event, so uncommitted metrics report unavailable rather than zero.",
+    "Rework is only the observable files-retouched signal; no line-level rework or AI ownership."
+  ]
+}

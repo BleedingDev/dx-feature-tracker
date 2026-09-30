@@ -1,0 +1,11 @@
+[15:07:33.299] ERROR (#2): SourceUnavailable: selected input is not readable
+    at unavailable (file:///Users/satan/workspace/bleedingdev/projects/dx-feature-tracker/packages/core/dist/dx/collectors/local-test/collector.js:265:34)
+    at file:///Users/satan/workspace/bleedingdev/projects/dx-feature-tracker/packages/core/dist/dx/collectors/local-test/collector.js:270:37
+    at file:///Users/satan/workspace/bleedingdev/projects/dx-feature-tracker/node_modules/.pnpm/effect@4.0.0-rc.117/node_modules/effect/dist/internal/effect.js:1476:96
+    at ~effect/Utils/internal (file:///Users/satan/workspace/bleedingdev/projects/dx-feature-tracker/node_modules/.pnpm/effect@4.0.0-rc.117/node_modules/effect/dist/Utils.js:80:14)
+    at LocalTest.readFiles (file:///Users/satan/workspace/bleedingdev/projects/dx-feature-tracker/packages/core/dist/dx/collectors/local-test/collector.js:299:26)
+    at LocalTest.readFiles (definition) (file:///Users/satan/workspace/bleedingdev/projects/dx-feature-tracker/packages/core/dist/dx/collectors/local-test/collector.js:266:26)
+    at LocalTest.collect (file:///Users/satan/workspace/bleedingdev/projects/dx-feature-tracker/packages/core/dist/dx/cli/commands/collect.js:35:36)
+    at LocalTest.collect (definition) (file:///Users/satan/workspace/bleedingdev/projects/dx-feature-tracker/packages/core/dist/dx/collectors/local-test/collector.js:292:40)
+    at Capability.dx_collect (file:///Users/satan/workspace/bleedingdev/projects/dx-feature-tracker/node_modules/.pnpm/effect@4.0.0-rc.117/node_modules/effect/dist/unstable/cli/internal/command.js:54:93)
+    at Capability.dx_collect (definition) (file:///Users/satan/workspace/bleedingdev/projects/dx-feature-tracker/packages/capability/dist/to-command.js:113:72)

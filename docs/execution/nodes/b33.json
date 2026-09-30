@@ -1,0 +1,50 @@
+{
+  "id": "B33",
+  "role": "optional",
+  "status": "disabled",
+  "deliverable": "Observed strict AI line-instance survival from canonical ordered edit/preimage evidence; unknown, heuristic and source-attributed values kept distinct.",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "ownedFiles": [
+    "packages/core/src/dx/metrics/provenance/alignment.ts",
+    "packages/core/src/dx/metrics/provenance/evidence.ts",
+    "packages/core/src/dx/metrics/provenance/survival.ts",
+    "packages/core/src/dx/metrics/provenance/metric.ts",
+    "packages/core/test/dx/b33.test.ts",
+    "packages/core/test/dx/fixtures/b33/b33-scenarios.json"
+  ],
+  "digests": {
+"packages/core/src/dx/metrics/provenance/alignment.ts": "sha256:d2a2abed75d1366667cad8d496f0346527831d5c10a6ce940eb12b5371838f95",
+"packages/core/src/dx/metrics/provenance/evidence.ts": "sha256:0ed753d5afc76a068b0fc783a1ed2ccb49b1417d505a88ea06339a2564cf568a",
+"packages/core/src/dx/metrics/provenance/metric.ts": "sha256:61ead0076a89b624ec8d38b263a4af16de4dccb6bdd70559a273cabd1975c522",
+"packages/core/src/dx/metrics/provenance/survival.ts": "sha256:ad71ad1991e453178dd2f4201cc87a1bedf2f9676902d1fecac6a462e35685a5",
+"packages/core/test/dx/b33.test.ts": "sha256:eb3264d1b2d9dd477ed7e7a3021322895e31193239d7e356a863b82e1f8247f6",
+"packages/core/test/dx/fixtures/b33/b33-scenarios.json": "sha256:949a402aabaea076320922318c61a00ccc0ec1825a2e92d3c7d94e55c4144c76"
+  },
+  "descriptorExport": "provenanceMetric (DxMetric) and provenanceDescriptor from packages/core/src/dx/metrics/provenance/metric.ts; descriptor id dx.metric.provenance, readiness disabled",
+  "fixtureIds": ["b33-clean-lineage", "b33-unresolved-states", "b33-no-evidence", "b33-source-attributed"],
+  "sourceProbe": "No collector on this host emits dx.provenance.edit.v1 / dx.provenance.checkpoint.v1 evidence (A06: Git AI, Entire absent; no Cursor edit/preimage line-hash producer). Fixture-only.",
+  "observedAt": "2026-09-30T12:09:30Z",
+  "checks": [
+    { "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b33.test.ts", "exit": 0, "result": "7/7 passed" },
+    { "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "result": "0 errors in B33 files; exit 1 from other owners' files (e.g. collectors/cursor-local-db/map-rows.ts TS1003)" },
+    { "cmd": "pnpm exec oxlint <B33 files>", "result": "0 diagnostics in B33 files (command exit nonzero from type-aware diagnostics in other owners' files)" },
+    { "cmd": "pnpm exec oxfmt --check <B33 files>", "exit": 0 }
+  ],
+  "supportedFields": [
+    "dx.provenance.ai-line-survival.strict",
+    "dx.provenance.ai-lines-introduced.observed",
+    "dx.provenance.ai-lines-rewritten-by-human.observed",
+    "dx.provenance.unresolved-files",
+    "dx.provenance.ai-line-share.source-attributed",
+    "dx.provenance.ai-line-survival.heuristic-similarity (always unsupported)"
+  ],
+  "integration": "Not for registration: descriptor readiness is disabled (integration registers only ready/degraded). Enable only after a producer emits dx.provenance.edit.v1 events with real ordered preimages plus named checkpoints and passes a real receipt.",
+  "gaps": [
+    "no-producer: no live source of ordered edit/preimage line-hash evidence on this host",
+    "formatting/rename detected only when the producer flags formattingOnly/renamedFrom",
+    "heuristic semantic-similarity survival not implemented (reported unsupported)",
+    "checkpoint selection: latest named checkpoint by occurredAt/observedAt across files; no explicit checkpoint selector input in the frozen DxMetric.compute signature"
+  ],
+  "dependencyProposals": []
+}

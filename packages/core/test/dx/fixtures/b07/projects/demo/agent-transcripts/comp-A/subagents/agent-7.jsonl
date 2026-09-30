@@ -1,0 +1,2 @@
+{"role":"user","message":{"content":[{"type":"text","text":"subagent task"}]}}
+{"role":"assistant","message":{"content":[{"type":"text","text":"ok"},{"type":"tool_use","name":"Grep"}]}}

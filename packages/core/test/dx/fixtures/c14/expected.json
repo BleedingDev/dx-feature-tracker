@@ -1,0 +1,10 @@
+{
+  "branch": "fixture/c14-adversarial",
+  "canaries": ["C14-PROMPT-CANARY", "sk-c14-CANARY-not-a-real-key"],
+  "tokens": { "input": 1000, "output": 200, "cached-input": 3000 },
+  "mustBeUnavailable": ["money", "reasoning tokens"],
+  "tests": { "runs": 1, "failures": 1 },
+  "commits": 2,
+  "hookSpoolMaxFiles": 7,
+  "notes": "Duplicate cursor-cli result (same session/request) must count once: input 1000 not 2000. Truncated sess-C line (99999) must never be counted. Duplicate stop hook payload must collapse or be reported as a duplicate. Malformed hook stdin must not crash the hook (exit 0, skipped)."
+}

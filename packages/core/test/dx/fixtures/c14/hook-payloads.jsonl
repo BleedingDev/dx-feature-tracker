@@ -1,0 +1,8 @@
+{"hook_event_name":"sessionStart","conversation_id":"c14-conv-1","generation_id":null,"model":"fixture-model","cursor_version":"fixture","workspace_roots":["__DEMO__"],"session_id":"c14-conv-1","is_background_agent":false,"composer_mode":"agent"}
+{"hook_event_name":"beforeSubmitPrompt","conversation_id":"c14-conv-1","generation_id":"c14-gen-1","model":"fixture-model","workspace_roots":["__DEMO__"],"prompt":"C14-PROMPT-CANARY please use key sk-c14-CANARY-not-a-real-key","attachments":[]}
+{"hook_event_name":"afterShellExecution","conversation_id":"c14-conv-1","generation_id":"c14-gen-1","workspace_roots":["__DEMO__"],"command":"curl -H 'Authorization: Bearer sk-c14-CANARY-not-a-real-key' https://example.invalid","output":"C14-PROMPT-CANARY output","duration":1200,"exit_code":7}
+{"hook_event_name":"afterFileEdit","conversation_id":"c14-conv-1","generation_id":"c14-gen-1","workspace_roots":["__DEMO__"],"file_path":"__DEMO__/math.ts","edits":[{"old_string":"C14-PROMPT-CANARY","new_string":"sk-c14-CANARY-not-a-real-key"}]}
+{"hook_event_name":"stop","conversation_id":"c14-conv-1","generation_id":"c14-gen-1","workspace_roots":["__DEMO__"],"status":"completed","loop_count":0}
+{"hook_event_name":"stop","conversation_id":"c14-conv-1","generation_id":"c14-gen-1","workspace_roots":["__DEMO__"],"status":"completed","loop_count":0}
+MALFORMED {"hook_event_name":"stop",
+{"hook_event_name":"sessionEnd","conversation_id":"c14-conv-1","workspace_roots":["__DEMO__"],"reason":"completed","duration_ms":5000}

@@ -1,0 +1,15 @@
+{
+  "info": {
+    "id": "ses_fixture0002",
+    "time": { "created": 1790762400000 }
+  },
+  "messages": [
+    {
+      "info": {
+        "id": "msg_fixture0101",
+        "role": "assistant",
+        "tokens": { "input": 90, "output": 10 }
+      }
+    }
+  ]
+}

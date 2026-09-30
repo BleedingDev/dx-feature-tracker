@@ -1,0 +1,131 @@
+{
+ "label": "ADVERSARIAL FIXTURE FLIGHT (synthetic)",
+ "branch": "fixture/c14-adversarial",
+ "snapshotId": "snap_edd72b72876f9a10a016e8594647afd0",
+ "observed": {
+  "toolCalls": 0,
+  "failedCommands": null,
+  "filesRetouched": 1,
+  "reworkedFiles": 0,
+  "duplicateRowsCollapsed": 0
+ },
+ "passed": 15,
+ "failed": 0,
+ "results": [
+  {
+   "name": "hook never fails Cursor (all payloads incl. malformed exit 0)",
+   "pass": true,
+   "detail": [
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "name": "every collect/analyze/explain step exit 0",
+   "pass": true,
+   "detail": null
+  },
+  {
+   "name": "no prompt/command/secret canary in spool or any CLI output",
+   "pass": true,
+   "detail": {
+    "scannedFiles": 24,
+    "leaks": []
+   }
+  },
+  {
+   "name": "spool holds only well-formed payloads (malformed skipped)",
+   "pass": true,
+   "detail": 7
+  },
+  {
+   "name": "tokens.input counts duplicate result once and ignores truncated line",
+   "pass": true,
+   "detail": 1000
+  },
+  {
+   "name": "tokens.output",
+   "pass": true,
+   "detail": 200
+  },
+  {
+   "name": "tokens.cached-input",
+   "pass": true,
+   "detail": 3000
+  },
+  {
+   "name": "reasoning tokens unavailable (null), not 0",
+   "pass": true,
+   "detail": null
+  },
+  {
+   "name": "all money metrics unavailable (no fabricated charge or estimate)",
+   "pass": true,
+   "detail": {
+    "dx.ai-usage.money.charge": null,
+    "dx.ai-usage.money.list-price-estimate": null,
+    "dx.ai-usage.money.metered": null,
+    "dx.ai-usage.money.unallocated": null,
+    "dx.cost.charge.usd": null,
+    "dx.cost.list-price-estimate.price-table.usd": null,
+    "dx.cost.list-price-estimate.source.usd": null,
+    "dx.cost.metered.usd": null,
+    "dx.cost.subscription-allocation.usd": null,
+    "dx.cost.unallocated.usd": null
+   }
+  },
+  {
+   "name": "cursor-cli coverage discloses result-without-usage",
+   "pass": true,
+   "detail": [
+    "no-cost-in-cli-output",
+    "no-reasoning-tokens",
+    "no-branch-in-cli-output",
+    "may-overlap-hooks-stop",
+    "rejected-lines",
+    "result-without-usage",
+    "run-without-result"
+   ]
+  },
+  {
+   "name": "cursor-cli coverage is not 'complete' despite rejected/truncated lines",
+   "pass": true,
+   "detail": "partial"
+  },
+  {
+   "name": "re-collect of same stream inserts 0 new rows",
+   "pass": true,
+   "detail": {
+    "inserted": 0,
+    "duplicates": 2
+   }
+  },
+  {
+   "name": "local test run and failure visible",
+   "pass": true,
+   "detail": {
+    "runs": 1,
+    "failures": 1
+   }
+  },
+  {
+   "name": "branch commits observed",
+   "pass": true,
+   "detail": {
+    "flightCommits": 2,
+    "gitCommits": 2
+   }
+  },
+  {
+   "name": "explain returns a timeline for the fixture snapshot",
+   "pass": true,
+   "detail": 18
+  }
+ ]
+}

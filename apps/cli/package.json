@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "bin": {
+    "dft": "./bin/dft",
     "rat-stack": "./bin/rat-stack"
   },
   "type": "module",

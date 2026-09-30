@@ -1,0 +1,392 @@
+{
+  "entries": [
+    {
+      "eventId": "sha256:65d878b2c578e58026663981f4367007a67673024d6fb95bf34ac2bd21165525",
+      "evidenceIds": [
+        "sha256:65d878b2c578e58026663981f4367007a67673024d6fb95bf34ac2bd21165525"
+      ],
+      "kind": "git.observation",
+      "lane": "git-history",
+      "occurredAt": "2026-09-30T12:47:17.000Z",
+      "occurredAtPrecision": "second",
+      "orderingUncertain": true,
+      "origin": "imported",
+      "summary": "git.observation via git-history reflogEntries=2"
+    },
+    {
+      "eventId": "74555b1cf87bc3a08fed55572bc0464965bf495cc6d8c6300868399253e1eecc",
+      "evidenceIds": [
+        "74555b1cf87bc3a08fed55572bc0464965bf495cc6d8c6300868399253e1eecc"
+      ],
+      "kind": "git.observation",
+      "lane": "git-observation",
+      "occurredAt": "2026-09-30T12:47:17.000Z",
+      "occurredAtPrecision": "second",
+      "orderingUncertain": true,
+      "origin": "imported",
+      "summary": "git.observation via git-observation"
+    },
+    {
+      "eventId": "sha256:df7b07bd849a91cf2c0c12832841cd036f5da30475ac3486621eef258836ef56",
+      "evidenceIds": [
+        "sha256:df7b07bd849a91cf2c0c12832841cd036f5da30475ac3486621eef258836ef56"
+      ],
+      "kind": "ai.session",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T12:47:20.849Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "ai.session via cursor-hooks isBackgroundAgent=false rawUsagePresent=false supportedHookEvent=true toolCall=false [occurredAt:source-reported]"
+    },
+    {
+      "eventId": "sha256:b6b61c90b9db71313b7f68625266b0990e8490fcf5bc3af184a28e3db2c9308e",
+      "evidenceIds": [
+        "sha256:b6b61c90b9db71313b7f68625266b0990e8490fcf5bc3af184a28e3db2c9308e"
+      ],
+      "kind": "other",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T12:47:26.863Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "other via cursor-hooks durationMs=469.535 rawUsagePresent=false supportedHookEvent=true toolCall=true [occurredAt:source-reported, payload.durationMs:source-reported]"
+    },
+    {
+      "eventId": "sha256:604ac3bb5f744fd9c2d87ceed002875dc39142c0e3e341a5f2b2b8a7013d473e",
+      "evidenceIds": [
+        "sha256:604ac3bb5f744fd9c2d87ceed002875dc39142c0e3e341a5f2b2b8a7013d473e"
+      ],
+      "kind": "other",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T12:47:26.871Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "other via cursor-hooks durationMs=467.188 rawUsagePresent=false supportedHookEvent=true toolCall=true [occurredAt:source-reported, payload.durationMs:source-reported]"
+    },
+    {
+      "eventId": "sha256:5511d3ddc47c506ac660c3c2010f3cfbc58d6df55e083458eda96db30d694bb6",
+      "evidenceIds": [
+        "sha256:5511d3ddc47c506ac660c3c2010f3cfbc58d6df55e083458eda96db30d694bb6"
+      ],
+      "kind": "other",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T12:47:26.906Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "other via cursor-hooks durationMs=469.537 rawUsagePresent=false supportedHookEvent=true toolCall=true [occurredAt:source-reported, payload.durationMs:source-reported]"
+    },
+    {
+      "eventId": "sha256:f485845f56702d2aacdda6afa344439f1df1a7afe0d30803df6fa8b3de769dbb",
+      "evidenceIds": [
+        "sha256:f485845f56702d2aacdda6afa344439f1df1a7afe0d30803df6fa8b3de769dbb"
+      ],
+      "kind": "other",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T12:47:30.550Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "other via cursor-hooks durationMs=0.966 rawUsagePresent=false supportedHookEvent=true toolCall=true [occurredAt:source-reported, payload.durationMs:source-reported]"
+    },
+    {
+      "eventId": "sha256:4dc76d625b0744afaac7cce5a688d9e2514c204e39b8858562112777db9afbf5",
+      "evidenceIds": [
+        "sha256:4dc76d625b0744afaac7cce5a688d9e2514c204e39b8858562112777db9afbf5"
+      ],
+      "kind": "other",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T12:47:30.570Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "other via cursor-hooks durationMs=0.831 rawUsagePresent=false supportedHookEvent=true toolCall=true [occurredAt:source-reported, payload.durationMs:source-reported]"
+    },
+    {
+      "eventId": "sha256:2ef44b07d793b5dca9fdad7f4509b6d8f0e5dc10c7694d5b0e8670a90de43401",
+      "evidenceIds": [
+        "sha256:2ef44b07d793b5dca9fdad7f4509b6d8f0e5dc10c7694d5b0e8670a90de43401"
+      ],
+      "kind": "other",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T12:47:34.566Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "other via cursor-hooks durationMs=777.508 rawUsagePresent=false supportedHookEvent=true toolCall=false [occurredAt:source-reported, payload.durationMs:source-reported]"
+    },
+    {
+      "eventId": "sha256:38d66999bcee6bba90bdf55b548d604938cca2b307fee73f20c5c6b81f371bd5",
+      "evidenceIds": [
+        "sha256:38d66999bcee6bba90bdf55b548d604938cca2b307fee73f20c5c6b81f371bd5"
+      ],
+      "kind": "other",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T12:47:34.958Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "other via cursor-hooks durationMs=777.508 rawUsagePresent=false supportedHookEvent=true toolCall=true [occurredAt:source-reported, payload.durationMs:source-reported]"
+    },
+    {
+      "eventId": "sha256:236bd978a6cd644df320af7d333771097bba2d354212bd0f9c8710a2e2e069f5",
+      "evidenceIds": [
+        "sha256:236bd978a6cd644df320af7d333771097bba2d354212bd0f9c8710a2e2e069f5"
+      ],
+      "kind": "other",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T12:47:38.347Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "other via cursor-hooks durationMs=0.64 rawUsagePresent=false supportedHookEvent=true toolCall=true [occurredAt:source-reported, payload.durationMs:source-reported]"
+    },
+    {
+      "eventId": "sha256:d85019f9428b55920a2ba5ec223fb7c56d94f9dd9498eca72de138515c94cb2a",
+      "evidenceIds": [
+        "sha256:d85019f9428b55920a2ba5ec223fb7c56d94f9dd9498eca72de138515c94cb2a"
+      ],
+      "kind": "other",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T12:47:39.086Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "other via cursor-hooks durationMs=604.982 rawUsagePresent=false supportedHookEvent=true toolCall=false [occurredAt:source-reported, payload.durationMs:source-reported]"
+    },
+    {
+      "eventId": "sha256:2c11f2c9a36f8df48615144351d056115bbaaa1bc21b23682fd24e310e29439c",
+      "evidenceIds": [
+        "sha256:2c11f2c9a36f8df48615144351d056115bbaaa1bc21b23682fd24e310e29439c"
+      ],
+      "kind": "other",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T12:47:39.521Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "other via cursor-hooks durationMs=604.982 rawUsagePresent=false supportedHookEvent=true toolCall=true [occurredAt:source-reported, payload.durationMs:source-reported]"
+    },
+    {
+      "eventId": "sha256:79021c9a7b6f60d3040388c54952a5e7168e8181dd2011c3f14c2e6e847828f1",
+      "evidenceIds": [
+        "sha256:79021c9a7b6f60d3040388c54952a5e7168e8181dd2011c3f14c2e6e847828f1"
+      ],
+      "kind": "other",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T12:47:43.094Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "other via cursor-hooks durationMs=0.445 rawUsagePresent=false supportedHookEvent=true toolCall=true [occurredAt:source-reported, payload.durationMs:source-reported]"
+    },
+    {
+      "eventId": "sha256:87d9da49253d00adda6b039a42cbb69f76a3cb0ba4fc289a192eb90325ad0a90",
+      "evidenceIds": [
+        "sha256:87d9da49253d00adda6b039a42cbb69f76a3cb0ba4fc289a192eb90325ad0a90"
+      ],
+      "kind": "other",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T12:47:43.094Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "other via cursor-hooks durationMs=0.474 rawUsagePresent=false supportedHookEvent=true toolCall=true [occurredAt:source-reported, payload.durationMs:source-reported]"
+    },
+    {
+      "eventId": "sha256:bcaa3bd98207705651be8447f8ed3df9f4ce88cf82e5a9590288cd6ec9a0b1c8",
+      "evidenceIds": [
+        "sha256:bcaa3bd98207705651be8447f8ed3df9f4ce88cf82e5a9590288cd6ec9a0b1c8"
+      ],
+      "kind": "ai.tool-edit",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T12:47:43.756Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "ai.tool-edit via cursor-hooks editCount=1 linesAdded=1 linesRemoved=0 rawUsagePresent=false supportedHookEvent=true toolCall=false [occurredAt:source-reported, payload.linesAdded:derived]"
+    },
+    {
+      "eventId": "sha256:d2026686e586d9e19c2338393146b4f8fab36b019d558b7c50f3b1cf607caeb0",
+      "evidenceIds": [
+        "sha256:d2026686e586d9e19c2338393146b4f8fab36b019d558b7c50f3b1cf607caeb0"
+      ],
+      "kind": "ai.tool-edit",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T12:47:43.767Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "ai.tool-edit via cursor-hooks editCount=1 linesAdded=14 linesRemoved=0 rawUsagePresent=false supportedHookEvent=true toolCall=false [occurredAt:source-reported, payload.linesAdded:derived]"
+    },
+    {
+      "eventId": "sha256:772cfec25ed119f9f6e0a8e3aaad6e8eaef7689f6bbfd8f2964566f427cbebd7",
+      "evidenceIds": [
+        "sha256:772cfec25ed119f9f6e0a8e3aaad6e8eaef7689f6bbfd8f2964566f427cbebd7"
+      ],
+      "kind": "other",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T12:47:44.230Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "other via cursor-hooks durationMs=33.186 rawUsagePresent=false supportedHookEvent=true toolCall=true [occurredAt:source-reported, payload.durationMs:source-reported]"
+    },
+    {
+      "eventId": "sha256:444569fa5238688631451476a0c69ee87c36d7def7649a0df9667e0a481caed0",
+      "evidenceIds": [
+        "sha256:444569fa5238688631451476a0c69ee87c36d7def7649a0df9667e0a481caed0"
+      ],
+      "kind": "other",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T12:47:46.479Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "other via cursor-hooks durationMs=200.953 rawUsagePresent=false supportedHookEvent=true toolCall=false [occurredAt:source-reported, payload.durationMs:source-reported]"
+    },
+    {
+      "eventId": "sha256:ab8272886fa52632d3d3cdf3a3a72e64f8ed6ebc39959c3966f9cebdec3ac19f",
+      "evidenceIds": [
+        "sha256:ab8272886fa52632d3d3cdf3a3a72e64f8ed6ebc39959c3966f9cebdec3ac19f"
+      ],
+      "kind": "other",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T12:47:46.878Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "other via cursor-hooks durationMs=200.953 rawUsagePresent=false supportedHookEvent=true toolCall=true [occurredAt:source-reported, payload.durationMs:source-reported]"
+    },
+    {
+      "eventId": "sha256:950266f62a6551af6976559761e5b9e39c95a381ae6bd0b2c7cd4d100acd3930",
+      "evidenceIds": [
+        "sha256:950266f62a6551af6976559761e5b9e39c95a381ae6bd0b2c7cd4d100acd3930"
+      ],
+      "kind": "git.commit",
+      "lane": "git-history",
+      "occurredAt": "2026-09-30T12:47:49.000Z",
+      "occurredAtPrecision": "second",
+      "orderingUncertain": true,
+      "origin": "imported",
+      "summary": "git.commit via git-history binaryFiles=0 filesChanged=2 isMerge=false linesAdded=14 linesDeleted=0 numstatAvailable=true [authoredAt:source-reported, committedAt:source-reported]"
+    },
+    {
+      "eventId": "5522b21e0e49af42a9d390165a896f8f73e1b41aa8430f5999464aaa47e9a12c",
+      "evidenceIds": [
+        "5522b21e0e49af42a9d390165a896f8f73e1b41aa8430f5999464aaa47e9a12c"
+      ],
+      "kind": "git.observation",
+      "lane": "git-observation",
+      "occurredAt": "2026-09-30T12:47:49.000Z",
+      "occurredAtPrecision": "second",
+      "orderingUncertain": true,
+      "origin": "imported",
+      "summary": "git.observation via git-observation"
+    },
+    {
+      "eventId": "sha256:d688b60475907ef1f3326ec13acb1d95c0fb248b250feeb59b1a96ce8fa61f7c",
+      "evidenceIds": [
+        "sha256:d688b60475907ef1f3326ec13acb1d95c0fb248b250feeb59b1a96ce8fa61f7c"
+      ],
+      "kind": "ai.usage",
+      "lane": "cursor-cli",
+      "occurredAt": "2026-09-30T12:47:49.059Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "ai.usage via cursor-cli durationApiMs=28141 durationMs=28141 isError=false toolCalls=12 [durationMs:source-reported, tokens.cache-write:source-reported, tokens.cached-input:source-reported, tokens.input:source-reported, tokens.output:source-reported]"
+    },
+    {
+      "eventId": "sha256:e5f89debe7d4b59d00e041f23ea90aa009c23ae5b160479e495e053affef2696",
+      "evidenceIds": [
+        "sha256:e5f89debe7d4b59d00e041f23ea90aa009c23ae5b160479e495e053affef2696"
+      ],
+      "kind": "ai.session",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T12:47:49.504Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "ai.session via cursor-hooks durationMs=30788 isBackgroundAgent=false rawUsagePresent=false supportedHookEvent=true toolCall=false [occurredAt:source-reported, payload.durationMs:source-reported]"
+    },
+    {
+      "eventId": "f4780b9bb2d2dcdfa64c1d3a4ef95dfb7d7b77080beb1f39609bf5057b063868",
+      "evidenceIds": [
+        "f4780b9bb2d2dcdfa64c1d3a4ef95dfb7d7b77080beb1f39609bf5057b063868"
+      ],
+      "kind": "git.observation",
+      "lane": "git-observation",
+      "occurredAt": "2026-09-30T12:47:51.648Z",
+      "occurredAtPrecision": "second",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "git.observation via git-observation conflictedFiles=0 stagedFiles=0 trackedChangedFiles=0 uncommittedBinaryFiles=0 uncommittedLinesAdded=0 uncommittedLinesDeleted=0"
+    },
+    {
+      "eventId": "sha256:aa55759b81af19a8a8b7fdad782a393013fd176448237a3a71f904c5569b2822",
+      "evidenceIds": [
+        "sha256:aa55759b81af19a8a8b7fdad782a393013fd176448237a3a71f904c5569b2822"
+      ],
+      "kind": "git.diff",
+      "lane": "git-history",
+      "occurredAt": null,
+      "occurredAtPrecision": "unknown",
+      "orderingUncertain": true,
+      "origin": "imported",
+      "summary": "git.diff via git-history binaryFiles=0 filesChanged=0 linesAdded=0 linesDeleted=0 pathsTruncated=false untrackedFiles=1 (time unavailable)"
+    },
+    {
+      "eventId": "3d8d8fcb96bfa997a901397e0e33ce85f3aa8e75782a3c2be464cf1c0f05065c",
+      "evidenceIds": [
+        "3d8d8fcb96bfa997a901397e0e33ce85f3aa8e75782a3c2be464cf1c0f05065c"
+      ],
+      "kind": "test.result",
+      "lane": "local-test",
+      "occurredAt": null,
+      "occurredAtPrecision": "unknown",
+      "orderingUncertain": true,
+      "origin": "imported",
+      "summary": "test.result via local-test durationMs=0 errors=0 failed=0 failingTestsTruncated=false passed=2 skipped=0 [durationMs:source-reported, errors:source-reported, failed:source-reported, passed:source-reported, skipped:source-reported, tests:source-reported] (time unavailable)"
+    },
+    {
+      "eventId": "54971a7e8832db006b1b573ce0d1c2ff38a8e4fcae8732209c6b9947339d42a5",
+      "evidenceIds": [
+        "54971a7e8832db006b1b573ce0d1c2ff38a8e4fcae8732209c6b9947339d42a5"
+      ],
+      "kind": "test.result",
+      "lane": "local-test",
+      "occurredAt": null,
+      "occurredAtPrecision": "unknown",
+      "orderingUncertain": true,
+      "origin": "imported",
+      "summary": "test.result via local-test durationMs=0 errors=0 failed=0 failingTestsTruncated=false passed=2 skipped=0 [durationMs:source-reported, errors:source-reported, failed:source-reported, passed:source-reported, skipped:source-reported, tests:source-reported] (time unavailable)"
+    },
+    {
+      "eventId": "sha256:4ba29166d5f9e3aef6279abdd1acbf8cca63c102140585a6218a68ea34ed51ba",
+      "evidenceIds": [
+        "sha256:4ba29166d5f9e3aef6279abdd1acbf8cca63c102140585a6218a68ea34ed51ba"
+      ],
+      "kind": "ai.usage",
+      "lane": "cursor-transcripts",
+      "occurredAt": null,
+      "occurredAtPrecision": "unknown",
+      "orderingUncertain": true,
+      "origin": "imported",
+      "summary": "ai.usage via cursor-transcripts assistantMessages=7 toolCalls=12 turnIndex=0 [charge:source-reported, estimates.visibleTextTokens:estimated] (time unavailable)"
+    }
+  ],
+  "lanes": [
+    "cursor-cli",
+    "cursor-hooks",
+    "cursor-transcripts",
+    "git-history",
+    "git-observation",
+    "local-test"
+  ],
+  "nextCursor": null,
+  "snapshotId": "snap_571314886feae9d12c01cc488e80984d",
+  "total": 29
+}

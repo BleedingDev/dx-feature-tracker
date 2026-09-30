@@ -1,0 +1,3 @@
+src/cart.ts(12,5): error TS2322: Type 'string' is not assignable to type 'number'.
+src/cart.ts(30,1): error TS2304: Cannot find name 'totl'.
+src/checkout.ts(4,10): error TS2322: Type 'undefined' is not assignable to type 'Order'.

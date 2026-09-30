@@ -1,0 +1,75 @@
+{
+  "node": "backfill",
+  "status": "degraded",
+  "generated": "2026-09-30T15:02+02:00",
+  "decision": "D8 retroactive analysis",
+  "owned": [
+    "packages/core/src/dx/correlation/branch-at-time/timeline.ts",
+    "packages/core/src/dx/correlation/branch-at-time/git.ts",
+    "packages/core/src/dx/correlation/branch-at-time/attribute.ts",
+    "packages/core/src/dx/correlation/branch-at-time/pipeline.ts",
+    "packages/core/src/dx/metrics/episodes/metric.ts",
+    "packages/core/test/dx/branch-at-time.test.ts",
+    "packages/core/test/dx/episodes.test.ts"
+  ],
+  "sharedFilesEdited": [],
+  "registry": {
+    "episodesMetricRegistered": false,
+    "reason": "Product owner deferred episodes; kept secondary and unregistered until the re-attribution step is wired into the pipeline. One-line registration when wanted: import { episodesMetric } from \"../metrics/episodes/metric.js\" and add episodesMetric to allMetrics.",
+    "correlatorDescriptor": "historicalBranchDescriptor (correlation/branch-at-time, degraded) is exported, not registered"
+  },
+  "exports": {
+    "branchAt": "branchAt(timeline, instantMs, options?) -> { branch, method: reflog|commit-graph|current|unknown, confidence, attribution, detached, reason }",
+    "loadWorktreeTimeline": "loadWorktreeTimeline(gitRunner, worktree) -> { timeline, commitBranches }",
+    "attributeHistoricalBranches": "attributeHistoricalBranches(events, { timelines, commitBranches, options? }) -> { events (context.branch rewritten, payload.historicalBranch label), attributions }",
+    "reattributeHistoricalBranches": "Effect requiring ChildProcessSpawner: loads timelines for every worktree in the events plus extra paths, then attributes",
+    "summarizeAttribution": "per-branch counts by basis and method, plus how many moved from the collect-time branch",
+    "makeHistoricalBranchCorrelator": "DxCorrelator view (targetKind branch)",
+    "episodesMetric": "DxMetric dx.metric.episodes (unregistered)"
+  },
+  "attributionOrder": [
+    "live-capture: hook/command-capture events keep their branch (confidence 1)",
+    "scored-commit: identity.commitSha on a commit reachable from exactly one local branch (strong, 0.9)",
+    "worktree-at-time: context.worktreePath or payload workspacePath/worktreePath/cwd/workspaceRoot -> branchAt(occurredAt)",
+    "linked-request: same requestId/generationId/sessionId as an attributed event (provisional, max 0.8)",
+    "unassigned"
+  ],
+  "branchAtMethods": {
+    "reflog": "HEAD reflog of that worktree; confidence 0.95; detached HEAD -> branch null, unassigned",
+    "commit-graph": "nearest branch-reflog commit entry or branch-exclusive commit within 24h; provisional; 0.7 bracketed, 0.5 one side, 0.35 neighbours disagree",
+    "current": "no HEAD reflog, instant after current branch tip; provisional 0.4",
+    "unknown": "nothing applies"
+  },
+  "inventory": {
+    "method": "node:sqlite backup() copies in an owned temp dir via /Users/satan/bin/owned-temp-dir (cleaned, 2.4 MB); counts and date ranges only",
+    "globalStorage/state.vscdb": { "composerData": 1, "composerCreated": "2026-09-30T10:46Z", "bubbles": 0, "composerHeaders": 3, "withUsageData": 0 },
+    "workspaceStorage": { "workspaces": 1, "composerList": "none" },
+    "ai-code-tracking.db": { "ai_code_hashes": 38, "range": "2026-09-30T12:13Z..12:55Z", "scored_commits": 0, "tracked_file_content": 7, "conversation_summaries": 0, "rowsReferencingThisRepo": 0 },
+    "~/.cursor/projects": { "projects": 33, "realRepoProjects": 2, "agentTranscriptFiles": 17, "range": "2026-09-30T12:13Z..12:55Z" },
+    "~/.cursor/chats": { "files": 32, "storeDbs": 17, "range": "2026-09-30T12:13Z..12:55Z" },
+    "thisRepoGit": { "commits": "2026-09-30T13:43..14:03+02:00", "headReflogEntries": 5, "branches": ["main"] },
+    "conclusion": "Every Cursor record on this host is from 2026-09-30 and all AI rows come from scratch demo repos. There is no month-old Cursor history here, so the look-back window on this machine is hours, not weeks."
+  },
+  "limits": [
+    "HEAD reflog retention: gc.reflogExpire default 90 days (30 days for unreachable entries). Older instants use provisional commit-graph evidence or stay unassigned.",
+    "Commit-graph evidence uses branch-exclusive commits and branch-reflog commit entries only. History shared with other branches and deleted branches give no evidence.",
+    "Cursor Auto mode: the local DB and ai-code-tracking.db record model 'default'. Only the usage CSV or dashboard names the real model.",
+    "Usage CSV rows have no workspace or request id, so they stay unassigned unless a local event shares a request or conversation id.",
+    "Composer rows keep only the latest model and usage per chat (B06). Retroactive totals are only as complete as what Cursor kept.",
+    "Linked worktrees need their own worktree path in the event. A global row without a path is not guessed."
+  ],
+  "checks": [
+    { "argv": "pnpm --filter @rat-stack/core exec vitest run test/dx/branch-at-time.test.ts test/dx/episodes.test.ts", "exit": 0, "result": "5 passed" },
+    { "argv": "pnpm exec oxlint <7 owned files>", "exit": 0 },
+    { "argv": "pnpm exec oxfmt --check <7 owned files>", "exit": 0 },
+    { "argv": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "result": "0 errors in owned files; the one error is in collectors/cursor-usage-api/session.ts (another owner, added concurrently)" },
+    { "argv": "node inventory.mjs under owned-temp-dir", "exit": 0 },
+    { "argv": "live probe: loadWorktreeTimeline on this repo", "exit": 0, "result": "reflog from 2026-09-30T11:43:55Z; main -> detached (pull --rebase) -> main; now = main/reflog/0.95; 30 days ago = unknown (before the repo existed)" },
+    { "argv": "node apps/cli/dist/cli.js dx analyze", "exit": 0, "result": "no dx.episode.* results (episodes unregistered)" }
+  ],
+  "b24": "No change to B24. correlateFlights reads context.branch, so running attributeHistoricalBranches on snapshot events before correlateFlights and costByBranch gives historical flights without touching flight/*.",
+  "integrationRequests": [
+    "A02/CLI owner: in analyze/history, before metrics, run reattributeHistoricalBranches(snapshot.events, [worktree]) and pass the rewritten events to costByBranch, accountAiUsageByBranch, correlateFlights and the metrics. Show summarizeAttribution next to the branch total.",
+    "Snapshot selection by branch has to happen after re-attribution. Otherwise past rows that were stored under the collect-time branch are filtered out before they can move."
+  ]
+}

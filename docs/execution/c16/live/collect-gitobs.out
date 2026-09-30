@@ -1,0 +1,28 @@
+{
+  "adapterId": "git-observation",
+  "coverage": {
+    "adapterId": "git-observation",
+    "expectedItems": null,
+    "gaps": [
+      {
+        "code": "observation-not-history",
+        "message": "Working-tree state is sampled only when collect runs; edits made and reverted between observations are not seen."
+      },
+      {
+        "code": "reflog-local-retention",
+        "message": "Branch reflog is local to this clone and expires with git gc; branches fetched or created elsewhere have no creation entry."
+      },
+      {
+        "code": "no-ai-attribution",
+        "message": "Git observation carries no evidence of who or what authored a change; attribution stays unassigned."
+      }
+    ],
+    "observedItems": 2,
+    "state": "partial",
+    "watermark": "2026-09-30T13:07:33.639Z",
+    "windowFrom": "2026-09-30T13:06:52.000Z",
+    "windowTo": "2026-09-30T13:07:33.639Z"
+  },
+  "duplicates": 0,
+  "inserted": 2
+}

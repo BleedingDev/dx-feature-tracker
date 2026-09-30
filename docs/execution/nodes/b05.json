@@ -1,0 +1,59 @@
+{
+  "id": "B05",
+  "status": "degraded",
+  "role": "core-candidate",
+  "deliverable": "Decode supported Agent/Tab/tool hooks, atomic event spool and optional raw stop-token fields with version/presence/dedup checks.",
+  "owned_files": [
+    "packages/core/src/dx/collectors/cursor-hooks/raw-payload.ts",
+    "packages/core/src/dx/collectors/cursor-hooks/spool-record.ts",
+    "packages/core/src/dx/collectors/cursor-hooks/sanitize.ts",
+    "packages/core/src/dx/collectors/cursor-hooks/decode.ts",
+    "packages/core/src/dx/collectors/cursor-hooks/spool.ts",
+    "packages/core/src/dx/collectors/cursor-hooks/handler.ts",
+    "packages/core/src/dx/collectors/cursor-hooks/collector.ts",
+    "packages/core/test/dx/b05.test.ts",
+    "packages/core/test/dx/fixtures/b05/",
+    "docs/execution/nodes/b05.json",
+    "docs/execution/nodes/b05.md"
+  ],
+  "contract_digest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090 (dx.contracts.v1)",
+  "descriptor_export": {
+    "collector": "cursorHooksCollector from packages/core/src/dx/collectors/cursor-hooks/collector.ts",
+    "descriptor": "cursorHooksDescriptor (id collector.cursor-hooks, readiness degraded)",
+    "hook_handler": "handleCursorHook(stdinText, { cwd, now, spoolDir, resolveGit }) and resolveGitContext from packages/core/src/dx/collectors/cursor-hooks/handler.ts",
+    "default_spool": "DEFAULT_SPOOL_RELATIVE = .dx-flight-recorder/cursor-hooks-spool (relative to the git worktree top level) from spool.ts"
+  },
+  "fixture_ids": ["b05.agent-turns", "b05.duplicate-stop", "b05.tab-edit", "b05.stop-usage-raw", "b05.malformed"],
+  "source_probe": {
+    "cursor_ide": "3.22.12 (A06 probe)",
+    "cursor_agent_cli": "2026.09.28-64d2043 present; `cursor-agent status` -> Not logged in; CURSOR_API_KEY unset",
+    "hook_event_names": "cross-checked against event names (names only) registered in ~/.cursor/hooks.json on this host: beforeSubmitPrompt, stop, preToolUse, postToolUse, postToolUseFailure, beforeShellExecution, beforeMCPExecution, afterAgentResponse",
+    "live_capture": "not demonstrated: cursor-agent is not authenticated on this host, so no real hook payload was produced"
+  },
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b05.test.ts", "exit": 0, "result": "11 passed"},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json (filtered to cursor-hooks and b05 paths)", "exit": 0, "result": "0 diagnostics in B05 files; whole-package exit is non-zero because of other owners' files (codex, claude)"},
+    {"cmd": "pnpm exec oxlint packages/core/test/dx/b05.test.ts packages/core/src/dx/collectors/cursor-hooks", "exit": 0, "result": "clean"},
+    {"cmd": "pnpm exec oxfmt --check <B05 files>", "exit": 0, "result": "formatted"}
+  ],
+  "supported_fields": [
+    "ai.request (beforeSubmitPrompt): promptChars, attachmentCount; prompt text never stored",
+    "ai.turn (stop): status, loopCount, model, identity.turnId = conversation_id:generation_id; duplicate stops collapse",
+    "ai.session (sessionStart/sessionEnd): durationMs (source duration_ms), reason, finalStatus, isBackgroundAgent, composerMode",
+    "ai.tool-edit (afterFileEdit / afterTabFileEdit): filePath, editCount, linesAdded/linesRemoved (derived from edit strings, method=derived), surface agent|tab",
+    "other with payload.toolCall=true (postToolUse, postToolUseFailure): toolName, durationMs; count these for agent/tool calls",
+    "other (pre*/before*/afterShell/afterMCP/afterAgentResponse/afterAgentThought/subagent*/preCompact): toolName, commandBin, commandHash, durationMs; toolCall=false to avoid double counting",
+    "ai.usage (stop with numeric token/usage/cost/cache/credit/price/spend keys): payload.rawUsage by raw path, semanticsVerified=false, normalizedCategories=null",
+    "context: branch, headSha, repoCommonDir, worktreePath resolved by local git at capture time"
+  ],
+  "gaps": [
+    "Live Cursor capture not demonstrated: cursor-agent is Not logged in on this host. Needs a logged-in cursor-agent or IDE session after C13 installs project .cursor/hooks.json.",
+    "A02/A07 must build a hook entrypoint that reads stdin, calls handleCursorHook(stdin, { cwd: process.cwd(), now: new Date(), resolveGit: resolveGitContext, spoolDir: null }), writes result.stdout and exits 0.",
+    "C13 must register it in project .cursor/hooks.json only. Recommended events: sessionStart, sessionEnd, beforeSubmitPrompt, stop, postToolUse, postToolUseFailure, afterFileEdit, afterTabFileEdit. The before*/preToolUse replies ({permission:allow}) are unverified against live Cursor, so leave those hooks out.",
+    "The .dx-flight-recorder/ directory should be gitignored (not a B05-owned file).",
+    "Stop-hook token/cost fields: no documented Cursor fields were observed, so none are claimed. Any numeric usage-like key is kept raw and unverified. B30 must not sum these until a semantic probe passes.",
+    "occurredAt is the hook capture time. Cursor hook payloads carry no source timestamp.",
+    "Hook events start at install; earlier history needs B07/B08 labelled import.",
+    "Git resolution fails in an unborn repo (no commit yet), so context stays null."
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "origin": "fixture",
+  "note": "Synthetic B37 fixture events. Secret-shaped values are assembled at test time, never committed.",
+  "events": [
+    {
+      "id": "b37-evt-usage",
+      "adapterId": "cursor-hooks",
+      "kind": "ai.usage",
+      "ref": "cursor-hooks:spool/2026-09-30/stop-0001.json",
+      "hash": "sha256:aaaa000000000000000000000000000000000000000000000000000000000001",
+      "payload": {
+        "model": "fixture-model",
+        "usage": {
+          "inputTokens": 1200,
+          "outputTokens": 340,
+          "cachedInputTokens": null
+        },
+        "prompt": "please refactor the billing module and keep secrets out",
+        "status": "completed"
+      }
+    },
+    {
+      "id": "b37-evt-command",
+      "adapterId": "shell-command",
+      "kind": "command.run",
+      "ref": "file:///Users/fixture-user/work/repo/.dx/spool/cmd-0002.json",
+      "hash": null,
+      "payload": {
+        "command": "pnpm test --filter core",
+        "exitCode": 1,
+        "durationMs": 5321,
+        "stdout": "FAIL test/dx/b37.test.ts",
+        "cwd": "/Users/fixture-user/work/repo"
+      }
+    },
+    {
+      "id": "b37-evt-empty",
+      "adapterId": "git-history",
+      "kind": "git.commit",
+      "ref": "git:commit/0123456789abcdef0123456789abcdef01234567",
+      "hash": "sha256:aaaa000000000000000000000000000000000000000000000000000000000003",
+      "payload": {}
+    }
+  ]
+}

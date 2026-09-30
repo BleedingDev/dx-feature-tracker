@@ -1,0 +1,43 @@
+{
+  "id": "B08",
+  "plan": "dxfr-rat-b08-collectors-cursor-usage-export",
+  "status": "degraded",
+  "readiness": "degraded",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "ownedFiles": [
+    "packages/core/src/dx/collectors/cursor-usage-export/parse.ts",
+    "packages/core/src/dx/collectors/cursor-usage-export/descriptor.ts",
+    "packages/core/src/dx/collectors/cursor-usage-export/collector.ts",
+    "packages/core/test/dx/b08.test.ts",
+    "packages/core/test/dx/fixtures/b08/usage-kind-cache-split.csv",
+    "packages/core/test/dx/fixtures/b08/usage-legacy-flat.csv",
+    "packages/core/test/dx/fixtures/b08/usage-team-user.csv",
+    "packages/core/test/dx/fixtures/b08/usage-unsupported.csv"
+  ],
+  "exports": {
+    "collector": "cursorUsageExportCollector (collector.ts) : DxCollector<FileSystem | Crypto>",
+    "descriptor": "cursorUsageExportDescriptor (descriptor.ts), id collector.cursor-usage-export",
+    "probe": "probeCursorUsageExport(path) (collector.ts) -> ProbeReceipt",
+    "adapterId": "cursor-usage-export (sourceKind usage-csv)"
+  },
+  "fixtureIds": ["b08-usage-kind-cache-split", "b08-usage-legacy-flat", "b08-usage-team-user", "b08-usage-unsupported"],
+  "sourceProbe": {
+    "state": "absent",
+    "note": "No user-exported Cursor usage CSV exists on this host (docs/execution/source-probes.json source.cursor.usage-csv not-attempted; ~/Downloads has no usage csv). Parser is fixture-tested only."
+  },
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b08.test.ts", "exit": 0, "result": "7/7 passed"},
+    {"cmd": "pnpm exec oxlint <b08 files>", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check <b08 files>", "exit": 0},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "result": "0 errors in B08 files; 13 errors in other owners' files (cursor-transcripts/parse.ts, opencode/collector.ts, test/dx/b23.test.ts)"}
+  ],
+  "supportedFields": ["occurredAt", "payload.model", "payload.maxMode", "payload.rawCategory", "payload.tokens.{input,cached-input,cache-write,output,reasoning,total}", "payload.rawTokens", "payload.costUsd", "payload.costLedger", "payload.charge", "payload.requestUnits", "payload.batchId"],
+  "gaps": [
+    "shape-unverified: no real Cursor usage export on host; readiness degraded, not ready",
+    "branch-unassigned: CSV rows have no branch/request/session id; every event has payload.attribution=unassigned, requestKey=null, context.branch=null. Per-branch cost needs a time-window correlator (B26) against branch activity intervals.",
+    "token-category-mapping-unverified: raw column names kept in payload.rawTokens",
+    "not a live Cursor capture route; B05 (hooks) / B07 (transcripts) must demonstrate the ready non-admin AI route",
+    "integration owner (A02/A07) must register the collector; B08 did not edit barrels/registry"
+  ]
+}

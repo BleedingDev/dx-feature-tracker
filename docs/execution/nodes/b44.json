@@ -1,0 +1,72 @@
+{
+  "id": "B44",
+  "role": "optional",
+  "status": "disabled",
+  "deliverable": "Normalize prospective SDK run/turn usage and settlement records with explicit flight tags; instrumented traffic scope only, no new assistant UI.",
+  "ownedFiles": [
+    "packages/core/src/dx/collectors/cursor-sdk/parse.ts",
+    "packages/core/src/dx/collectors/cursor-sdk/collector.ts",
+    "packages/core/test/dx/b44.test.ts",
+    "packages/core/test/dx/fixtures/b44/flight-record.jsonl",
+    "packages/core/test/dx/fixtures/b44/live-sdk-1.0.34-unauthenticated-run.jsonl",
+    "docs/execution/nodes/b44.json",
+    "docs/execution/nodes/b44.md"
+  ],
+  "frozenContract": {
+    "version": "dx.contracts.v1",
+    "digest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+    "digestOf": "packages/core/src/dx/contracts/version.ts CONTRACT_DIGEST"
+  },
+  "descriptorExport": {
+    "module": "packages/core/src/dx/collectors/cursor-sdk/collector.ts",
+    "descriptor": "cursorSdkDescriptor",
+    "collector": "cursorSdkCollector",
+    "pureParser": "parseCursorSdkFlightRecord",
+    "collectorRequirements": "FileSystem.FileSystem (NodeServices.layer)",
+    "descriptorId": "collector/cursor-sdk",
+    "adapterId": "cursor-sdk",
+    "readiness": "disabled"
+  },
+  "fixtureIds": ["b44-cursor-sdk-flight-record"],
+  "inputFormat": {
+    "schema": "dxfr.cursor-sdk.v1",
+    "line": "{schema, record: stream|result|settlement, recordedAt ISO, flight: {branch (required), flightId?}, ...}",
+    "stream": "message = SDKMessage; only type usage and tool_call are read (tool args/result never read); all other types ignored",
+    "result": "agentId + result = Run.wait() RunResult",
+    "settlement": "agentId + usage = agent.getUsage() AgentUsage"
+  },
+  "sourceProbe": {
+    "observedAt": "2026-09-30T12:27:32Z",
+    "results": [
+      { "cmd": "npm view @cursor/sdk version", "exit": 0, "result": "1.0.34 (types inspected: TokenUsage, UsageCost, RunUsage, AgentUsage, RunResult, SDKMessage)" },
+      { "cmd": "real local Agent.create({local:{cwd}, model:{id:'composer-2.5'}}) + send + stream + wait + getUsage in owned temp dir/scratch git repo on branch feat/sdk-live", "exit": 0, "result": "SDK ran; run status error '[unknown] Invalid User API Key'; no usage message; getUsage() unauthenticated. No CURSOR_API_KEY on host (cursor-agent login is not accepted by the SDK)." }
+    ],
+    "conclusion": "Real SDK record shape demonstrated and parsed (live fixture), but no token/cost-bearing real run is possible without a user CURSOR_API_KEY. Kept disabled."
+  },
+  "supportedFields": [
+    "context.branch (from explicit flight tag)",
+    "identity.sessionId (agentId)",
+    "identity.turnId (runId / usage UUID)",
+    "identity.requestId",
+    "payload.tokens.{input,output,cacheRead,cacheWrite,reasoning}",
+    "payload.charge (chargedCents/100, source-reported USD)",
+    "payload.rawCostUsd (informational, not a charge)",
+    "payload.agentDurationMs",
+    "payload.runStatus",
+    "payload.toolCall/toolName/status (ok|failed|running)"
+  ],
+  "countingRule": "Per agent: if a getUsage() settlement exists, settlement per-run rows are the only token/charge-counting ai.usage events and run results become ai.request (runTokens informational); otherwise the run result with usage is ai.usage (charge null, cost-unsettled gap). Stream usage messages are ai.turn liveTurnTokens (not counted). Agent totals exceeding per-run sums go to an aggregate provider-bucket event.",
+  "checks": [
+    { "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b44.test.ts", "exit": 0, "result": "5/5 passed" },
+    { "cmd": "pnpm exec oxlint <3 owned ts files>", "exit": 0 },
+    { "cmd": "pnpm exec oxfmt --check <3 owned ts files>", "exit": 0 },
+    { "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "result": "0 errors in B44 files; 6 errors in other owners' files (collectors/opencode/collector.ts, test/dx/audits/c10.test.ts, c12.test.ts)" }
+  ],
+  "gaps": [
+    "No CURSOR_API_KEY on host: no real token/cost-bearing SDK run demonstrated; readiness stays disabled.",
+    "Instrumented traffic only: IDE, cursor-agent CLI and uninstrumented SDK traffic are invisible to this adapter.",
+    "Settlement refreshes across separate imports keep the first stored event (same eventId); within one import the latest snapshot wins.",
+    "Not registered in the collector registry/CLI (A02/A07 own integration); register only after a keyed live run."
+  ],
+  "reEnable": "User sets CURSOR_API_KEY, runs the instrumented wrapper (pattern in b44.md) on a scratch branch, imports the JSONL with --input, then flip readiness to degraded and have A02/A07 register it."
+}

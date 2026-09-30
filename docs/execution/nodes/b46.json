@@ -1,0 +1,49 @@
+{
+  "id": "B46",
+  "role": "optional",
+  "status": "degraded",
+  "contract": {
+    "version": "dx.contracts.v1",
+    "digest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+    "contractsDocSha256": "2701e1aa3687aea5eb80420a1fbc87866eef332bc54e9311c8f61d4b99b9519d"
+  },
+  "ownedFiles": [
+    "packages/core/src/dx/collectors/entire/parse.ts",
+    "packages/core/src/dx/collectors/entire/collector.ts",
+    "packages/core/test/dx/b46.test.ts",
+    "packages/core/test/dx/fixtures/b46/"
+  ],
+  "exports": {
+    "collector": "entireCheckpointsCollector (DxCollector<FileSystem.FileSystem>) from packages/core/src/dx/collectors/entire/collector.ts",
+    "descriptor": "entireCheckpointsDescriptor (id collector/entire-checkpoints, readiness degraded)",
+    "adapterId": "entire (ENTIRE_ADAPTER_ID, parse.ts)",
+    "pureParser": "parseEntireCheckpoints(files, options) from parse.ts"
+  },
+  "fixtureIds": ["b46-entire-delta-windows", "b46-entire-cumulative-unverified"],
+  "sourceProbe": {
+    "id": "source.entire",
+    "state": "absent",
+    "evidence": "docs/execution/source-probes.json: no entire binary, ~/.entire or entire/* branch (exit 1)"
+  },
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b46.test.ts", "exit": 0, "result": "5 passed"},
+    {"cmd": "pnpm exec oxlint <3 owned files>", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check <3 owned files>", "exit": 0},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "note": "0 errors in B46 files; failures are in other owners' files (cursor-cli, cursor-transcripts, cursor-usage-export, git-ai, manual, opencode) at 14:12 CEST"}
+  ],
+  "supportedFields": [
+    "checkpoint root (provenance.attestation) with rootTokenUsage as unsummed aggregate-alternative ledger",
+    "ai.session: sessionId, agent, model, checkpointIds",
+    "ai.turn: transcript delta window (start/end line, tool calls, tool names, message counts); tokensFromTranscript null",
+    "ai.usage per checkpoint+session: input, cachedInput, cacheWrite, output, apiCallCount, subagentTokens (separate), requestKey source:entire:session:<sid>:turn:<checkpointId>, provisional attribution",
+    "context.branch from Entire checkpoint branch; allocation provisional"
+  ],
+  "gaps": [
+    "Entire absent on host: fixture-only, layout (entire/checkpoints/v1 shape) not verified against a live Entire release",
+    "Input is an operator-extracted checkpoint directory; the collector never reads refs, initializes Entire or pushes",
+    "Cost unavailable (tokens only); tokens.total unavailable (not derived)",
+    "Sessions spanning checkpoints without strictly increasing checkpoint_transcript_start: only latest counted (cumulative-unverified-collapsed gap, possible understatement)",
+    "Not registered: integration owner (A02/A07) must add entireCheckpointsCollector to the registry and map --source entire; B46 does not edit barrels/registry",
+    "AiSourceKind 'entire' sits below claude-jsonl/codex-session in precedence; overlap with those sources for the same session is left to B26/B30"
+  ]
+}

@@ -1,0 +1,112 @@
+{
+ "id": "A02",
+ "status": "ready",
+ "owner": "integration owner (A02 -> A07 -> A08 baton)",
+ "contract": {
+  "version": "dx.contracts.v1",
+  "digest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090"
+ },
+ "ownedFiles": [
+  "apps/cli/src/command.ts",
+  "apps/cli/src/surfaces.ts",
+  "packages/core/src/dx/index.ts",
+  "packages/core/src/dx/capabilities.ts",
+  "packages/core/src/dx/composition.ts",
+  "packages/core/src/dx/registry/registry.ts",
+  "packages/core/src/dx/registry/runtime.ts",
+  "packages/core/test/dx/integration/a02-spine.test.ts"
+ ],
+ "coAuthorNote": "A07 was started early and wrote parts of apps/cli/src/command.ts, surfaces.ts and composition.ts at 14:30-14:32; A02 reviewed and kept them (dx subcommands via toCommand plus Command.provide(dxStoreLive); hook command without the store). composition.ts now re-exports registry/runtime.ts plus A07's autoSources/commandLogPath.",
+ "descriptorExport": "buildRegistry() admits collectors + metrics + support descriptors through A08 admitDescriptors; disabled ones stay listed for dx_status",
+ "surfaces": {
+  "cli": [
+   "dx status",
+   "dx collect --source <id|alias> [--input] [--repo] [--flight]",
+   "dx mark --kind ...",
+   "dx analyze [--snapshotId|--asOf] [--repo] [--flight]",
+   "dx explain",
+   "dx evidence --evidenceIds JSON",
+   "dx hook (stdin JSON, no store)"
+  ],
+  "mcp": [
+   "dx_status",
+   "dx_collect",
+   "dx_mark",
+   "dx_analyze",
+   "dx_explain",
+   "dx_evidence",
+   "inspectFile"
+  ],
+  "env": {
+   "DX_STORE": "live store path override",
+   "DX_REPLAY": "1 = replay store (~/.dx-flight-recorder/replay.sqlite unless DX_STORE... note: DX_STORE is ignored in replay mode by B01 resolveStorePath)",
+   "DX_REPO": "default repo for MCP/CLI calls (else cwd)"
+  }
+ },
+ "fixtureIds": [
+  "a02-spine (generated temp git repo + one labelled fixture hook payload; no committed fixture)"
+ ],
+ "checks": [
+  {
+   "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/integration/a02-spine.test.ts",
+   "exit": 0,
+   "result": "3 passed"
+  },
+  {
+   "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json",
+   "exit": 0,
+   "note": "the opencode collector diagnostic has since been fixed by its owner"
+  },
+  {
+   "cmd": "pnpm --filter @rat-stack/cli exec tsc --noEmit -p tsconfig.json",
+   "exit": 0
+  },
+  {
+   "cmd": "pnpm exec oxlint <A02 files>",
+   "exit": 0
+  },
+  {
+   "cmd": "pnpm exec oxfmt --check <A02 files>",
+   "exit": 0
+  },
+  {
+   "cmd": "pnpm --filter @rat-stack/core run build; pnpm --filter @rat-stack/cli run build",
+   "exit": 0
+  },
+  {
+   "cmd": "owned-temp-dir smoke of the built CLI on scratch branch feature/smoke: dx hook | collect git-history | collect cursor-hooks | mark | analyze | explain | status",
+   "exit": 0,
+   "result": "dx.git.commits=1, lines-added=2; token/cost metrics unavailable (null); explain lanes cursor-hooks,git-history,manual; collect of disabled cursor-sdk exits 1 with its reason"
+  },
+  {
+   "cmd": "stdio MCP probe of the built CLI (initialize, tools/list, tools/call dx_analyze)",
+   "exit": 0,
+   "result": "tools inspectFile,dx_status,dx_analyze,dx_explain,dx_evidence,dx_collect,dx_mark; dx_analyze isError=false on branch feature/smoke; 0 non-JSON stdout lines; 0 stderr bytes"
+  },
+  {
+   "cmd": "pnpm --filter @rat-stack/cli exec vitest run",
+   "exit": 1,
+   "result": "13 passed, 1 failed: apps/cli/test/command.test.ts (not A02-owned) expects capabilities.length + 4 top-level commands; the new dx group makes it +5"
+  }
+ ],
+ "supportedFields": [
+  "per-branch selector (repoCommonDir + branch) resolved from local git for MCP and CLI",
+  "git commits/lines/files/uncommitted",
+  "cursor hook spool collection (tool calls)",
+  "manual markers",
+  "AI tokens/cost where collectors report them (unavailable otherwise)"
+ ],
+ "gaps": [
+  "GATE BLOCKER (not A02-owned): apps/cli/test/command.test.ts must expect `capabilities.length + 5` because the new `dx` group adds a top-level command. Until the gate or A01 applies that one-line change, cli vitest exits 1.",
+  "No live Cursor capture demonstrated by A02; the hook path is proven with a labelled fixture payload only. A07/C13 own live capture and installing .cursor/hooks.json with command `node <repo>/apps/cli/dist/cli.js dx hook`.",
+  "No metric computes branch time, active intervals or agent time; intervals is helper-only (dx.metric.intervals). Needs a metric owner.",
+  "No explicit agent/tool-call count metric; only friction tool-call-failure-rate.",
+  "B38 runCollect marks any collect with an input as origin=imported, so hook spool collection is labelled imported rather than live.",
+  "findCollector matches only exact ids or ids with a 'collector/' prefix; A02 adds canonicalSource aliasing (git-history -> collector.git-history, cursor-hooks -> collector.cursor-hooks).",
+  "Store flags --store/--replay are env-only (DX_STORE, DX_REPLAY=1) because capability commands derive flags from the frozen contract inputs.",
+  "MCP analyze does not write B38's cached report file (latest.json); only B38 runAnalyze does, and it is not wired to a CLI command.",
+  "repoCommonDir and worktreePath are realpath'd (resolveCanonicalGit) in both contextForRepo and the hook entrypoint. Without this, macOS /var and /private/var paths split hook events from CLI selectors.",
+  "The code-mode and devtools MCP variants expose only inspectFile. The dx_* tools are on the default `mcp` only."
+ ],
+ "concurrencyNote": "Two writers acted as A02/A07 in this scope at the same time (14:27-14:36), and neither was sequential. Both handoffs are merged here. The last A02 verification pass, at 14:36, re-ran every check listed below against the current tree."
+}

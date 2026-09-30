@@ -1,0 +1,1 @@
+{"hook_event_name": "afterTabFileEdit", "conversation_id": null, "generation_id": null, "cursor_version": "3.22.12", "workspace_roots": ["/fixture/workspace"], "file_path": "/fixture/workspace/src/b.ts", "edits": [{"old_string": "", "new_string": "x\ny"}]}

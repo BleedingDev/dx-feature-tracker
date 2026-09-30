@@ -1,0 +1,40 @@
+{
+  "id": "C12",
+  "status": "ready",
+  "owner": "native worker C12",
+  "contract": {
+    "version": "dx.contracts.v1",
+    "digest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090"
+  },
+  "ownedFiles": [
+    "packages/core/test/dx/audits/c12.test.ts",
+    "packages/core/test/dx/fixtures/c12/offline-flight.batch.json",
+    "packages/core/test/dx/fixtures/c12/garbage.batch.json",
+    "packages/core/test/dx/fixtures/c12/truncated.batch.json",
+    "packages/core/test/dx/fixtures/c12/wrong-shape.batch.json",
+    "docs/execution/c12/runtime-audit.md"
+  ],
+  "descriptorExport": null,
+  "fixtureIds": ["c12-offline-flight"],
+  "scenarios": {
+    "no-github": "pass",
+    "offline-fetch": "pass",
+    "no-repo": "pass (SourceUnavailable / InvalidInput)",
+    "store-busy-real-lock": "pass (StoreBusy -> spool -> idempotent drain)",
+    "corrupt-spool": "pass (quarantined to rejected/, valid batch imported)",
+    "corrupt-store-file": "pass (StoreError operation=open)",
+    "missing-adapter": "pass (InvalidInput / UnsupportedSource / SourceUnavailable)"
+  },
+  "checks": [
+    { "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/audits/c12.test.ts", "exit": 0, "result": "6 passed" },
+    { "cmd": "pnpm exec oxlint packages/core/test/dx/audits/c12.test.ts", "exit": 0 },
+    { "cmd": "pnpm exec oxfmt --check <c12 test + json fixtures>", "exit": 0 },
+    { "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "result": "0 diagnostics in C12 files; failures are in opencode collector and c10 test" }
+  ],
+  "gaps": [
+    "Offline audit intercepts fetch only, not raw sockets (static review found no network calls in src/dx).",
+    "Corrupt store file fails with a typed StoreError, but the CLI offers no recovery hint or path (A02/A07).",
+    "The argv/MCP exit-code mapping for these failures is not audited; it depends on A02/A07 wiring.",
+    "Live Cursor capture is out of C12 scope."
+  ]
+}

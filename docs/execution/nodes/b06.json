@@ -1,0 +1,47 @@
+{
+  "id": "B06",
+  "status": "ready",
+  "descriptorReadiness": "degraded",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "ownedFiles": [
+    "packages/core/src/dx/collectors/cursor-local-db/collector.ts",
+    "packages/core/src/dx/collectors/cursor-local-db/descriptor.ts",
+    "packages/core/src/dx/collectors/cursor-local-db/envelope.ts",
+    "packages/core/src/dx/collectors/cursor-local-db/map-ai-tracking.ts",
+    "packages/core/src/dx/collectors/cursor-local-db/map-state.ts",
+    "packages/core/src/dx/collectors/cursor-local-db/schemas.ts",
+    "packages/core/src/dx/collectors/cursor-local-db/snapshot.ts",
+    "packages/core/test/dx/b06.test.ts",
+    "packages/core/test/dx/fixtures/b06/state-vscdb-headers.json",
+    "packages/core/test/dx/fixtures/b06/state-vscdb-legacy-itemtable.json",
+    "packages/core/test/dx/fixtures/b06/ai-tracking.json"
+  ],
+  "exports": {
+    "collector": "cursorLocalDbCollector (packages/core/src/dx/collectors/cursor-local-db/collector.ts)",
+    "descriptor": "cursorLocalDbDescriptor (packages/core/src/dx/collectors/cursor-local-db/descriptor.ts)",
+    "adapterId": "cursor-local-db"
+  },
+  "fixtureIds": ["b06-state-vscdb-headers", "b06-state-vscdb-legacy-itemtable", "b06-ai-tracking"],
+  "requiredInputs": ["selectedInput: path to state.vscdb or ai-code-tracking.db (explicit opt-in)", "scratchDir (backup copy lives here, removed with -wal/-shm after read)"],
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b06.test.ts", "exit": 0, "result": "5/5 passed"},
+    {"cmd": "pnpm exec oxlint packages/core/src/dx/collectors/cursor-local-db/ packages/core/test/dx/b06.test.ts", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check <owned files>", "exit": 0},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "note": "0 errors in B06 files; 12 errors in other owners' files (manual/*, opencode/collector.ts, b22/b23 tests) at 14:14"}
+  ],
+  "sourceProbe": {
+    "cursorIde": "3.22.12", "cursorAgentCli": "2026.09.28-64d2043",
+    "stateVscdb": "~/Library/Application Support/Cursor/User/globalStorage/state.vscdb: layout state-vscdb/composer-headers recognized; 3 draft/empty-window composers, no bubbles, no usageData; scoped to a repo -> 0 events, 3 scope-excluded",
+    "aiTrackingDb": "~/.cursor/ai-tracking/ai-code-tracking.db: layout ai-tracking recognized",
+    "liveCapture": "cursor-agent -p (exit 0, session 79a43eaf...) created hello.ts in an owned scratch demo repo on branch feature/b06-demo; Cursor wrote 3 ai_code_hashes rows (source=cli, conversationId=session id); collector scoped to that repo emitted 3 ai.tool-edit events, coverage complete; scored_commits stayed empty after a CLI commit"
+  },
+  "supportedFields": ["ai.session: createdAt, lastUpdatedAt, model, mode, lines/files added/removed, contextMeter (notSpend)", "ai.turn: role, toolName, toolStatus, input/output tokens (source-reported; 0/0 treated as not recorded)", "ai.usage: usageData.costInCents as metered ledger (not billed charge), request count", "ai.tool-edit: source (composer/tab/cli), model, fileExtension, conversationId, toolCallRef", "provenance.attestation: scored_commits lines by source per branch"],
+  "gaps": [
+    "Live IDE state DB on this host has no conversations with tokens or usageData, so ai.turn/ai.usage paths are fixture-proven only",
+    "cursor-agent CLI does not write IDE state.vscdb; its token usage is in its own JSON output/hooks (other owners), not this DB",
+    "No billed charge from local DB; cached/reasoning token categories not present in bubble tokenCount",
+    "Workspace scoping relies on trackedGitRepos/workspaceIdentifier containing the repo path; unscoped drafts are excluded and counted",
+    "Integration (A02/A07) must register cursorLocalDbCollector and pass scratchDir; CLI --input selects the DB path"
+  ]
+}

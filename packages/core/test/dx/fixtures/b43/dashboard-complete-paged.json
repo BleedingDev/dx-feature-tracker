@@ -1,0 +1,71 @@
+{
+  "fixture": "b43-dashboard-complete-paged (synthetic)",
+  "pages": [
+    {
+      "request": { "page": 1, "pageSize": 2 },
+      "response": {
+        "totalUsageEventsCount": 3,
+        "usageEventsDisplay": [
+          {
+            "timestamp": "1790757600000",
+            "model": "claude-4.5-sonnet",
+            "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+            "requestsCosts": 1,
+            "isTokenBasedCall": true,
+            "requestId": "req-a",
+            "conversationId": "conv-1",
+            "tokenUsage": {
+              "inputTokens": 1200,
+              "outputTokens": 300,
+              "cacheReadTokens": 9000,
+              "cacheWriteTokens": 400,
+              "totalCents": 4.25
+            }
+          },
+          {
+            "timestamp": "1790757660000",
+            "model": "gpt-5",
+            "kind": "USAGE_EVENT_KIND_USAGE_BASED",
+            "requestsCosts": 2,
+            "isTokenBasedCall": true,
+            "requestId": "req-b",
+            "tokenUsage": {
+              "inputTokens": 500,
+              "outputTokens": 800,
+              "totalCents": 12.5
+            }
+          }
+        ]
+      }
+    },
+    {
+      "request": { "page": 2, "pageSize": 2 },
+      "response": {
+        "totalUsageEventsCount": 3,
+        "usageEventsDisplay": [
+          {
+            "timestamp": "1790757660000",
+            "model": "gpt-5",
+            "kind": "USAGE_EVENT_KIND_USAGE_BASED",
+            "requestsCosts": 2,
+            "isTokenBasedCall": true,
+            "requestId": "req-b",
+            "tokenUsage": {
+              "inputTokens": 500,
+              "outputTokens": 800,
+              "totalCents": 12.5
+            }
+          },
+          {
+            "timestamp": "1790757720000",
+            "model": "auto",
+            "kind": "USAGE_EVENT_KIND_ERRORED_NOT_CHARGED",
+            "requestsCosts": 0,
+            "isTokenBasedCall": false,
+            "usageBasedCosts": "$0.00"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "fixtureId": "b39-branch-flight",
+  "origin": "fixture",
+  "note": "Synthetic fixture events for one branch flight; no real prompts or content.",
+  "repoCommonDir": "/fixture/repo/.git",
+  "branch": "feature/b39-demo",
+  "flightId": "flight-b39",
+  "events": [
+    {
+      "eventId": "b39-evt-commit",
+      "adapterId": "git-observation",
+      "kind": "git.commit",
+      "occurredAt": "2026-09-30T12:05:00.000Z",
+      "hash": "sha256:b39000000000000000000000000000000000000000000000000000000000001",
+      "ref": "git:commit/abc123",
+      "payload": { "filesChanged": 3, "linesAdded": 40, "linesDeleted": 5 }
+    },
+    {
+      "eventId": "b39-evt-usage",
+      "adapterId": "cursor-hooks",
+      "kind": "ai.usage",
+      "occurredAt": "2026-09-30T12:01:00.000Z",
+      "hash": "sha256:b39000000000000000000000000000000000000000000000000000000000002",
+      "ref": "cursor-hooks:spool/stop-0001.json",
+      "payload": {
+        "inputTokens": 1200,
+        "outputTokens": 340,
+        "prompt": "fixture prompt text that must never be echoed"
+      }
+    }
+  ],
+  "late": {
+    "eventId": "b39-evt-late",
+    "adapterId": "shell-command",
+    "kind": "test.result",
+    "occurredAt": "2026-09-30T12:10:00.000Z",
+    "hash": "sha256:b39000000000000000000000000000000000000000000000000000000000003",
+    "ref": "shell:run/0001",
+    "payload": { "exitCode": 1, "failed": 2 }
+  }
+}

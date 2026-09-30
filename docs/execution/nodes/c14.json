@@ -1,0 +1,55 @@
+{
+  "id": "C14",
+  "status": "ready",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "deliverable": "Rehearsable live flight plus separately labelled adversarial fixture flight",
+  "ownedFiles": [
+    "docs/execution/c14/rehearse.sh",
+    "docs/execution/c14/README.md",
+    "docs/execution/c14/rehearsal-all.json",
+    "docs/execution/c14/rehearsal-all.log",
+    "docs/execution/c14/live/*",
+    "docs/execution/c14/adversarial/*",
+    "packages/core/test/dx/fixtures/c14/README.json",
+    "packages/core/test/dx/fixtures/c14/hook-payloads.jsonl",
+    "packages/core/test/dx/fixtures/c14/cursor-stream.jsonl",
+    "packages/core/test/dx/fixtures/c14/junit-fail.xml",
+    "packages/core/test/dx/fixtures/c14/expected.json"
+  ],
+  "descriptorExport": null,
+  "fixtureIds": ["c14.hook-payloads", "c14.cursor-stream", "c14.junit-fail", "c14.expected"],
+  "sourceProbe": { "cursorAgent": "2026.09.28-64d2043", "cli": "apps/cli/dist/cli.js (built)", "node": "24.18.0" },
+  "checks": [
+    { "cmd": "/Users/satan/bin/owned-temp-dir --run c14-rehearse -- bash docs/execution/c14/rehearse.sh all", "exit": 0, "at": "2026-09-30T15:02:40+02:00", "adversarial": "15/15 pass", "live": "10/10 pass" },
+    { "cmd": "pnpm exec oxfmt --check packages/core/test/dx/fixtures/c14/ docs/execution/c14/README.md", "exit": 0 }
+  ],
+  "live": {
+    "label": "LIVE FLIGHT (real cursor-agent)",
+    "branch": "feature/c14-live",
+    "snapshotId": "snap_b59b5ecb1b0620672d2be3340fd647ff",
+    "tokens": { "input": 25599, "output": 1381, "cachedInput": 122880, "reasoning": null },
+    "money": null,
+    "toolCalls": 24, "streamToolCallsCompleted": 12,
+    "agentMs": 33007, "activeMs": 34035, "branchAgeMs": 36930,
+    "commits": 1, "filesChanged": 2, "linesAdded": 16, "linesDeleted": 0,
+    "testRuns": 1, "testFailures": 0, "reworkedFiles": 0,
+    "userHooksJsonUnchanged": true
+  },
+  "adversarial": {
+    "label": "ADVERSARIAL FIXTURE FLIGHT (synthetic, origin=fixture/adversarial)",
+    "branch": "fixture/c14-adversarial",
+    "snapshotId": "snap_9212c53ab9ae5cb64b1e0604f135df37",
+    "asserted": ["no canary leak", "malformed hook stdin exit 0", "duplicate result counted once", "truncated line never counted", "result-without-usage disclosed", "re-collect inserts 0", "money and reasoning null", "test runs 1 failures 1", "commits 2", "explain non-empty"]
+  },
+  "gaps": [
+    "Tool-call double count confirmed again: live analyze dx.flight.tool-calls=24 while cursor-agent stream had 12 completed tool calls (C09 finding 2, flight-time metric owner).",
+    "Adversarial: afterShellExecution with exit_code 7 gives dx.friction.failed-commands=null and dx.flight.tool-calls=0; hook shell failures and stream tool_call lines are not counted from the fixture (flight-time / cursor-hooks owners).",
+    "Adversarial: duplicate stop hook collapsed (7 spool files -> 6 inserted) but collect reports duplicates=0 and dx.ai-usage.duplicate-rows-collapsed=0, so the collapse is not disclosed.",
+    "Adversarial: two commits re-touching math.mjs give dx.git.files-retouched=1 but dx.friction.reworked-files=0.",
+    "cursor-hooks coverage still carries stale gap live-capture-not-demonstrated (B05).",
+    "dx analyze --flight <branch> still broken (C09 finding 1, A02/A07); rehearsal uses repo + current branch.",
+    "Money unavailable on this host (cursor-agent reports no charge; no price table).",
+    "Checker code is embedded as node heredocs in rehearse.sh (like c09/c17 shell scripts); standalone .mjs checkers failed the repo ultracite fence and were removed, so the checker is not lint-covered.",
+    "Cursor IDE not driven; only cursor-agent CLI. CI/PR intentionally out of scope."
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "id": "B42",
+  "role": "optional",
+  "status": "disabled",
+  "finishedAt": "2026-09-30T14:08+02:00",
+  "contract": {
+    "version": "dx.contracts.v1",
+    "digest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+    "consumed": ["ExplainTimeline", "TimelineEntry", "EvidenceItem", "ModuleDescriptor"]
+  },
+  "ownedFiles": [
+    "apps/web/src/features/dx/b42/timeline-drilldown.ts",
+    "apps/web/src/features/dx/b42/descriptor.ts",
+    "apps/web/test/dx/b42.test.ts"
+  ],
+  "descriptorExport": "apps/web/src/features/dx/b42/descriptor.ts#timelineDrilldownDescriptor",
+  "descriptor": { "id": "surface/timeline-drilldown", "kind": "surface", "readiness": "disabled", "version": "0.1.0" },
+  "fixtureIds": ["b42-timeline-multi-lane", "b42-timeline-missing-time", "b42-timeline-truncated"],
+  "sourceProbe": "no source; apps/web is excluded from the workspace (docs/execution/commands.json workspace.apps_web_decision)",
+  "checks": [
+    { "cmd": "pnpm exec vitest run apps/web/test/dx/b42.test.ts", "cwd": "repo root", "exit": 0, "result": "4 passed" },
+    { "cmd": "pnpm exec oxlint <3 owned files>", "cwd": "repo root", "exit": 0 },
+    { "cmd": "pnpm exec oxfmt --check <3 owned files>", "cwd": "repo root", "exit": 0 },
+    { "cmd": "pnpm exec tsc --noEmit -p <scratch tsconfig extending packages/core/tsconfig.json, types:[]>", "cwd": "packages/core", "exit": 0 }
+  ],
+  "supportedFields": ["lanes", "entries.occurredAt", "entries.occurredAtPrecision", "entries.orderingUncertain", "entries.origin", "entries.evidence", "missingEvidenceIds", "originMix", "truncated"],
+  "gaps": [
+    "surface-not-in-workspace: apps/web is not a workspace package, so no tsconfig/typecheck/test task runs these files in turbo; checked only by the targeted commands above",
+    "no-live-report-input: not wired to dx_explain/dx_evidence or any transport; integration must not register it (readiness disabled)",
+    "feature boundary lint forbids importing packages/core model from apps/*/src/features, so the module uses local structural view types; the test proves the decoded core ExplainTimeline/EvidenceItem types are assignable"
+  ],
+  "dependenciesNeeded": []
+}

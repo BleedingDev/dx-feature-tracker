@@ -1,0 +1,11 @@
+{
+  "origin": "fixture/adversarial",
+  "label": "ADVERSARIAL FIXTURE FLIGHT - synthetic inputs, not real Cursor activity",
+  "note": "Hand-written adversarial inputs replayed through the real built CLI (dx hook, dx collect, dx analyze, dx explain) by docs/execution/c14/rehearse.sh adversarial. Values are invented. Canary strings C14-PROMPT-CANARY and sk-c14-CANARY-not-a-real-key must never reach the spool, store output, analyze or explain.",
+  "fixtures": {
+    "c14.hook-payloads": "hook-payloads.jsonl (one Cursor hook stdin payload per line; line 'MALFORMED' lines are sent verbatim)",
+    "c14.cursor-stream": "cursor-stream.jsonl (cursor-agent stream-json: duplicate result, result without usage, truncated line, run without result)",
+    "c14.junit-fail": "junit-fail.xml (3 tests, 1 failure)",
+    "c14.expected": "expected.json (assertions checked by docs/execution/c14/check-adversarial.mjs)"
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "gate": "G01",
+  "attempt": 1,
+  "milestone": "P1 v0 recorder: built CLI/MCP spine with real Cursor hook capture, real Git and per-branch analyze/explain",
+  "verdict": "pass",
+  "verdictScope": "v0 pass. Real Cursor capture was observed on this candidate (project hooks, real cursor-agent, real Git, per-branch analyze/explain). The token-bearing Cursor turn and the Cursor-as-MCP-client calls were NOT re-observed on this digest (Cursor free-plan usage limit); they rest on earlier live runs whose collector, metric, CLI/MCP and storage code is byte-unchanged here. Those two items are listed under pendingObservation and must be re-observed before any later gate claims them on its own digest.",
+  "decidedAt": "2026-09-30T15:15+02:00",
+  "deadline": { "hardStop": "2026-09-30T15:47+02:00", "freezeAt": "15:11:05", "note": "2-hour override; frozen after the optional cut (15:02) because enabled in-flight auto-usage edits broke typecheck until 15:09:21" },
+  "candidate": {
+    "baseCommit": "2e78dc9",
+    "freezeMethod": "APFS clone (cp -Rc) of the live checkout into the gate scratchpad at 15:11:05 so concurrent producers could not change the tested content; the fence, smoke and commit all ran on that clone, and the commit contains exactly the tested content plus doc-only handoffs.",
+    "testedDigest": "sha256:6f5c5ce5edb91e67e6573a989ef1711f08097912e32de35c9e1e94681895d8ce",
+    "digestMethod": "sha256 of (HEAD sha line + `shasum -a 256` lines of sorted modified+untracked non-ignored files, excluding this receipt), computed in the clone after the last gate repair and before the fence exit-0 run",
+    "contractVersion": "dx.contracts.v1",
+    "schemaVersion": "dx.contracts.v1",
+    "docOnlyDeltasAfterFence": ["docs/execution/nodes/* refreshed from live (handoffs only)", "docs/execution/c09/run restored to C09's 14:55 evidence (the gate's 15:12 rerun outputs are summarized under cursorEvidence)", "docs/execution/phases/g01.json"],
+    "excludedFromCommit": ["apps/web/ (B42 disabled optional web drilldown; not a workspace package, not in the build graph)", "docs/execution/scratch_c12.bak (stray backup)"]
+  },
+  "enabledModules": {
+    "ready": ["a01", "a02", "a03", "a04", "a05", "a06", "a09", "b01", "b02", "b03", "b04", "b06", "b20", "b22", "b23", "b24", "b26", "b27", "b28", "b30", "b34", "b35", "b36", "b37", "b38", "b39", "b40", "flight-time", "auto-usage (done)"],
+    "degraded": ["a07", "a08", "b05", "b07", "b08", "b10", "b11", "b12", "b13", "b14", "b21", "b31", "b46", "b48", "backfill"],
+    "disabled": ["b09", "b33", "b41", "b42", "b43", "b44", "b45"],
+    "validators": { "ready": ["c01", "c02", "c03", "c06", "c07", "c08", "c09", "c10", "c12", "c13", "c14", "c15", "c17"], "degraded": ["c05", "c16"] },
+    "note": "Registry admits ready/degraded descriptors; disabled ones are listed by dx status only. Status comes from each node's docs/execution/nodes/<id>.json at freeze."
+  },
+  "gateRepairs": [
+    { "owner": "A02 (flagged by A02 as gate work)", "file": "apps/cli/test/command.test.ts", "problem": "Expected capabilities.length + 4 top-level commands; the new dx group makes it + 5, so cli vitest exited 1.", "fix": "Assert the dx command is registered and expect + 5. Not weakened: the test now checks one more thing." },
+    { "owner": "A01 (config) for C12/B46/B48 fixtures", "file": "oxfmt.config.ts", "problem": "`oxfmt --check .` exited 1 on 4 deliberately malformed fixture files (c12 garbage/truncated batch, b46 invalid metadata, b48 ignored.json) that it cannot parse.", "fix": "Added those 4 exact paths to ignorePatterns; they are invalid input by design." },
+    { "owner": "B10", "file": "oxfmt.config.ts + packages/core/test/dx/fixtures/b10/result.json", "problem": "b10/result.json is byte-exact single-line cursor-agent --output-format json output; formatting it broke b10 'decodes single-object json output format'.", "fix": "Restored the original bytes and added that exact path to ignorePatterns." },
+    { "owners": "A04/B05/B34/B35/B37/B38/B39/B43/C01/C06/C15/A07 fixtures, B12 opencode collector, product docs", "files": "36 fixture JSON files, packages/core/src/dx/collectors/opencode/collector.ts, docs/product/decisions.md, docs/product/model-effort-sources.md, docs/demo/phase1-demo.md", "problem": "`oxfmt --check .` reported format drift.", "fix": "`pnpm exec oxfmt <exact files>` (G00 precedent). All 36 JSON files verified semantically equal to the pre-format content (0 diffs); the full core suite passes afterward." }
+  ],
+  "commands": [
+    { "name": "fence attempt 1 (live tree)", "argv": ["pnpm", "exec", "turbo", "run", "check", "test", "build"], "at": "15:05:37", "exit": 2, "result": "core build/typecheck failed: effect diagnostics in in-flight auto-usage files (cursor-usage-api/*, price-catalog/provider.ts, auto-usage.test.ts), plus //#lint oxfmt failures", "superseded": true },
+    { "name": "fence attempt 2 (clone 1)", "argv": ["pnpm", "exec", "turbo", "run", "check", "test", "build"], "at": "15:09:41", "exit": 1, "result": "//#lint: docs/demo/phase1-demo.md format", "superseded": true },
+    { "name": "fence attempt 3 (clone 1, --continue)", "argv": ["pnpm", "exec", "turbo", "run", "check", "test", "build", "--continue"], "at": "15:09:56", "exit": 1, "result": "core 2 failed: b10 single-object json (gate format regression, repaired) and a07-rebuild (auto-usage composition autoSources added a network source; fixed by auto-usage owner at 15:10)", "superseded": true },
+    { "name": "fence (frozen candidate, clone 2)", "argv": ["pnpm", "exec", "turbo", "run", "check", "test", "build", "--continue"], "at": "15:11:18-15:11:46", "exit": 0, "result": "18/18 tasks successful; //#lint (ultracite 0 warnings 0 errors + oxfmt clean); typecheck clean; tests: capability 72/72, devtools 19/19, cli 20/20, core 567 passed + 3 expected-fail (70 files)" },
+    { "name": "live Cursor smoke on the frozen candidate", "argv": ["/Users/satan/bin/owned-temp-dir", "--run", "g01-cursor", "--", "bash", "docs/execution/c09/live-smoke.sh"], "at": "15:12:05-15:12:19", "exit": 0, "result": "install 0, mark 0, cursor-agent 1 (usage limit), collect hooks/cli/git/gitobs 0, analyze 0, explain 0, cursor mcp list 0 (rat-stack: not loaded, needs approval), mcp list-tools 1, cursor-agent mcp call 1 (usage limit); owned temp dir cleaned" },
+    { "name": "Cursor MCP dx_explain call", "argv": ["cursor-agent", "-p", "--approve-mcps", "--output-format", "stream-json", "..."], "at": "15:12:20", "exit": 1, "result": "ActionRequiredError: usage limit (Cursor free plan)" },
+    { "name": "secret scan of candidate files", "argv": ["grep", "-lE", "ghp_|gho_|github_pat_|sk-ant-|AKIA...|PRIVATE KEY|WorkosCursorSessionToken=..."], "exit": 0, "result": "hits only in redact.ts (redaction regexes) and auto-usage.test.ts (fakeJwt fixture token); no real secrets" }
+  ],
+  "requiredChecks": {
+    "builtArtifactBoot": "pass: fence builds apps/cli/dist/cli.js; the live smoke drove install/mark/collect/analyze/explain/status through that built CLI (all exit 0)",
+    "deterministicReplay": "pass: c02 (same store across restart and a fresh store give the same snapshot id, watermark and events) and a07-rebuild (fresh store rebuilds identical metric hash) in the exit-0 fence",
+    "duplicateIngestion": "pass: c02 replay-twice 0 new inserts, b01 dedupe, c05 accounting fixtures; known B30 double-count gaps listed below",
+    "immutableSnapshotReuse": "pass: a07-rebuild pinned analyze by snapshotId equals first analyze; c02/c07",
+    "overlappingIntervalArithmetic": "pass: flight-time tests; the live smoke shows 'dx.flight.agent.ms 3850 ms, 2 source intervals merged into 1, 1621 ms overlap'",
+    "branchAmbiguity": "pass: c03 identity audit (linked worktrees, branch reuse, rename) 8/8, with the B02 reuse finding recorded as a gap",
+    "sanitizedExport": "pass: c10 privacy audit and b37 redaction; the gate committed only stream summaries, no prompt text",
+    "actualCursorInvocation": "partial on this digest, see cursorEvidence",
+    "cleanRestart": "pass: c02 restart replay, c12 runtime audit (locks/corrupt store fail typed), a07-rebuild fresh store",
+    "workspaceChecks": "pass: fence exit 0"
+  },
+  "cursorEvidence": {
+    "client": "cursor-agent 2026.09.28-64d2043 (installed CLI, logged in, free plan)",
+    "thisDigest_15:12": {
+      "install": "scripts/dx-install.ts put project-level .cursor/hooks.json + .cursor/mcp.json into an owned temp demo repo (never ~/.cursor; C14 verified user hooks.json sha unchanged)",
+      "realHookCapture": "real cursor-agent run on feature/c09-live fired the project hooks; 2 real spool files were collected (cursor-hooks coverage complete, observedItems 2) and appear in dx explain (7 entries across cursor-hooks, git-history, git-observation, manual lanes)",
+      "perBranchAnalyze": "real Git plus hook-derived time: dx.flight.branch-age.ms 8187 (reflog branch creation), dx.flight.active.ms 4720, dx.flight.agent.ms 3850, dx.git.untracked-files 5; AI tokens and money correctly unavailable with reasons because Cursor refused the turn",
+      "notObserved": "The agent turn returned 'You've hit your usage limit', so no token-bearing stream and no Cursor-side MCP approval/tool call happened on this digest. `cursor-agent mcp list` saw the project rat-stack server as 'not loaded (needs approval)'."
+    },
+    "earlierLiveRunsSameCodePaths": {
+      "C09_14:55": "real cursor-agent on feature/c09-live: 9 hook spool files, tokens via cursor-cli stream in analyze, and Cursor itself called the rat-stack MCP dx_analyze tool (mcpToolCall rat-stack-dx_analyze completed ok) - docs/execution/c09/run/*",
+      "C14": "live flight feature/c14-live 10/10 checks: analyze tokens 25599 input / 1381 output / 122880 cached exactly match the stream's result.usage; money and reasoning unavailable; 1 commit, 2 files, +16 lines, 1 test run - docs/execution/c14/live",
+      "C17": "real v1 rehearsal - docs/execution/c17",
+      "codeIdentity": "Since 14:55 only registry/registry.ts and registry/sync.ts changed among collectors/cursor-cli, collectors/cursor-hooks, metrics/ai-usage, cli, mcp, storage, registry, reports (find -newermt 14:55)."
+    },
+    "pendingObservation": [
+      "Cursor as MCP client: approve the project rat-stack server, list tools, call dx_analyze and dx_explain against the same snapshotId, follow an evidence reference - dx_explain via Cursor was never observed; dx_analyze via Cursor observed only at 14:55 on an earlier digest.",
+      "A token-bearing real Cursor turn on this exact digest (blocked by the Cursor free-plan usage limit at 15:12)."
+    ]
+  },
+  "coverage": {
+    "cursor": "hooks (live), cursor-agent stream-json (live earlier; tokens input/output/cached; reasoning and money unavailable from this source), local ai-code-tracking.db via backup copy (B06, degraded), transcripts (B07, degraded), usage CSV (B08, degraded, no file on host), dashboard/usage API (auto-usage; no charge observed live)",
+    "git": "real selected Git: commits, files, lines, branch age from reflog, uncommitted/untracked",
+    "localTests": "command capture (B38/shell-command) test runs/failures; C14 live saw 1 test run",
+    "money": "unavailable on this host (no charge-bearing source observed); price-table estimates carry method=price-table:<catalog>",
+    "ciPr": "out of scope by product decision; not required"
+  },
+  "gaps": [
+    { "owner": "operator / Cursor quota", "gap": "The pendingObservation items above need a Cursor account with remaining agent usage (or a manual operator run in the Cursor IDE): approve the project MCP server, call dx_analyze + dx_explain on one snapshot, follow one evidenceId, then re-run docs/execution/c09/live-smoke.sh." },
+    { "owner": "A02", "gap": "`dx analyze --flight <branch>` / `dx explain --flight <branch>` select by flight_id, which no collector sets; the demo must use repo scope (current branch) (C09/C13/A09)." },
+    { "owner": "flight-time / B05 / B10", "gap": "dx.flight.tool-calls double counts (live 24-36 vs 12 in the stream) (C14/C15/C17); do not quote tool calls." },
+    { "owner": "B30", "gap": "accountAiUsage sums an unkeyed event imported twice, and accountAiUsageByBranch counts a request seen on two branches on both (C05)." },
+    { "owner": "B02", "gap": "git.context upstreamKey omits branchCreatedAt, so a branch recreated at the same HEAD does not split into a new flight (C03)." },
+    { "owner": "B05", "gap": "sanitize.ts firstToken stores `NAME=secret` env prefixes as commandBin (C10 high); B37 credential regex misses compound labels (C10). Stale 'live-capture-not-demonstrated' coverage gap." },
+    { "owner": "analysis", "gap": "dx.ai-usage.tokens.total is null although input/output/cached components exist (C17)." },
+    { "owner": "A02", "gap": "MCP server exits 130 on stdin close and drops in-flight requests (C08, low)." },
+    { "owner": "gate", "gap": "Running `pnpm exec` inside the clone triggered pnpm's automatic dependency check (lockfile up to date, no changes); it did not touch the live checkout." }
+  ],
+  "logs": "Gate logs in the root gate scratchpad (fence.log, fence2-4.log, g01-cursor-run/, cursor-explain.err); not committed. The rerun's analyze/explain summaries are recorded above."
+}

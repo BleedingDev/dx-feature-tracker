@@ -1,0 +1,28 @@
+{
+  "adapterId": "cursor-hooks",
+  "coverage": {
+    "adapterId": "cursor-hooks",
+    "expectedItems": 7,
+    "gaps": [
+      {
+        "code": "hooks-begin-at-install",
+        "message": "hook events exist only after project .cursor/hooks.json is installed; earlier history needs a labelled import"
+      },
+      {
+        "code": "stop-usage-unverified",
+        "message": "stop-hook token/cost fields are kept raw with semanticsVerified=false and must not be summed until a semantic probe passes"
+      },
+      {
+        "code": "live-capture-not-demonstrated",
+        "message": "no authenticated cursor-agent session was available to this worker; payload shapes come from documented fixtures"
+      }
+    ],
+    "observedItems": 7,
+    "state": "complete",
+    "watermark": "001790773587670-daa285a6e4f3cc1204b3e3a8.json",
+    "windowFrom": "2026-09-30T13:06:25.593Z",
+    "windowTo": "2026-09-30T13:06:27.670Z"
+  },
+  "duplicates": 0,
+  "inserted": 6
+}

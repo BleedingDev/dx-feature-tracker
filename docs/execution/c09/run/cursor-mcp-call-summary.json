@@ -1,0 +1,65 @@
+{
+ "toolCalls": [
+  {
+   "subtype": "started",
+   "kind": "getMcpToolsToolCall",
+   "name": "dx_analyze",
+   "ok": null
+  },
+  {
+   "subtype": "completed",
+   "kind": "getMcpToolsToolCall",
+   "name": "dx_analyze",
+   "ok": true
+  },
+  {
+   "subtype": "started",
+   "kind": "mcpToolCall",
+   "name": "rat-stack-dx_analyze",
+   "ok": null
+  },
+  {
+   "subtype": "completed",
+   "kind": "mcpToolCall",
+   "name": "rat-stack-dx_analyze",
+   "ok": true
+  },
+  {
+   "subtype": "started",
+   "kind": "shellToolCall",
+   "name": null,
+   "ok": null
+  },
+  {
+   "subtype": "completed",
+   "kind": "shellToolCall",
+   "name": null,
+   "ok": true
+  },
+  {
+   "subtype": "started",
+   "kind": "shellToolCall",
+   "name": null,
+   "ok": null
+  },
+  {
+   "subtype": "completed",
+   "kind": "shellToolCall",
+   "name": null,
+   "ok": true
+  },
+  {
+   "subtype": "started",
+   "kind": "shellToolCall",
+   "name": null,
+   "ok": null
+  },
+  {
+   "subtype": "completed",
+   "kind": "shellToolCall",
+   "name": null,
+   "ok": true
+  }
+ ],
+ "finalAnswer": "I'll inspect the `dx_analyze` tool schema, then call it once with no flight argument.15224"
+}

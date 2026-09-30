@@ -1,0 +1,10 @@
+0 verbose cli /home/dev/node /home/dev/npm-cli.js
+1 info using npm@11.19.1
+2 info using node@v26.10.0
+3 timing npm:load Completed in 14ms
+4 verbose title npm install
+5 http fetch GET 200 https://registry.npmjs.org/left-pad 40ms (cache miss)
+6 http fetch GET 200 https://registry.npmjs.org/right-pad 60ms (cache miss)
+7 timing reify Completed in 820ms
+8 timing npm Completed in 1210ms
+9 verbose exit 1

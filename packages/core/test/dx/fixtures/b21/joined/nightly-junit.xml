@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="suite" tests="1" failures="0" errors="0">
+    <testsuite name="test/other.test.ts" timestamp="2026-09-30T11:00:30Z" tests="1">
+        <testcase classname="test/other.test.ts" name="other passes" time="0.25"/>
+    </testsuite>
+</testsuites>

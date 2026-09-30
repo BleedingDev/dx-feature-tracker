@@ -1,0 +1,47 @@
+{
+  "id": "C06",
+  "owner": "native worker C06",
+  "role": "verification",
+  "status": "ready",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "deliveredAt": "2026-09-30T14:41+02:00",
+  "ownedFiles": [
+    "packages/core/test/dx/audits/c06.test.ts",
+    "packages/core/test/dx/fixtures/c06/README.json",
+    "packages/core/test/dx/fixtures/c06/usage-export-unknown-header.csv",
+    "packages/core/test/dx/fixtures/c06/usage-export-no-token-or-cost.csv",
+    "packages/core/test/dx/fixtures/c06/transcript-unknown-layout.jsonl",
+    "packages/core/test/dx/fixtures/c06/transcript-unknown-layout.txt",
+    "packages/core/test/dx/fixtures/c06/spool-future-version.json",
+    "docs/execution/c06/source-version-audit.md"
+  ],
+  "descriptorExport": null,
+  "auditedDescriptors": ["cursor-hooks", "cursor-local-db", "cursor-transcripts", "cursor-usage-export"],
+  "fixtureIds": [
+    "c06.usage-export.unknown-header",
+    "c06.usage-export.no-token-or-cost",
+    "c06.transcript.unknown-jsonl-layout",
+    "c06.transcript.unknown-txt-layout",
+    "c06.hooks.future-spool-version",
+    "c06.hooks.future-hook-event",
+    "c06.local-db.unknown-schema",
+    "c06.local-db.itemtable-layout"
+  ],
+  "sourceVersionProbe": "docs/execution/source-probes.json (A06): Cursor 3.22.12; state.vscdb tables ItemTable, cursorDiskKV, composerHeaders; no live data opened by C06",
+  "checks": [
+    {"cmd": "pnpm exec vitest run test/dx/audits/c06.test.ts (cwd packages/core)", "exit": 0, "result": "15 passed"},
+    {"cmd": "pnpm exec oxlint packages/core/test/dx/audits/c06.test.ts", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check packages/core/test/dx/audits/c06.test.ts packages/core/test/dx/fixtures/c06/README.json", "exit": 0},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "result": "0 diagnostics in C06 files; errors belong to c08.test.ts, c13.test.ts, scripts/dx-install.ts"}
+  ],
+  "findings": [
+    {"owner": "B05/B06", "summary": "No adapter gates on source version; UnsupportedSource.sourceVersion always null; hooks accept any cursorVersion"},
+    {"owner": "B06", "summary": "Empty recognised local DB reports coverage complete with 0 items while empty hook spool reports none"}
+  ],
+  "gaps": [
+    "Audit runs on synthetic fixtures only; no live Cursor DB/spool was opened by C06. G02 should rerun against a real selected receipt.",
+    "ai-tracking layout not exercised with an unknown-version variant.",
+    "Optional non-Cursor sources (claude, codex, opencode, entire, git-ai, provider-usage) not audited in the compressed window."
+  ]
+}

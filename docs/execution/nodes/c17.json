@@ -1,0 +1,27 @@
+{
+  "id": "C17",
+  "status": "ready",
+  "completedAt": "2026-09-30T14:48+02:00",
+  "files": ["docs/execution/c17/run.sh", "docs/execution/c17/README.md", "docs/execution/c17/out/"],
+  "candidate": {"recorderHead": "2e78dc98f56044897dc4178331388120fb27966d", "dirtyPaths": 223, "cliDistSha256": "4c39549492a2d28c4a53e3de4e0641fe9b154a91f0e6f81aa57099a01b430ba6", "installerSha256": "4bc956fda622e1946ccee0a42424853a6b0dd86657f1f659d592f71e0245b2c4"},
+  "operator": {"role": "cursor-validation-owner (C17 agent)", "cursorAgent": "2026.09.28-64d2043", "node": "v24.18.0", "cli": "rat-stack v0.1.0", "contract": "dx.contracts.v1"},
+  "flight": {"branch": "feature/c17-real-flight", "kind": "prospective-live", "importedHistorical": "cursor transcript copy of the same run, origin=imported", "snapshotId": "snap_571314886feae9d12c01cc488e80984d"},
+  "checks": [
+    {"cmd": "owned-temp-dir --run c17 -- bash docs/execution/c17/run.sh", "exit": 0},
+    {"cmd": "cursor-agent -p --output-format stream-json --force --trust <prompt>", "exit": 0},
+    {"cmd": "node scripts/dx-install.ts install --target <demo> --store <tmp>", "exit": 0},
+    {"cmd": "dx collect x8 (git-history, cursor-hooks, cursor-cli, local-test x2, git-observation, cursor-transcripts imported, recollect cli)", "exit": 0},
+    {"cmd": "dx analyze --repo; dx analyze --snapshotId; dx explain --snapshotId; dx evidence --snapshotId --evidenceIds", "exit": 0},
+    {"cmd": "node scripts/dx-install.ts uninstall --target <demo>", "exit": 0}
+  ],
+  "metrics": {"requests": 1, "tokensInput": 22150, "tokensOutput": 1275, "tokensCachedInput": 153984, "tokensCacheWrite": 0, "tokensReasoning": null, "tokensTotal": null, "money": null, "toolCalls": 36, "agentMs": 30788, "activeIntervals": 1, "branchAgeMs": 35544, "commits": 1, "filesChanged": 2, "linesAdded": 14, "testRuns": 2, "testFailures": 0, "reworkedFiles": 0},
+  "gaps": [
+    "Money unavailable: cursor-agent, hooks and transcripts report no charge; no usage CSV/dashboard export on this host.",
+    "dx.ai-usage.tokens.total is null although input/output/cached components exist (analysis owner).",
+    "dx.flight.tool-calls=36 while the stream shows 12 tool_call started/completed; likely counts hook pre/post plus cli events; verify no double count (correlation/B-owner).",
+    "analyze --repo reports flightId null; branch-to-flight-id resolution still missing (A02), repo scope used.",
+    "cursor-hooks coverage still carries stale gap 'live-capture-not-demonstrated' (B05).",
+    "Cursor IDE (GUI) sessions, MCP and skills discovery were not exercised; only cursor-agent CLI.",
+    "Candidate tree was dirty (223 paths); gate must rerun run.sh on the committed digest."
+  ]
+}

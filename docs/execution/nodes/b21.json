@@ -1,0 +1,46 @@
+{
+  "id": "B21",
+  "owner": "native worker B21",
+  "role": "optional",
+  "status": "degraded",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "deliveredAt": "2026-09-30T14:11+02:00",
+  "ownedFiles": [
+    "packages/core/src/dx/collectors/local-test/report.ts",
+    "packages/core/src/dx/collectors/local-test/command-session.ts",
+    "packages/core/src/dx/collectors/local-test/collector.ts",
+    "packages/core/test/dx/b21.test.ts",
+    "packages/core/test/dx/fixtures/b21/pass/vitest-junit.xml",
+    "packages/core/test/dx/fixtures/b21/pass/vitest-report.json",
+    "packages/core/test/dx/fixtures/b21/joined/junit-failures.xml",
+    "packages/core/test/dx/fixtures/b21/joined/nightly-junit.xml",
+    "packages/core/test/dx/fixtures/b21/joined/commands.jsonl"
+  ],
+  "descriptorExport": {
+    "module": "packages/core/src/dx/collectors/local-test/collector.ts",
+    "collector": "localTestCollector (DxCollector<FileSystem.FileSystem>; provide NodeServices.layer)",
+    "descriptor": "localTestDescriptor (id collector/local-test, readiness degraded)",
+    "pure": "buildLocalTestBatch(files, input, observedAt)",
+    "adapterId": "local-test"
+  },
+  "fixtureIds": ["b21-vitest-junit-pass", "b21-junit-failures", "b21-vitest-json", "b21-command-sessions"],
+  "sourceProbe": "Real vitest 5.0.1 output: `pnpm exec vitest run test/stats.test.ts --reporter=junit|json --outputFile=<scratch>` (exit 0) copied into fixtures/b21/pass with hostname and absolute repo path sanitized.",
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b21.test.ts", "exit": 0, "result": "14 passed"},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json (filtered to local-test/b21)", "exit": "no diagnostics in owned files"},
+    {"cmd": "pnpm exec oxlint <owned files>", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check <owned files>", "exit": 0}
+  ],
+  "events": {
+    "test.result": "one per report file: tests, passed, failed, errors, skipped, durationMs (source-reported), failingTests (<=25 names, <=200 chars), status, commandSessionId, joinAttribution strong|provisional|unassigned, joinMethod declared-report|time-window|none, occurredAtMethod",
+    "command.run": "one per dx.local-test.command.v1 record: commandName, redacted commandDisplay (<=200 chars), exitCode|null, durationMs (derived)|null, isTestCommand, status passed|failed|unknown; identity.sessionId"
+  },
+  "gaps": [
+    "No producer writes dx.local-test.command.v1 JSONL yet (a `dx run -- <cmd>` wrapper is outside B21 scope); command joins only work when that file is supplied.",
+    "Only explicitly selected report files/directories (non-recursive) are imported; test runs that write no JUnit/JSON report are not observed.",
+    "JUnit timestamps without a timezone are left unavailable (null), not guessed.",
+    "No per-test rework/flake history yet (re-runs are separate test.result events; a metric can diff failingTests across runs).",
+    "Not registered: integration owner (A02/A07) must add localTestCollector to the registry and expose `dx collect --source local-test --input <path>`."
+  ]
+}

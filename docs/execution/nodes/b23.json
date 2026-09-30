@@ -1,0 +1,40 @@
+{
+  "id": "B23",
+  "owner": "native worker B23",
+  "role": "core",
+  "status": "ready",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "deliveredAt": "2026-09-30T14:16+02:00",
+  "ownedFiles": [
+    "packages/core/src/dx/correlation/repo/path.ts",
+    "packages/core/src/dx/correlation/repo/worktree-map.ts",
+    "packages/core/src/dx/correlation/repo/git-dir.ts",
+    "packages/core/src/dx/correlation/repo/descriptor.ts",
+    "packages/core/test/dx/b23.test.ts",
+    "packages/core/test/dx/fixtures/b23/worktree-porcelain.txt"
+  ],
+  "descriptorExport": {
+    "module": "packages/core/src/dx/correlation/repo/descriptor.ts",
+    "descriptor": "repoCorrelationDescriptor (id correlation.repo, kind correlation, readiness ready)",
+    "pure": "path.ts: normalizePath, relativeWithin, isContained, containedJoin; worktree-map.ts: parseWorktreePorcelain, buildRepoMap, resolvePath, correlateContext",
+    "effectful": "git-dir.ts (requires FileSystem; provide NodeServices.layer): discoverGitLocation, loadRepoMap, repoMapForPath, canonicalizePath"
+  },
+  "fixtureIds": ["b23-worktree-porcelain", "b23-live-linked-worktree"],
+  "sourceProbe": "Live: test creates a temp repo with real git (main + linked worktree feature/cost, pack-refs --all), then discovers it purely from the filesystem (.git dir / gitdir file / commondir / worktrees/*/gitdir / HEAD / packed-refs). No git spawn and no writes in the module.",
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b23.test.ts", "exit": 0, "result": "9 passed"},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json (filtered to correlation/repo|b23)", "exit": "no diagnostics in owned files"},
+    {"cmd": "pnpm exec oxlint <owned files>", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check <owned files>", "exit": 0}
+  ],
+  "supportedFields": ["context.repoCommonDir", "context.worktreePath", "context.branch", "context.headSha", "relativePath"],
+  "assignmentStates": "assigned | detached (repo mapped, branch null) | multi-root | conflict (existing context kept) | unassigned",
+  "gaps": [
+    "Not registered in the core dx barrel or CLI yet: integration (A02/A07/A08) must call repoMapForPath(repo) once, then correlateContext(maps, event.context, [hook cwd, workspace_roots, edited file paths]) for Cursor hook/transcript/local-db events.",
+    "Local only: no remote/GitHub repository identity (out of scope).",
+    "Case-sensitive comparison after realpath; non-existent paths on case-insensitive volumes are compared lexically.",
+    "Submodules resolve to the innermost worktree only if listed; multi-root workspaces stay multi-root (unassigned).",
+    "Observed paths outside every worktree are ignored when at least one path matches (reason string says so only via relativePaths count)."
+  ]
+}

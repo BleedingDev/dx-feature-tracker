@@ -1,0 +1,37 @@
+{
+  "id": "C01",
+  "role": "verification",
+  "status": "ready",
+  "contract": {"version": "dx.contracts.v1", "digest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090"},
+  "files": [
+    "packages/core/test/dx/audits/c01.test.ts",
+    "packages/core/test/dx/fixtures/c01/envelope-mutations.json",
+    "packages/core/test/dx/fixtures/c01/known-findings.json"
+  ],
+  "exports": {"descriptor": "none (audit node, no runtime module)", "barrel": "not edited"},
+  "fixtureIds": ["c01-envelope-mutations", "c01-known-findings"],
+  "consumesFixtures": ["core-golden-flight", "core-ai-overlap", "core-missing-time", "core-branch-ambiguity", "core-secret-canary", "core-unavailable-sources"],
+  "sourceProbe": "not applicable: audit runs against frozen A04 fixtures and the real B01 SQLite store in an owned temp dir",
+  "audited": {
+    "envelope": "30 single-field mutations of a golden envelope (unknown/missing/null schemaVersion, unknown kind/origin/acquisition/precision, missing required blocks, wrong types, value-method discriminator) plus batch-level rejection and coverage-schema rejection",
+    "versions": "EVENT_SCHEMA_VERSION pinned; all core fixtures and snapshot manifests carry current CONTRACT_VERSION/DIGEST; all 5 metric descriptors declare CONTRACT_VERSION; store fails closed (StoreError) on a persisted dx.event.v2 envelope",
+    "metrics": "ai-usage, cost, friction, git-churn, provenance on 6 core fixtures: MetricResult decodes, null => reason and non-measured state, unavailable/unsupported/disabled => null value, zero denominator => null, estimated state <=> estimated method, metricId/unit match definition, no measured value when all sources unavailable, deterministic compute, null values cite coverage (known gaps excepted)"
+  },
+  "findings": [
+    {"owner": "B01", "severity": "medium", "summary": "EventStore.append does not decode envelopes; an unknown-version event (cast past the type) is inserted and then every snapshot over it fails with StoreError (fail closed, but one bad row poisons the selector). Validate on append and reject with InvalidInput/StoreError."},
+    {"owner": "B-metric owners (git-churn, provenance)", "severity": "medium", "summary": "All git-churn (11) and provenance (6) MetricResults have value null with an empty coverage array on every core fixture; nulls should cite the SourceCoverage explaining them. Listed in fixtures/c01/known-findings.json; remove the entry once fixed."},
+    {"owner": "friction", "severity": "low", "summary": "On core-secret-canary friction emits one measured result with an empty coverage array."},
+    {"owner": "A03", "severity": "low", "summary": "Schema laxness (documented as expect=accept FINDING rows): IsoTimestampSchema is plain String (\"yesterday\" accepted), eventId not checked for sha256: form, empty adapterId accepted, unknown top-level fields silently stripped. SnapshotManifest.contractVersion is a free string; only the store's digest check guards unknown contract versions."}
+  ],
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/audits/c01.test.ts", "exit": 0, "result": "71/71 passed"},
+    {"cmd": "pnpm exec oxlint --type-aware packages/core/test/dx/audits/c01.test.ts", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check packages/core/test/dx/audits/c01.test.ts", "exit": 0},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "result": "0 diagnostics in c01 files; failures are in other owners' files (cursor-dashboard-response/parse.ts, cursor-sdk/parse.ts globalDate; opencode/collector.ts Schema.UnknownFromJsonString)"}
+  ],
+  "gaps": [
+    "Fixture index not updated (A04 owns fixtures/index.json); ask A04 to index c01-envelope-mutations and c01-known-findings.",
+    "Collectors are not audited for emitting valid envelopes; only schema, store read path and metrics.",
+    "Correctness of metric values against goldens is not audited here (C05/B owners); only honesty/null/coverage invariants."
+  ]
+}

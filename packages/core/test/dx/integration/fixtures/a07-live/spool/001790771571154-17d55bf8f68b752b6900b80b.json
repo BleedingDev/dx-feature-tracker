@@ -1,0 +1,52 @@
+{
+  "capturedAt": "2026-09-30T12:32:51.154Z",
+  "git": {
+    "branch": "feature/a07-live-demo",
+    "headSha": "429e6d337d843cb27dd69128e1c5c192bc7de443",
+    "repoCommonDir": "/tmp/a07-demo/.git",
+    "worktreePath": "/tmp/a07-demo"
+  },
+  "hook": {
+    "attachmentCount": 0,
+    "commandBin": null,
+    "commandHash": null,
+    "composerMode": null,
+    "conversationId": "487a09d4-1638-4add-a548-db653635a61b",
+    "cursorVersion": "2026.09.28-64d2043",
+    "durationMs": null,
+    "editCount": null,
+    "filePath": "/tmp/a07-demo/math.js",
+    "finalStatus": null,
+    "generationId": "487a09d4-1638-4add-a548-db653635a61b",
+    "hookEvent": "beforeReadFile",
+    "isBackgroundAgent": null,
+    "linesAdded": null,
+    "linesRemoved": null,
+    "loopCount": null,
+    "model": "default",
+    "presentKeys": [
+      "attachments",
+      "content",
+      "conversation_id",
+      "cursor_version",
+      "file_path",
+      "generation_id",
+      "hook_event_name",
+      "model",
+      "session_id",
+      "transcript_path",
+      "user_email",
+      "workspace_roots"
+    ],
+    "promptChars": null,
+    "rawUsage": [],
+    "reason": null,
+    "sessionId": "487a09d4-1638-4add-a548-db653635a61b",
+    "status": null,
+    "toolName": null,
+    "toolUseId": null,
+    "workspaceRoots": ["/tmp/a07-demo"]
+  },
+  "recordHash": "17d55bf8f68b752b6900b80b305ebe5cc9ecf792f416505387dedea8bc090d43",
+  "spoolVersion": "dxfr.cursor-hook-spool.v1"
+}

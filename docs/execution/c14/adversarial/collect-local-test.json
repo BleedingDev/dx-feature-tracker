@@ -1,0 +1,20 @@
+{
+  "adapterId": "local-test",
+  "coverage": {
+    "adapterId": "local-test",
+    "expectedItems": 1,
+    "gaps": [
+      {
+        "code": "command-sessions-absent",
+        "message": "No command session file supplied; test results are not joined to commands."
+      }
+    ],
+    "observedItems": 1,
+    "state": "complete",
+    "watermark": null,
+    "windowFrom": null,
+    "windowTo": null
+  },
+  "duplicates": 0,
+  "inserted": 1
+}

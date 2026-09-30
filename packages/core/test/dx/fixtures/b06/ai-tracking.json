@@ -1,0 +1,82 @@
+{
+  "fixtureId": "b06-ai-tracking",
+  "origin": "fixture",
+  "note": "Synthetic ~/.cursor/ai-tracking/ai-code-tracking.db rows.",
+  "tables": ["ai_code_hashes", "scored_commits", "conversation_summaries"],
+  "ai_code_hashes": [
+    {
+      "hash": "fxh1",
+      "source": "composer",
+      "fileExtension": "ts",
+      "fileName": "/fixture/repo/src/a.ts",
+      "requestId": "fx-req-2",
+      "conversationId": "fx-c1",
+      "timestamp": 1790000500000,
+      "model": "fixture-model",
+      "createdAt": 1790000500000
+    },
+    {
+      "hash": "fxh2",
+      "source": "tab",
+      "fileExtension": "ts",
+      "fileName": "/fixture/other/b.ts",
+      "requestId": null,
+      "conversationId": null,
+      "timestamp": 1790000550000,
+      "model": null,
+      "createdAt": 1790000550000
+    }
+  ],
+  "scored_commits": [
+    {
+      "commitHash": "fxsha1",
+      "branchName": "feature/fx",
+      "scoredAt": 1790000900000,
+      "linesAdded": 50,
+      "linesDeleted": 8,
+      "tabLinesAdded": 5,
+      "tabLinesDeleted": 0,
+      "composerLinesAdded": 40,
+      "composerLinesDeleted": 7,
+      "humanLinesAdded": 5,
+      "humanLinesDeleted": 1,
+      "blankLinesAdded": 0,
+      "blankLinesDeleted": 0,
+      "commitMessage": "B06_SECRET_PROMPT_CANARY",
+      "commitDate": "2026-09-21T12:00:00.000Z",
+      "v1AiPercentage": "80",
+      "v2AiPercentage": "80"
+    },
+    {
+      "commitHash": "fxsha2",
+      "branchName": "main",
+      "scoredAt": 1790000950000,
+      "linesAdded": 3,
+      "linesDeleted": 0,
+      "tabLinesAdded": 0,
+      "tabLinesDeleted": 0,
+      "composerLinesAdded": 0,
+      "composerLinesDeleted": 0,
+      "humanLinesAdded": 3,
+      "humanLinesDeleted": 0,
+      "blankLinesAdded": 0,
+      "blankLinesDeleted": 0,
+      "commitMessage": "B06_SECRET_PROMPT_CANARY",
+      "commitDate": "2026-09-21T13:00:00.000Z",
+      "v1AiPercentage": "0",
+      "v2AiPercentage": "0"
+    }
+  ],
+  "conversation_summaries": [
+    {
+      "conversationId": "fx-c1",
+      "title": "B06_SECRET_PROMPT_CANARY",
+      "tldr": "B06_SECRET_PROMPT_CANARY",
+      "overview": "B06_SECRET_PROMPT_CANARY",
+      "summaryBullets": "B06_SECRET_PROMPT_CANARY",
+      "model": "m",
+      "mode": "agent",
+      "updatedAt": 1790000000000
+    }
+  ]
+}

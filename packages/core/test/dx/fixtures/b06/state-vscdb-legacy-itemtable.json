@@ -1,0 +1,18 @@
+{
+  "fixtureId": "b06-state-vscdb-legacy-itemtable",
+  "origin": "fixture",
+  "note": "Synthetic legacy workspace state.vscdb: headers in ItemTable composer.composerData, no composerHeaders table.",
+  "tables": ["ItemTable", "cursorDiskKV"],
+  "ItemTable": [
+    {
+      "key": "composer.composerData",
+      "value": "{\"allComposers\": [{\"composerId\": \"fx-l1\", \"createdAt\": 1790001000000, \"lastUpdatedAt\": 1790001300000, \"unifiedMode\": \"agent\", \"name\": \"B06_SECRET_PROMPT_CANARY\"}]}"
+    }
+  ],
+  "cursorDiskKV": [
+    {
+      "key": "bubbleId:fx-l1:b1",
+      "value": "{\"type\": 2, \"createdAt\": 1790001100000, \"tokenCount\": {\"inputTokens\": 800, \"outputTokens\": 120}}"
+    }
+  ]
+}

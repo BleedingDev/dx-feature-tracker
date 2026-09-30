@@ -1,0 +1,10 @@
+{
+  "usageEventsDisplay": [
+    {
+      "timestamp": "1790757600000",
+      "model": "auto",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requestsCosts": 1
+    }
+  ]
+}

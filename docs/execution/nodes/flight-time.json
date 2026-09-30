@@ -1,0 +1,40 @@
+{
+  "id": "flight-time",
+  "status": "ready",
+  "deliverable": "Per-branch flight time: branch age, active intervals, agent time, tool calls, commits",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "ownedFiles": [
+    "packages/core/src/dx/metrics/flight-time/signals.ts",
+    "packages/core/src/dx/metrics/flight-time/metric.ts",
+    "packages/core/test/dx/flight-time.test.ts"
+  ],
+  "sharedEdits": [
+    "packages/core/src/dx/registry/registry.ts: import + flightTimeMetric appended to allMetrics"
+  ],
+  "exports": {
+    "packages/core/src/dx/metrics/flight-time/metric.ts": ["flightTimeMetric (DxMetric)", "flightTimeDescriptor", "computeFlightTime", "flightTimeDefinitions", "FLIGHT_TIME_METRIC_VERSION"],
+    "packages/core/src/dx/metrics/flight-time/signals.ts": ["collectFlightSignals", "IDLE_GAP_MS", "FlightSignals", "BranchStartMethod"]
+  },
+  "descriptor": {"id": "dx.metric.flight-time", "kind": "metric", "owner": "flight-time", "readiness": "ready", "requiredInputs": []},
+  "fixtureIds": ["core-golden-flight", "b05.agent-turns", "b10-cursor-cli-stream-json"],
+  "supportedFields": ["dx.flight.branch-age.ms", "dx.flight.active.ms", "dx.flight.active.intervals", "dx.flight.agent.ms", "dx.flight.tool-calls", "dx.flight.commits", "dx.flight.first-commit-at", "dx.flight.last-commit-at"],
+  "reuses": ["intervals.intervalHelpers.union/sum + closeOpenIntervalAt (B27)", "ai-usage/normalize.matchKeysOf + sourceKindFrom (B30)", "model/ai.AI_SOURCE_PRECEDENCE"],
+  "checks": {
+    "vitest": {"argv": "pnpm --filter @rat-stack/core exec vitest run test/dx/flight-time.test.ts", "exit": 0, "passed": 7},
+    "vitest_registry": {"argv": "pnpm --filter @rat-stack/core exec vitest run test/dx/integration/a02-spine.test.ts test/dx/integration/a07-rebuild.test.ts", "exit": 0, "passed": 4},
+    "oxlint": {"exit": 0},
+    "oxfmt_check": {"exit": 0},
+    "tsc_core": {"ownFileErrors": 0, "overallExit": 1, "otherOwners": "test/dx/c13.test.ts, scripts/dx-install.ts"},
+    "build": {"argv": "pnpm exec turbo run build --filter=@rat-stack/cli...", "exit": 0},
+    "cli_analyze": {"argv": "node apps/cli/dist/cli.js dx analyze", "exit": 0, "branch": "main", "values": {"dx.flight.branch-age.ms": "3707001 partial (reflog-oldest-entry, open until as-of)", "dx.flight.commits": "0 measured (git-history complete, no commits beyond base)", "dx.flight.agent.ms": "unavailable (no AI evidence on main)", "dx.flight.tool-calls": "unavailable (no AI evidence on main)"}},
+    "live_claude_jsonl": {"note": "real Claude subagent transcript for this repo, branch HEAD, computed directly", "values": {"dx.flight.agent.ms": 184318, "dx.flight.tool-calls": 28, "dx.flight.active.ms": 184318}}
+  },
+  "gaps": [
+    {"code": "branch-start-lower-bound", "message": "Without a reflog creation entry, start is the earliest of first branch commit, oldest reflog entry or first observed activity; value is partial and a lower bound."},
+    {"code": "idle-gap-heuristic", "message": "Activity and session spans split at 30 min idle gaps; single-event sessions without a duration add no agent time."},
+    {"code": "tool-call-key-match", "message": "Cross-source tool-call dedup needs a shared request/turn key; unkeyed reports count as-is. Session-level totals (codex ai.session) only used when a session has no per-turn data (partial)."},
+    {"code": "merge-end", "message": "Branch end uses pr.metadata payload.mergedAt; no collector emits it yet, so live branches close at snapshot as-of."},
+    {"code": "no-branch-selector-on-cli", "message": "dx analyze has no --branch flag; AI events on other branches (e.g. Claude jsonl gitBranch=HEAD) are not in the main snapshot."}
+  ]
+}

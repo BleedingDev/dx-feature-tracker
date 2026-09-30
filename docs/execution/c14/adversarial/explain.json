@@ -1,0 +1,249 @@
+{
+  "entries": [
+    {
+      "eventId": "sha256:a784a8aaaae072b296a821d56dfc4255b22125dfddd6e03f1f2393ee06093684",
+      "evidenceIds": [
+        "sha256:a784a8aaaae072b296a821d56dfc4255b22125dfddd6e03f1f2393ee06093684"
+      ],
+      "kind": "git.observation",
+      "lane": "git-history",
+      "occurredAt": "2026-09-30T13:06:25.000Z",
+      "occurredAtPrecision": "second",
+      "orderingUncertain": true,
+      "origin": "imported",
+      "summary": "git.observation via git-history reflogEntries=3"
+    },
+    {
+      "eventId": "34eaf2d853f29484a8638c168941cdaadd00d3b33e9b18425f4a6d116dff1cb5",
+      "evidenceIds": [
+        "34eaf2d853f29484a8638c168941cdaadd00d3b33e9b18425f4a6d116dff1cb5"
+      ],
+      "kind": "git.observation",
+      "lane": "git-observation",
+      "occurredAt": "2026-09-30T13:06:25.000Z",
+      "occurredAtPrecision": "second",
+      "orderingUncertain": true,
+      "origin": "imported",
+      "summary": "git.observation via git-observation"
+    },
+    {
+      "eventId": "e759f419ad49ae492c098b1168c0f6ec280ba449d0e24538e597281c926b57c2",
+      "evidenceIds": [
+        "e759f419ad49ae492c098b1168c0f6ec280ba449d0e24538e597281c926b57c2"
+      ],
+      "kind": "marker.start",
+      "lane": "manual",
+      "occurredAt": "2026-09-30T13:06:25.289Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "live",
+      "summary": "marker.start via manual claim=false [payload.markerKind:user-claimed]"
+    },
+    {
+      "eventId": "sha256:e87a0d13fcb2ed2be4d21b15ae2556a94fc30d67cee2e1d6f77944e703455532",
+      "evidenceIds": [
+        "sha256:e87a0d13fcb2ed2be4d21b15ae2556a94fc30d67cee2e1d6f77944e703455532"
+      ],
+      "kind": "ai.session",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T13:06:25.593Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "ai.session via cursor-hooks isBackgroundAgent=false rawUsagePresent=false supportedHookEvent=true toolCall=false [occurredAt:source-reported]"
+    },
+    {
+      "eventId": "sha256:2a47f84b9d0033030467207b36386ae212c982f4e5ab9f5546c2d8195acf94c3",
+      "evidenceIds": [
+        "sha256:2a47f84b9d0033030467207b36386ae212c982f4e5ab9f5546c2d8195acf94c3"
+      ],
+      "kind": "ai.request",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T13:06:25.890Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "ai.request via cursor-hooks attachmentCount=0 promptChars=61 rawUsagePresent=false supportedHookEvent=true toolCall=false [occurredAt:source-reported]"
+    },
+    {
+      "eventId": "sha256:3ce61ac900bd0cc05eca38292e1d13c939bc946c489c411bc41d48486f4b3c9f",
+      "evidenceIds": [
+        "sha256:3ce61ac900bd0cc05eca38292e1d13c939bc946c489c411bc41d48486f4b3c9f"
+      ],
+      "kind": "other",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T13:06:26.189Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "other via cursor-hooks durationMs=1200 rawUsagePresent=false supportedHookEvent=true toolCall=false [occurredAt:source-reported, payload.durationMs:source-reported]"
+    },
+    {
+      "eventId": "sha256:3e0a5a79b77d1816057709b4e359e8c77420e978ce835b6a79a37af783bb899f",
+      "evidenceIds": [
+        "sha256:3e0a5a79b77d1816057709b4e359e8c77420e978ce835b6a79a37af783bb899f"
+      ],
+      "kind": "ai.tool-edit",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T13:06:26.491Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "ai.tool-edit via cursor-hooks editCount=1 linesAdded=1 linesRemoved=1 rawUsagePresent=false supportedHookEvent=true toolCall=false [occurredAt:source-reported, payload.linesAdded:derived]"
+    },
+    {
+      "eventId": "sha256:86db68af20fd8a514efb3ad5cdfbcfc556a9e3dd36acaedf995599d5b56a56b2",
+      "evidenceIds": [
+        "sha256:86db68af20fd8a514efb3ad5cdfbcfc556a9e3dd36acaedf995599d5b56a56b2"
+      ],
+      "kind": "ai.turn",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T13:06:26.787Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "ai.turn via cursor-hooks loopCount=0 rawUsagePresent=false supportedHookEvent=true toolCall=false [occurredAt:source-reported]"
+    },
+    {
+      "eventId": "sha256:3bbb874ad36344f5d33fde440a9d7f26768364f1d46f14f3227a0d2c4cdd3c52",
+      "evidenceIds": [
+        "sha256:3bbb874ad36344f5d33fde440a9d7f26768364f1d46f14f3227a0d2c4cdd3c52"
+      ],
+      "kind": "git.commit",
+      "lane": "git-history",
+      "occurredAt": "2026-09-30T13:06:27.000Z",
+      "occurredAtPrecision": "second",
+      "orderingUncertain": true,
+      "origin": "imported",
+      "summary": "git.commit via git-history binaryFiles=0 filesChanged=1 isMerge=false linesAdded=1 linesDeleted=0 numstatAvailable=true [authoredAt:source-reported, committedAt:source-reported]"
+    },
+    {
+      "eventId": "sha256:5a00ca548bb4c8d9a86c251155e46b8388bec12de681388759cf678e0b94fa52",
+      "evidenceIds": [
+        "sha256:5a00ca548bb4c8d9a86c251155e46b8388bec12de681388759cf678e0b94fa52"
+      ],
+      "kind": "git.commit",
+      "lane": "git-history",
+      "occurredAt": "2026-09-30T13:06:27.000Z",
+      "occurredAtPrecision": "second",
+      "orderingUncertain": true,
+      "origin": "imported",
+      "summary": "git.commit via git-history binaryFiles=0 filesChanged=1 isMerge=false linesAdded=1 linesDeleted=0 numstatAvailable=true [authoredAt:source-reported, committedAt:source-reported]"
+    },
+    {
+      "eventId": "102151ade72d94fe15cf9b1be8c4c85750c7f166e8deece0293eaf56c477e475",
+      "evidenceIds": [
+        "102151ade72d94fe15cf9b1be8c4c85750c7f166e8deece0293eaf56c477e475"
+      ],
+      "kind": "git.observation",
+      "lane": "git-observation",
+      "occurredAt": "2026-09-30T13:06:27.000Z",
+      "occurredAtPrecision": "second",
+      "orderingUncertain": true,
+      "origin": "imported",
+      "summary": "git.observation via git-observation"
+    },
+    {
+      "eventId": "80c866be83dfd6a7b2eae9baca2a948ac10708add2dcab9f60aff1f0cb33bcf2",
+      "evidenceIds": [
+        "80c866be83dfd6a7b2eae9baca2a948ac10708add2dcab9f60aff1f0cb33bcf2"
+      ],
+      "kind": "git.observation",
+      "lane": "git-observation",
+      "occurredAt": "2026-09-30T13:06:27.000Z",
+      "occurredAtPrecision": "second",
+      "orderingUncertain": true,
+      "origin": "imported",
+      "summary": "git.observation via git-observation"
+    },
+    {
+      "eventId": "sha256:af959aca0cb966aea3fd492a07b368609b5819a5fe670a0b38d7d87de0d1ea4a",
+      "evidenceIds": [
+        "sha256:af959aca0cb966aea3fd492a07b368609b5819a5fe670a0b38d7d87de0d1ea4a"
+      ],
+      "kind": "ai.session",
+      "lane": "cursor-hooks",
+      "occurredAt": "2026-09-30T13:06:27.670Z",
+      "occurredAtPrecision": "exact",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "ai.session via cursor-hooks durationMs=5000 rawUsagePresent=false supportedHookEvent=true toolCall=false [occurredAt:source-reported, payload.durationMs:source-reported]"
+    },
+    {
+      "eventId": "18fbee9ba706e4eafe2e34d5aac8b1c22eec9c4e0fe5e3721978acd793d0959b",
+      "evidenceIds": [
+        "18fbee9ba706e4eafe2e34d5aac8b1c22eec9c4e0fe5e3721978acd793d0959b"
+      ],
+      "kind": "git.observation",
+      "lane": "git-observation",
+      "occurredAt": "2026-09-30T13:06:29.678Z",
+      "occurredAtPrecision": "second",
+      "orderingUncertain": false,
+      "origin": "imported",
+      "summary": "git.observation via git-observation conflictedFiles=0 stagedFiles=0 trackedChangedFiles=0 uncommittedBinaryFiles=0 uncommittedLinesAdded=0 uncommittedLinesDeleted=0"
+    },
+    {
+      "eventId": "sha256:5199996fcdbd39cc261b2ddd5d9341ee1dd3518b1dec5641f160e65140bfabd0",
+      "evidenceIds": [
+        "sha256:5199996fcdbd39cc261b2ddd5d9341ee1dd3518b1dec5641f160e65140bfabd0"
+      ],
+      "kind": "ai.usage",
+      "lane": "cursor-cli",
+      "occurredAt": null,
+      "occurredAtPrecision": "unknown",
+      "orderingUncertain": true,
+      "origin": "imported",
+      "summary": "ai.usage via cursor-cli durationMs=4000 isError=false toolCalls=0 [durationMs:source-reported, tokens.cache-write:source-reported, tokens.cached-input:source-reported, tokens.input:source-reported, tokens.output:source-reported] (time unavailable)"
+    },
+    {
+      "eventId": "sha256:c861a3cf5c68418b4a4aadafa216f076bb847efc3f51d111e193c4a3985427fa",
+      "evidenceIds": [
+        "sha256:c861a3cf5c68418b4a4aadafa216f076bb847efc3f51d111e193c4a3985427fa"
+      ],
+      "kind": "ai.usage",
+      "lane": "cursor-cli",
+      "occurredAt": null,
+      "occurredAtPrecision": "unknown",
+      "orderingUncertain": true,
+      "origin": "imported",
+      "summary": "ai.usage via cursor-cli durationMs=1000 isError=false toolCalls=0 [durationMs:source-reported] (time unavailable)"
+    },
+    {
+      "eventId": "9a4089715851190bfd042d8da9f8707661855c3b491073fc63f09a16c8f69716",
+      "evidenceIds": [
+        "9a4089715851190bfd042d8da9f8707661855c3b491073fc63f09a16c8f69716"
+      ],
+      "kind": "test.result",
+      "lane": "local-test",
+      "occurredAt": null,
+      "occurredAtPrecision": "unknown",
+      "orderingUncertain": true,
+      "origin": "imported",
+      "summary": "test.result via local-test durationMs=4 errors=0 failed=1 failingTestsTruncated=false passed=2 skipped=0 [durationMs:source-reported, errors:source-reported, failed:source-reported, passed:source-reported, skipped:source-reported, tests:source-reported] (time unavailable)"
+    },
+    {
+      "eventId": "sha256:81ef4a6a8e2709655cbe072c06b9ef64e3ced27f05c3252dfaffcc766c104a38",
+      "evidenceIds": [
+        "sha256:81ef4a6a8e2709655cbe072c06b9ef64e3ced27f05c3252dfaffcc766c104a38"
+      ],
+      "kind": "git.diff",
+      "lane": "git-history",
+      "occurredAt": null,
+      "occurredAtPrecision": "unknown",
+      "orderingUncertain": true,
+      "origin": "imported",
+      "summary": "git.diff via git-history binaryFiles=0 filesChanged=0 linesAdded=0 linesDeleted=0 pathsTruncated=false untrackedFiles=7 (time unavailable)"
+    }
+  ],
+  "lanes": [
+    "cursor-cli",
+    "cursor-hooks",
+    "git-history",
+    "git-observation",
+    "local-test",
+    "manual"
+  ],
+  "nextCursor": null,
+  "snapshotId": "snap_edd72b72876f9a10a016e8594647afd0",
+  "total": 18
+}

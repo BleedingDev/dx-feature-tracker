@@ -1,5 +1,6 @@
 // @effect-diagnostics-next-line nodeBuiltinImport:off -- The Node HTTP server is the one place where nothing in Effect wraps the built-in: `NodeHttpServer.layer` takes a `node:http` server factory.
 import { createServer } from "node:http";
+import { homedir } from "node:os";
 
 import { NodeHttpServer } from "@effect/platform-node";
 import type { AnyCapability } from "@rat-stack/capability";
@@ -10,6 +11,16 @@ import {
   toToolkit,
 } from "@rat-stack/capability";
 import { capabilities } from "@rat-stack/core";
+import {
+  allCollectors,
+  buildRegistry,
+  defaultCostOptions,
+  dxStoreLayer,
+  makeDxCapabilities,
+  metricsWithCost,
+  resolveDftStore,
+  resolveDxStore,
+} from "@rat-stack/core/dx";
 import { devtools, devtoolsLayer } from "@rat-stack/devtools";
 import { Effect, Layer, Logger } from "effect";
 import { McpProtocol, McpServer } from "effect/unstable/ai";
@@ -19,6 +30,39 @@ import { HttpApiBuilder, HttpApiScalar } from "effect/unstable/httpapi";
 import { VERSION } from "./version.js";
 
 export const http = toHttpApi("RatStack", capabilities);
+
+const dxEnv = process.env;
+
+const legacyStore =
+  dxEnv.DX_REPLAY === "1" || (dxEnv.DX_STORE ?? "").trim() !== "";
+
+export const dxStore = legacyStore
+  ? resolveDxStore({
+      env: dxEnv,
+      home: homedir(),
+      replay: dxEnv.DX_REPLAY === "1",
+      store: null,
+    })
+  : resolveDftStore({ db: null, env: dxEnv, home: homedir() });
+
+const dxCostOptions = defaultCostOptions();
+
+export const dxRegistry = buildRegistry(
+  allCollectors,
+  metricsWithCost(dxCostOptions)
+);
+
+export const dxCapabilities = makeDxCapabilities({
+  collectors: allCollectors,
+  costOptions: dxCostOptions,
+  defaultRepo: dxEnv.DX_REPO ?? process.cwd(),
+  registry: dxRegistry,
+  storePath: dxStore.path,
+});
+
+export const dxStoreLive = dxStoreLayer(dxStore);
+
+const dxTools = toToolkit([...capabilities, ...dxCapabilities]);
 
 export const tools = toToolkit(capabilities);
 
@@ -125,6 +169,9 @@ export const mcpServer = {
     })
   ).pipe(Layer.provide(devtoolsLayer())),
   tools: withStdio(
-    McpServer.toolkit(tools.toolkit).pipe(Layer.provideMerge(tools.layer))
+    McpServer.toolkit(dxTools.toolkit).pipe(
+      Layer.provideMerge(dxTools.layer),
+      Layer.provide(dxStoreLive)
+    )
   ),
 } as const;

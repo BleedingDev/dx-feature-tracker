@@ -1,0 +1,12 @@
+{
+  "human_additions": 10,
+  "mixed_additions": 2,
+  "ai_additions": 19,
+  "ai_accepted": 18,
+  "total_ai_additions": 21,
+  "total_ai_deletions": 2,
+  "time_waiting_for_ai": 42,
+  "git_diff_deleted_lines": 3,
+  "git_diff_added_lines": 40,
+  "tool_model_breakdown": {}
+}

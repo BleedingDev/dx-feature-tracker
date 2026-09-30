@@ -1,0 +1,45 @@
+{
+  "id": "B07",
+  "status": "degraded",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "ownedFiles": [
+    "packages/core/src/dx/collectors/cursor-transcripts/collector.ts",
+    "packages/core/src/dx/collectors/cursor-transcripts/parse.ts",
+    "packages/core/src/dx/collectors/cursor-transcripts/usage.ts",
+    "packages/core/test/dx/b07.test.ts",
+    "packages/core/test/dx/fixtures/b07/projects/demo/agent-transcripts/comp-A/comp-A.jsonl",
+    "packages/core/test/dx/fixtures/b07/projects/demo/agent-transcripts/comp-A/subagents/agent-7.jsonl",
+    "packages/core/test/dx/fixtures/b07/projects/demo/agent-transcripts/comp-T.txt",
+    "packages/core/test/dx/fixtures/b07/unrecognized.jsonl"
+  ],
+  "exports": {
+    "module": "packages/core/src/dx/collectors/cursor-transcripts/collector.ts",
+    "collector": "cursorTranscriptCollector (DxCollector<FileSystem | Crypto>)",
+    "descriptor": "cursorTranscriptDescriptor (id collector.cursor-transcripts, readiness degraded, owner B07)",
+    "probe": "probeCursorTranscript(path) -> ProbeReceipt (non-content)",
+    "adapterId": "cursor-transcripts",
+    "helpers": "sessionFromPath(path), parseCursorTranscript(text, options) in parse.ts, mapUsage(counters, rawPrefix) in usage.ts"
+  },
+  "fixtureIds": ["b07-cursor-transcript-jsonl", "b07-cursor-subagent-jsonl", "b07-cursor-transcript-txt"],
+  "sourceProbe": "~/.cursor/projects has 1 project dir (empty-window) and 0 agent-transcripts dirs; cursor-agent 2026.09.28-64d2043 present but `cursor-agent status` -> 'Not logged in' (exit 1), so no live transcript could be generated. Fixtures follow the documented layouts (research/reports/revision/cursor-local.md): <composerId>.txt, <composerId>/<composerId>.jsonl, <composerId>/subagents/<agent>.jsonl.",
+  "events": {
+    "ai.usage": "one per turn (user message opens a turn; turns with no assistant row are dropped). upstreamKey session:<composerId>:turn:<n>; eventId sha256(adapter\\nkey\\nkind); requestKey source:transcript-estimate:session:<id>:turn:<n>; occurredAt null (transcripts have no per-turn time). payload: assistantMessages, toolCalls, toolNames (names only), model (if present), tokens {input,cached-input,cache-write,output,reasoning,total} source-reported only when a usage object exists else null, unmappedUsage (raw unknown counters), usageState mapped|partial|unmapped|unavailable, estimates.visibleTextTokens (method estimated, chars/4 of assistant visible text), charge null, listPriceEstimateUsd null, parentSessionId for subagents, branchSource collect-context|null, transcriptLayout."
+  },
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b07.test.ts", "exit": 0, "result": "7/7 passed"},
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json (filtered to cursor-transcripts|b07)", "exit": "1 overall from other owners' files; 0 diagnostics in B07 files"},
+    {"cmd": "pnpm exec oxlint <b07 files>", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check <b07 files>", "exit": 0}
+  ],
+  "gaps": [
+    "Fixture-only: no live Cursor transcript exists on this host and cursor-agent is not logged in; not a demonstrated live/imported AI route. Another candidate (B05 hooks / B08) must carry the ready non-admin route.",
+    "Role/content transcripts usually carry no tokens, model or timestamps: tokens stay unavailable, only a labelled visible-text estimate is emitted; occurredAt is null.",
+    "No billed charge in transcripts (charge null, gap charge-unavailable).",
+    "Branch comes only from the collect context (branchSource collect-context); historical transcripts must not silently inherit today's branch — integration should pass the flight's branch or leave it null.",
+    "cursor-agent --output-format stream-json is owned by B10 (collector/cursor-cli) and intentionally not parsed here to avoid double counting.",
+    "Manual Export Transcript .md files not parsed.",
+    "Not registered in the dx barrel/registry or fixture index.json (A02/A07 own integration).",
+    "Subagent turns carry parentSessionId; rollups must not count them as an independent flight."
+  ]
+}

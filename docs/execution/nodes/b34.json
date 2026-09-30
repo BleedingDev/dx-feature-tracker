@@ -1,0 +1,41 @@
+{
+  "id": "B34",
+  "status": "ready",
+  "contract": { "version": "dx.contracts.v1", "digest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090" },
+  "descriptor": { "export": "frictionDescriptor", "id": "dx.metric.friction", "readiness": "ready", "module": "packages/core/src/dx/metrics/friction/metric.ts", "metricExport": "frictionMetric" },
+  "files": [
+    "packages/core/src/dx/metrics/friction/signals.ts",
+    "packages/core/src/dx/metrics/friction/templates.ts",
+    "packages/core/src/dx/metrics/friction/metric.ts",
+    "packages/core/test/dx/b34.test.ts",
+    "packages/core/test/dx/fixtures/b34/b34-scenarios.json"
+  ],
+  "fixtureIds": ["b34-repeated-failures", "b34-clean-branch", "b34-no-evidence"],
+  "metrics": [
+    "dx.friction.test-runs",
+    "dx.friction.test-failures",
+    "dx.friction.test-failure-rate",
+    "dx.friction.tool-call-failure-rate",
+    "dx.friction.failed-commands",
+    "dx.friction.reworked-files"
+  ],
+  "findings": ["friction.test-repeated-failure:<test>", "friction.test-failure-rate", "friction.tool-failure-rate", "friction.command-repeated-failure:<command>", "friction.file-rework:<file>"],
+  "consumedPayloads": {
+    "test.result": "local-test (status, failed, errors, failingTests) and shell-command (outcome)",
+    "command.run": "exitCode, spawnError, commandName/program/commandBin/commandHash",
+    "cursor-hooks": "toolCall, hookEvent (postToolUseFailure), status, toolName, filePath on ai.tool-edit"
+  },
+  "checks": [
+    { "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b34.test.ts", "exit": 0, "note": "7/7 passed" },
+    { "cmd": "pnpm exec oxlint packages/core/src/dx/metrics/friction packages/core/test/dx/b34.test.ts", "exit": 0 },
+    { "cmd": "pnpm exec oxfmt --check <B34 files>", "exit": 0 },
+    { "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "note": "0 diagnostics in B34 files; errors in cli/commands/start.ts, collectors/opencode, reports/evidence/redact.ts, test/dx/b30, test/dx/b37 (other owners)" }
+  ],
+  "gaps": [
+    "Not registered: integration owner (A02/A07/A08) must add frictionMetric to the metric registry.",
+    "Not yet exercised on a live store snapshot; fixtures mirror real local-test/shell-command/cursor-hooks payload shapes.",
+    "Cross-adapter duplicate test runs (local-test report + shell-command exit for the same run) are not joined; result marked partial/provisional when more than one test adapter is present.",
+    "Rework = agent edit events per file (ai.tool-edit); no line-level churn or human rewrite.",
+    "No time/money savings estimated by design."
+  ]
+}

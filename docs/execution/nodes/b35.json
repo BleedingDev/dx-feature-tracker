@@ -1,0 +1,68 @@
+{
+  "id": "B35",
+  "role": "core",
+  "status": "ready",
+  "deliverable": "Deterministic analyze report from typed metric outputs",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "ownedFiles": [
+    "packages/core/src/dx/reports/analyze/canonical.ts",
+    "packages/core/src/dx/reports/analyze/honesty.ts",
+    "packages/core/src/dx/reports/analyze/compose.ts",
+    "packages/core/src/dx/reports/analyze/select.ts",
+    "packages/core/src/dx/reports/analyze/layer.ts",
+    "packages/core/test/dx/b35.test.ts",
+    "packages/core/test/dx/fixtures/b35/branch-metrics.json"
+  ],
+  "digests": {
+    "packages/core/src/dx/reports/analyze/canonical.ts": "sha256:974637517e2029fa64d31577e2fef13609a363437a0377c081c18d63c29a2f8b",
+    "packages/core/src/dx/reports/analyze/honesty.ts": "sha256:ec907b33ab3b66e355ea2a9b8a37c12f63890a2be473f750f39db23716264791",
+    "packages/core/src/dx/reports/analyze/compose.ts": "sha256:3b28e3a2533743dd8b0f575e7216831fc65fb2821ad159bb86d3735362cb675c",
+    "packages/core/src/dx/reports/analyze/select.ts": "sha256:ca9fcc6296baa5b218978a70567a55ce592907dbbe868268fbadb8f75a40bcd9",
+    "packages/core/src/dx/reports/analyze/layer.ts": "sha256:832bd37730fa5f2bbebedbc4b8df1409d18ce5875de2f655de36fac78ae13468",
+    "packages/core/test/dx/b35.test.ts": "sha256:3be41e67fd0da8f1c357620af87d197287f1ffaf66fd4d33d17fbedb40d9c966",
+    "packages/core/test/dx/fixtures/b35/branch-metrics.json": "sha256:a2b2b2abfd7df79304bf892cb476a433b38f88f743cb699219b47892b0ec9fb5"
+  },
+  "descriptorExport": "analyzeReportDescriptor (id dx.report.analyze, kind report, readiness ready) and ReportComposerLive (Layer providing ReportComposer) from packages/core/src/dx/reports/analyze/layer.ts; analyzeReportComposer + composeAnalyzeReport(snapshot, outputs, disclosures?) from compose.ts; selectAnalyzeSnapshot(store, {selector, snapshotId, asOf}) from select.ts",
+  "fixtureIds": [
+    "b35-mixed-branch",
+    "b35-permuted-branch",
+    "b35-dishonest-inputs",
+    "b35-empty"
+  ],
+  "sourceProbe": "Pure composer; consumes StoreSnapshot + MetricOutput[] only. No source probe applicable.",
+  "checks": [
+    {
+      "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/b35.test.ts",
+      "exit": 0,
+      "result": "11/11 passed"
+    },
+    {
+      "cmd": "pnpm exec oxlint <B35 files>",
+      "exit": 0
+    },
+    {
+      "cmd": "pnpm exec oxfmt --check <B35 files>",
+      "exit": 0
+    },
+    {
+      "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json",
+      "exit": 1,
+      "result": "0 diagnostics in B35 files; exit 1 from other owners (collectors/git-ai, collectors/opencode, reports/explain/timeline.ts, test/dx/b06, test/dx/b33)"
+    }
+  ],
+  "supportedFields": [
+    "metrics (sorted by metricId@checkpoint, exact duplicates collapsed, conflicting kept + noted)",
+    "findings (rank, severity, id)",
+    "coverage (snapshot + metric coverage, deduped, sorted)",
+    "notes (disclosures, selector incl. branch, non-live origin mix, coverage gaps, unavailable/estimated/partial metrics, honesty repairs, conflicts, dangling finding refs)",
+    "snapshot",
+    "flightId"
+  ],
+  "gaps": [
+    "Composer never recomputes/sums values; per-branch tokens/cost/time/commits come from metric owners.",
+    "selectAnalyzeSnapshot does not persist the new manifest (capability handler/integration must call putSnapshotManifest).",
+    "asOf is mapped to selector.to on store.snapshot; relies on EventStore honoring selector.to.",
+    "Integration (A02/A07) must register ReportComposerLive and analyzeReportDescriptor; barrel not edited."
+  ]
+}
