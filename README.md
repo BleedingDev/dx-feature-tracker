@@ -1,5 +1,7 @@
 # AI Engineering Cost Tracker
 
+[![dft intro: every branch, what it cost](docs/assets/dft-intro.gif)](https://github.com/BleedingDev/dx-feature-tracker/raw/main/apps/cli/assets/intro/dft-intro.mp4)
+
 AI Engineering Cost Tracker makes AI-assisted software development features measurable.
 
 When an AI coding agent such as Grok or Cursor works on a feature, it can consume thousands or millions of tokens across dozens of requests. Today, it is difficult to answer a simple question:
