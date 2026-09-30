@@ -1,6 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 
 import {
+  chatsText,
   collapseTurns,
   formatAge,
   formatCount,
@@ -13,6 +14,23 @@ const turn = (model: string, effort: string | null) => ({
   effort,
   maxMode: null,
   model,
+});
+
+const node = (
+  sessionId: string,
+  childSessionIds: readonly string[],
+  branches: readonly string[]
+) => ({
+  agentTimeMs: { value: null },
+  branches,
+  childSessionIds,
+  modelTimeline: [],
+  modelTimelineReason: null,
+  money: [],
+  sessionId,
+  title: null,
+  tokens: [],
+  toolCalls: { value: null },
 });
 
 describe("dft human output", () => {
@@ -31,8 +49,33 @@ describe("dft human output", () => {
         turn("grok-4.7", "high"),
         turn("auto", null),
         turn("grok-4.7", "high"),
+        turn("default", null),
       ])
-    ).toBe("grok-4.7 high ×2, auto ×1");
+    ).toBe("grok-4.7 high ×2, Auto ×2");
+  });
+
+  it("counts subagents apart from chats and names the other branches of a chat", () => {
+    const text = chatsText(
+      {
+        branch: "main",
+        chats: [
+          node(
+            "parent00-1",
+            ["child000-1", "child000-2"],
+            ["main", "feature/sub-b"]
+          ),
+          node("child000-1", [], ["main"]),
+          node("child000-2", [], ["main"]),
+        ],
+        rootSessionIds: ["parent00-1"],
+        unattributed: { events: 0 },
+      },
+      { now: 0, verbose: false }
+    ).split("\n");
+
+    expect(text[0]).toBe("1 chat on main, with 2 subagents");
+    expect(text).toContain("  Also on feature/sub-b");
+    expect(text.filter((line) => line.includes("Also on"))).toHaveLength(1);
   });
 
   it("keeps the sync note to one line unless verbose", () => {

@@ -23,6 +23,7 @@ interface ChatValueLike {
 
 export interface ChatNode {
   readonly agentTimeMs: ChatValueLike;
+  readonly branches?: readonly string[];
   readonly childSessionIds: readonly string[];
   readonly modelTimeline: readonly ModelTurnLike[];
   readonly modelTimelineReason: string | null;
@@ -431,6 +432,11 @@ const present = (parts: readonly (string | null)[]): string => {
   return kept.length === 0 ? DASH : kept.join(" · ");
 };
 
+const AUTO_MODELS = new Set(["auto", "default"]);
+
+const modelLabel = (model: string): string =>
+  AUTO_MODELS.has(model.toLowerCase()) ? "Auto" : model;
+
 export const modelShares = (
   chats: readonly ChatNode[]
 ): readonly (readonly [string, number])[] => {
@@ -438,7 +444,8 @@ export const modelShares = (
 
   for (const chat of chats) {
     for (const turn of chat.modelTimeline) {
-      counts.set(turn.model, (counts.get(turn.model) ?? 0) + 1);
+      const model = modelLabel(turn.model);
+      counts.set(model, (counts.get(model) ?? 0) + 1);
     }
   }
 
@@ -802,7 +809,9 @@ const turnKey = (turn: ModelTurnLike): string => {
     ...(turn.maxMode === true ? ["max"] : []),
   ];
 
-  return traits.length === 0 ? turn.model : `${turn.model} ${traits.join("+")}`;
+  const model = modelLabel(turn.model);
+
+  return traits.length === 0 ? model : `${model} ${traits.join("+")}`;
 };
 
 export const collapseTurns = (timeline: readonly ModelTurnLike[]): string => {
@@ -907,6 +916,14 @@ export const chatsText = (
       lines.push(`${detail}models: ${chat.modelTimelineReason}`);
     }
 
+    const others = (chat.branches ?? []).filter(
+      (name) => name !== report.branch
+    );
+
+    if (others.length > 0) {
+      lines.push(`${detail}Also on ${others.join(", ")}`);
+    }
+
     for (const childId of chat.childSessionIds) {
       const child = byId.get(childId);
 
@@ -938,12 +955,20 @@ export const chatsText = (
         ]
       : [];
 
-  return [
-    `${plural(report.chats.length, "chat")} on ${branch}`,
-    "",
-    ...lines,
-    ...unattributed,
-  ].join("\n");
+  const subagents = new Set(
+    report.chats.flatMap((chat) =>
+      chat.childSessionIds.filter((id) => byId.has(id))
+    )
+  ).size;
+
+  const topLevel = report.chats.length - subagents;
+
+  const heading =
+    subagents === 0
+      ? `${plural(report.chats.length, "chat")} on ${branch}`
+      : `${plural(topLevel, "chat")} on ${branch}, with ${plural(subagents, "subagent")}`;
+
+  return [heading, "", ...lines, ...unattributed].join("\n");
 };
 
 const measureValue = (measure: HistoryMeasure): number | null => measure.value;

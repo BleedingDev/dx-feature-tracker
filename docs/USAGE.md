@@ -108,7 +108,7 @@ dft dashboard --out costs.html --no-open
 
 `dft` counts each git worktree's work on the branch checked out in that worktree. `dft history` and `dft dashboard` show every branch of the repository, whichever worktree it lives in, with a `WORKTREE` column when any branch is in a linked worktree.
 
-**One agent that starts subagents in worktrees.** Run `dft install` once, in the main checkout, and start the agent there. Cursor reads hooks from `.cursor/hooks.json` in the folder the agent was started in, so its subagents are recorded too, even when they work in other worktrees. `dft` puts each subagent's edits and commands on the branch of the worktree they touched, and shows each subagent as its own chat under the parent in `dft chats` and the dashboard.
+**One agent that starts subagents in worktrees.** Run `dft install` once, in the main checkout, and start the agent there. Cursor reads hooks from `.cursor/hooks.json` in the folder the agent was started in, so its subagents are recorded too, even when they work in other worktrees. `dft` puts each subagent's edits and commands on the branch of the worktree they touched, and shows each subagent as its own chat under the parent in `dft chats` and the dashboard. A chat that worked on more than one branch gets an `Also on <branches>` line; its tokens stay on the branch where the chat ran.
 
 **Worktrees you open on their own.** When you open a worktree in its own Cursor window, or start a separate `cursor-agent` in it, Cursor reads that worktree's own `.cursor/hooks.json`. A new worktree does not get that file, because `dft install` does not commit it. Set them all up at once:
 
@@ -160,7 +160,7 @@ Cursor usage rows that can't be matched to any local event appear in `dft histor
 
 `dft chats` shows the model and reasoning level for each turn, read from the suffix of the model name (`minimal`, `low`, `medium`, `high`, `xhigh`, `thinking`). For example, `gpt-5-high` is shown as model `gpt-5` with reasoning level `high`. If Cursor reports the level in its own field, that value is used instead.
 
-When Cursor runs in Auto mode, the model shows as `Auto`/`default`. Cursor does not report which model it picked, so `dft` does not guess, and there is no price estimate for those turns.
+When Cursor runs in Auto mode, the model shows as `Auto` (Cursor records it as `default`). Cursor does not report which model it picked, so `dft` does not guess, and there is no price estimate for those turns.
 
 ## What happens automatically
 
