@@ -3,8 +3,13 @@ import { DateTime, Effect } from "effect";
 
 import { InvalidInput } from "../contracts/error-invalid-input.js";
 import { EventStore } from "../contracts/event-store.js";
+import {
+  accountAwareEvents,
+  reattributeIfPossible,
+} from "../correlation/branch-at-time/snapshot.js";
 import type { CostOptions } from "../metrics/cost/metric.js";
 import { NO_COST_OPTIONS } from "../metrics/cost/metric.js";
+import { withObservedModels } from "../metrics/cost/price-catalog/observed.js";
 import type { FlightContext } from "../model/event.js";
 import { contextForRepo } from "../registry/runtime.js";
 import { computeHistory, isoOf, parseSince } from "./compute.js";
@@ -47,7 +52,7 @@ export const makeDxHistoryCapability = (deps: DxHistoryDeps) =>
         });
       }
 
-      const snapshot = yield* store.snapshot({
+      const stored = yield* accountAwareEvents(store, {
         branch: null,
         flightId: null,
         from: null,
@@ -55,10 +60,17 @@ export const makeDxHistoryCapability = (deps: DxHistoryDeps) =>
         to: null,
       });
 
+      const retro = yield* reattributeIfPossible(stored.events);
+
+      const snapshot = { ...stored.wide, events: retro.events };
+
       const result = computeHistory(snapshot, {
         allRepos,
         asOf,
-        costOptions: deps.costOptions ?? NO_COST_OPTIONS,
+        costOptions: withObservedModels(
+          deps.costOptions ?? NO_COST_OPTIONS,
+          snapshot.events
+        ),
         repoCommonDir: context.repoCommonDir,
         resolveStatus: deps.resolveStatus ?? gitBranchStatus,
         sinceMs: since === null ? null : since.ms,

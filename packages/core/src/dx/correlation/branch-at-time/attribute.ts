@@ -26,6 +26,7 @@ export type HistoricalBasis =
   | "worktree-at-time"
   | "linked-request"
   | "live-capture"
+  | "collected-context"
   | "unassigned";
 
 export interface HistoricalAttribution {
@@ -35,7 +36,12 @@ export interface HistoricalAttribution {
   readonly collectedBranch: string | null;
   readonly confidence: number;
   readonly eventId: string;
-  readonly method: BranchAtMethod | "commit-hash" | "request-link" | "hook";
+  readonly method:
+    | BranchAtMethod
+    | "commit-hash"
+    | "request-link"
+    | "hook"
+    | "collected";
   readonly reason: string;
 }
 
@@ -204,6 +210,22 @@ const byWorktreeAtTime =
         };
   };
 
+const untimedCollected = (
+  event: DxEventEnvelope
+): HistoricalAttribution | null =>
+  timeOf(event) === null && event.context.branch !== null
+    ? {
+        ...base(event),
+        attribution: "provisional",
+        basis: "collected-context",
+        branch: event.context.branch,
+        confidence: 0.5,
+        method: "collected",
+        reason:
+          "event has no timestamp; kept the branch its collector recorded",
+      }
+    : null;
+
 const unassigned = (
   event: DxEventEnvelope,
   reason: string
@@ -300,12 +322,13 @@ export const attributeHistoricalBranches = (
     const found =
       own ??
       (viaLink === undefined
-        ? unassigned(
+        ? (untimedCollected(event) ??
+          unassigned(
             event,
             timeOf(event) === null
               ? "event has no timestamp"
               : "no worktree path, scored commit or linked request/conversation id"
-          )
+          ))
         : {
             ...base(event),
             attribution: "provisional" as const,

@@ -230,6 +230,10 @@ describe("dx_chats", () => {
       effort: "high+thinking",
       model: "claude-4.5-opus",
     });
+    expect(parseModelEffort("grok-4.7-high-fast")).toMatchObject({
+      effort: "high+fast",
+      model: "grok-4.7",
+    });
     expect(parseModelEffort("gpt-5.1-codex-max")).toMatchObject({
       effort: null,
       effortSource: "unavailable",

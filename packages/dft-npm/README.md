@@ -2,6 +2,8 @@
 
 Local AI engineering cost tracker for Cursor and git. `dft` records what your Cursor agent does in a repository and reports, per branch, the time, tokens and every money ledger it can find. Everything stays on your machine.
 
+Full guide: [docs/USAGE.md](https://github.com/BleedingDev/dx-feature-tracker/blob/main/docs/USAGE.md).
+
 ## Install
 
 Requires Node.js **24.18.0 or newer** (`node --version`).
@@ -19,9 +21,9 @@ dft install              # adds dft to .cursor/hooks.json and copies two Cursor 
 dft install --git-hooks  # also records a snapshot on pre-commit and pre-push
 ```
 
-`dft install` only writes inside the repository (`.cursor/hooks.json`, `.cursor/skills/`, and with `--git-hooks` the git hooks directory). It never writes `~/.cursor`, keeps any existing hooks, and running it again changes nothing. If the repo uses lefthook, it prints a snippet to add instead of editing hooks.
+`dft install` only writes inside the repository (`.cursor/hooks.json`, `.cursor/skills/`, and with `--git-hooks` the git hooks directory). It never writes `~/.cursor`, and keeps any existing hooks. Run it once per repository: running it again currently adds a second set of `dft hook` entries to `.cursor/hooks.json`. If the repo uses lefthook, it prints a snippet to add instead of editing hooks.
 
-The installed hooks call the Node binary and the `dft` path that ran `dft install`. If you switch Node versions or reinstall into a different prefix, run `dft install` again.
+The installed hooks call the Node binary and the `dft` path that ran `dft install`. If you switch Node versions or reinstall into a different prefix, delete the old `dft hook` entries from `.cursor/hooks.json` and run `dft install` again.
 
 Then use Cursor normally.
 

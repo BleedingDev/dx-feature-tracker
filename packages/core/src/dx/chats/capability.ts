@@ -3,6 +3,11 @@ import { DateTime, Effect, Option } from "effect";
 
 import { InvalidInput } from "../contracts/error-invalid-input.js";
 import { EventStore } from "../contracts/event-store.js";
+import {
+  accountAwareEvents,
+  narrowToBranch,
+  reattributeIfPossible,
+} from "../correlation/branch-at-time/snapshot.js";
 import type { SelectorResolver } from "../mcp/handlers/deps.js";
 import { literalSelectorResolver } from "../mcp/handlers/selector.js";
 import { isolateStdout } from "../mcp/handlers/stdio.js";
@@ -107,7 +112,9 @@ export const makeDxChatsCapability = (deps: DxChatsDeps = {}) =>
           from: since ?? resolved.from,
         };
 
-        const snapshot = yield* store.snapshot(selector);
+        const { events, wide } = yield* accountAwareEvents(store, selector);
+        const retro = yield* reattributeIfPossible(events);
+        const snapshot = narrowToBranch(wide, selector, retro.events);
 
         return buildChatTree(snapshot.events, {
           branch: selector.branch,

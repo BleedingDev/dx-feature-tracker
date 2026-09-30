@@ -14,6 +14,7 @@ const EFFORT_LEVELS: ReadonlySet<string> = new Set([
   "high",
   "xhigh",
   "thinking",
+  "fast",
 ]);
 
 const AUTO_MODELS: ReadonlySet<string> = new Set(["auto", "default"]);

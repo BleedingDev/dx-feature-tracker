@@ -1,0 +1,142 @@
+{
+  "gate": "G04",
+  "attempt": 1,
+  "milestone": "P4 release verdict: last-green artifact 1439ef3 (G03 content) re-fenced, installer/uninstall and pinned-snapshot restart rehearsed with a real Cursor client; degraded-live",
+  "verdict": "pass",
+  "verdictScope": "degraded-live release. The released artifact is exactly commit 1439ef38fcb294b7643f487828251e4b769d5a47 (clean tree). Recorder-side checks all pass on that digest. The live Cursor model turn could not run: the Cursor account hit its usage limit (cursor-agent: 'ActionRequiredError: You've hit your usage limit'), so this digest carries NO live token/cost observation and must not be described as a live token capture. The claims audit's live-origin check fails for that reason and is recorded as exit 1, not waived. Late work after 1439ef3 (p1-final-wire D8 wiring) is NOT released.",
+  "decidedAt": "2026-09-30T15:31+02:00",
+  "deadline": "2026-09-30T15:47+02:00",
+  "candidate": {
+    "commit": "1439ef38fcb294b7643f487828251e4b769d5a47",
+    "originMain": "1439ef38fcb294b7643f487828251e4b769d5a47",
+    "freezeMethod": "APFS clone (cp -Rc) of the live checkout into the gate scratchpad at 15:26:23. Attempt A kept the staged p1-final-wire changes (input digest f2a38507ce07c949817b5659d647b0bfc86166a98072d0a7d09585364663d19a) and failed the fence. Disposition: clone reset to HEAD, stray docs/execution/scratch_c12.bak and apps/web/ (disabled B42, not a workspace package) removed. The released candidate is the clean HEAD tree.",
+    "testedDigest": "sha256:2537654229adb9b5bb1d08723f3f97111ec181540ba52e5b4167d28634fb6163",
+    "digestMethod": "sha256 of the HEAD sha line; the clone had zero modified or untracked non-ignored files at test time",
+    "contractVersion": "dx.contracts.v1",
+    "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+    "cliDistSha256": "4c39549492a2d28c4a53e3de4e0641fe9b154a91f0e6f81aa57099a01b430ba6",
+    "installerSha256": "4bc956fda622e1946ccee0a42424853a6b0dd86657f1f659d592f71e0245b2c4"
+  },
+  "disposition": {
+    "excluded": [
+      {
+        "item": "p1-final-wire (staged in the live checkout: apps/cli/src/dft-render.ts, apps/cli/src/dft.ts, packages/core/src/dx/chats/capability.ts, packages/core/src/dx/correlation/branch-at-time/snapshot.ts, packages/core/src/dx/history/capability.ts, packages/core/src/dx/reports/analyze/select.ts, packages/core/test/dx/p1-final-wire.test.ts, docs/execution/nodes/p1-final-wire.md)",
+        "reason": "fence exit 1: packages/core/test/dx/integration/a07-rebuild.test.ts:226 pinned-snapshot metric hash != first-analysis hash (expected 69759cfb..., received de67d68a...). Same regression G03 saw with the earlier D8 wiring. A pinned snapshot must replay identical metrics; that is the restart guarantee this gate checks. Handoff has no .json receipt and did not run a07-rebuild.",
+        "state": "left staged and untouched in the live checkout; not released"
+      },
+      { "item": "apps/web/", "reason": "B42 disabled optional web drilldown; not a workspace package" },
+      { "item": "docs/execution/scratch_c12.bak", "reason": "stray scratch file" }
+    ]
+  },
+  "enabledModules": {
+    "note": "Unchanged from G03 (same commit).",
+    "ready": ["a01","a02","a03","a04","a05","a06","a09","b01","b02","b03","b04","b06","b20","b22","b23","b24","b26","b27","b28","b30","b34","b35","b36","b37","b38","b39","b40","flight-time","auto-usage","npm-package","p1-prices","p1-history","p1-wire"],
+    "degraded": ["a07","a08","b05","b07","b08","b10","b11","b12","b13","b14","b21","b31","b46","b48","backfill","p1-chats"],
+    "disabled": ["b09","b33","b41","b42","b43","b44","b45","p1-final-wire"]
+  },
+  "commands": [
+    {
+      "name": "fence attempt A (live freeze incl. staged p1-final-wire)",
+      "argv": ["pnpm","exec","turbo","run","check","test","build","--continue"],
+      "cwd": "<gate scratchpad>/g04clone",
+      "at": "15:26:30-15:26:57",
+      "exit": 1,
+      "result": "17/18 tasks ok; @rat-stack/core#test 1 failed | 569 passed | 3 expected fail: a07-rebuild pinned-vs-first metric hash mismatch",
+      "superseded": true
+    },
+    {
+      "name": "fence (released candidate = clean 1439ef3)",
+      "argv": ["pnpm","exec","turbo","run","check","test","build","--continue"],
+      "cwd": "<gate scratchpad>/g04clone",
+      "at": "15:27:09-15:27:38",
+      "exit": 0,
+      "result": "18/18 tasks successful; capability 72/72, devtools 19/19, cli 20/20, core 70 files 567 passed + 3 expected-fail. Includes c13 installer merge/backup/uninstall fixture (4 tests) and a07-rebuild fresh-store rebuild (same metrics)."
+    },
+    {
+      "name": "real Cursor rehearsal on the released candidate (C17 script)",
+      "argv": ["/Users/satan/bin/owned-temp-dir","--run","g04-c17","--","bash","docs/execution/c17/run.sh"],
+      "env": "C17_OUT=<gate scratchpad>/c17out-g04",
+      "at": "15:27:59-15:29:12",
+      "exit": 1,
+      "steps": {"install":0,"cursor-agent run 1":1,"cursor-agent run 2":1,"collect-git":0,"collect-hooks":0,"collect-cli":0,"collect-test-operator":1,"collect-gitobs":0,"collect-transcripts-imported":0,"recollect-cli":0,"analyze1":0,"analyze2-same-snapshot (fresh process)":0,"explain-snapshot":0,"evidence-follow":0,"status":0,"uninstall":0},
+      "result": "Script exit 1 comes from cursor-agent (usage limit) and the operator junit step (no agent edit), not from the recorder."
+    },
+    {
+      "name": "cursor-agent failure probe",
+      "argv": ["cursor-agent","-p","--output-format","stream-json","--trust","Reply with the word ok only."],
+      "at": "15:29:22-15:29:26",
+      "exit": 1,
+      "result": "stderr: ActionRequiredError: You've hit your usage limit. `cursor-agent status`: logged in. Probe dir deleted."
+    },
+    {
+      "name": "C15 claims audit on this digest's live flight",
+      "argv": ["bash","docs/execution/c15/audit-claims.sh","<scratch>/g04-analyze1.json","<scratch>/g04-explain-snapshot.json","live"],
+      "cwd": "<gate scratchpad>/g04clone",
+      "at": "15:30",
+      "exit": 1,
+      "result": "13 pass, 1 fail. FAIL 'live flight contains live-origin evidence' (originMix {imported:7}): with the model turn blocked, no cursor-cli usage line exists, so no live-origin event was recorded. All honesty checks pass: null metrics carry reasons, no valued unavailable metric, estimates labelled method=estimated with method=, source values cite evidence, no savings/productivity/human-waiting metric, no AI ownership without lineage, branch age/active/agent time separate, partial sources named, shipped source has no causal copy."
+    }
+  ],
+  "restartRehearsal": {
+    "snapshotId": "snap_7a7c81c3109ec4e50ae892911caf26f2",
+    "method": "analyze1 creates the snapshot; analyze2 is a separate node process reopening the same SQLite store with --snapshotId; explain and evidence follow run in further processes",
+    "metricsEqual": true,
+    "metricsSha256Prefix": "c1734f8862fa3a58",
+    "evidenceFollowed": 5,
+    "fixtureRebuild": "a07-rebuild in the fence: fresh store rebuild yields the same metric hash"
+  },
+  "installerRehearsal": {
+    "install": "exit 0; project-level .cursor/mcp.json, .cursor/hooks.json, 2 skills, .git/info/exclude in the scratch demo repo",
+    "uninstall": "exit 0; backups mcp.json.dx-backup-* and hooks.json.dx-backup-* written, owned entries removed",
+    "userHooksJson": "~/.cursor/hooks.json sha256 identical before and after",
+    "fixture": "packages/core/test/dx/c13.test.ts 4/4 in the exit-0 fence (merge beside unrelated entries, backups, uninstall only owned entries, refuse foreign/unparseable, keep user-edited entry)"
+  },
+  "cursorEvidence": {
+    "client": "cursor-agent 2026.09.28-64d2043 (logged in; account usage limit reached)",
+    "node": "v24.18.0",
+    "branch": "scratch demo repo branch in owned temp dir (deleted by wrapper)",
+    "snapshotId": "snap_7a7c81c3109ec4e50ae892911caf26f2",
+    "observed": {
+      "dx.flight.agent.ms": 8904,
+      "dx.flight.active.ms": 14875,
+      "dx.flight.active.intervals": 1,
+      "dx.flight.branch-age.ms": 57158,
+      "dx.git.commits": 0,
+      "hookSpoolFiles": 2,
+      "transcriptFound": true,
+      "tokens": "unavailable (cursor-agent usage limit; no result line)",
+      "money": "unavailable (no source charge; price-table estimate unavailable without token readings)"
+    },
+    "tokenRoute": "B10 cursor-cli token capture last observed live by C17 at 14:48 (22150 input / 1275 output / 153984 cached) and by C14 (25599 / 1381 / 122880) on earlier digests; not re-observed on this digest",
+    "pendingObservation": [
+      "token-bearing cursor-agent turn on this digest (blocked by Cursor account usage limit)",
+      "interactive Cursor IDE MCP analyze/explain by an operator"
+    ]
+  },
+  "coverage": {
+    "git": "live",
+    "cursorHooks": "live capture (2 spool files, recorded with origin=imported via spool collection)",
+    "cursorCliUsage": "none this run (usage limit); route verified on earlier digests",
+    "localTests": "operator junit absent this run (agent made no change); local-test collector covered by fence tests",
+    "ciPr": "out of scope"
+  },
+  "gaps": [
+    "No live token/cost observation on the released digest: Cursor account usage limit.",
+    "Claims audit live-origin check exit 1 for the same reason; do not present this flight as live token capture.",
+    "Tool-call count flagged overcounted by C15 (24 vs 12); do not quote it.",
+    "Money per branch: source charges only via imported usage exports/dashboard; the account's $3.53 Auto usage stays unattributed until D8/session join (p1-final-wire) is fixed and released.",
+    "Cursor IDE MCP analyze/explain operator observation pending."
+  ],
+  "blockers": [
+    {
+      "owner": "p1-final-wire",
+      "problem": "D8 retroactive reattribution breaks pinned-snapshot reproducibility: a07-rebuild.test.ts:226 metric hash mismatch.",
+      "fix": "Make selectAnalyzeSnapshot apply reattribution only when building a new snapshot (or persist the reattributed events/attribution into the snapshot) so --snapshotId replays the stored metrics unchanged; rerun a07-rebuild plus the full fence before a new gate."
+    },
+    {
+      "owner": "operator (Cursor account)",
+      "problem": "cursor-agent refuses model turns: usage limit reached.",
+      "fix": "After the limit resets, rerun C17_OUT=<dir> /Users/satan/bin/owned-temp-dir --run c17 -- bash docs/execution/c17/run.sh and the C15 audit with label live on 1439ef3."
+    }
+  ]
+}

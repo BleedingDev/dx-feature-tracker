@@ -6,6 +6,13 @@ import type {
   StoreFailure,
   StoreSnapshot,
 } from "../../contracts/services.js";
+import {
+  accountAwareEvents,
+  narrowToBranch,
+  reattributeIfPossible,
+  replayAccountAwareEvents,
+  summaryToJson,
+} from "../../correlation/branch-at-time/snapshot.js";
 import type { SnapshotId } from "../../model/ids.js";
 import type { SnapshotSelector } from "../../model/snapshot.js";
 
@@ -19,24 +26,79 @@ export interface SelectedSnapshot {
   readonly snapshot: StoreSnapshot;
   readonly mode: "pinned" | "as-of" | "latest";
   readonly disclosures: readonly string[];
+  readonly attribution?: ReturnType<typeof summaryToJson>;
 }
+
+const disclosureOf = (
+  applied: boolean,
+  attribution: ReturnType<typeof summaryToJson>
+): string | null =>
+  applied
+    ? `Events re-attributed to the branch checked out when they happened (D8): ${
+        attribution
+          .map(
+            (b) =>
+              `${b.branch ?? "(unattributed)"} ${String(b.events)} [${Object.entries(
+                b.byMethod
+              )
+                .map(([m, n]) => `${m}=${String(n)}`)
+                .join(", ")}]`
+          )
+          .join("; ") || "no events"
+      }.`
+    : null;
+
+const retroactive = (
+  store: EventStoreService,
+  selector: SnapshotSelector
+): Effect.Effect<
+  {
+    readonly snapshot: StoreSnapshot;
+    readonly attribution: ReturnType<typeof summaryToJson>;
+    readonly disclosure: string | null;
+  },
+  StoreFailure
+> =>
+  Effect.gen(function* retroactiveSnapshot() {
+    const { events, wide } = yield* accountAwareEvents(store, selector);
+    const retro = yield* reattributeIfPossible(events);
+
+    return {
+      attribution: summaryToJson(retro.summary),
+      disclosure: disclosureOf(retro.applied, summaryToJson(retro.summary)),
+      snapshot: narrowToBranch(wide, selector, retro.events),
+    };
+  });
 
 const pinned = (
   store: EventStoreService,
   snapshotId: SnapshotId
 ): Effect.Effect<SelectedSnapshot, StoreFailure | SnapshotNotFound> =>
-  Effect.map(store.getSnapshot(snapshotId), (snapshot) => ({
-    disclosures: [`Reused requested snapshot ${snapshotId}.`],
-    mode: "pinned" as const,
-    snapshot,
-  }));
+  Effect.gen(function* pinnedSnapshot() {
+    const stored = yield* store.getSnapshot(snapshotId);
+    const events = yield* replayAccountAwareEvents(store, stored);
+    const retro = yield* reattributeIfPossible(events);
+    const attribution = summaryToJson(retro.summary);
+    const disclosure = disclosureOf(retro.applied, attribution);
+
+    return {
+      attribution,
+      disclosures:
+        disclosure === null
+          ? [`Reused requested snapshot ${snapshotId}.`]
+          : [`Reused requested snapshot ${snapshotId}.`, disclosure],
+      mode: "pinned" as const,
+      snapshot: narrowToBranch(stored, stored.manifest.selector, retro.events),
+    };
+  });
 
 const latest = (
   store: EventStoreService,
   selector: SnapshotSelector
 ): Effect.Effect<SelectedSnapshot, StoreFailure> =>
   Effect.gen(function* latestSnapshot() {
-    const snapshot = yield* store.snapshot(selector);
+    const retro = yield* retroactive(store, selector);
+    const { snapshot } = retro;
     const previousId = yield* store.latestSnapshotId(selector);
 
     const previous =
@@ -57,7 +119,15 @@ const latest = (
               : `Evidence changed since previous snapshot ${previousId} (watermark ${previous.value.manifest.eventWatermark} -> ${snapshot.manifest.eventWatermark}).`,
           ];
 
-    return { disclosures, mode: "latest" as const, snapshot };
+    return {
+      attribution: retro.attribution,
+      disclosures:
+        retro.disclosure === null
+          ? disclosures
+          : [...disclosures, retro.disclosure],
+      mode: "latest" as const,
+      snapshot,
+    };
   });
 
 export const selectAnalyzeSnapshot = (
@@ -72,13 +142,15 @@ export const selectAnalyzeSnapshot = (
     const { asOf } = request;
 
     return Effect.map(
-      store.snapshot({ ...request.selector, to: asOf }),
-      (snapshot) => ({
+      retroactive(store, { ...request.selector, to: asOf }),
+      (retro) => ({
+        attribution: retro.attribution,
         disclosures: [
-          `Analyzed snapshot ${snapshot.manifest.snapshotId} bounded to asOf ${asOf}.`,
+          `Analyzed snapshot ${retro.snapshot.manifest.snapshotId} bounded to asOf ${asOf}.`,
+          ...(retro.disclosure === null ? [] : [retro.disclosure]),
         ],
         mode: "as-of" as const,
-        snapshot,
+        snapshot: retro.snapshot,
       })
     );
   }

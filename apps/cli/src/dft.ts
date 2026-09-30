@@ -36,6 +36,7 @@ import {
 } from "./dft-install.js";
 import type { InstallStep } from "./dft-install.js";
 import {
+  analyzeText,
   historyText,
   ledgerValues,
   moneyLines,
@@ -63,24 +64,33 @@ const booleanFlag = (name: string, description: string) =>
   );
 
 const reportFlags = {
-  allRepos: booleanFlag("all-repos", "Include every repository in the store"),
+  allRepos: booleanFlag(
+    "all-repos",
+    "Report every repository in the store, not just the current one"
+  ),
   branch: optionalString(
     "branch",
-    "Branch to report; defaults to the current branch"
+    "Branch to report on, e.g. feature/x; defaults to the checked-out branch"
   ),
   db: optionalString(
     "db",
-    "SQLite store; defaults to $DFT_HOME/dft.db (~/.dft/dft.db)"
+    "Path to the SQLite store; defaults to $DFT_HOME/dft.db (~/.dft/dft.db)"
   ),
-  json: booleanFlag("json", "Print machine-readable JSON on stdout"),
-  noSync: booleanFlag("no-sync", "Skip the incremental sync of local sources"),
+  json: booleanFlag(
+    "json",
+    "Print JSON on stdout instead of text; sync notes go to stderr"
+  ),
+  noSync: booleanFlag(
+    "no-sync",
+    "Skip importing new local data first; report only what is already stored"
+  ),
   repo: optionalString(
     "repo",
-    "Repository path; defaults to the current directory"
+    "Repository path; defaults to $DX_REPO, then the current directory"
   ),
   since: optionalString(
     "since",
-    "Lower time bound: 7d, 24h, 30m, 2w or an ISO timestamp"
+    "Only count activity after this point: 30m, 24h, 7d, 2w or an ISO timestamp like 2026-09-01T00:00:00Z"
   ),
 };
 
@@ -214,8 +224,19 @@ const capabilityAt = (session: Session) => {
 
 const statusCommand = reportCommand(
   "status",
-  "Show the store, enabled sources and module readiness (syncs this repo first)",
+  "Check that dft is set up: store path, which local sources were found and whether each report is ready. Syncs this repo first.",
   (_flags, session) => capabilityAt(session).status.handler({})
+).pipe(
+  Command.withShortDescription(
+    "Check setup: store, local sources found, report readiness"
+  ),
+  Command.withExamples([
+    { command: "dft status", description: "Check setup for the current repo" },
+    {
+      command: "dft status --json --no-sync",
+      description: "Machine-readable status without importing new data",
+    },
+  ])
 );
 
 const analyzeHandler = (flags: ReportFlags, session: Session) =>
@@ -223,22 +244,58 @@ const analyzeHandler = (flags: ReportFlags, session: Session) =>
     flags.allRepos ? {} : { repo: session.paths.repo }
   );
 
+const analyzeExamples = [
+  {
+    command: "dft analyze",
+    description: "Cost, tokens and time for the checked-out branch",
+  },
+  {
+    command: "dft analyze --branch feature/x --json",
+    description: "Another branch, as JSON",
+  },
+  {
+    command: "dft analyze --since 7d --no-sync",
+    description: "Last 7 days only, without importing new data first",
+  },
+];
+
 const analyzeCommand = reportCommand(
   "analyze",
-  "Per-branch AI cost report: every money ledger separately, tokens, time, git",
-  analyzeHandler
+  "AI cost report for one branch: each money ledger listed separately (never summed), plus tokens, active time and git activity. Syncs this repo first unless --no-sync.",
+  analyzeHandler,
+  analyzeText
+).pipe(
+  Command.withShortDescription(
+    "Cost report for a branch: money ledgers, tokens, time, git"
+  ),
+  Command.withExamples(analyzeExamples)
 );
 
 const analyseCommand = reportCommand(
   "analyse",
-  "Alias of analyze",
-  analyzeHandler
-);
+  "Same as analyze",
+  analyzeHandler,
+  analyzeText
+).pipe(Command.withExamples(analyzeExamples));
 
 const explainCommand = reportCommand(
   "explain",
-  "Evidence-linked timeline behind the current branch's numbers",
+  "Show the timeline of events behind a branch's numbers, each linked to its source evidence (up to 200 entries). Use it to check where a cost came from.",
   (_flags, session) => capabilityAt(session).explain.handler({ limit: 200 })
+).pipe(
+  Command.withShortDescription(
+    "Timeline of events behind a branch's numbers, with evidence"
+  ),
+  Command.withExamples([
+    {
+      command: "dft explain",
+      description: "Explain the checked-out branch",
+    },
+    {
+      command: "dft explain --branch feature/x --since 24h",
+      description: "Another branch, last 24 hours",
+    },
+  ])
 );
 
 interface OptionalInput {
@@ -273,24 +330,50 @@ const historyInput = (flags: ReportFlags, session: Session) =>
 
 const historyCommand = reportCommand(
   "history",
-  "Every feature flight (repo, branch) with status, time, tokens and each money ledger",
+  "List every branch worked on (one row per repo and branch) with status, active time, tokens and each money ledger. Covers the current repo unless --all-repos. --branch is ignored here.",
   (flags, session) =>
     capabilityAt(session).history.handler(historyInput(flags, session)),
   (output) => historyText(output.rows)
+).pipe(
+  Command.withShortDescription(
+    "All branches with status, time, tokens and money ledgers"
+  ),
+  Command.withExamples([
+    { command: "dft history", description: "All branches in this repo" },
+    {
+      command: "dft history --since 30d --all-repos",
+      description: "Every repo, last 30 days",
+    },
+    {
+      command: "dft history --json",
+      description: "Rows as JSON for scripts",
+    },
+  ])
 );
 
 const chatsCommand = reportCommand(
   "chats",
-  "Chat tree for a branch with the per-turn model and reasoning level",
+  "Show the chat sessions for a branch as a tree, with the model and reasoning level used on each turn.",
   (flags, session) =>
     capabilityAt(session).chats.handler(
       optionalInput({ repo: session.paths.repo }, flags)
     )
+).pipe(
+  Command.withShortDescription(
+    "Chat tree for a branch with per-turn model and reasoning level"
+  ),
+  Command.withExamples([
+    { command: "dft chats", description: "Chats on the checked-out branch" },
+    {
+      command: "dft chats --branch feature/x --since 7d",
+      description: "Another branch, last 7 days",
+    },
+  ])
 );
 
 const syncCommand = reportCommand(
   "sync",
-  "Incrementally import this repo's local sources (hook spool, git, transcripts); idempotent",
+  "Import new local data for this repo: Cursor hook spool, git history and chat transcripts. Safe to re-run; only new data is added. Other commands already sync first, so you rarely need this.",
   (flags, session) =>
     Effect.gen(function* sync() {
       const store = yield* EventStore;
@@ -304,6 +387,17 @@ const syncCommand = reportCommand(
     }),
   (output) => formatSyncLine(output),
   false
+).pipe(
+  Command.withShortDescription(
+    "Import new local data (hook spool, git, transcripts); safe to re-run"
+  ),
+  Command.withExamples([
+    { command: "dft sync", description: "Import new data for this repo" },
+    {
+      command: "dft sync --repo ~/code/app --db /tmp/dft.db",
+      description: "Another repo into a separate store",
+    },
+  ])
 );
 
 const gitDirty = (worktree: string): boolean | null => {
@@ -433,8 +527,18 @@ const snapshotCommand = Command.make(
     )
 ).pipe(
   Command.withDescription(
-    "Persist an analyze snapshot keyed to HEAD (+dirty) and print one line per money ledger; exit 0 unless --max-cost is exceeded"
-  )
+    "Save the branch's current cost to snapshots.jsonl next to the store, keyed to HEAD and the dirty flag, and print one line per money ledger. Meant for git hooks: it never fails on its own errors, and exits 1 only when --max-cost is exceeded."
+  ),
+  Command.withShortDescription(
+    "Record cost at HEAD; optional --max-cost budget check for git hooks"
+  ),
+  Command.withExamples([
+    { command: "dft snapshot", description: "Record and print the cost now" },
+    {
+      command: "dft snapshot --max-cost 5",
+      description: "Exit 1 if any single ledger is over 5",
+    },
+  ])
 );
 
 const installLine = (step: InstallStep): string =>
@@ -445,7 +549,7 @@ const installCommand = Command.make(
   {
     gitHooks: booleanFlag(
       "git-hooks",
-      "Also chain `dft snapshot` into pre-commit and pre-push (never clobbers existing hooks)"
+      "Also add `dft snapshot` to the pre-commit and pre-push git hooks; existing hooks are kept"
     ),
     json: reportFlags.json,
     repo: reportFlags.repo,
@@ -471,8 +575,18 @@ const installCommand = Command.make(
     })
 ).pipe(
   Command.withDescription(
-    "Write project .cursor/hooks.json entries and Cursor skills (never ~/.cursor); --git-hooks adds snapshot hooks"
-  )
+    "Set up dft in this repo: add dft entries to .cursor/hooks.json and install the dft Cursor skills. Only touches the project; never writes to ~/.cursor. Run once: running it again adds duplicate dft hook entries."
+  ),
+  Command.withShortDescription(
+    "Set up Cursor hooks and skills in this repo (run once)"
+  ),
+  Command.withExamples([
+    { command: "dft install", description: "Set up Cursor hooks and skills" },
+    {
+      command: "dft install --git-hooks",
+      description: "Also snapshot cost on every commit and push",
+    },
+  ])
 );
 
 const readStdin = (): string => {
@@ -492,8 +606,9 @@ const hookCommand = Command.make("hook", {}, () =>
   )
 ).pipe(
   Command.withDescription(
-    "Cursor hook entrypoint: read one hook JSON payload on stdin, spool sanitized metadata, print the hook response"
-  )
+    "Internal: called by Cursor hooks written by dft install. Reads one hook JSON payload on stdin, stores sanitized metadata and prints the hook response."
+  ),
+  Command.withShortDescription("Internal: Cursor hook entrypoint")
 );
 
 const staticSession = () => {
@@ -521,28 +636,49 @@ const fixedCaps = {
 };
 
 const collectCommand = toCommand(fixedCaps.collect, { name: "collect" }).pipe(
-  Command.provide(dxStoreLayer(fixed.store))
+  Command.provide(dxStoreLayer(fixed.store)),
+  Command.withShortDescription(
+    "Advanced: run collectors directly; most users want dft sync"
+  )
 );
 
 const markCommand = toCommand(fixedCaps.mark, { name: "mark" }).pipe(
-  Command.provide(dxStoreLayer(fixed.store))
+  Command.provide(dxStoreLayer(fixed.store)),
+  Command.withDescription(
+    "Advanced, optional: write an explicit flight start/stop/wait marker or labelled claim. Reports work without manual marks; branch and time are detected automatically."
+  ),
+  Command.withShortDescription(
+    "Advanced, optional: add a manual marker; not needed for normal reports"
+  )
 );
 
 const evidenceCommand = toCommand(fixedCaps.evidence, {
   name: "evidence",
-}).pipe(Command.provide(dxStoreLayer(fixed.store)));
+}).pipe(
+  Command.provide(dxStoreLayer(fixed.store)),
+  Command.withShortDescription("Advanced: look up stored evidence records")
+);
 
 const mcpCommand = Command.make("mcp", {}, () =>
   Layer.launch(mcpServer.tools).pipe(Effect.orDie)
 ).pipe(
   Command.withDescription(
-    "Serve the dx capabilities as an MCP server over stdio"
-  )
+    "Run dft as an MCP server over stdio so agents can call the same reports as tools."
+  ),
+  Command.withShortDescription("Serve dft reports as an MCP server (stdio)")
 );
 
 export const dftCommand = Command.make("dft").pipe(
   Command.withDescription(
-    "AI engineering cost tracker: per-branch tokens, time and every money ledger from local Cursor and git data"
+    [
+      "AI engineering cost tracker: tokens, active time and every money ledger per branch, from local Cursor and git data.",
+      "",
+      "  Quick start:",
+      "    dft install                           set up Cursor hooks and skills in this repo (once)",
+      "    dft analyze                           cost report for the current branch",
+      "    dft history --since 30d --all-repos   every branch you worked on, all repos",
+      "    dft <command> --help                  flags and examples for one command",
+    ].join("\n")
   ),
   Command.withSubcommands([
     installCommand,

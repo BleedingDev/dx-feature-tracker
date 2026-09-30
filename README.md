@@ -8,6 +8,19 @@ When an AI coding agent such as Grok or Cursor works on a feature, it can consum
 
 This tool connects AI usage with Git branches, commits, code changes, tests, and development activity to provide a complete picture of the cost and efficiency of AI-assisted development.
 
+## Install and use
+
+Requires macOS, Node.js 24.18.0 or newer, and Cursor.
+
+```sh
+npm i -g dx-feature-tracker
+cd your-repo
+dft install
+dft analyze
+```
+
+See the [usage guide](docs/USAGE.md) for every command, what the numbers mean and troubleshooting.
+
 ## What it tracks
 
 - **AI cost** — actual API spending
