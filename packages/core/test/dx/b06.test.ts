@@ -279,7 +279,7 @@ describe("B06 cursor-local-db collector", () => {
   );
 
   it.effect(
-    "fails typed for missing input, missing file and unknown schema",
+    "fails typed for missing input, missing file and unknown schema, with or without a scratch folder",
     () =>
       Effect.gen(function* failureCases() {
         const unknownPath = path.join(tempRoot, "unknown.db");
@@ -306,7 +306,7 @@ describe("B06 cursor-local-db collector", () => {
           "InvalidInput",
           "SourceUnavailable",
           "UnsupportedSource",
-          "InvalidInput",
+          "UnsupportedSource",
         ]);
       })
   );

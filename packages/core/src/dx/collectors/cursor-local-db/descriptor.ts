@@ -17,9 +17,9 @@ export const cursorLocalDbDescriptor: ModuleDescriptor = {
   fixtureIds: [...CURSOR_LOCAL_DB_FIXTURE_IDS],
   gaps: [
     {
-      code: "opt-in-input",
+      code: "backup-copy",
       message:
-        "Reads only an explicitly selected state.vscdb or ai-code-tracking.db through a consistent backup copy in scratchDir.",
+        "Reads state.vscdb or ai-code-tracking.db read-only through a backup copy in a scratch folder that is removed afterwards. Auto-sync rereads a changed database at most every 30 seconds.",
     },
     {
       code: "no-billed-charge",
@@ -34,14 +34,14 @@ export const cursorLocalDbDescriptor: ModuleDescriptor = {
     {
       code: "workspace-scope",
       message:
-        "Composer rows are scoped to the selected repo only when tracked repos or workspace identifiers reference its path; others are excluded and counted.",
+        "Rows are kept only when their tracked repo, workspace folder or file path lies inside the collected worktree and not inside another worktree of the same repo. Scored commits must exist in the repo. Other rows are skipped and counted.",
     },
   ],
   id: DescriptorIdSchema.make(CURSOR_LOCAL_DB_ADAPTER_ID),
   kind: "collector",
   owner: "B06",
   readiness: "degraded",
-  requiredInputs: ["selectedInput:sqlite-path", "scratchDir"],
+  requiredInputs: ["selectedInput:sqlite-path"],
   supportedFields: [
     "ai.session.createdAt",
     "ai.session.lastUpdatedAt",

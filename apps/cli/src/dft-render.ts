@@ -41,7 +41,7 @@ export interface ChatsReport {
   readonly unattributed: { readonly events: number };
 }
 
-const DASH = "—";
+const DASH = "-";
 
 const SECOND = 1000;
 

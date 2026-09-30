@@ -1,0 +1,99 @@
+{
+  "fixtureId": "cursor-local-db-scope-state",
+  "origin": "fixture",
+  "note": "Synthetic Cursor state.vscdb rows for worktree scoping. __MAIN__ is replaced by the test with its throwaway repo path. Not real user data.",
+  "tables": ["ItemTable", "cursorDiskKV", "composerHeaders"],
+  "workspaceFolders": {
+    "ws-folder": "file://__MAIN__"
+  },
+  "composerHeaders": [
+    {
+      "composerId": "sc-main",
+      "workspaceId": "ws-main",
+      "createdAt": 1790000000000,
+      "lastUpdatedAt": 1790000600000,
+      "isArchived": 0,
+      "isSubagent": 0,
+      "value": "{\"composerId\": \"sc-main\", \"createdAt\": 1790000000000, \"lastUpdatedAt\": 1790000600000, \"unifiedMode\": \"agent\", \"trackedGitRepos\": [{\"repoPath\": \"__MAIN__\", \"branch\": \"main\"}], \"workspaceIdentifier\": {\"id\": \"ws-main\"}}"
+    },
+    {
+      "composerId": "sc-prefix",
+      "workspaceId": "ws-prefix",
+      "createdAt": 1790000000000,
+      "lastUpdatedAt": 1790000600000,
+      "isArchived": 0,
+      "isSubagent": 0,
+      "value": "{\"composerId\": \"sc-prefix\", \"createdAt\": 1790000000000, \"lastUpdatedAt\": 1790000600000, \"unifiedMode\": \"agent\", \"trackedGitRepos\": [{\"repoPath\": \"__MAIN__-other\"}], \"workspaceIdentifier\": {\"id\": \"ws-prefix\"}}"
+    },
+    {
+      "composerId": "sc-nested",
+      "workspaceId": "ws-nested",
+      "createdAt": 1790000000000,
+      "lastUpdatedAt": 1790000600000,
+      "isArchived": 0,
+      "isSubagent": 0,
+      "value": "{\"composerId\": \"sc-nested\", \"createdAt\": 1790000000000, \"lastUpdatedAt\": 1790000600000, \"unifiedMode\": \"agent\", \"trackedGitRepos\": [], \"workspaceIdentifier\": {\"id\": \"ws-nested\", \"uri\": {\"fsPath\": \"__MAIN__/.worktrees/wt-a\", \"external\": \"file://__MAIN__/.worktrees/wt-a\"}}}"
+    },
+    {
+      "composerId": "sc-folder",
+      "workspaceId": "ws-folder",
+      "createdAt": 1790000000000,
+      "lastUpdatedAt": 1790000600000,
+      "isArchived": 0,
+      "isSubagent": 0,
+      "value": "{\"composerId\": \"sc-folder\", \"createdAt\": 1790000000000, \"lastUpdatedAt\": 1790000600000, \"unifiedMode\": \"agent\", \"trackedGitRepos\": [], \"workspaceIdentifier\": {\"id\": \"ws-folder\"}}"
+    },
+    {
+      "composerId": "sc-empty",
+      "workspaceId": "empty-window",
+      "createdAt": 1790000000000,
+      "lastUpdatedAt": 1790000600000,
+      "isArchived": 0,
+      "isSubagent": 0,
+      "value": "{\"composerId\": \"sc-empty\", \"createdAt\": 1790000000000, \"lastUpdatedAt\": 1790000600000, \"unifiedMode\": \"agent\", \"trackedGitRepos\": [], \"workspaceIdentifier\": {\"id\": \"empty-window\"}}"
+    }
+  ],
+  "cursorDiskKV": [
+    {
+      "key": "composerData:sc-main",
+      "value": "{\"composerId\": \"sc-main\", \"createdAt\": 1790000000000, \"lastUpdatedAt\": 1790000600000, \"unifiedMode\": \"agent\", \"trackedGitRepos\": [{\"repoPath\": \"__MAIN__\", \"branch\": \"main\"}], \"workspaceIdentifier\": {\"id\": \"ws-main\"}, \"text\": \"SCOPE_SECRET_PROMPT_CANARY\", \"modelConfig\": {\"modelName\": \"fixture-model\"}}"
+    },
+    {
+      "key": "composerData:sc-prefix",
+      "value": "{\"composerId\": \"sc-prefix\", \"createdAt\": 1790000000000, \"lastUpdatedAt\": 1790000600000, \"unifiedMode\": \"agent\", \"trackedGitRepos\": [{\"repoPath\": \"__MAIN__-other\"}], \"workspaceIdentifier\": {\"id\": \"ws-prefix\"}, \"text\": \"SCOPE_SECRET_PROMPT_CANARY\", \"modelConfig\": {\"modelName\": \"fixture-model\"}}"
+    },
+    {
+      "key": "composerData:sc-nested",
+      "value": "{\"composerId\": \"sc-nested\", \"createdAt\": 1790000000000, \"lastUpdatedAt\": 1790000600000, \"unifiedMode\": \"agent\", \"trackedGitRepos\": [], \"workspaceIdentifier\": {\"id\": \"ws-nested\", \"uri\": {\"fsPath\": \"__MAIN__/.worktrees/wt-a\", \"external\": \"file://__MAIN__/.worktrees/wt-a\"}}, \"text\": \"SCOPE_SECRET_PROMPT_CANARY\", \"modelConfig\": {\"modelName\": \"fixture-model\"}}"
+    },
+    {
+      "key": "composerData:sc-folder",
+      "value": "{\"composerId\": \"sc-folder\", \"createdAt\": 1790000000000, \"lastUpdatedAt\": 1790000600000, \"unifiedMode\": \"agent\", \"trackedGitRepos\": [], \"workspaceIdentifier\": {\"id\": \"ws-folder\"}, \"text\": \"SCOPE_SECRET_PROMPT_CANARY\", \"modelConfig\": {\"modelName\": \"fixture-model\"}}"
+    },
+    {
+      "key": "composerData:sc-empty",
+      "value": "{\"composerId\": \"sc-empty\", \"createdAt\": 1790000000000, \"lastUpdatedAt\": 1790000600000, \"unifiedMode\": \"agent\", \"trackedGitRepos\": [], \"workspaceIdentifier\": {\"id\": \"empty-window\"}, \"text\": \"SCOPE_SECRET_PROMPT_CANARY\", \"modelConfig\": {\"modelName\": \"fixture-model\"}}"
+    },
+    {
+      "key": "bubbleId:sc-main:b1",
+      "value": "{\"type\": 2, \"requestId\": \"sc-main-req\", \"createdAt\": \"2026-09-21T10:00:05.000Z\", \"tokenCount\": {\"inputTokens\": 100, \"outputTokens\": 10}, \"text\": \"SCOPE_SECRET_PROMPT_CANARY\"}"
+    },
+    {
+      "key": "bubbleId:sc-prefix:b1",
+      "value": "{\"type\": 2, \"requestId\": \"sc-prefix-req\", \"createdAt\": \"2026-09-21T10:00:05.000Z\", \"tokenCount\": {\"inputTokens\": 100, \"outputTokens\": 10}, \"text\": \"SCOPE_SECRET_PROMPT_CANARY\"}"
+    },
+    {
+      "key": "bubbleId:sc-nested:b1",
+      "value": "{\"type\": 2, \"requestId\": \"sc-nested-req\", \"createdAt\": \"2026-09-21T10:00:05.000Z\", \"tokenCount\": {\"inputTokens\": 100, \"outputTokens\": 10}, \"text\": \"SCOPE_SECRET_PROMPT_CANARY\"}"
+    },
+    {
+      "key": "bubbleId:sc-folder:b1",
+      "value": "{\"type\": 2, \"requestId\": \"sc-folder-req\", \"createdAt\": \"2026-09-21T10:00:05.000Z\", \"tokenCount\": {\"inputTokens\": 100, \"outputTokens\": 10}, \"text\": \"SCOPE_SECRET_PROMPT_CANARY\"}"
+    },
+    {
+      "key": "bubbleId:sc-empty:b1",
+      "value": "{\"type\": 2, \"requestId\": \"sc-empty-req\", \"createdAt\": \"2026-09-21T10:00:05.000Z\", \"tokenCount\": {\"inputTokens\": 100, \"outputTokens\": 10}, \"text\": \"SCOPE_SECRET_PROMPT_CANARY\"}"
+    }
+  ],
+  "ItemTable": []
+}

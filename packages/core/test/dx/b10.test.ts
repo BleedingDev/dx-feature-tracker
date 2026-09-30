@@ -38,7 +38,7 @@ describe("cursor-cli collector (B10)", () => {
     const codes = cursorCliDescriptor.gaps.map((gap) => gap.code);
 
     expect(codes).toContain("no-cost-in-cli-output");
-    expect(codes).toContain("cli-store-db-unsupported");
+    expect(codes).toContain("cli-store-no-tokens");
     expect(codes).toContain("no-live-capture");
   });
 
@@ -113,13 +113,15 @@ describe("cursor-cli collector (B10)", () => {
     })
   );
 
-  it.effect("reports CLI SQLite chat stores as an unsupported layout", () =>
+  it.effect("reports a chat store without agent metadata as unsupported", () =>
     Effect.gen(function* decodeStore() {
       const batch = yield* collect(inputFor(fixture("store.db")));
 
       expect(batch.events).toHaveLength(0);
       expect(batch.coverage.state).toBe("unsupported");
-      expect(batch.coverage.gaps[0]?.code).toBe("cli-store-db-unsupported");
+      expect(batch.coverage.gaps.map((gap) => gap.code)).toContain(
+        "chat-store-unrecognized"
+      );
     })
   );
 

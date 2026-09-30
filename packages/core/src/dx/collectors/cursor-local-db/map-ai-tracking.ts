@@ -1,7 +1,8 @@
 import { buildEnvelope, reported, toIso } from "./envelope.js";
-import { maxIso, scopeNeedles } from "./map-state.js";
+import { maxIso, scopeOfMap } from "./map-state.js";
 import type { MapContext, MapResult } from "./map-state.js";
 import type { CodeHashRow, ScoredCommitRow } from "./schemas.js";
+import { ownsPath } from "./scope.js";
 import type { AiTrackingRows } from "./snapshot.js";
 
 const hashEvent = (row: CodeHashRow, ctx: MapContext, version: string) =>
@@ -76,18 +77,19 @@ export const mapAiTracking = (
   rows: AiTrackingRows,
   ctx: MapContext
 ): MapResult => {
-  const needles = scopeNeedles(ctx.context);
+  const scope = scopeOfMap(ctx);
 
   const hashes = rows.codeHashes.filter(
-    (row) =>
-      needles.length === 0 ||
-      needles.some((needle) => (row.fileName ?? "").startsWith(needle))
+    (row) => scope === null || ownsPath(scope, row.fileName ?? "")
   );
 
   const { branch } = ctx.context;
+  const known = ctx.knownCommits ?? null;
 
   const commits = rows.scoredCommits.filter(
-    (row) => branch === null || row.branchName === branch
+    (row) =>
+      (branch === null || row.branchName === branch) &&
+      (known === null || known.has(row.commitHash))
   );
 
   const events = [

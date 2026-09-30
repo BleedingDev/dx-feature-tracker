@@ -20,10 +20,11 @@ import {
   EventIdSchema,
   RequestKeySchema,
 } from "../../model/ids.js";
+import { collectChatStores } from "../cursor-chats-store/collect.js";
 
 export const CURSOR_CLI_ADAPTER_ID = "cursor-cli";
 
-export const CURSOR_CLI_ADAPTER_VERSION = "0.1.0";
+export const CURSOR_CLI_ADAPTER_VERSION = "0.2.0";
 
 export const CURSOR_CLI_PROBED_VERSION = "2026.09.28-64d2043";
 
@@ -36,6 +37,10 @@ export const CURSOR_CLI_FIXTURE_IDS = [
 const SOURCE_KIND = "cursor-cli";
 
 const SQLITE_MAGIC = "SQLite format 3\u0000";
+
+const isSqlite = (bytes: Uint8Array): boolean =>
+  Buffer.from(bytes.subarray(0, SQLITE_MAGIC.length)).toString("latin1") ===
+  SQLITE_MAGIC;
 
 const NullableCount = Schema.optional(Schema.NullOr(Schema.Finite));
 
@@ -103,9 +108,9 @@ export const cursorCliDescriptor: ModuleDescriptor = {
         "Decoder follows the installed cursor-agent 2026.09.28 emitter; no live run was captured on this host (agent login required).",
     },
     {
-      code: "cli-store-db-unsupported",
+      code: "cli-store-no-tokens",
       message:
-        "Lowercase CLI chat store.db (~/.cursor/chats) holds protobuf blobs; layout unsupported and reported as a visible gap.",
+        "The cursor-agent chat store (~/.cursor/chats/<md5 of cwd>/<chat>/store.db) is read automatically for chats, turns, request ids, branch and model, but it keeps no token counts. Exact per-turn tokens come from the stop hook (input_tokens includes cache reads and writes) or Cursor account usage.",
     },
   ],
   id: DescriptorIdSchema.make("collector/cursor-cli"),
@@ -113,7 +118,7 @@ export const cursorCliDescriptor: ModuleDescriptor = {
   owner: "B10",
   readiness: "degraded",
   requiredInputs: [
-    "user-selected file with `cursor-agent -p --output-format stream-json|json` stdout",
+    "user-selected file with `cursor-agent -p --output-format stream-json|json` stdout, or a cursor-agent chat store.db or chats folder",
   ],
   supportedFields: [
     "identity.sessionId",
@@ -129,6 +134,13 @@ export const cursorCliDescriptor: ModuleDescriptor = {
     "payload.toolCalls",
     "payload.toolNames",
     "payload.isError",
+    "store.session.model",
+    "store.session.contextMeter",
+    "store.session.parentSessionId",
+    "store.turn.requestId",
+    "store.turn.startedAt",
+    "store.turn.branch",
+    "store.turn.toolCalls",
   ],
   version: CURSOR_CLI_ADAPTER_VERSION,
 };
@@ -317,27 +329,6 @@ const toEnvelope = (
   };
 };
 
-const unsupportedStoreBatch = (): EventBatch => ({
-  coverage: {
-    adapterId: CURSOR_CLI_ADAPTER_ID,
-    expectedItems: null,
-    gaps: [
-      {
-        code: "cli-store-db-unsupported",
-        message:
-          "Selected input is a SQLite CLI chat store; its protobuf blob layout is not decoded. No events emitted.",
-      },
-    ],
-    observedItems: 0,
-    state: "unsupported",
-    watermark: null,
-    windowFrom: null,
-    windowTo: null,
-  },
-  cursor: null,
-  events: [],
-});
-
 const applyLine = (
   line: Line,
   sessions: Map<string, SessionState>,
@@ -390,10 +381,6 @@ export const parseCursorCliOutput = (
   input: CollectInput,
   observedAt: string
 ): EventBatch => {
-  if (text.startsWith(SQLITE_MAGIC)) {
-    return unsupportedStoreBatch();
-  }
-
   const sessions = new Map<string, SessionState>();
   const events = new Map<string, DxEventEnvelope>();
   const counts = { considered: 0, rejected: 0, resultsWithoutUsage: 0 };
@@ -489,15 +476,29 @@ export const cursorCliCollector: DxCollector<FileSystem.FileSystem> = {
 
       const fileSystem = yield* FileSystem.FileSystem;
 
-      const text = yield* fileSystem.readFileString(path).pipe(
-        Effect.mapError(
-          () =>
-            new SourceUnavailable({
-              adapterId: CURSOR_CLI_ADAPTER_ID,
-              message: "selected cursor-agent output file is not readable",
-            })
-        )
-      );
+      const unreadable = () =>
+        new SourceUnavailable({
+          adapterId: CURSOR_CLI_ADAPTER_ID,
+          message: "selected cursor-agent output file is not readable",
+        });
+
+      const info = yield* fileSystem
+        .stat(path)
+        .pipe(Effect.mapError(unreadable));
+
+      const bytes =
+        info.type === "Directory"
+          ? null
+          : yield* fileSystem.readFile(path).pipe(Effect.mapError(unreadable));
+
+      if (bytes === null || isSqlite(bytes)) {
+        return yield* collectChatStores(input, {
+          adapterId: CURSOR_CLI_ADAPTER_ID,
+          adapterVersion: CURSOR_CLI_ADAPTER_VERSION,
+        });
+      }
+
+      const text = new TextDecoder().decode(bytes);
 
       const now = yield* DateTime.now;
 

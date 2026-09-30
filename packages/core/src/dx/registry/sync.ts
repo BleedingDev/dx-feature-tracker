@@ -5,10 +5,12 @@ import path from "node:path";
 import { Console, Effect } from "effect";
 
 import { runCollect } from "../cli/commands/collect.js";
+import { chatStoreSources } from "../collectors/cursor-chats-store/sources.js";
 import {
   HOOK_SPOOL_FOLDER,
   latestSpoolRecord,
 } from "../collectors/cursor-hooks/spool.js";
+import { localDbSources } from "../collectors/cursor-local-db/sources.js";
 import { autoSources, worktreeSources } from "../composition.js";
 import type { AutoSource } from "../composition.js";
 import type { EventStoreService } from "../contracts/services.js";
@@ -113,30 +115,19 @@ export const unavailableSteps = (
   const transcripts =
     worktree === null ? null : transcriptDirFor(home, worktree);
 
-  return [
-    ...(transcripts === null || existsSync(transcripts)
-      ? []
-      : [
-          {
-            duplicates: null,
-            input: transcripts,
-            inserted: null,
-            reason:
-              "no Cursor agent-transcripts folder for this worktree (slug match is by path)",
-            source: TRANSCRIPT_SOURCE,
-            status: "unavailable" as const,
-          },
-        ]),
-    {
-      duplicates: null,
-      input: null,
-      inserted: null,
-      reason:
-        "Cursor local DB is global (all workspaces); it is not auto-synced because its rows cannot be scoped to this repo yet. Run `dft collect --source cursor-local-db --input <state.vscdb>` explicitly.",
-      source: "collector.cursor-local-db",
-      status: "unavailable",
-    },
-  ];
+  return transcripts === null || existsSync(transcripts)
+    ? []
+    : [
+        {
+          duplicates: null,
+          input: transcripts,
+          inserted: null,
+          reason:
+            "no Cursor agent-transcripts folder for this worktree (slug match is by path)",
+          source: TRANSCRIPT_SOURCE,
+          status: "unavailable",
+        },
+      ];
 };
 
 export const leftoverSpoolSources = (
@@ -179,11 +170,15 @@ export const planSources = (
     ...[
       ...autoSources(context, options.cwd, options.storePath, dftHome),
       ...transcriptSources(options.home, worktree),
+      ...chatStoreSources(options.home, worktree),
+      ...localDbSources(options.home),
     ].map(withContext(context)),
     ...siblings.flatMap((other) =>
       [
         ...worktreeSources(other, dftHome),
         ...transcriptSources(options.home, other),
+        ...chatStoreSources(options.home, other),
+        ...localDbSources(options.home),
       ].map(withContext(contextForRepo(other)))
     ),
   ];

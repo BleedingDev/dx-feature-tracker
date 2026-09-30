@@ -26,9 +26,9 @@ export const cursorTranscriptDescriptor: ModuleDescriptor = {
   fixtureIds: [...CURSOR_TRANSCRIPT_FIXTURE_IDS],
   gaps: [
     {
-      code: "fixture-only",
+      code: "cursor-agent-output",
       message:
-        "No live Cursor transcript on this host (0 agent-transcripts dirs) and cursor-agent is not logged in; verified against documented-shape fixtures only. cursor-agent stream-json output is owned by B10 (collector/cursor-cli), not parsed here",
+        "cursor-agent also writes these transcripts; its stream-json output is read by collector/cursor-cli, and its chat store adds turn times, request ids and branches",
     },
     {
       code: "charge-unavailable",
@@ -41,9 +41,9 @@ export const cursorTranscriptDescriptor: ModuleDescriptor = {
         "Role/content transcripts usually omit usage; tokens are source-reported only when a usage object is present, else unavailable plus a labelled visible-text estimate",
     },
     {
-      code: "explicit-file-only",
+      code: "worktree-folder-only",
       message:
-        "Imports one explicitly selected .jsonl or .txt file; never scans ~/.cursor",
+        "Auto-sync reads ~/.cursor/projects/<worktree slug>/agent-transcripts for each synced worktree; other projects are never read",
     },
     {
       code: "markdown-export-unsupported",

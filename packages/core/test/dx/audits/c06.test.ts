@@ -188,7 +188,7 @@ describe("C06 cursor-local-db version audit", () => {
   );
 
   it.effect(
-    "refuses to read without an explicit selection or scratch dir",
+    "refuses without a selection and makes its own scratch dir when none is given",
     () =>
       Effect.gen(function* noSelection() {
         const unselected = yield* cursorLocalDbCollector
@@ -203,7 +203,7 @@ describe("C06 cursor-local-db version audit", () => {
           )
           .pipe(Effect.flip);
 
-        expect(noScratch._tag).toBe("InvalidInput");
+        expect(noScratch._tag).toBe("SourceUnavailable");
       })
   );
 

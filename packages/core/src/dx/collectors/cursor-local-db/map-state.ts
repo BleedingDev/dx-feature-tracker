@@ -1,4 +1,4 @@
-import { Option } from "effect";
+import { Option, Schema } from "effect";
 
 import type { Origin } from "../../model/common.js";
 import type { DxEventEnvelope, FlightContext } from "../../model/event.js";
@@ -9,14 +9,28 @@ import {
   decodeLegacyIndex,
 } from "./schemas.js";
 import type { BubbleJson, ComposerJson, HeaderRow } from "./schemas.js";
+import { pathsIn, primaryOwner, scopeFor } from "./scope.js";
+import type { WorktreeScope } from "./scope.js";
 import type { StateDbRows } from "./snapshot.js";
+
+export type WorkspaceFolderOf = (workspaceId: string) => string | null;
 
 export interface MapContext {
   readonly context: FlightContext;
+  readonly folderOf?: WorkspaceFolderOf;
+  readonly knownCommits?: ReadonlySet<string> | null;
   readonly observedAt: string;
   readonly origin: Origin;
+  readonly scope?: WorktreeScope | null;
   readonly sourceHash: string;
 }
+
+const noListedWorktrees = () => [];
+
+export const scopeOfMap = (ctx: MapContext): WorktreeScope | null =>
+  ctx.scope === undefined
+    ? scopeFor(ctx.context, noListedWorktrees)
+    : ctx.scope;
 
 export interface MapResult {
   readonly events: readonly DxEventEnvelope[];
@@ -37,11 +51,6 @@ interface BubbleRecord {
   readonly bubbleId: string;
   readonly value: BubbleJson;
 }
-
-export const scopeNeedles = (context: FlightContext): readonly string[] =>
-  [context.worktreePath, context.repoCommonDir?.replace(/\/\.git\/?$/u, "")]
-    .filter((value) => value !== null && value !== undefined)
-    .filter((value) => value.length > 1);
 
 export const maxIso = (values: readonly (string | null)[]) => {
   let best: string | null = null;
@@ -124,16 +133,62 @@ const field = <K extends keyof ComposerJson>(
   key: K
 ): ComposerJson[K] | null => record.data?.[key] ?? record.header?.[key] ?? null;
 
-const inScope = (needles: readonly string[], record: ComposerRecord) => {
-  const evidence = JSON.stringify([
-    field(record, "trackedGitRepos"),
-    field(record, "workspaceIdentifier"),
-  ]);
+const WorkspaceIdSchema = Schema.Struct({ id: Schema.String });
 
-  return (
-    needles.length === 0 || needles.some((needle) => evidence.includes(needle))
-  );
+const workspaceIdOf = Schema.decodeUnknownOption(WorkspaceIdSchema);
+
+const evidenceOf = (
+  record: ComposerRecord,
+  folderOf: WorkspaceFolderOf | undefined
+): readonly string[] => {
+  const workspaceIds = [
+    record.headerRow?.workspaceId ?? null,
+    Option.getOrNull(workspaceIdOf(field(record, "workspaceIdentifier")))?.id ??
+      null,
+  ].filter((id): id is string => id !== null && id !== "");
+
+  const folders =
+    folderOf === undefined
+      ? []
+      : workspaceIds.flatMap((id) => {
+          const folder = folderOf(id);
+
+          return folder === null ? [] : [folder];
+        });
+
+  return [
+    ...pathsIn(field(record, "trackedGitRepos")),
+    ...pathsIn(field(record, "workspaceIdentifier")),
+    ...pathsIn(folders),
+  ];
 };
+
+const ownerOfRecord = (
+  scope: WorktreeScope,
+  record: ComposerRecord,
+  folderOf: WorkspaceFolderOf | undefined
+) => primaryOwner(scope, evidenceOf(record, folderOf));
+
+export const composersInRepo = (
+  rows: StateDbRows,
+  scope: WorktreeScope | null,
+  folderOf?: WorkspaceFolderOf
+): ReadonlySet<string> | null =>
+  scope === null
+    ? null
+    : new Set(
+        [...collectComposers(rows).composers.values()].flatMap((record) =>
+          ownerOfRecord(scope, record, folderOf) === null
+            ? []
+            : [record.composerId]
+        )
+      );
+
+const inScope = (
+  ctx: MapContext,
+  scope: WorktreeScope | null,
+  record: ComposerRecord
+) => scope === null || ownerOfRecord(scope, record, ctx.folderOf) === scope.own;
 
 const sessionEvent = (
   record: ComposerRecord,
@@ -326,10 +381,10 @@ const turnEvent = (bubble: BubbleRecord, ctx: MapContext, version: string) => {
 
 export const mapStateDb = (rows: StateDbRows, ctx: MapContext): MapResult => {
   const { bubbles, composers, unreadable } = collectComposers(rows);
-  const needles = scopeNeedles(ctx.context);
+  const scope = scopeOfMap(ctx);
 
   const kept = [...composers.values()].filter((record) =>
-    inScope(needles, record)
+    inScope(ctx, scope, record)
   );
 
   const keptIds = new Set(kept.map((record) => record.composerId));
@@ -349,7 +404,11 @@ export const mapStateDb = (rows: StateDbRows, ctx: MapContext): MapResult => {
   return {
     events,
     excluded:
-      composers.size - kept.length + bubbles.length - keptBubbles.length,
+      composers.size -
+      kept.length +
+      bubbles.length -
+      keptBubbles.length +
+      (rows.skippedBubbles ?? 0),
     unreadable,
     watermark: maxIso(
       kept.map((record) => toIso(field(record, "lastUpdatedAt")))

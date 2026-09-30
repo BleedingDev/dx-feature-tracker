@@ -1,5 +1,6 @@
-// @effect-diagnostics nodeBuiltinImport:off -- The collector reads an explicitly selected SQLite file through node:sqlite backup into a scratch copy it removes afterwards.
-import { existsSync, rmSync } from "node:fs";
+// @effect-diagnostics nodeBuiltinImport:off -- The collector reads a Cursor SQLite file through node:sqlite backup into a scratch copy it removes afterwards.
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { DatabaseSync, backup } from "node:sqlite";
 
@@ -28,6 +29,15 @@ export interface StateDbRows {
   readonly headers: readonly HeaderRow[];
   readonly kv: readonly KeyValueRow[];
   readonly items: readonly KeyValueRow[];
+  readonly skippedBubbles?: number;
+}
+
+export type ComposerSelector = (
+  rows: StateDbRows
+) => ReadonlySet<string> | null;
+
+export interface SnapshotOptions {
+  readonly selectComposers?: ComposerSelector;
 }
 
 export interface AiTrackingRows {
@@ -73,13 +83,46 @@ const readAiTracking = (db: DatabaseSync): AiTrackingRows => ({
   ),
 });
 
+const CountRowSchema = Schema.Struct({ count: Schema.Finite });
+
+const countBubbles = (db: DatabaseSync) =>
+  selectRows(
+    db,
+    "select count(*) as count from cursorDiskKV where key like 'bubbleId:%'",
+    CountRowSchema
+  )[0]?.count ?? 0;
+
+const bubblesOf = (
+  db: DatabaseSync,
+  composerIds: ReadonlySet<string> | null
+): readonly KeyValueRow[] => {
+  if (composerIds === null) {
+    return selectRows(
+      db,
+      "select key, cast(value as text) as value from cursorDiskKV where key like 'bubbleId:%'",
+      KeyValueRowSchema
+    );
+  }
+
+  const statement = db.prepare(
+    "select key, cast(value as text) as value from cursorDiskKV where key >= ? and key < ?"
+  );
+
+  return [...composerIds].flatMap((composerId) =>
+    Schema.decodeUnknownSync(Schema.Array(KeyValueRowSchema))(
+      statement.all(`bubbleId:${composerId}:`, `bubbleId:${composerId};`)
+    )
+  );
+};
+
 const readStateDb = (
   db: DatabaseSync,
-  tables: readonly string[]
+  tables: readonly string[],
+  options: SnapshotOptions
 ): StateDbRows => {
-  const kv = selectRows(
+  const composerData = selectRows(
     db,
-    "select key, cast(value as text) as value from cursorDiskKV where key like 'composerData:%' or key like 'bubbleId:%'",
+    "select key, cast(value as text) as value from cursorDiskKV where key like 'composerData:%'",
     KeyValueRowSchema
   );
 
@@ -89,23 +132,34 @@ const readStateDb = (
     KeyValueRowSchema
   );
 
-  if (!tables.includes("composerHeaders")) {
-    return { headers: [], items, kv, layout: "state-vscdb/itemtable" };
-  }
+  const hasHeaders = tables.includes("composerHeaders");
+
+  const base = {
+    headers: hasHeaders
+      ? selectRows(
+          db,
+          "select composerId, workspaceId, isSubagent, value from composerHeaders",
+          HeaderRowSchema
+        )
+      : [],
+    items,
+    kv: composerData,
+    layout: hasHeaders
+      ? ("state-vscdb/composer-headers" as const)
+      : ("state-vscdb/itemtable" as const),
+  };
+
+  const selected = options.selectComposers?.(base) ?? null;
+  const bubbles = bubblesOf(db, selected);
 
   return {
-    headers: selectRows(
-      db,
-      "select composerId, workspaceId, isSubagent, value from composerHeaders",
-      HeaderRowSchema
-    ),
-    items,
-    kv,
-    layout: "state-vscdb/composer-headers",
+    ...base,
+    kv: [...composerData, ...bubbles],
+    skippedBubbles: selected === null ? 0 : countBubbles(db) - bubbles.length,
   };
 };
 
-const readCopy = (copyPath: string) => {
+const readCopy = (copyPath: string, options: SnapshotOptions) => {
   const db = new DatabaseSync(copyPath, { readOnly: true });
 
   try {
@@ -116,7 +170,7 @@ const readCopy = (copyPath: string) => {
     }
 
     if (hasAll(tables, STATE_TABLES)) {
-      return { rows: readStateDb(db, tables), tables };
+      return { rows: readStateDb(db, tables, options), tables };
     }
 
     return { rows: null, tables };
@@ -128,9 +182,21 @@ const readCopy = (copyPath: string) => {
 const unavailable = (message: string) =>
   new SourceUnavailable({ adapterId: CURSOR_LOCAL_DB_ADAPTER_ID, message });
 
+const ownedScratch = (scratchDir: string | null) => {
+  if (scratchDir !== null && scratchDir.length > 0) {
+    return { dir: scratchDir, owned: false };
+  }
+
+  return {
+    dir: mkdtempSync(path.join(tmpdir(), "dft-cursor-db-")),
+    owned: true,
+  };
+};
+
 export const readConsistentSnapshot = (
   sourcePath: string | null,
-  scratchDir: string | null
+  scratchDir: string | null,
+  options: SnapshotOptions = {}
 ) =>
   Effect.gen(function* snapshotSelectedDb() {
     if (sourcePath === null || sourcePath.length === 0) {
@@ -140,28 +206,32 @@ export const readConsistentSnapshot = (
       });
     }
 
-    if (scratchDir === null || scratchDir.length === 0) {
-      return yield* new InvalidInput({
-        field: "scratchDir",
-        message:
-          "cursor-local-db requires scratchDir for a consistent backup copy",
-      });
-    }
-
     if (!existsSync(sourcePath)) {
       return yield* unavailable("Selected Cursor local DB does not exist");
     }
 
     const stamp = yield* Clock.currentTimeMillis;
 
+    const scratch = yield* Effect.try({
+      catch: (cause) =>
+        unavailable(
+          `Cannot create a scratch folder for the copy: ${String(cause)}`
+        ),
+      try: () => ownedScratch(scratchDir),
+    });
+
     const copyPath = path.join(
-      scratchDir,
+      scratch.dir,
       `${path.basename(sourcePath)}.${process.pid}.${stamp}.b06-copy.db`
     );
 
     const removeCopy = Effect.sync(() => {
       for (const suffix of ["", "-wal", "-shm", "-journal"]) {
         rmSync(`${copyPath}${suffix}`, { force: true });
+      }
+
+      if (scratch.owned) {
+        rmSync(scratch.dir, { force: true, recursive: true });
       }
     });
 
@@ -196,7 +266,7 @@ export const readConsistentSnapshot = (
             message: `Cursor local DB copy did not match a recognized schema: ${String(cause)}`,
             sourceVersion: null,
           }),
-        try: () => readCopy(copyPath),
+        try: () => readCopy(copyPath, options),
       });
 
       if (snapshot.rows === null) {

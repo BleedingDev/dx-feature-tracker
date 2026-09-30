@@ -1,0 +1,71 @@
+{
+  "fixtureId": "cursor-local-db-scope-tracking",
+  "origin": "fixture",
+  "note": "Synthetic ai-code-tracking.db rows for worktree scoping. __MAIN__ and __HEAD__ are replaced by the test. Not real user data.",
+  "tables": ["ai_code_hashes", "scored_commits"],
+  "ai_code_hashes": [
+    {
+      "hash": "h-main",
+      "source": "composer",
+      "fileExtension": "ts",
+      "fileName": "__MAIN__/src/a.ts",
+      "requestId": null,
+      "conversationId": "sc-main",
+      "timestamp": 1790000500000,
+      "model": "fixture-model",
+      "createdAt": 1790000500000
+    },
+    {
+      "hash": "h-nested",
+      "source": "cli",
+      "fileExtension": "ts",
+      "fileName": "__MAIN__/.worktrees/wt-a/src/b.ts",
+      "requestId": null,
+      "conversationId": "sc-nested",
+      "timestamp": 1790000510000,
+      "model": null,
+      "createdAt": 1790000510000
+    },
+    {
+      "hash": "h-prefix",
+      "source": "tab",
+      "fileExtension": "ts",
+      "fileName": "__MAIN__-other/src/c.ts",
+      "requestId": null,
+      "conversationId": null,
+      "timestamp": 1790000520000,
+      "model": null,
+      "createdAt": 1790000520000
+    }
+  ],
+  "scored_commits": [
+    {
+      "commitHash": "__HEAD__",
+      "branchName": "main",
+      "scoredAt": 1790000900000,
+      "linesAdded": 5,
+      "linesDeleted": 0,
+      "tabLinesAdded": 0,
+      "tabLinesDeleted": 0,
+      "composerLinesAdded": 5,
+      "composerLinesDeleted": 0,
+      "humanLinesAdded": 0,
+      "humanLinesDeleted": 0,
+      "commitDate": "2026-09-21T12:00:00.000Z"
+    },
+    {
+      "commitHash": "0000000000000000000000000000000000000abc",
+      "branchName": "main",
+      "scoredAt": 1790000950000,
+      "linesAdded": 3,
+      "linesDeleted": 0,
+      "tabLinesAdded": 0,
+      "tabLinesDeleted": 0,
+      "composerLinesAdded": 0,
+      "composerLinesDeleted": 0,
+      "humanLinesAdded": 3,
+      "humanLinesDeleted": 0,
+      "commitDate": "2026-09-21T13:00:00.000Z"
+    }
+  ]
+}
