@@ -1,0 +1,701 @@
+{
+  "fixtureId": "core-golden-flight",
+  "description": "Common golden report input: one bounded flight with markers, a wait interval, two commits, a failed then successful CI attempt, a PR and one AI turn with source-reported usage. Charge is unavailable.",
+  "origin": "fixture",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "snapshot": {
+    "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+    "contractVersion": "dx.contracts.v1",
+    "createdAt": "2026-09-30T12:00:00.000Z",
+    "enabledDescriptors": [],
+    "eventWatermark": "sha256:feb403b01f31e499e5535cf4dd03b7191b2d9109629148f908d8c8be97dbbab0",
+    "metricDefinitions": [],
+    "originMix": [
+      {
+        "count": 12,
+        "origin": "fixture"
+      }
+    ],
+    "selector": {
+      "branch": null,
+      "flightId": "flight-fixture-0001",
+      "from": null,
+      "repoCommonDir": "/redacted/repos/sample-app/.git",
+      "to": null
+    },
+    "snapshotId": "snap-core-golden-flight"
+  },
+  "batches": [
+    {
+      "coverage": {
+        "adapterId": "marker",
+        "expectedItems": 4,
+        "gaps": [],
+        "observedItems": 4,
+        "state": "complete",
+        "watermark": "flight-fixture-0001:stop",
+        "windowFrom": "2026-09-30T09:00:00.000Z",
+        "windowTo": "2026-09-30T11:00:00.000Z"
+      },
+      "cursor": {
+        "adapterId": "marker",
+        "value": "flight-fixture-0001:stop"
+      },
+      "events": [
+        {
+          "acquisition": "manual",
+          "adapterId": "marker",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0001",
+            "headSha": "1111111111111111111111111111111111111111",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:52d9c4feafb7122c6833228c45e62e8c0225756229002b635916f9d5a20c8a4e",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:ecc26a43901e1b6461a4fc54811a98e78250e59aad3add97468bece64ff008b2",
+            "ref": "fixture://core/marker/flight-fixture-0001:start"
+          },
+          "fieldSemantics": [],
+          "identity": {
+            "commitSha": null,
+            "generationId": null,
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": null,
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "marker.start",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:00:00.000Z",
+          "occurredAtPrecision": "exact",
+          "origin": "fixture",
+          "payload": {
+            "label": "fixture flight start"
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "flight-fixture-0001:start"
+        },
+        {
+          "acquisition": "manual",
+          "adapterId": "marker",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0001",
+            "headSha": "1111111111111111111111111111111111111111",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:b980bf12d613da76b8a2b50bc4f9803aa60e10bbac3afcbfdf8dbb5d10b0dc3b",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:6f3d105bff1c275803a518cf89bf8e5fd4a1dbb35e47f49b0e6b12513398fac9",
+            "ref": "fixture://core/marker/flight-fixture-0001:wait-1:start"
+          },
+          "fieldSemantics": [],
+          "identity": {
+            "commitSha": null,
+            "generationId": null,
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": null,
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "marker.wait-start",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:40:00.000Z",
+          "occurredAtPrecision": "exact",
+          "origin": "fixture",
+          "payload": {
+            "label": "waiting for CI"
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "flight-fixture-0001:wait-1:start"
+        },
+        {
+          "acquisition": "manual",
+          "adapterId": "marker",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0001",
+            "headSha": "1111111111111111111111111111111111111111",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:336647026d66d45a4b6a066abd89ec9eaf52a7861cc98376ea95fdb2383e9b1e",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:6f3d105bff1c275803a518cf89bf8e5fd4a1dbb35e47f49b0e6b12513398fac9",
+            "ref": "fixture://core/marker/flight-fixture-0001:wait-1:stop"
+          },
+          "fieldSemantics": [],
+          "identity": {
+            "commitSha": null,
+            "generationId": null,
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": null,
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "marker.wait-stop",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:55:00.000Z",
+          "occurredAtPrecision": "exact",
+          "origin": "fixture",
+          "payload": {
+            "label": "waiting for CI"
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "flight-fixture-0001:wait-1:stop"
+        },
+        {
+          "acquisition": "manual",
+          "adapterId": "marker",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0001",
+            "headSha": "1111111111111111111111111111111111111111",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:3c8a82e8be2671c4637b16fc5ebadc3f42c4fe9b4d1c945f2bdc59cecbca7807",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:4a5335208fa7992e0c7ff681a3f2f4ee1704267fbfc85997f2ff66c5d1a5a788",
+            "ref": "fixture://core/marker/flight-fixture-0001:stop"
+          },
+          "fieldSemantics": [],
+          "identity": {
+            "commitSha": null,
+            "generationId": null,
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": null,
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "marker.stop",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T10:30:00.000Z",
+          "occurredAtPrecision": "exact",
+          "origin": "fixture",
+          "payload": {
+            "label": "fixture flight stop"
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "flight-fixture-0001:stop"
+        }
+      ]
+    },
+    {
+      "coverage": {
+        "adapterId": "git",
+        "expectedItems": 3,
+        "gaps": [],
+        "observedItems": 3,
+        "state": "complete",
+        "watermark": "commit:3333333333333333333333333333333333333333",
+        "windowFrom": "2026-09-30T09:00:00.000Z",
+        "windowTo": "2026-09-30T11:00:00.000Z"
+      },
+      "cursor": {
+        "adapterId": "git",
+        "value": "commit:3333333333333333333333333333333333333333"
+      },
+      "events": [
+        {
+          "acquisition": "git",
+          "adapterId": "git",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0001",
+            "headSha": "1111111111111111111111111111111111111111",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:feb403b01f31e499e5535cf4dd03b7191b2d9109629148f908d8c8be97dbbab0",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:f860a8c9af21e5e170cd928b0b8ffb8c8c9eafe9553ce6d1c1480598155e5f0a",
+            "ref": "fixture://core/git/context:/redacted/repos/sample-app:1111111111111111111111111111111111111111"
+          },
+          "fieldSemantics": [],
+          "identity": {
+            "commitSha": null,
+            "generationId": null,
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": null,
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "git.context",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:00:05.000Z",
+          "occurredAtPrecision": "second",
+          "origin": "fixture",
+          "payload": {
+            "detached": false,
+            "dirty": false
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "context:/redacted/repos/sample-app:1111111111111111111111111111111111111111"
+        },
+        {
+          "acquisition": "git",
+          "adapterId": "git",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0001",
+            "headSha": "2222222222222222222222222222222222222222",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:a3a21b39fad0249105ee4e16f6b7e0448e3b74fb02ab76ec9f93549c99878063",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:f3af3ce73e7f3bc876585646cc33c20c918b14da3857e23e622a5eccb43a3e89",
+            "ref": "fixture://core/git/commit:2222222222222222222222222222222222222222"
+          },
+          "fieldSemantics": [
+            {
+              "field": "insertions",
+              "method": "observed",
+              "note": null,
+              "rawName": "numstat",
+              "unit": "lines"
+            }
+          ],
+          "identity": {
+            "commitSha": "2222222222222222222222222222222222222222",
+            "generationId": null,
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": null,
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "git.commit",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:35:00.000Z",
+          "occurredAtPrecision": "second",
+          "origin": "fixture",
+          "payload": {
+            "filesChanged": 3,
+            "insertions": 42,
+            "deletions": 7,
+            "parentCount": 1,
+            "trailers": []
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "commit:2222222222222222222222222222222222222222"
+        },
+        {
+          "acquisition": "git",
+          "adapterId": "git",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0001",
+            "headSha": "3333333333333333333333333333333333333333",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:6453637f6a9514e0b25b4ab5727eaec4eedb3dafe77ae7a4fa0c05a9c88c5a1c",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:6b78c4968b2c42219ef871bfc2483b2ebb531576a269f49e91d976a5fa237b01",
+            "ref": "fixture://core/git/commit:3333333333333333333333333333333333333333"
+          },
+          "fieldSemantics": [
+            {
+              "field": "insertions",
+              "method": "observed",
+              "note": null,
+              "rawName": "numstat",
+              "unit": "lines"
+            }
+          ],
+          "identity": {
+            "commitSha": "3333333333333333333333333333333333333333",
+            "generationId": null,
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": null,
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "git.commit",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T10:20:00.000Z",
+          "occurredAtPrecision": "second",
+          "origin": "fixture",
+          "payload": {
+            "filesChanged": 1,
+            "insertions": 5,
+            "deletions": 2,
+            "parentCount": 1,
+            "trailers": []
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "commit:3333333333333333333333333333333333333333"
+        }
+      ]
+    },
+    {
+      "coverage": {
+        "adapterId": "github-actions",
+        "expectedItems": 3,
+        "gaps": [],
+        "observedItems": 3,
+        "state": "complete",
+        "watermark": "pr:17",
+        "windowFrom": "2026-09-30T09:00:00.000Z",
+        "windowTo": "2026-09-30T11:00:00.000Z"
+      },
+      "cursor": {
+        "adapterId": "github-actions",
+        "value": "pr:17"
+      },
+      "events": [
+        {
+          "acquisition": "api",
+          "adapterId": "github-actions",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0001",
+            "headSha": "2222222222222222222222222222222222222222",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:839b459bcc9c94b5ffad105f0c628a359344d5111f2dd81d779c931b24cf05bb",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:eb1cecb1978883982578e20f09d7dffec43cdc590645cdcef54e67cba1f46efd",
+            "ref": "fixture://core/github-actions/run:9001:attempt:1"
+          },
+          "fieldSemantics": [],
+          "identity": {
+            "commitSha": "2222222222222222222222222222222222222222",
+            "generationId": null,
+            "githubAttempt": 1,
+            "githubRunId": "9001",
+            "prNumber": 17,
+            "requestId": null,
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "ci.attempt",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:36:00.000Z",
+          "occurredAtPrecision": "second",
+          "origin": "fixture",
+          "payload": {
+            "conclusion": "failure",
+            "startedAt": "2026-09-30T09:36:00.000Z",
+            "completedAt": "2026-09-30T09:44:00.000Z",
+            "workflow": "ci"
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "run:9001:attempt:1"
+        },
+        {
+          "acquisition": "api",
+          "adapterId": "github-actions",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0001",
+            "headSha": "2222222222222222222222222222222222222222",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:e1db1c7ea927f7699e469e504675a7e59a2d9066fef585ce28e539f2db51caf0",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:3a42527f1d3db52b55e2091ba983fd659f4dc19cac0066e0e8e75bdb8521ab6e",
+            "ref": "fixture://core/github-actions/run:9001:attempt:2"
+          },
+          "fieldSemantics": [],
+          "identity": {
+            "commitSha": "2222222222222222222222222222222222222222",
+            "generationId": null,
+            "githubAttempt": 2,
+            "githubRunId": "9001",
+            "prNumber": 17,
+            "requestId": null,
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "ci.attempt",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:45:00.000Z",
+          "occurredAtPrecision": "second",
+          "origin": "fixture",
+          "payload": {
+            "conclusion": "success",
+            "startedAt": "2026-09-30T09:45:00.000Z",
+            "completedAt": "2026-09-30T09:54:00.000Z",
+            "workflow": "ci"
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "run:9001:attempt:2"
+        },
+        {
+          "acquisition": "api",
+          "adapterId": "github-actions",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0001",
+            "headSha": "2222222222222222222222222222222222222222",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:acf6356295b0b2983c434b2227357c7eaa9944f61adfa84ea2dbaa3cd2759693",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:b4524116748abd226248ea529052d27b8bef25611f04257289c8d8a0d7313759",
+            "ref": "fixture://core/github-actions/pr:17"
+          },
+          "fieldSemantics": [],
+          "identity": {
+            "commitSha": null,
+            "generationId": null,
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": 17,
+            "requestId": null,
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "pr.metadata",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:34:00.000Z",
+          "occurredAtPrecision": "second",
+          "origin": "fixture",
+          "payload": {
+            "state": "open",
+            "draft": false,
+            "headRef": "feature/fixture-flight",
+            "baseRef": "main"
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "pr:17"
+        }
+      ]
+    },
+    {
+      "coverage": {
+        "adapterId": "cursor-hooks",
+        "expectedItems": 1,
+        "gaps": [],
+        "observedItems": 1,
+        "state": "complete",
+        "watermark": "session:sess-a:gen:gen-1",
+        "windowFrom": "2026-09-30T09:00:00.000Z",
+        "windowTo": "2026-09-30T11:00:00.000Z"
+      },
+      "cursor": {
+        "adapterId": "cursor-hooks",
+        "value": "session:sess-a:gen:gen-1"
+      },
+      "events": [
+        {
+          "acquisition": "hook",
+          "adapterId": "cursor-hooks",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0001",
+            "headSha": "1111111111111111111111111111111111111111",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:b66b78129a5c12901c8031236fabc0a7e60a743be38af80f901851b36d178116",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:ba925240dbecb6c29d29bca1d1b39512b7a9ba38ee15785b9c324cce0a3d3873",
+            "ref": "fixture://core/cursor-hooks/session:sess-a:gen:gen-1"
+          },
+          "fieldSemantics": [],
+          "identity": {
+            "commitSha": null,
+            "generationId": "gen-1",
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": null,
+            "sessionId": "sess-a",
+            "turnId": null
+          },
+          "kind": "ai.turn",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:10:00.000Z",
+          "occurredAtPrecision": "second",
+          "origin": "fixture",
+          "payload": {
+            "sourceKind": "hooks-stop",
+            "status": "completed",
+            "model": "redacted-model"
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "session:sess-a:gen:gen-1"
+        }
+      ]
+    },
+    {
+      "coverage": {
+        "adapterId": "cursor-usage-csv",
+        "expectedItems": 1,
+        "gaps": [],
+        "observedItems": 1,
+        "state": "complete",
+        "watermark": "csv:row:1",
+        "windowFrom": "2026-09-30T09:00:00.000Z",
+        "windowTo": "2026-09-30T11:00:00.000Z"
+      },
+      "cursor": {
+        "adapterId": "cursor-usage-csv",
+        "value": "csv:row:1"
+      },
+      "events": [
+        {
+          "acquisition": "file-import",
+          "adapterId": "cursor-usage-csv",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0001",
+            "headSha": "1111111111111111111111111111111111111111",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:2f8f648bf2cdf4422d166334e8d8801c674bf66b5216edb8a3a11a31afac3b96",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:fcdb236783f3c942d31cd3bd683c3b5c3d2f71c0bcc287a10a5823d27c8eb66f",
+            "ref": "fixture://core/cursor-usage-csv/csv:row:1"
+          },
+          "fieldSemantics": [
+            {
+              "field": "tokens.input",
+              "method": "source-reported",
+              "note": null,
+              "rawName": "Input (w/o Cache Write)",
+              "unit": "tokens"
+            },
+            {
+              "field": "tokens.cached-input",
+              "method": "source-reported",
+              "note": null,
+              "rawName": "Cache Read",
+              "unit": "tokens"
+            },
+            {
+              "field": "tokens.output",
+              "method": "source-reported",
+              "note": null,
+              "rawName": "Output Tokens",
+              "unit": "tokens"
+            },
+            {
+              "field": "charge",
+              "method": "source-reported",
+              "note": "charge column empty in export: unavailable, not zero",
+              "rawName": "Cost",
+              "unit": "USD"
+            }
+          ],
+          "identity": {
+            "commitSha": null,
+            "generationId": null,
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": "req-0001",
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "ai.usage",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:10:00.000Z",
+          "occurredAtPrecision": "minute",
+          "origin": "fixture",
+          "payload": {
+            "sourceKind": "usage-csv",
+            "tokens": {
+              "input": 1200,
+              "cached-input": 800,
+              "output": 350
+            },
+            "charge": null
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "csv:row:1"
+        }
+      ]
+    }
+  ],
+  "expectations": {
+    "eventCount": 12,
+    "flightWindow": {
+      "from": "2026-09-30T09:00:00.000Z",
+      "to": "2026-09-30T10:30:00.000Z",
+      "durationMs": 5400000
+    },
+    "markedWaitMs": 900000,
+    "ciAttempts": {
+      "runId": "9001",
+      "total": 2,
+      "failed": 1,
+      "succeeded": 1,
+      "earlierFailedAttemptRetained": true
+    },
+    "commitCount": 2,
+    "aiSourceReportedTokens": {
+      "input": 1200,
+      "cached-input": 800,
+      "output": 350
+    },
+    "chargeState": "unavailable",
+    "originMix": [
+      {
+        "origin": "fixture",
+        "count": 12
+      }
+    ]
+  }
+}

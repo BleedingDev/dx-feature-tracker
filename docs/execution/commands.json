@@ -1,0 +1,199 @@
+{
+  "schema": "dxfr-commands/v1",
+  "owner": "A01",
+  "generated": "2026-09-30T13:56+02:00",
+  "repoRoot": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+  "toolchain": {
+    "node": "24.18.0 (selected by .nvmrc/.prototools via proto shim; process.execPath /Users/satan/.proto/tools/node/24.18.0/bin/node)",
+    "pnpm": "host pnpm 12.4.2 runs scripts (devEngines onFail=warn prints a [WARN] line on stderr; harmless). Lockfile was produced by pnpm 11.3.0: /Users/satan/.proto/tools/pnpm/11.3.0/shims/pnpm",
+    "effect": "4.0.0-rc.117",
+    "typescript": "7.0.2 (patched by @effect/tsgo 0.45.0)",
+    "vitest": "5.0.1",
+    "@effect/vitest": "4.0.0-rc.117",
+    "turbo": "2.11.2"
+  },
+  "workspace": {
+    "packages": [
+      "@rat-stack/cli (apps/cli)",
+      "@rat-stack/core (packages/core)",
+      "@rat-stack/capability (packages/capability)",
+      "@rat-stack/devtools (packages/devtools)"
+    ],
+    "excluded_from_tree": [
+      "apps/web",
+      "apps/infra",
+      "apps/mischief",
+      "packages/auth",
+      "packages/database",
+      "packages/lore"
+    ],
+    "apps_web_decision": "apps/web is NOT in the workspace. No web dashboard in the candidate tree."
+  },
+  "rules": [
+    "Only A01 installs. Never run pnpm install/add.",
+    "Never run whole-tree formatters (no `pnpm fix`, no `oxfmt .`). Format only your own files: pnpm exec oxfmt <your files>.",
+    "Never run the whole-workspace suite; gates do.",
+    "Core package exports '@rat-stack/core/dx' -> packages/core/src/dx/index.ts (barrel owned by A02 integration)."
+  ],
+  "install": {
+    "argv": [
+      "/Users/satan/.proto/tools/pnpm/11.3.0/shims/pnpm",
+      "install",
+      "--frozen-lockfile"
+    ],
+    "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+    "owner": "A01 only",
+    "verified_exit": 0
+  },
+  "perOwner": {
+    "test_one_file": {
+      "argv": [
+        "pnpm",
+        "--filter",
+        "@rat-stack/core",
+        "exec",
+        "vitest",
+        "run",
+        "test/dx/<id>.test.ts"
+      ],
+      "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+      "note": "No prebuild needed for exec vitest (sources resolve via types->src). Use it.effect/it.layer from @effect/vitest."
+    },
+    "test_one_file_alt": {
+      "argv": [
+        "pnpm",
+        "exec",
+        "vitest",
+        "run",
+        "test/dx/<id>.test.ts"
+      ],
+      "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker/packages/core"
+    },
+    "typecheck_core": {
+      "argv": [
+        "pnpm",
+        "--filter",
+        "@rat-stack/core",
+        "exec",
+        "tsc",
+        "--noEmit",
+        "-p",
+        "tsconfig.json"
+      ],
+      "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+      "note": "Whole core package (src+test); errors in others' files are not yours - filter output by your paths.",
+      "verified_exit": 0
+    },
+    "lint_own_files": {
+      "argv": [
+        "pnpm",
+        "exec",
+        "oxlint",
+        "<your files>"
+      ],
+      "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+      "note": "ultracite/oxlint fence with repo plugins (anti-slop, boundaries, effect-tests). Must be clean for your files."
+    },
+    "format_check_own_files": {
+      "argv": [
+        "pnpm",
+        "exec",
+        "oxfmt",
+        "--check",
+        "<your files>"
+      ],
+      "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker"
+    },
+    "format_own_files": {
+      "argv": [
+        "pnpm",
+        "exec",
+        "oxfmt",
+        "<your files>"
+      ],
+      "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker"
+    }
+  },
+  "build": {
+    "argv": [
+      "pnpm",
+      "exec",
+      "turbo",
+      "run",
+      "build"
+    ],
+    "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+    "verified_exit": 0,
+    "artifact": "apps/cli/dist/cli.js"
+  },
+  "cli": {
+    "built_path": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker/apps/cli/dist/cli.js",
+    "argv": [
+      "node",
+      "apps/cli/dist/cli.js",
+      "--help"
+    ],
+    "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+    "verified_exit": 0
+  },
+  "mcp": {
+    "protocol_only_launcher": {
+      "command": "node",
+      "args": [
+        "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker/apps/cli/dist/cli.js",
+        "mcp"
+      ]
+    },
+    "note": "stdio MCP; stdout carries only JSON-RPC frames. Never launch via `pnpm cli`/turbo (build noise + pnpm [WARN] line). Build first with the build command.",
+    "declared_protocols": [
+      "2025-06-18",
+      "2025-03-26",
+      "2024-11-05"
+    ],
+    "probe": {
+      "argv": [
+        "node",
+        "<scratch>/mcp-probe.mjs",
+        "node",
+        "apps/cli/dist/cli.js",
+        "mcp"
+      ],
+      "result": "initialize ok protocol 2025-06-18, tools/list ok, tools/call ok, 0 non-JSON stdout lines, 0 stderr bytes (upstream inspectFile tool, pre-DX)",
+      "verified_exit": 0
+    }
+  },
+  "gate": {
+    "argv": [
+      "pnpm",
+      "exec",
+      "turbo",
+      "run",
+      "check",
+      "test",
+      "build"
+    ],
+    "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+    "owner": "gate nodes / single validation queue only",
+    "baseline_result_13:56": "pnpm exec turbo run check test build -> 18/18 tasks successful, exit 0 at 13:55:51 (capability 72, devtools 19, cli 14, core 76 tests).",
+    "env_check": {
+      "argv": [
+        "pnpm",
+        "exec",
+        "varlock",
+        "load"
+      ],
+      "verified_exit": 0
+    }
+  },
+  "runtime_probes": {
+    "node_sqlite": {
+      "argv": [
+        "node",
+        "-e",
+        "require('node:sqlite').DatabaseSync"
+      ],
+      "result": "DatabaseSync + WAL + prepared insert/select + backup function present on v24.18.0, no ExperimentalWarning",
+      "verified_exit": 0
+    }
+  }
+}

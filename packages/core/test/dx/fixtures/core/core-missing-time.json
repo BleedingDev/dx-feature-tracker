@@ -1,0 +1,243 @@
+{
+  "fixtureId": "core-missing-time",
+  "description": "Missing and inconsistent time: flight has no stop marker, a wait interval has no end, one command has no timestamp and one command ends before it starts.",
+  "origin": "fixture",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "snapshot": {
+    "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+    "contractVersion": "dx.contracts.v1",
+    "createdAt": "2026-09-30T12:00:00.000Z",
+    "enabledDescriptors": [],
+    "eventWatermark": "sha256:811eb87a92bf93df426261d8321b324cf63b24d523e86e9b9b3b1bcbd15f81ec",
+    "metricDefinitions": [],
+    "originMix": [
+      {
+        "count": 4,
+        "origin": "fixture"
+      }
+    ],
+    "selector": {
+      "branch": null,
+      "flightId": null,
+      "from": null,
+      "repoCommonDir": "/redacted/repos/sample-app/.git",
+      "to": null
+    },
+    "snapshotId": "snap-core-missing-time"
+  },
+  "batches": [
+    {
+      "coverage": {
+        "adapterId": "marker",
+        "expectedItems": 2,
+        "gaps": [],
+        "observedItems": 2,
+        "state": "complete",
+        "watermark": "flight-fixture-0002:wait-1:start",
+        "windowFrom": "2026-09-30T09:00:00.000Z",
+        "windowTo": "2026-09-30T11:00:00.000Z"
+      },
+      "cursor": {
+        "adapterId": "marker",
+        "value": "flight-fixture-0002:wait-1:start"
+      },
+      "events": [
+        {
+          "acquisition": "manual",
+          "adapterId": "marker",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0002",
+            "headSha": "1111111111111111111111111111111111111111",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:811eb87a92bf93df426261d8321b324cf63b24d523e86e9b9b3b1bcbd15f81ec",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+            "ref": "fixture://core/marker/flight-fixture-0002:start"
+          },
+          "fieldSemantics": [],
+          "identity": {
+            "commitSha": null,
+            "generationId": null,
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": null,
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "marker.start",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:00:00.000Z",
+          "occurredAtPrecision": "exact",
+          "origin": "fixture",
+          "payload": {},
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "flight-fixture-0002:start"
+        },
+        {
+          "acquisition": "manual",
+          "adapterId": "marker",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0002",
+            "headSha": "1111111111111111111111111111111111111111",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:2a7fb6597ba2747ba295e1c2483a98f2b631cc6b1231e8786f56953d9458beb1",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+            "ref": "fixture://core/marker/flight-fixture-0002:wait-1:start"
+          },
+          "fieldSemantics": [],
+          "identity": {
+            "commitSha": null,
+            "generationId": null,
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": null,
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "marker.wait-start",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:10:00.000Z",
+          "occurredAtPrecision": "exact",
+          "origin": "fixture",
+          "payload": {},
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "flight-fixture-0002:wait-1:start"
+        }
+      ]
+    },
+    {
+      "coverage": {
+        "adapterId": "command-capture",
+        "expectedItems": 2,
+        "gaps": [
+          {
+            "code": "missing-timestamp",
+            "message": "One command record has no timestamp."
+          }
+        ],
+        "observedItems": 2,
+        "state": "partial",
+        "watermark": "cmd:2",
+        "windowFrom": "2026-09-30T09:00:00.000Z",
+        "windowTo": "2026-09-30T11:00:00.000Z"
+      },
+      "cursor": {
+        "adapterId": "command-capture",
+        "value": "cmd:2"
+      },
+      "events": [
+        {
+          "acquisition": "command-capture",
+          "adapterId": "command-capture",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0002",
+            "headSha": "1111111111111111111111111111111111111111",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:58935cbc0bde5e22732162cb162646195e381927df1903b047d629ff6471d670",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:1c04e665718169c644a2a2c8f0830dcf37c5de561c3c700fd4f37a425c35d1f2",
+            "ref": "fixture://core/command-capture/cmd:1"
+          },
+          "fieldSemantics": [],
+          "identity": {
+            "commitSha": null,
+            "generationId": null,
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": null,
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "command.run",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": null,
+          "occurredAtPrecision": "unknown",
+          "origin": "fixture",
+          "payload": {
+            "exitCode": 0,
+            "durationMs": null
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "cmd:1"
+        },
+        {
+          "acquisition": "command-capture",
+          "adapterId": "command-capture",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0002",
+            "headSha": "1111111111111111111111111111111111111111",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:4f1611a0da6cf4c357d5d7ef4b4d335c37f7847c4d10c0146ad1437580eb4213",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:f8f6099e036ce837de64e893754b6cc202e391063621e7e08a69a8cad638a6c7",
+            "ref": "fixture://core/command-capture/cmd:2"
+          },
+          "fieldSemantics": [],
+          "identity": {
+            "commitSha": null,
+            "generationId": null,
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": null,
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "command.run",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:20:00.000Z",
+          "occurredAtPrecision": "second",
+          "origin": "fixture",
+          "payload": {
+            "exitCode": 1,
+            "startedAt": "2026-09-30T09:20:00.000Z",
+            "completedAt": "2026-09-30T09:19:00.000Z"
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "cmd:2"
+        }
+      ]
+    }
+  ],
+  "expectations": {
+    "flightStopPresent": false,
+    "flightDuration": {
+      "value": null,
+      "measurement": "unavailable"
+    },
+    "censoredIntervals": 2,
+    "clockErrors": 1,
+    "nullOccurredAtEventIds": [
+      "sha256:58935cbc0bde5e22732162cb162646195e381927df1903b047d629ff6471d670"
+    ]
+  }
+}

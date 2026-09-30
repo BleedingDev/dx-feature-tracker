@@ -1,0 +1,120 @@
+{
+  "id": "A01",
+  "plan": "dxfr-rat-a01-scaffold",
+  "status": "ready",
+  "signal": "scaffold-created",
+  "signal_time": "2026-09-30T13:52+02:00",
+  "completed": "2026-09-30T13:57+02:00",
+  "contract_digest": {
+    "algorithm": "sha256 over (path+content) of owned_files in order",
+    "value": "0c8ccdbccd9463915563a020878b7e017c9166c0e1c5aba8104b98fcc1c3a2d3"
+  },
+  "owned_files": [
+    "package.json",
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
+    "tsconfig.base.json",
+    "packages/core/package.json",
+    "packages/capability/package.json",
+    "packages/devtools/package.json",
+    "apps/cli/package.json",
+    "AGENTS.md",
+    "VISION.md",
+    "docs/execution/runtime.md",
+    "docs/execution/commands.json",
+    "turbo.json",
+    "oxfmt.config.ts",
+    ".prototools",
+    "docs/execution/nodes/a01.json",
+    "docs/execution/nodes/a01.md"
+  ],
+  "scaffold_tree_files_also_created_by_A01": [
+    "apps/cli/**",
+    "packages/{core,capability,devtools}/** (upstream sources)",
+    "scripts/**",
+    "tools/**",
+    "oxlint.config.ts",
+    "lefthook.yml",
+    ".env.schema",
+    ".nvmrc",
+    "CLAUDE.md",
+    "PROVENANCE.md",
+    ".claude/",
+    ".cursor/",
+    ".pi/",
+    ".github/",
+    ".vscode/",
+    "skills/",
+    "assets/",
+    "vendor/",
+    ".agent_sources/"
+  ],
+  "edits_outside_manifest_scope": [
+    "turbo.json (dropped mischief/web tasks)",
+    "oxfmt.config.ts (ignore planning prose)",
+    ".prototools (node/pnpm pins)",
+    "packages/core/test/boundaries-rule.test.ts (deleted 3 cases linting removed packages)",
+    ".gitignore (upstream superset replaced 2-line original; still ignores node_modules and .DS_Store)"
+  ],
+  "descriptor_export": "@rat-stack/core/dx -> packages/core/src/dx/index.ts (barrel owned by A02)",
+  "fixture_ids": [],
+  "source_version_probe": {
+    "upstream": "joelhooks/rat-stack@753c7b07dcc516037dd1d455a8766bf112084844",
+    "node": "v24.18.0",
+    "pnpm_lockfile": "11.3.0",
+    "pnpm_host": "12.4.2 (onFail=warn)",
+    "effect": "4.0.0-rc.117",
+    "typescript": "7.0.2+@effect/tsgo 0.45.0",
+    "vitest": "5.0.1",
+    "node_sqlite": "DatabaseSync ok, WAL ok, backup present"
+  },
+  "checks": [
+    {
+      "cmd": "/Users/satan/.proto/tools/pnpm/11.3.0/shims/pnpm install",
+      "exit": 0
+    },
+    {
+      "cmd": "/Users/satan/.proto/tools/pnpm/11.3.0/shims/pnpm install --frozen-lockfile",
+      "exit": 0
+    },
+    {
+      "cmd": "pnpm exec turbo run typecheck build",
+      "exit": 0
+    },
+    {
+      "cmd": "node apps/cli/dist/cli.js --help",
+      "exit": 0
+    },
+    {
+      "cmd": "node <scratch>/mcp-probe.mjs node apps/cli/dist/cli.js mcp (initialize/tools.list/tools.call)",
+      "exit": 0
+    },
+    {
+      "cmd": "node -e node:sqlite probe",
+      "exit": 0
+    },
+    {
+      "cmd": "pnpm exec turbo run check test build (13:55:28, before A03 lint fixes)",
+      "exit": 1
+    },
+    {
+      "cmd": "pnpm exec turbo run check test build (13:55:51)",
+      "exit": 0
+    }
+  ],
+  "supported": [
+    "pinned install",
+    "build/typecheck/test/lint fence",
+    "CLI boot",
+    "stdio MCP initialize/list/call with clean stdout",
+    "node:sqlite runtime"
+  ],
+  "gaps": [
+    "Cursor itself has not launched the MCP server yet (C09/C17).",
+    "Host pnpm is 12.4.2; package.json devEngines onFail relaxed to warn so scripts run; installs must use the 11.3.0 absolute path.",
+    "DX barrel packages/core/src/dx/index.ts does not exist yet (A02); importing @rat-stack/core/dx fails until then.",
+    "Upstream inspectFile/FileInspector example still composed in apps/cli (A02 replaces).",
+    "lefthook pre-commit runs pnpm check + pnpm test: gate commits require a green fence."
+  ],
+  "dependency_proposals": []
+}

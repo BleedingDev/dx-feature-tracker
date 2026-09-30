@@ -1,0 +1,30 @@
+{
+  "id": "A06",
+  "role": "core",
+  "status": "ready",
+  "deliverable": "Actual non-content version/presence facts and safe probe protocol",
+  "ownedFiles": ["docs/execution/capability-gates.md", "docs/execution/source-probes.json"],
+  "digests": {
+    "docs/execution/source-probes.json": "sha256:f847ff3a7c536e352dffc5dcfedd7096708d41961d31238b0da3e8d59350896d",
+    "docs/execution/capability-gates.md": "sha256:eb4093fe1ac16ba92927495f44c7845534be98bab8a81ddacf3323b6c371d318"
+  },
+  "descriptorExport": null,
+  "fixtureIds": [],
+  "observedAt": "2026-09-30T11:49:11Z",
+  "checks": [
+    { "cmd": "node -e \"require('./docs/execution/source-probes.json')\" (23 probes, 5 states)", "exit": 0 },
+    { "cmd": "grep -c secret/identity patterns in owned files", "result": "0 matches" }
+  ],
+  "keyFacts": {
+    "node": "v26.10.0", "nodeSqlite": "3.53.4 DatabaseSync+backup ok", "pnpm": "12.4.2", "git": "2.56.0", "gh": "2.102.0 authenticated",
+    "cursor": "3.22.12", "cursorAgent": "2026.09.28-64d2043", "cursorStateDbTables": ["ItemTable", "cursorDiskKV", "composerHeaders"],
+    "actionsRuns": 0, "gitAi": "absent", "entire": "absent", "agentTranscripts": "absent", "projectHooks": "absent"
+  },
+  "gaps": [
+    "GitHub Actions has 0 runs: P2 real Actions/PR evidence unavailable until a run/PR exists (root decision)",
+    "Presence is not live support; A09 must probe selected inputs through the built composition",
+    "Project Cursor hooks not installed (C13)",
+    "Git AI, Entire, JSONL transcripts, CSV/dashboard exports, SDK telemetry: fixture-only on this host"
+  ],
+  "dependencyProposals": []
+}

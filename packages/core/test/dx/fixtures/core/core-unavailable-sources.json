@@ -1,0 +1,117 @@
+{
+  "fixtureId": "core-unavailable-sources",
+  "description": "Unavailable, unsupported and disabled sources: coverage states and gaps with zero events. Metrics depending on them must return null with a reason, not zero.",
+  "origin": "fixture",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "snapshot": {
+    "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+    "contractVersion": "dx.contracts.v1",
+    "createdAt": "2026-09-30T12:00:00.000Z",
+    "enabledDescriptors": [],
+    "eventWatermark": "empty",
+    "metricDefinitions": [],
+    "originMix": [],
+    "selector": {
+      "branch": null,
+      "flightId": null,
+      "from": null,
+      "repoCommonDir": "/redacted/repos/sample-app/.git",
+      "to": null
+    },
+    "snapshotId": "snap-core-unavailable-sources"
+  },
+  "batches": [
+    {
+      "coverage": {
+        "adapterId": "cursor-usage-csv",
+        "expectedItems": null,
+        "gaps": [
+          {
+            "code": "input-not-selected",
+            "message": "No usage export was selected."
+          }
+        ],
+        "observedItems": 0,
+        "state": "none",
+        "watermark": null,
+        "windowFrom": "2026-09-30T09:00:00.000Z",
+        "windowTo": "2026-09-30T11:00:00.000Z"
+      },
+      "cursor": null,
+      "events": []
+    },
+    {
+      "coverage": {
+        "adapterId": "opencode",
+        "expectedItems": null,
+        "gaps": [
+          {
+            "code": "unsupported-source",
+            "message": "Source not supported in this build."
+          }
+        ],
+        "observedItems": null,
+        "state": "unsupported",
+        "watermark": null,
+        "windowFrom": "2026-09-30T09:00:00.000Z",
+        "windowTo": "2026-09-30T11:00:00.000Z"
+      },
+      "cursor": null,
+      "events": []
+    },
+    {
+      "coverage": {
+        "adapterId": "entire",
+        "expectedItems": null,
+        "gaps": [
+          {
+            "code": "disabled-by-policy",
+            "message": "Optional adapter disabled at release cut."
+          }
+        ],
+        "observedItems": null,
+        "state": "disabled",
+        "watermark": null,
+        "windowFrom": "2026-09-30T09:00:00.000Z",
+        "windowTo": "2026-09-30T11:00:00.000Z"
+      },
+      "cursor": null,
+      "events": []
+    },
+    {
+      "coverage": {
+        "adapterId": "github-actions",
+        "expectedItems": null,
+        "gaps": [
+          {
+            "code": "api-error",
+            "message": "GitHub API unavailable (rate limited)."
+          }
+        ],
+        "observedItems": null,
+        "state": "error",
+        "watermark": null,
+        "windowFrom": "2026-09-30T09:00:00.000Z",
+        "windowTo": "2026-09-30T11:00:00.000Z"
+      },
+      "cursor": null,
+      "events": []
+    }
+  ],
+  "expectations": {
+    "eventCount": 0,
+    "tokenTotal": {
+      "value": null,
+      "measurement": "unavailable"
+    },
+    "charge": {
+      "value": null,
+      "measurement": "unavailable"
+    },
+    "ciAttempts": {
+      "value": null,
+      "measurement": "unavailable"
+    }
+  }
+}

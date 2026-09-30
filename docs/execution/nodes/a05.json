@@ -1,0 +1,19 @@
+{
+  "id": "A05",
+  "status": "ready",
+  "role": "core",
+  "deliverable": "Exact ownership manifest and dependency-aware launch instructions",
+  "owned_files": ["docs/execution/ownership.md", "docs/execution/launch-policy.md", "docs/execution/nodes/a05.json", "docs/execution/nodes/a05.md"],
+  "frozen_source": {"path": "research/execution-manifest.json", "sha256": "edf6d82859a14264908703404829a285d66a5e014297004e762a4958b91b46ca", "nodes": 79, "edges": 145},
+  "contract_digest": "not applicable (A05 owns no code contracts; A03 owns contracts-v1)",
+  "descriptor_export": "none (documentation node)",
+  "fixture_ids": [],
+  "checks": [
+    {"cmd": "python3 gen_a05.py --check (manifest path overlap + cycle check)", "exit": 0, "result": "24 overlaps, all inside the A02/A07/A08 baton; 0 unexpected overlaps; DAG acyclic, max depth 16"}
+  ],
+  "gaps": [
+    "Scaffold files not listed by any node (turbo.json, root tsconfig.json, lint/vitest configs, package entry points) are assigned to A01 by policy, not by the canonical manifest.",
+    "Deadline table reflects the 2-hour override (hard stop 15:47 CEST); manifest still says deadline_minutes 240.",
+    "docs/execution/commands.json did not exist at writing time; no A01 command applies to this doc node."
+  ]
+}

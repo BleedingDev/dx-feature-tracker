@@ -1,0 +1,55 @@
+{
+  "name": "dx-flight-recorder",
+  "version": "0.1.0",
+  "private": true,
+  "description": "DX Flight Recorder: local evidence-first developer-experience recorder built on Ratstack (Effect 4 capability contracts projected to CLI and stdio MCP).",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "build": "turbo run build",
+    "check": "varlock load && turbo run typecheck && ultracite check && oxfmt --check .",
+    "cli": "turbo run build --filter=@rat-stack/cli && node apps/cli/dist/cli.js",
+    "env:check": "varlock load",
+    "fix": "ultracite fix && oxfmt .",
+    "lint": "ultracite check && oxfmt --check .",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "prepare": "effect-tsgo patch && lefthook install",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "typecheck-scripts": "tsc --noEmit -p tsconfig.json",
+    "mcp": "node apps/cli/dist/cli.js mcp"
+  },
+  "devDependencies": {
+    "@effect/tsgo": "0.45.0",
+    "@oxlint/plugins": "1.83.0",
+    "@types/node": "24.13.6",
+    "effect": "4.0.0-rc.117",
+    "lefthook": "2.1.14",
+    "oxfmt": "0.68.0",
+    "oxlint": "1.83.0",
+    "oxlint-tsgolint": "7.0.2002",
+    "turbo": "2.11.2",
+    "typescript": "7.0.2",
+    "ultracite": "7.12.0",
+    "varlock": "1.20.0",
+    "vitest": "5.0.1"
+  },
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "11.3.0",
+      "onFail": "warn"
+    },
+    "runtime": {
+      "name": "node",
+      "version": ">=24.18.0",
+      "onFail": "warn"
+    }
+  },
+  "engines": {
+    "node": ">=24.18.0",
+    "pnpm": ">=11.1.2"
+  },
+  "packageManager": "pnpm@11.3.0"
+}

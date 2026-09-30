@@ -1,0 +1,77 @@
+{
+  "gate": "G00",
+  "attempt": 1,
+  "milestone": "P0 validated foundation and contract freeze",
+  "verdict": "pass",
+  "decidedAt": "2026-09-30T14:03+02:00",
+  "deadline": { "hardStop": "2026-09-30T15:47+02:00", "checkpointInterfacesFrozen": "13:57", "note": "2-hour override; contracts frozen 13:56 (A03), fixtures delivered 14:00-14:01 (A04)" },
+  "candidate": {
+    "baseCommit": "153567ec68dbe66d11654f0a0491222cb1977050",
+    "workingTreeDigest": "sha256:6ce341ecf539316f9a6ea2bebf1c0f307949973bd00f82bd14ea5bbadb1c8d49",
+    "digestMethod": "sha256 of (HEAD sha line + `shasum -a 256` lines of sorted modified+untracked non-ignored files), computed 14:02:01 before the fence and re-verified identical 14:02:40 after all checks; excludes this receipt",
+    "files": 243,
+    "contractVersion": "dx.contracts.v1",
+    "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+    "contractDigestRecomputed": true,
+    "schemaVersion": "dx.contracts.v1",
+    "upstream": "joelhooks/rat-stack@753c7b07dcc516037dd1d455a8766bf112084844",
+    "workspace": ["@rat-stack/cli (apps/cli)", "@rat-stack/core (packages/core)", "@rat-stack/capability (packages/capability)", "@rat-stack/devtools (packages/devtools)"],
+    "excluded": ["apps/web", "apps/infra", "apps/mischief", "packages/auth", "packages/database", "packages/lore"]
+  },
+  "inputs": {
+    "dependencies": ["A01", "A03", "A04", "A05", "A06"],
+    "handoffs": {
+      "A01": "docs/execution/nodes/a01.json (ready)",
+      "A03": "docs/execution/nodes/a03.json (ready)",
+      "A04": "docs/execution/nodes/a04.json (ready)",
+      "A05": "docs/execution/nodes/a05.json (ready)",
+      "A06": "docs/execution/nodes/a06.json (ready)"
+    },
+    "commandManifest": "docs/execution/commands.json",
+    "ownership": "docs/execution/ownership.md",
+    "launchPolicy": "docs/execution/launch-policy.md",
+    "sourceProbes": "docs/execution/source-probes.json"
+  },
+  "enabledModules": [],
+  "enabledModulesNote": "No DX product descriptors exist yet; P0 enables only the scaffold, frozen contracts (packages/core/src/dx/{model,contracts}) and core fixtures (packages/core/test/dx/fixtures). No optional module is in the candidate.",
+  "gateRepairs": [
+    {
+      "owner": "A04",
+      "files": ["packages/core/test/dx/fixtures/core/core-branch-ambiguity.json", "packages/core/test/dx/fixtures/core/core-secret-canary.json", "packages/core/test/dx/fixtures/core/vocabulary.json", "packages/core/test/dx/fixtures/index.json"],
+      "problem": "Attempt-1 fence run 14:01:25 exited 1: //#lint `oxfmt --check .` reported format issues in these 4 files (cli/core test tasks were interrupted by turbo after the lint failure, not failed on assertions).",
+      "fix": "`pnpm exec oxfmt <4 files>` (repo formatter, exactly those files). Verified each file JSON-parses semantically equal to the pre-format content; event IDs are field-derived so fixture tests are unaffected. No check weakened."
+    }
+  ],
+  "commands": [
+    { "name": "fence (first run)", "argv": ["pnpm", "exec", "turbo", "run", "check", "test", "build"], "cwd": "<repo>", "at": "14:01:25", "exit": 1, "result": "11/14 tasks, failed //#lint (oxfmt --check, 4 A04 fixture files)", "superseded": true },
+    { "name": "fence", "argv": ["pnpm", "exec", "turbo", "run", "check", "test", "build"], "cwd": "<repo>", "at": "14:02:01-14:02:11", "exit": 0, "result": "18/18 tasks successful (6 cached); tests: capability 72/72, devtools 19/19, cli 14/14, core 96/96 (12 files incl. A04 core-fixtures.test.ts)" },
+    { "name": "contract digest recompute", "argv": ["sh", "-c", "for f in sorted model/*.ts contracts/*.ts minus contracts/version.ts: printf '== %s\\n' f; cat f | sha256"], "cwd": "packages/core/src/dx", "exit": 0, "result": "b9623bd4...eb090 == CONTRACT_DIGEST in contracts/version.ts" },
+    { "name": "sqlite append/reopen probe", "argv": ["node", "<scratch>/sqlite-probe.mjs", "<scratch>"], "exit": 0, "result": "node v24.18.0 node:sqlite DatabaseSync; WAL; INSERT OR IGNORE dedupe (a,b,a -> 2 rows); close/reopen append c; read-only reopen -> 3 rows in seq order a,b,c; journal_mode wal; temp dir removed" },
+    { "name": "built CLI boot", "argv": ["node", "apps/cli/dist/cli.js", "--help"], "exit": 0, "result": "lists inspectFile, catalog, openapi, serve, mcp" },
+    { "name": "stdio MCP probe (built server)", "argv": ["node", "<scratch>/mcp-probe.mjs", "node", "apps/cli/dist/cli.js", "mcp"], "exit": 0, "result": "initialize ok protocol 2025-06-18 server rat-stack 0.1.0; tools/list [inspectFile]; tools/call inspectFile ok with structuredContent; 0 non-JSON stdout lines; 0 stderr bytes" },
+    { "name": "env schema", "argv": ["pnpm", "exec", "varlock", "load"], "exit": 0 },
+    { "name": "secret pattern scan of candidate files", "argv": ["grep", "-lE", "ghp_|gho_|github_pat_|sk-ant-|AKIA...|BEGIN PRIVATE KEY"], "exit": 1, "result": "no matches (grep exit 1 = none found)" },
+    { "name": "install (A01, not rerun by gate)", "argv": ["/Users/satan/.proto/tools/pnpm/11.3.0/shims/pnpm", "install", "--frozen-lockfile"], "exit": 0, "source": "A01 receipt" }
+  ],
+  "logs": "Gate logs kept in the root session scratchpad (fence.log, fence2.log, cli-help.log, varlock.log); not committed.",
+  "coverage": {
+    "sources": "Presence/version facts only (A06, docs/execution/source-probes.json). No DX collector exists yet; nothing ingested.",
+    "git": "present 2.56.0, branch main",
+    "github": "gh 2.102.0 authenticated; repo public; Actions runs 0 (present-empty) -> Actions/PR evidence unavailable at P0",
+    "cursor": "IDE 3.22.12 and cursor-agent 2026.09.28-64d2043 present; project hooks absent; transcripts absent"
+  },
+  "cursorEvidence": {
+    "status": "pending",
+    "operator": "not yet assigned/observed",
+    "note": "Not required for P0. Only a scripted stdio JSON-RPC client was used (protocol test, not Cursor). Actual Cursor launch/initialize/list/call is owned by C09 (v0) and C17 (v1)."
+  },
+  "gaps": [
+    "Cursor has not launched the built MCP server (C09/C17 pending).",
+    "GitHub Actions has 0 runs; real Actions/PR evidence for v1 does not exist yet (committing .github/workflows/ci.yml with this gate may create the first run).",
+    "@rat-stack/core/dx export points at packages/core/src/dx/index.ts which does not exist yet (owned by A02 integration); consumers must import from defining files until A02 adds it.",
+    "Host pnpm 12.4.2 vs lockfile pnpm 11.3.0: devEngines onFail=warn prints a [WARN] line; installs must use the absolute 11.3.0 shim (A01 only).",
+    "research/execution-manifest.json still states deadline_minutes 240; 2-hour override (hard stop 15:47 CEST) governs.",
+    "Event ID join separator (U+0000) is A04's choice, not stated in the A03 contract; collectors must match it."
+  ],
+  "nextAllowed": "Production fanout (A02 integrator, B collectors, C validators) may start against this commit per docs/execution/launch-policy.md."
+}

@@ -1,0 +1,30 @@
+{
+  "id": "A03",
+  "owner": "contract steward",
+  "status": "ready",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "digestMethod": "sha256 over '== <path>\\n<content>' of sorted model/*.ts + contracts/*.ts excluding contracts/version.ts, cwd packages/core/src/dx",
+  "frozenAt": "2026-09-30T13:56+02:00",
+  "design": "docs/execution/contracts-v1.md",
+  "ownedFiles": ["packages/core/src/dx/contracts/capabilities.ts", "packages/core/src/dx/contracts/cli-params.ts", "packages/core/src/dx/contracts/error-cancelled.ts", "packages/core/src/dx/contracts/error-contract-mismatch.ts", "packages/core/src/dx/contracts/error-github-api.ts", "packages/core/src/dx/contracts/error-invalid-input.ts", "packages/core/src/dx/contracts/error-snapshot-not-found.ts", "packages/core/src/dx/contracts/error-source-unavailable.ts", "packages/core/src/dx/contracts/error-store-busy.ts", "packages/core/src/dx/contracts/error-store-error.ts", "packages/core/src/dx/contracts/error-unsupported-source.ts", "packages/core/src/dx/contracts/errors.ts", "packages/core/src/dx/contracts/event-store.ts", "packages/core/src/dx/contracts/fakes.ts", "packages/core/src/dx/contracts/github-api-broker.ts", "packages/core/src/dx/contracts/report-composer.ts", "packages/core/src/dx/contracts/services.ts", "packages/core/src/dx/contracts/version.ts", "packages/core/src/dx/model/ai.ts", "packages/core/src/dx/model/common.ts", "packages/core/src/dx/model/coverage.ts", "packages/core/src/dx/model/descriptor.ts", "packages/core/src/dx/model/event.ts", "packages/core/src/dx/model/ids.ts", "packages/core/src/dx/model/interval.ts", "packages/core/src/dx/model/metric.ts", "packages/core/src/dx/model/probe.ts", "packages/core/src/dx/model/report.ts", "packages/core/src/dx/model/snapshot.ts"],
+  "descriptorExport": "none (A03 is contracts only); descriptor schema = ModuleDescriptorSchema in packages/core/src/dx/model/descriptor.ts; fakeDescriptor() in contracts/fakes.ts",
+  "capabilityContracts": ["dxStatusContract","dxCollectContract","dxMarkContract","dxAnalyzeContract","dxExplainContract","dxEvidenceContract"],
+  "services": {"EventStore": "contracts/event-store.ts (B01)", "ReportComposer": "contracts/report-composer.ts (B35)", "GitHubApiBroker": "contracts/github-api-broker.ts (B15)", "plainValues": ["DxCollector","DxCorrelator","DxMetric"], "intervalHelpers": "IntervalHelpers in model/interval.ts (B27 implements, B29 consumes)"},
+  "fixtureIds": [],
+  "sourceVersionProbe": "not applicable (no source adapter)",
+  "runtime": {"effect": "4.0.0-rc.117", "typescript": "7.0.2 (tsgo-patched)", "vitest": "5.0.1"},
+  "checks": [
+    {"cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 0},
+    {"cmd": "pnpm exec oxlint --type-aware packages/core/src/dx/contracts packages/core/src/dx/model", "exit": 0},
+    {"cmd": "pnpm exec oxfmt --check packages/core/src/dx/contracts packages/core/src/dx/model", "exit": 0},
+    {"cmd": "vitest run (scratch smoke outside repo: envelope decode accept/reject, canonicalRequestKey, fake store idempotence + SnapshotNotFound, contract names)", "exit": 0, "note": "3/3 passed; not a repo test (C01 owns envelope tests)"}
+  ],
+  "gaps": [
+    "Fakes are compile-only/test aids (readiness disabled, origin fixture); no production service implementations are A03's.",
+    "No repo test file assigned to A03; C01 owns envelope/metric rule tests.",
+    "A01 manifest says @rat-stack/core/dx -> packages/core/src/dx/index.ts barrel (A02); repo lint oxc(no-barrel-file) rejects export-* barrels over 100 modules, so A02 should use named re-exports or direct imports.",
+    "dx_* capability handlers are not implemented here (A02/B38/B39)."
+  ],
+  "dependencyProposals": []
+}

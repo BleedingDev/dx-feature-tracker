@@ -1,0 +1,87 @@
+{
+  "schema": "dxfr-fixture-index/v1",
+  "owner": "A04",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "fixtures": [
+    {
+      "id": "core-vocabulary",
+      "owner": "A04",
+      "path": "core/vocabulary.json",
+      "kind": "vocabulary",
+      "origin": "fixture",
+      "description": "Redacted placeholder vocabulary shared by all fixtures. No real paths, users, tokens, charges or repository content."
+    },
+    {
+      "id": "core-golden-flight",
+      "owner": "A04",
+      "path": "core/core-golden-flight.json",
+      "kind": "event-batches",
+      "origin": "fixture",
+      "eventCount": 12,
+      "adapters": [
+        "marker",
+        "git",
+        "github-actions",
+        "cursor-hooks",
+        "cursor-usage-csv"
+      ],
+      "description": "Common golden report input: one bounded flight with markers, a wait interval, two commits, a failed then successful CI attempt, a PR and one AI turn with source-reported usage. Charge is unavailable."
+    },
+    {
+      "id": "core-ai-overlap",
+      "owner": "A04",
+      "path": "core/core-ai-overlap.json",
+      "kind": "event-batches",
+      "origin": "fixture",
+      "eventCount": 6,
+      "adapters": [
+        "cursor-usage-csv",
+        "cursor-hooks",
+        "cursor-dashboard",
+        "transcript-estimate"
+      ],
+      "description": "AI overlap policy: same request key from usage-csv and hooks-stop collapses (usage-csv preferred), duplicate stop emission for one turn collapses, a daily dashboard aggregate is an alternative ledger, and an estimate with no strong key stays unassigned."
+    },
+    {
+      "id": "core-missing-time",
+      "owner": "A04",
+      "path": "core/core-missing-time.json",
+      "kind": "event-batches",
+      "origin": "fixture",
+      "eventCount": 4,
+      "adapters": ["marker", "command-capture"],
+      "description": "Missing and inconsistent time: flight has no stop marker, a wait interval has no end, one command has no timestamp and one command ends before it starts."
+    },
+    {
+      "id": "core-branch-ambiguity",
+      "owner": "A04",
+      "path": "core/core-branch-ambiguity.json",
+      "kind": "event-batches",
+      "origin": "fixture",
+      "eventCount": 4,
+      "adapters": ["git", "cursor-hooks"],
+      "description": "Branch ambiguity: the same branch name is checked out in two worktrees of one repo, one worktree becomes detached, and an AI turn carries a branch but no worktree or head. Attribution must stay provisional or unassigned, never strong."
+    },
+    {
+      "id": "core-secret-canary",
+      "owner": "A04",
+      "path": "core/core-secret-canary.json",
+      "kind": "event-batches",
+      "origin": "fixture",
+      "eventCount": 1,
+      "adapters": ["command-capture"],
+      "description": "Synthetic secret canary: a captured command carries a synthetic token in argv and env. Exported/explained evidence must never contain the canary string."
+    },
+    {
+      "id": "core-unavailable-sources",
+      "owner": "A04",
+      "path": "core/core-unavailable-sources.json",
+      "kind": "event-batches",
+      "origin": "fixture",
+      "eventCount": 0,
+      "adapters": ["cursor-usage-csv", "opencode", "entire", "github-actions"],
+      "description": "Unavailable, unsupported and disabled sources: coverage states and gaps with zero events. Metrics depending on them must return null with a reason, not zero."
+    }
+  ]
+}

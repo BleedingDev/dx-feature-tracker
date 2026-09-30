@@ -1,0 +1,48 @@
+{
+  "name": "@rat-stack/core",
+  "version": "0.1.0",
+  "private": true,
+  "files": [
+    "dist",
+    "src"
+  ],
+  "type": "module",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./contracts": {
+      "types": "./src/contracts.ts",
+      "import": "./dist/contracts.js",
+      "default": "./dist/contracts.js"
+    },
+    "./dx": {
+      "types": "./src/dx/index.ts",
+      "import": "./dist/dx/index.js",
+      "default": "./dist/dx/index.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json",
+    "check": "pnpm run typecheck",
+    "pretest": "pnpm run --silent build"
+  },
+  "dependencies": {
+    "@effect/platform-node": "4.0.0-rc.117",
+    "@rat-stack/capability": "workspace:*",
+    "@xstate/effect": "0.1.0-alpha.2",
+    "effect": "4.0.0-rc.117",
+    "xstate": "6.0.0-alpha.59"
+  },
+  "devDependencies": {
+    "@effect/vitest": "4.0.0-rc.117",
+    "@types/node": "24.13.6",
+    "typescript": "7.0.2",
+    "vitest": "5.0.1"
+  }
+}

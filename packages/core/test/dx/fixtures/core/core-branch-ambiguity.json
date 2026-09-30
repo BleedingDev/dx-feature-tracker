@@ -1,0 +1,240 @@
+{
+  "fixtureId": "core-branch-ambiguity",
+  "description": "Branch ambiguity: the same branch name is checked out in two worktrees of one repo, one worktree becomes detached, and an AI turn carries a branch but no worktree or head. Attribution must stay provisional or unassigned, never strong.",
+  "origin": "fixture",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "snapshot": {
+    "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+    "contractVersion": "dx.contracts.v1",
+    "createdAt": "2026-09-30T12:00:00.000Z",
+    "enabledDescriptors": [],
+    "eventWatermark": "sha256:feb403b01f31e499e5535cf4dd03b7191b2d9109629148f908d8c8be97dbbab0",
+    "metricDefinitions": [],
+    "originMix": [
+      {
+        "count": 4,
+        "origin": "fixture"
+      }
+    ],
+    "selector": {
+      "branch": null,
+      "flightId": null,
+      "from": null,
+      "repoCommonDir": "/redacted/repos/sample-app/.git",
+      "to": null
+    },
+    "snapshotId": "snap-core-branch-ambiguity"
+  },
+  "batches": [
+    {
+      "coverage": {
+        "adapterId": "git",
+        "expectedItems": 3,
+        "gaps": [],
+        "observedItems": 3,
+        "state": "complete",
+        "watermark": "context:/redacted/worktrees/sample-app-feature:2222222222222222222222222222222222222222:detached",
+        "windowFrom": "2026-09-30T09:00:00.000Z",
+        "windowTo": "2026-09-30T11:00:00.000Z"
+      },
+      "cursor": {
+        "adapterId": "git",
+        "value": "context:/redacted/worktrees/sample-app-feature:2222222222222222222222222222222222222222:detached"
+      },
+      "events": [
+        {
+          "acquisition": "git",
+          "adapterId": "git",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": null,
+            "headSha": "1111111111111111111111111111111111111111",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:feb403b01f31e499e5535cf4dd03b7191b2d9109629148f908d8c8be97dbbab0",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:919426203622dc48cd05f796b7fb66c1d5b7c26b824a63f5fbe3c2d2cd17dcf2",
+            "ref": "fixture://core/git/context:/redacted/repos/sample-app:1111111111111111111111111111111111111111"
+          },
+          "fieldSemantics": [],
+          "identity": {
+            "commitSha": null,
+            "generationId": null,
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": null,
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "git.context",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:00:00.000Z",
+          "occurredAtPrecision": "second",
+          "origin": "fixture",
+          "payload": {
+            "detached": false
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "context:/redacted/repos/sample-app:1111111111111111111111111111111111111111"
+        },
+        {
+          "acquisition": "git",
+          "adapterId": "git",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": null,
+            "headSha": "3333333333333333333333333333333333333333",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/worktrees/sample-app-feature"
+          },
+          "eventId": "sha256:a81c6b994ba7baf80df990d01e372d37208e0db660de6631565d88ccad360eeb",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:919426203622dc48cd05f796b7fb66c1d5b7c26b824a63f5fbe3c2d2cd17dcf2",
+            "ref": "fixture://core/git/context:/redacted/worktrees/sample-app-feature:3333333333333333333333333333333333333333"
+          },
+          "fieldSemantics": [],
+          "identity": {
+            "commitSha": null,
+            "generationId": null,
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": null,
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "git.context",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:05:00.000Z",
+          "occurredAtPrecision": "second",
+          "origin": "fixture",
+          "payload": {
+            "detached": false
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "context:/redacted/worktrees/sample-app-feature:3333333333333333333333333333333333333333"
+        },
+        {
+          "acquisition": "git",
+          "adapterId": "git",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": null,
+            "flightId": null,
+            "headSha": "2222222222222222222222222222222222222222",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/worktrees/sample-app-feature"
+          },
+          "eventId": "sha256:caec4c179d3693f0fc8f7255c89451959c33da9c41420d70a7828e7488142ebe",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:f283e55de8f41a0a29c400c4bdb38bedfc129d2bcbe893d1505f6e16d033077e",
+            "ref": "fixture://core/git/context:/redacted/worktrees/sample-app-feature:2222222222222222222222222222222222222222:detached"
+          },
+          "fieldSemantics": [],
+          "identity": {
+            "commitSha": null,
+            "generationId": null,
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": null,
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "git.context",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:15:00.000Z",
+          "occurredAtPrecision": "second",
+          "origin": "fixture",
+          "payload": {
+            "detached": true
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "context:/redacted/worktrees/sample-app-feature:2222222222222222222222222222222222222222:detached"
+        }
+      ]
+    },
+    {
+      "coverage": {
+        "adapterId": "cursor-hooks",
+        "expectedItems": 1,
+        "gaps": [
+          {
+            "code": "no-worktree",
+            "message": "Hook payload lacks worktree path."
+          }
+        ],
+        "observedItems": 1,
+        "state": "partial",
+        "watermark": "hook:stop:sess-c:gen-1",
+        "windowFrom": "2026-09-30T09:00:00.000Z",
+        "windowTo": "2026-09-30T11:00:00.000Z"
+      },
+      "cursor": {
+        "adapterId": "cursor-hooks",
+        "value": "hook:stop:sess-c:gen-1"
+      },
+      "events": [
+        {
+          "acquisition": "hook",
+          "adapterId": "cursor-hooks",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": null,
+            "headSha": null,
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": null
+          },
+          "eventId": "sha256:4e5069e34a72f8db00c676dca5063ad71fc7778dc72f35b54e0e31dd1d0be40c",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:3ab597640bfd41a1386dda269a6d743b44ffc837556a4369659ed04c343f6428",
+            "ref": "fixture://core/cursor-hooks/hook:stop:sess-c:gen-1"
+          },
+          "fieldSemantics": [],
+          "identity": {
+            "commitSha": null,
+            "generationId": "gen-1",
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": null,
+            "sessionId": "sess-c",
+            "turnId": null
+          },
+          "kind": "ai.turn",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:16:00.000Z",
+          "occurredAtPrecision": "second",
+          "origin": "fixture",
+          "payload": {
+            "sourceKind": "hooks-stop"
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "hook:stop:sess-c:gen-1"
+        }
+      ]
+    }
+  ],
+  "expectations": {
+    "sharedBranch": "feature/fixture-flight",
+    "distinctWorktrees": 2,
+    "detachedEventIds": [
+      "sha256:caec4c179d3693f0fc8f7255c89451959c33da9c41420d70a7828e7488142ebe"
+    ],
+    "aiTurnAttributionAllowed": ["provisional", "unassigned"]
+  }
+}

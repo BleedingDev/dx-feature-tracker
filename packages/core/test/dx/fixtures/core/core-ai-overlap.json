@@ -1,0 +1,432 @@
+{
+  "fixtureId": "core-ai-overlap",
+  "description": "AI overlap policy: same request key from usage-csv and hooks-stop collapses (usage-csv preferred), duplicate stop emission for one turn collapses, a daily dashboard aggregate is an alternative ledger, and an estimate with no strong key stays unassigned.",
+  "origin": "fixture",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "snapshot": {
+    "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+    "contractVersion": "dx.contracts.v1",
+    "createdAt": "2026-09-30T12:00:00.000Z",
+    "enabledDescriptors": [],
+    "eventWatermark": "sha256:e39e08f96f2186190b54a5aaa97c95b3b2c05c153030ce2a97a096c29a096842",
+    "metricDefinitions": [],
+    "originMix": [
+      {
+        "count": 6,
+        "origin": "fixture"
+      }
+    ],
+    "selector": {
+      "branch": null,
+      "flightId": null,
+      "from": null,
+      "repoCommonDir": "/redacted/repos/sample-app/.git",
+      "to": null
+    },
+    "snapshotId": "snap-core-ai-overlap"
+  },
+  "batches": [
+    {
+      "coverage": {
+        "adapterId": "cursor-usage-csv",
+        "expectedItems": 1,
+        "gaps": [],
+        "observedItems": 1,
+        "state": "complete",
+        "watermark": "csv:row:10",
+        "windowFrom": "2026-09-30T09:00:00.000Z",
+        "windowTo": "2026-09-30T11:00:00.000Z"
+      },
+      "cursor": {
+        "adapterId": "cursor-usage-csv",
+        "value": "csv:row:10"
+      },
+      "events": [
+        {
+          "acquisition": "file-import",
+          "adapterId": "cursor-usage-csv",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0001",
+            "headSha": "1111111111111111111111111111111111111111",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:89e6ee22be825db348f1d2625c3dc06eda86d52faa4e26dc6c4a6b182e86494c",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:9c94f1353c788080db5c0f7c9d232bad62440f5c2e7ee4f7aa7a8c5787944e73",
+            "ref": "fixture://core/cursor-usage-csv/csv:row:10"
+          },
+          "fieldSemantics": [
+            {
+              "field": "tokens.input",
+              "method": "source-reported",
+              "note": null,
+              "rawName": "Input (w/o Cache Write)",
+              "unit": "tokens"
+            },
+            {
+              "field": "tokens.output",
+              "method": "source-reported",
+              "note": null,
+              "rawName": "Output Tokens",
+              "unit": "tokens"
+            }
+          ],
+          "identity": {
+            "commitSha": null,
+            "generationId": null,
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": "req-0100",
+            "sessionId": "sess-b",
+            "turnId": null
+          },
+          "kind": "ai.usage",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:20:00.000Z",
+          "occurredAtPrecision": "minute",
+          "origin": "fixture",
+          "payload": {
+            "sourceKind": "usage-csv",
+            "tokens": {
+              "input": 1000,
+              "output": 200
+            }
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "csv:row:10"
+        }
+      ]
+    },
+    {
+      "coverage": {
+        "adapterId": "cursor-hooks",
+        "expectedItems": 3,
+        "gaps": [],
+        "observedItems": 3,
+        "state": "complete",
+        "watermark": "hook:stop:sess-b:gen-11:emit-2",
+        "windowFrom": "2026-09-30T09:00:00.000Z",
+        "windowTo": "2026-09-30T11:00:00.000Z"
+      },
+      "cursor": {
+        "adapterId": "cursor-hooks",
+        "value": "hook:stop:sess-b:gen-11:emit-2"
+      },
+      "events": [
+        {
+          "acquisition": "hook",
+          "adapterId": "cursor-hooks",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0001",
+            "headSha": "1111111111111111111111111111111111111111",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:321bcedbe82545c2f1443209e81eb936e9edce7fbe5389d4e9b40fdec78bcd6d",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:98dcea94a141b526391a8ee40086a2c2aef3ff20662cdcf91dee3f3243b8dd3a",
+            "ref": "fixture://core/cursor-hooks/hook:stop:req-0100:1"
+          },
+          "fieldSemantics": [
+            {
+              "field": "tokens.input",
+              "method": "source-reported",
+              "note": null,
+              "rawName": "input_tokens",
+              "unit": "tokens"
+            },
+            {
+              "field": "tokens.output",
+              "method": "source-reported",
+              "note": null,
+              "rawName": "output_tokens",
+              "unit": "tokens"
+            }
+          ],
+          "identity": {
+            "commitSha": null,
+            "generationId": "gen-10",
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": "req-0100",
+            "sessionId": "sess-b",
+            "turnId": null
+          },
+          "kind": "ai.usage",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:20:03.000Z",
+          "occurredAtPrecision": "second",
+          "origin": "fixture",
+          "payload": {
+            "sourceKind": "hooks-stop",
+            "tokens": {
+              "input": 990,
+              "output": 205
+            }
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "hook:stop:req-0100:1"
+        },
+        {
+          "acquisition": "hook",
+          "adapterId": "cursor-hooks",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0001",
+            "headSha": "1111111111111111111111111111111111111111",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:47815b39e7116ef951bca4c5a2835243259b71faf35364aeeaa92be02ec9a4ea",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:e9483244247eacf4424bddae955b09db07505afe7f5f5df5daaefff28ff821e1",
+            "ref": "fixture://core/cursor-hooks/hook:stop:sess-b:gen-11:emit-1"
+          },
+          "fieldSemantics": [],
+          "identity": {
+            "commitSha": null,
+            "generationId": "gen-11",
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": null,
+            "sessionId": "sess-b",
+            "turnId": null
+          },
+          "kind": "ai.turn",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:25:00.000Z",
+          "occurredAtPrecision": "second",
+          "origin": "fixture",
+          "payload": {
+            "sourceKind": "hooks-stop",
+            "status": "completed"
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "hook:stop:sess-b:gen-11:emit-1"
+        },
+        {
+          "acquisition": "hook",
+          "adapterId": "cursor-hooks",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0001",
+            "headSha": "1111111111111111111111111111111111111111",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:6472d22b3677b9f97c4fd48f01a6b1ad68a31691031f4ec9e05b7489efe7231d",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:e9483244247eacf4424bddae955b09db07505afe7f5f5df5daaefff28ff821e1",
+            "ref": "fixture://core/cursor-hooks/hook:stop:sess-b:gen-11:emit-2"
+          },
+          "fieldSemantics": [],
+          "identity": {
+            "commitSha": null,
+            "generationId": "gen-11",
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": null,
+            "sessionId": "sess-b",
+            "turnId": null
+          },
+          "kind": "ai.turn",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:25:00.000Z",
+          "occurredAtPrecision": "second",
+          "origin": "fixture",
+          "payload": {
+            "sourceKind": "hooks-stop",
+            "status": "completed"
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "hook:stop:sess-b:gen-11:emit-2"
+        }
+      ]
+    },
+    {
+      "coverage": {
+        "adapterId": "cursor-dashboard",
+        "expectedItems": 1,
+        "gaps": [],
+        "observedItems": 1,
+        "state": "complete",
+        "watermark": "dashboard:day:2026-09-30",
+        "windowFrom": "2026-09-30T09:00:00.000Z",
+        "windowTo": "2026-09-30T11:00:00.000Z"
+      },
+      "cursor": {
+        "adapterId": "cursor-dashboard",
+        "value": "dashboard:day:2026-09-30"
+      },
+      "events": [
+        {
+          "acquisition": "file-import",
+          "adapterId": "cursor-dashboard",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0001",
+            "headSha": "1111111111111111111111111111111111111111",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:e39e08f96f2186190b54a5aaa97c95b3b2c05c153030ce2a97a096c29a096842",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:4854740ef2a32a18c5f9e9bdee9b5687af3dc3fc5567e9da32c3e0d4b48083bc",
+            "ref": "fixture://core/cursor-dashboard/dashboard:day:2026-09-30"
+          },
+          "fieldSemantics": [
+            {
+              "field": "tokens.total",
+              "method": "source-reported",
+              "note": "daily aggregate ledger; alternative to detail rows, never summed with them",
+              "rawName": "totalTokens",
+              "unit": "tokens"
+            }
+          ],
+          "identity": {
+            "commitSha": null,
+            "generationId": null,
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": null,
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "ai.usage",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T00:00:00.000Z",
+          "occurredAtPrecision": "day",
+          "origin": "fixture",
+          "payload": {
+            "sourceKind": "dashboard-json",
+            "aggregate": true,
+            "tokens": {
+              "total": 50000
+            }
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "dashboard:day:2026-09-30"
+        }
+      ]
+    },
+    {
+      "coverage": {
+        "adapterId": "transcript-estimate",
+        "expectedItems": 1,
+        "gaps": [
+          {
+            "code": "estimate-only",
+            "message": "Visible-text estimate; no request identity."
+          }
+        ],
+        "observedItems": 1,
+        "state": "partial",
+        "watermark": "transcript:unknown:1",
+        "windowFrom": "2026-09-30T09:00:00.000Z",
+        "windowTo": "2026-09-30T11:00:00.000Z"
+      },
+      "cursor": {
+        "adapterId": "transcript-estimate",
+        "value": "transcript:unknown:1"
+      },
+      "events": [
+        {
+          "acquisition": "derived",
+          "adapterId": "transcript-estimate",
+          "adapterVersion": "fixture-1.0.0",
+          "context": {
+            "branch": "feature/fixture-flight",
+            "flightId": "flight-fixture-0001",
+            "headSha": "1111111111111111111111111111111111111111",
+            "repoCommonDir": "/redacted/repos/sample-app/.git",
+            "worktreePath": "/redacted/repos/sample-app"
+          },
+          "eventId": "sha256:6d5e226bbd2c2fa4c609fa414dd119d9318e3faa91aef0f5dfd8457164b70221",
+          "evidence": {
+            "bounded": true,
+            "hash": "sha256:ff817a87d88c16b31d2b1d589f2997232d99ed55879de1c73460ad6ebb7274d2",
+            "ref": "fixture://core/transcript-estimate/transcript:unknown:1"
+          },
+          "fieldSemantics": [
+            {
+              "field": "tokens.output",
+              "method": "estimated",
+              "note": "visible-text estimate; not source-reported",
+              "rawName": null,
+              "unit": "tokens"
+            }
+          ],
+          "identity": {
+            "commitSha": null,
+            "generationId": null,
+            "githubAttempt": null,
+            "githubRunId": null,
+            "prNumber": null,
+            "requestId": null,
+            "sessionId": null,
+            "turnId": null
+          },
+          "kind": "ai.usage",
+          "observedAt": "2026-09-30T12:00:00.000Z",
+          "occurredAt": "2026-09-30T09:30:00.000Z",
+          "occurredAtPrecision": "second",
+          "origin": "fixture",
+          "payload": {
+            "sourceKind": "transcript-estimate",
+            "tokens": {
+              "output": 180
+            }
+          },
+          "schemaVersion": "dx.event.v1",
+          "sourceVersion": "fixture-1",
+          "upstreamKey": "transcript:unknown:1"
+        }
+      ]
+    }
+  ],
+  "expectations": {
+    "collapsedRequestKey": "source:usage-csv:request:req-0100",
+    "collapsedMembers": [
+      "sha256:89e6ee22be825db348f1d2625c3dc06eda86d52faa4e26dc6c4a6b182e86494c",
+      "sha256:321bcedbe82545c2f1443209e81eb936e9edce7fbe5389d4e9b40fdec78bcd6d"
+    ],
+    "preferredSourceKind": "usage-csv",
+    "preferredTokens": {
+      "input": 1000,
+      "output": 200
+    },
+    "duplicateTurnKey": "sess-b:gen-11",
+    "duplicateTurnDistinctCount": 1,
+    "alternativeLedgerEventIds": [
+      "sha256:e39e08f96f2186190b54a5aaa97c95b3b2c05c153030ce2a97a096c29a096842"
+    ],
+    "unassignedEventIds": [
+      "sha256:6d5e226bbd2c2fa4c609fa414dd119d9318e3faa91aef0f5dfd8457164b70221"
+    ],
+    "mustNotSum": true
+  }
+}

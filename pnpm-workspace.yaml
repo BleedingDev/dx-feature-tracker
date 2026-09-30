@@ -1,0 +1,13 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+allowBuilds:
+  esbuild: true
+  lefthook: true
+
+# Exact prerelease pins that pnpm's release-age check would otherwise hold back.
+# One entry per version; a bump replaces its entry rather than adding one.
+minimumReleaseAgeExclude:
+  - xstate@6.0.0-alpha.59
+  - "@xstate/effect@0.1.0-alpha.2"

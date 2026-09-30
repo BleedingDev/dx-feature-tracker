@@ -1,0 +1,72 @@
+{
+  "id": "A04",
+  "owner": "native worker A04",
+  "role": "core",
+  "status": "ready",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "deliveredAt": "2026-09-30T14:01+02:00",
+  "ownedFiles": [
+    "packages/core/test/dx/fixtures/index.json",
+    "packages/core/test/dx/fixtures/core/vocabulary.json",
+    "packages/core/test/dx/fixtures/core/core-golden-flight.json",
+    "packages/core/test/dx/fixtures/core/core-ai-overlap.json",
+    "packages/core/test/dx/fixtures/core/core-missing-time.json",
+    "packages/core/test/dx/fixtures/core/core-branch-ambiguity.json",
+    "packages/core/test/dx/fixtures/core/core-secret-canary.json",
+    "packages/core/test/dx/fixtures/core/core-unavailable-sources.json",
+    "packages/core/test/dx/fixtures/core/core-fixtures.test.ts"
+  ],
+  "descriptorExport": "none (fixture owner; no runtime module). Consumers set ModuleDescriptor.fixtureIds to the IDs below.",
+  "fixtureIds": [
+    "core-vocabulary",
+    "core-golden-flight",
+    "core-ai-overlap",
+    "core-missing-time",
+    "core-branch-ambiguity",
+    "core-secret-canary",
+    "core-unavailable-sources"
+  ],
+  "fixtureFormat": "{ fixtureId, description, origin: 'fixture', contractVersion, contractDigest, snapshot: SnapshotManifest, batches: EventBatch[], expectations }",
+  "eventIdDerivation": "sha256:<hex sha256(adapterId + U+0000 + upstreamKey + U+0000 + kind)>",
+  "sourceVersionProbe": "not applicable (synthetic redacted fixtures; every event origin=fixture, sourceVersion=fixture-1)",
+  "runtime": {
+    "node": "24.18.0",
+    "effect": "4.0.0-rc.117",
+    "vitest": "5.0.1"
+  },
+  "checks": [
+    {
+      "cmd": "pnpm --filter @rat-stack/core exec vitest run test/dx/fixtures/core/core-fixtures.test.ts",
+      "exit": 0,
+      "note": "20/20 passed"
+    },
+    {
+      "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json",
+      "exit": 0
+    },
+    {
+      "cmd": "pnpm exec oxlint --type-aware packages/core/test/dx/fixtures/core/core-fixtures.test.ts",
+      "exit": 0
+    },
+    {
+      "cmd": "pnpm exec oxfmt --check packages/core/test/dx/fixtures/core/core-fixtures.test.ts",
+      "exit": 0,
+      "note": "fixture JSON is excluded by oxfmt ignore rules"
+    }
+  ],
+  "supportedFields": [
+    "DxEventEnvelope v1 (all fields)",
+    "SourceCoverage states complete/partial/none/unsupported/disabled/error",
+    "SnapshotManifest",
+    "AI identity requestId/sessionId/generationId",
+    "fieldSemantics methods source-reported/observed/estimated"
+  ],
+  "gaps": [
+    "Event ID derivation separator (U+0000) is A04's choice; A03 contract only says sha256 of adapterId+upstreamKey+kind. If B-collectors or A03 standardize a different join, A04 regenerates.",
+    "expectations blocks are golden inputs/invariants derived from the data, not metric outputs; no MetricResult goldens exist because metric definitions/IDs are owned by B metric owners.",
+    "Other owners' fixture dirs (fixtures/<id>/) are not listed in index.json; they request entries from A04 (index is A04-exclusive).",
+    "Fixtures are synthetic: they prove contract/honesty behavior, not live source availability."
+  ],
+  "dependencyProposals": []
+}

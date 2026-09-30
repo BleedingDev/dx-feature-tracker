@@ -1,0 +1,36 @@
+{
+  "fixtureId": "core-vocabulary",
+  "description": "Redacted placeholder vocabulary shared by all fixtures. No real paths, users, tokens, charges or repository content.",
+  "origin": "fixture",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "eventIdDerivation": "sha256:<hex sha256 of adapterId + U+0000 + upstreamKey + U+0000 + kind>",
+  "placeholders": {
+    "repoCommonDir": "/redacted/repos/sample-app/.git",
+    "worktrees": [
+      "/redacted/repos/sample-app",
+      "/redacted/worktrees/sample-app-feature"
+    ],
+    "branches": ["feature/fixture-flight", "main"],
+    "flightIds": ["flight-fixture-0001", "flight-fixture-0002"],
+    "headShas": [
+      "1111111111111111111111111111111111111111",
+      "2222222222222222222222222222222222222222",
+      "3333333333333333333333333333333333333333"
+    ],
+    "sessionIds": ["sess-a", "sess-b", "sess-c"],
+    "requestIds": ["req-0001", "req-0100"],
+    "githubRunIds": ["9001"],
+    "prNumbers": [17],
+    "model": "redacted-model",
+    "observedAt": "2026-09-30T12:00:00.000Z",
+    "evidenceRefPrefix": "fixture://core/",
+    "syntheticSecretCanary": "DXFR_SYNTHETIC_SECRET_CANARY_7f3a9c"
+  },
+  "rules": [
+    "Every event origin is fixture; fixtures never masquerade as live or imported.",
+    "Unavailable values are null with a reason or gap; zero means a measured zero.",
+    "Estimated values carry method estimated in fieldSemantics and are never summed with source-reported values.",
+    "The synthetic secret canary appears only in core-secret-canary and must never appear in any output."
+  ]
+}
