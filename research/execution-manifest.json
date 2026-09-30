@@ -1,0 +1,2013 @@
+{
+  "product": "DX Flight Recorder",
+  "stack": "Ratstack",
+  "deadline_minutes": 240,
+  "configured_max_threads": 50,
+  "runtime_slots": 51,
+  "max_active_workers": 49,
+  "root_reserved": 1,
+  "nodes": [
+    {
+      "id": "A01",
+      "plan_name": "dxfr-rat-a01-scaffold",
+      "role": "core",
+      "owner": "scaffold owner",
+      "paths": [
+        "package.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        "tsconfig.base.json",
+        "packages/*/package.json",
+        "apps/*/package.json",
+        "AGENTS.md",
+        "VISION.md",
+        "docs/execution/runtime.md",
+        "docs/execution/commands.json"
+      ],
+      "deliverable": "Verified Ratstack scaffold, pinned install, app starts, runtime/MCP viability probe",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core; start immediately"
+    },
+    {
+      "id": "A02",
+      "plan_name": "dxfr-rat-a02-integration",
+      "role": "core",
+      "owner": "integration owner, sequential baton A02 -> A07 -> A08",
+      "paths": [
+        "apps/cli/src/cli.ts",
+        "apps/cli/src/command.ts",
+        "apps/cli/src/surfaces.ts",
+        "packages/core/src/dx/registry/",
+        "packages/core/src/dx/capabilities.ts",
+        "packages/core/src/dx/composition.ts",
+        "packages/core/src/dx/index.ts",
+        "packages/core/test/dx/integration/"
+      ],
+      "deliverable": "v0 built CLI/MCP composition, real Git plus labelled replay analyze/explain spine",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core; coordinate with A01/A03"
+    },
+    {
+      "id": "A03",
+      "plan_name": "dxfr-rat-a03-contracts",
+      "role": "core",
+      "owner": "contract steward",
+      "paths": [
+        "packages/core/src/dx/contracts/",
+        "packages/core/src/dx/model/",
+        "docs/execution/contracts-v1.md"
+      ],
+      "deliverable": "Frozen interfaces and compile-only fake implementations",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core; start immediately"
+    },
+    {
+      "id": "A04",
+      "plan_name": "dxfr-rat-a04-fixtures",
+      "role": "core",
+      "owner": "native worker A04",
+      "paths": [
+        "packages/core/test/dx/fixtures/core/",
+        "packages/core/test/dx/fixtures/index.json"
+      ],
+      "deliverable": "Redacted fixture vocabulary and common golden report inputs",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core; A03 review"
+    },
+    {
+      "id": "A05",
+      "plan_name": "dxfr-rat-a05-ownership",
+      "role": "core",
+      "owner": "native worker A05",
+      "paths": [
+        "docs/execution/ownership.md",
+        "docs/execution/launch-policy.md"
+      ],
+      "deliverable": "Exact ownership manifest and dependency-aware launch instructions",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core; start immediately"
+    },
+    {
+      "id": "A06",
+      "plan_name": "dxfr-rat-a06-capability-probes",
+      "role": "core",
+      "owner": "native worker A06",
+      "paths": [
+        "docs/execution/capability-gates.md",
+        "docs/execution/source-probes.json"
+      ],
+      "deliverable": "Actual non-content version/presence facts and safe probe protocol",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core; start immediately"
+    },
+    {
+      "id": "B01",
+      "plan_name": "dxfr-rat-b01-storage",
+      "role": "core",
+      "owner": "native worker B01",
+      "paths": [
+        "packages/core/src/dx/storage/",
+        "packages/core/test/dx/b01.test.ts",
+        "packages/core/test/dx/fixtures/b01/"
+      ],
+      "deliverable": "Single-writer store, schema, migrations, snapshot queries, replay idempotence",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B02",
+      "plan_name": "dxfr-rat-b02-collectors-git-identity",
+      "role": "core",
+      "owner": "native worker B02",
+      "paths": [
+        "packages/core/src/dx/collectors/git-identity/",
+        "packages/core/test/dx/b02.test.ts",
+        "packages/core/test/dx/fixtures/b02/"
+      ],
+      "deliverable": "Repo common-dir, worktree, branch, HEAD, base-SHA context",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B03",
+      "plan_name": "dxfr-rat-b03-collectors-git-history",
+      "role": "core",
+      "owner": "native worker B03",
+      "paths": [
+        "packages/core/src/dx/collectors/git-history/",
+        "packages/core/test/dx/b03.test.ts",
+        "packages/core/test/dx/fixtures/b03/"
+      ],
+      "deliverable": "Commit times, numstat/diff metadata, explicit first-observed distinction",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B04",
+      "plan_name": "dxfr-rat-b04-collectors-git-observation",
+      "role": "optional",
+      "owner": "native worker B04",
+      "paths": [
+        "packages/core/src/dx/collectors/git-observation/",
+        "packages/core/test/dx/b04.test.ts",
+        "packages/core/test/dx/fixtures/b04/"
+      ],
+      "deliverable": "Opt-in future branch/edit observation; no claim of complete historical activity",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B05",
+      "plan_name": "dxfr-rat-b05-collectors-cursor-hooks",
+      "role": "core-candidate",
+      "owner": "native worker B05",
+      "paths": [
+        "packages/core/src/dx/collectors/cursor-hooks/",
+        "packages/core/test/dx/b05.test.ts",
+        "packages/core/test/dx/fixtures/b05/"
+      ],
+      "deliverable": "Decode supported Agent/Tab/tool hooks, atomic event spool and optional raw stop-token fields with version/presence/dedup checks.",
+      "acceptance": "At least one of B05/B07/B08 must demonstrate a ready non-admin AI route. This individual candidate may finish unsupported/disabled if another passes; disclose reduced coverage.",
+      "upstream_notes": "Core candidate"
+    },
+    {
+      "id": "B06",
+      "plan_name": "dxfr-rat-b06-collectors-cursor-local-db",
+      "role": "optional",
+      "owner": "native worker B06",
+      "paths": [
+        "packages/core/src/dx/collectors/cursor-local-db/",
+        "packages/core/test/dx/b06.test.ts",
+        "packages/core/test/dx/fixtures/b06/"
+      ],
+      "deliverable": "Read only consistent opt-in IDE DB snapshots for recognized ItemTable/cursorDiskKV/composerHeaders and AI-tracking schemas; context meters stay separate from spend.",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B07",
+      "plan_name": "dxfr-rat-b07-collectors-cursor-transcripts",
+      "role": "core-candidate",
+      "owner": "native worker B07",
+      "paths": [
+        "packages/core/src/dx/collectors/cursor-transcripts/",
+        "packages/core/test/dx/b07.test.ts",
+        "packages/core/test/dx/fixtures/b07/"
+      ],
+      "deliverable": "Local exported transcript/chat parser with mapped/unmapped usage",
+      "acceptance": "At least one of B05/B07/B08 must demonstrate a ready non-admin AI route. This individual candidate may finish unsupported/disabled if another passes; disclose reduced coverage.",
+      "upstream_notes": "Core candidate"
+    },
+    {
+      "id": "B08",
+      "plan_name": "dxfr-rat-b08-collectors-cursor-usage-export",
+      "role": "core-candidate",
+      "owner": "native worker B08",
+      "paths": [
+        "packages/core/src/dx/collectors/cursor-usage-export/",
+        "packages/core/test/dx/b08.test.ts",
+        "packages/core/test/dx/fixtures/b08/"
+      ],
+      "deliverable": "Import user-provided personal CSV variants with raw category/cost semantics, rejected/unassigned rows, batch identity and truthful coverage.",
+      "acceptance": "At least one of B05/B07/B08 must demonstrate a ready non-admin AI route. This individual candidate may finish unsupported/disabled if another passes; disclose reduced coverage.",
+      "upstream_notes": "Core candidate"
+    },
+    {
+      "id": "B09",
+      "plan_name": "dxfr-rat-b09-collectors-cursor-extension",
+      "role": "optional",
+      "owner": "native worker B09",
+      "paths": [
+        "packages/core/src/dx/collectors/cursor-extension/",
+        "packages/core/test/dx/b09.test.ts",
+        "packages/core/test/dx/fixtures/b09/"
+      ],
+      "deliverable": "Supported VS Code/Cursor extension activity route feasibility and minimal descriptor",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B10",
+      "plan_name": "dxfr-rat-b10-collectors-cursor-cli",
+      "role": "optional",
+      "owner": "native worker B10",
+      "paths": [
+        "packages/core/src/dx/collectors/cursor-cli/",
+        "packages/core/test/dx/b10.test.ts",
+        "packages/core/test/dx/fixtures/b10/"
+      ],
+      "deliverable": "Decode recognized Cursor CLI output and opt-in legacy/new lowercase CLI database inputs; unsupported protobuf layouts return visible gaps.",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B11",
+      "plan_name": "dxfr-rat-b11-collectors-claude",
+      "role": "optional",
+      "owner": "native worker B11",
+      "paths": [
+        "packages/core/src/dx/collectors/claude/",
+        "packages/core/test/dx/b11.test.ts",
+        "packages/core/test/dx/fixtures/b11/"
+      ],
+      "deliverable": "Consented Claude JSONL usage import for cross-agent development flights",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B12",
+      "plan_name": "dxfr-rat-b12-collectors-codex",
+      "role": "optional",
+      "owner": "native worker B12",
+      "paths": [
+        "packages/core/src/dx/collectors/codex/",
+        "packages/core/test/dx/b12.test.ts",
+        "packages/core/test/dx/fixtures/b12/"
+      ],
+      "deliverable": "Consented Codex session usage import with session allocation uncertainty",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B13",
+      "plan_name": "dxfr-rat-b13-collectors-opencode",
+      "role": "optional",
+      "owner": "native worker B13",
+      "paths": [
+        "packages/core/src/dx/collectors/opencode/",
+        "packages/core/test/dx/b13.test.ts",
+        "packages/core/test/dx/fixtures/b13/"
+      ],
+      "deliverable": "OpenCode exported session/token import",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B14",
+      "plan_name": "dxfr-rat-b14-collectors-provider-usage",
+      "role": "optional",
+      "owner": "native worker B14",
+      "paths": [
+        "packages/core/src/dx/collectors/provider-usage/",
+        "packages/core/test/dx/b14.test.ts",
+        "packages/core/test/dx/fixtures/b14/"
+      ],
+      "deliverable": "Explicit supplied provider receipt/usage file import; no account-wide auto-fetch",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B15",
+      "plan_name": "dxfr-rat-b15-collectors-github-runs",
+      "role": "core",
+      "owner": "native worker B15",
+      "paths": [
+        "packages/core/src/dx/collectors/github-runs/",
+        "packages/core/test/dx/b15.test.ts",
+        "packages/core/test/dx/fixtures/b15/",
+        "packages/core/src/dx/services/github-api/"
+      ],
+      "deliverable": "Actions runs and attempts with pagination/ETag/partial states; sole shared GitHub API broker/cache/auth service owner",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B16",
+      "plan_name": "dxfr-rat-b16-collectors-github-jobs",
+      "role": "core",
+      "owner": "native worker B16",
+      "paths": [
+        "packages/core/src/dx/collectors/github-jobs/",
+        "packages/core/test/dx/b16.test.ts",
+        "packages/core/test/dx/fixtures/b16/"
+      ],
+      "deliverable": "Attempt-specific jobs, start/end/status and missing timestamps",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B17",
+      "plan_name": "dxfr-rat-b17-collectors-github-pr",
+      "role": "core",
+      "owner": "native worker B17",
+      "paths": [
+        "packages/core/src/dx/collectors/github-pr/",
+        "packages/core/test/dx/b17.test.ts",
+        "packages/core/test/dx/fixtures/b17/"
+      ],
+      "deliverable": "PR metadata, head/base repository IDs and commit links",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B18",
+      "plan_name": "dxfr-rat-b18-collectors-github-review",
+      "role": "optional",
+      "owner": "native worker B18",
+      "paths": [
+        "packages/core/src/dx/collectors/github-review/",
+        "packages/core/test/dx/b18.test.ts",
+        "packages/core/test/dx/fixtures/b18/"
+      ],
+      "deliverable": "Review events/timeline and requested-review episodes",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B19",
+      "plan_name": "dxfr-rat-b19-collectors-github-checks",
+      "role": "optional",
+      "owner": "native worker B19",
+      "paths": [
+        "packages/core/src/dx/collectors/github-checks/",
+        "packages/core/test/dx/b19.test.ts",
+        "packages/core/test/dx/fixtures/b19/"
+      ],
+      "deliverable": "Check runs/statuses outside Actions; conservative duplication handling",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B20",
+      "plan_name": "dxfr-rat-b20-collectors-shell-command",
+      "role": "optional",
+      "owner": "native worker B20",
+      "paths": [
+        "packages/core/src/dx/collectors/shell-command/",
+        "packages/core/test/dx/b20.test.ts",
+        "packages/core/test/dx/fixtures/b20/"
+      ],
+      "deliverable": "Capture argv command lifecycle and optional selected shell history as reconstructed evidence; preserve exit/signal behavior and context.",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B21",
+      "plan_name": "dxfr-rat-b21-collectors-local-test",
+      "role": "optional",
+      "owner": "native worker B21",
+      "paths": [
+        "packages/core/src/dx/collectors/local-test/",
+        "packages/core/test/dx/b21.test.ts",
+        "packages/core/test/dx/fixtures/b21/"
+      ],
+      "deliverable": "JUnit/structured test import and command-session joins",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B22",
+      "plan_name": "dxfr-rat-b22-collectors-manual",
+      "role": "core",
+      "owner": "native worker B22",
+      "paths": [
+        "packages/core/src/dx/collectors/manual/",
+        "packages/core/test/dx/b22.test.ts",
+        "packages/core/test/dx/fixtures/b22/"
+      ],
+      "deliverable": "Explicit start/stop/wait markers and labelled user claims",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B23",
+      "plan_name": "dxfr-rat-b23-correlation-repo",
+      "role": "core",
+      "owner": "native worker B23",
+      "paths": [
+        "packages/core/src/dx/correlation/repo/",
+        "packages/core/test/dx/b23.test.ts",
+        "packages/core/test/dx/fixtures/b23/"
+      ],
+      "deliverable": "Canonical repo/worktree mapping and path containment",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B24",
+      "plan_name": "dxfr-rat-b24-correlation-flight",
+      "role": "core",
+      "owner": "native worker B24",
+      "paths": [
+        "packages/core/src/dx/correlation/flight/",
+        "packages/core/test/dx/b24.test.ts",
+        "packages/core/test/dx/fixtures/b24/"
+      ],
+      "deliverable": "Immutable flight ID, aliases, explicit start, branch reuse and detached state",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B25",
+      "plan_name": "dxfr-rat-b25-correlation-github",
+      "role": "core",
+      "owner": "native worker B25",
+      "paths": [
+        "packages/core/src/dx/correlation/github/",
+        "packages/core/test/dx/b25.test.ts",
+        "packages/core/test/dx/fixtures/b25/"
+      ],
+      "deliverable": "PR/head-SHA/attempt joins, unassigned ambiguous events",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B26",
+      "plan_name": "dxfr-rat-b26-correlation-ai",
+      "role": "core",
+      "owner": "native worker B26",
+      "paths": [
+        "packages/core/src/dx/correlation/ai/",
+        "packages/core/test/dx/b26.test.ts",
+        "packages/core/test/dx/fixtures/b26/"
+      ],
+      "deliverable": "Conversation/branch event joins and allocated/unallocated fractions",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B27",
+      "plan_name": "dxfr-rat-b27-metrics-intervals",
+      "role": "core",
+      "owner": "native worker B27",
+      "paths": [
+        "packages/core/src/dx/metrics/intervals/",
+        "packages/core/test/dx/b27.test.ts",
+        "packages/core/test/dx/fixtures/b27/"
+      ],
+      "deliverable": "Interval union and sum, censoring, clock errors",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B28",
+      "plan_name": "dxfr-rat-b28-metrics-git",
+      "role": "core",
+      "owner": "native worker B28",
+      "paths": [
+        "packages/core/src/dx/metrics/git/",
+        "packages/core/test/dx/b28.test.ts",
+        "packages/core/test/dx/fixtures/b28/"
+      ],
+      "deliverable": "Commit/file/churn summary with base-SHA definition",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B29",
+      "plan_name": "dxfr-rat-b29-metrics-ci",
+      "role": "core",
+      "owner": "native worker B29",
+      "paths": [
+        "packages/core/src/dx/metrics/ci/",
+        "packages/core/test/dx/b29.test.ts",
+        "packages/core/test/dx/fixtures/b29/"
+      ],
+      "deliverable": "Feedback latency, job sum, overlap, failed attempts and retries",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B30",
+      "plan_name": "dxfr-rat-b30-metrics-ai-usage",
+      "role": "core",
+      "owner": "native worker B30",
+      "paths": [
+        "packages/core/src/dx/metrics/ai-usage/",
+        "packages/core/test/dx/b30.test.ts",
+        "packages/core/test/dx/fixtures/b30/"
+      ],
+      "deliverable": "Measured usage categories, duplicate detection, uncovered usage",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B31",
+      "plan_name": "dxfr-rat-b31-metrics-cost",
+      "role": "optional",
+      "owner": "native worker B31",
+      "paths": [
+        "packages/core/src/dx/metrics/cost/",
+        "packages/core/test/dx/b31.test.ts",
+        "packages/core/test/dx/fixtures/b31/"
+      ],
+      "deliverable": "Charges versus versioned price estimates versus subscription allocation",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B32",
+      "plan_name": "dxfr-rat-b32-metrics-review",
+      "role": "optional",
+      "owner": "native worker B32",
+      "paths": [
+        "packages/core/src/dx/metrics/review/",
+        "packages/core/test/dx/b32.test.ts",
+        "packages/core/test/dx/fixtures/b32/"
+      ],
+      "deliverable": "Time-to-first-review/review episodes with missing boundaries",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B33",
+      "plan_name": "dxfr-rat-b33-metrics-provenance",
+      "role": "optional",
+      "owner": "native worker B33",
+      "paths": [
+        "packages/core/src/dx/metrics/provenance/",
+        "packages/core/test/dx/b33.test.ts",
+        "packages/core/test/dx/fixtures/b33/"
+      ],
+      "deliverable": "Project observed strict line-instance survival from canonical ordered edit/preimage evidence; keep unknown, heuristic and source-attributed values distinct.",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B34",
+      "plan_name": "dxfr-rat-b34-metrics-friction",
+      "role": "core",
+      "owner": "native worker B34",
+      "paths": [
+        "packages/core/src/dx/metrics/friction/",
+        "packages/core/test/dx/b34.test.ts",
+        "packages/core/test/dx/fixtures/b34/"
+      ],
+      "deliverable": "Ranked evidenced findings, thresholds and null-safe recommendation templates",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B35",
+      "plan_name": "dxfr-rat-b35-reports-analyze",
+      "role": "core",
+      "owner": "native worker B35",
+      "paths": [
+        "packages/core/src/dx/reports/analyze/",
+        "packages/core/test/dx/b35.test.ts",
+        "packages/core/test/dx/fixtures/b35/"
+      ],
+      "deliverable": "Deterministic analyze report from typed metric outputs",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B36",
+      "plan_name": "dxfr-rat-b36-reports-explain",
+      "role": "core",
+      "owner": "native worker B36",
+      "paths": [
+        "packages/core/src/dx/reports/explain/",
+        "packages/core/test/dx/b36.test.ts",
+        "packages/core/test/dx/fixtures/b36/"
+      ],
+      "deliverable": "Stable timeline, source lanes, uncertain ordering and pagination",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B37",
+      "plan_name": "dxfr-rat-b37-reports-evidence",
+      "role": "core",
+      "owner": "native worker B37",
+      "paths": [
+        "packages/core/src/dx/reports/evidence/",
+        "packages/core/test/dx/b37.test.ts",
+        "packages/core/test/dx/fixtures/b37/"
+      ],
+      "deliverable": "Redaction and bounded original source links/refs",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B38",
+      "plan_name": "dxfr-rat-b38-cli-commands",
+      "role": "core",
+      "owner": "native worker B38",
+      "paths": [
+        "packages/core/src/dx/cli/commands/",
+        "packages/core/test/dx/b38.test.ts",
+        "packages/core/test/dx/fixtures/b38/"
+      ],
+      "deliverable": "start, collect/import, analyze, explain, status with cached report path",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B39",
+      "plan_name": "dxfr-rat-b39-mcp-handlers",
+      "role": "core",
+      "owner": "native worker B39",
+      "paths": [
+        "packages/core/src/dx/mcp/handlers/",
+        "packages/core/test/dx/b39.test.ts",
+        "packages/core/test/dx/fixtures/b39/"
+      ],
+      "deliverable": "MCP analyze/explain/status/evidence handlers, stdout protocol isolation",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B40",
+      "plan_name": "dxfr-rat-b40-cursor-skills-dx-analyze-cursor-skills-dx-explain",
+      "role": "core",
+      "owner": "native worker B40",
+      "paths": [
+        ".cursor/skills/dx-analyze/",
+        ".cursor/skills/dx-explain/",
+        "packages/core/test/dx/b40.test.ts"
+      ],
+      "deliverable": "Cursor skill files and static routing checks; actual client invocation belongs to C09/C17",
+      "acceptance": "Core needs demonstrated ready implementation for live release. If not ready, report no-go/degraded release; do not claim success from a disabled manifest.",
+      "upstream_notes": "Core"
+    },
+    {
+      "id": "B41",
+      "plan_name": "dxfr-rat-b41-ui-flight",
+      "role": "optional",
+      "owner": "native worker B41",
+      "paths": [
+        "apps/web/src/features/dx/b41/",
+        "apps/web/test/dx/b41.test.ts"
+      ],
+      "deliverable": "Ratstack flight page using report JSON and capability table Use the report contract only; no cloud/auth/deployment baseline and no shared app wiring edits.",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B42",
+      "plan_name": "dxfr-rat-b42-ui-timeline",
+      "role": "optional",
+      "owner": "native worker B42",
+      "paths": [
+        "apps/web/src/features/dx/b42/",
+        "apps/web/test/dx/b42.test.ts"
+      ],
+      "deliverable": "Timeline/evidence drill-down from frozen report JSON Use the report contract only; no cloud/auth/deployment baseline and no shared app wiring edits.",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B43",
+      "plan_name": "dxfr-rat-b43-collectors-cursor-dashboard-response",
+      "role": "optional",
+      "owner": "native worker B43",
+      "paths": [
+        "packages/core/src/dx/collectors/cursor-dashboard-response/",
+        "packages/core/test/dx/b43.test.ts",
+        "packages/core/test/dx/fixtures/b43/"
+      ],
+      "deliverable": "Validate explicit user-owned dashboard-response JSON exports, request/conversation keys, cost fields and pagination completeness; no cookie/HAR credentials.",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B44",
+      "plan_name": "dxfr-rat-b44-collectors-cursor-sdk",
+      "role": "optional",
+      "owner": "native worker B44",
+      "paths": [
+        "packages/core/src/dx/collectors/cursor-sdk/",
+        "packages/core/test/dx/b44.test.ts",
+        "packages/core/test/dx/fixtures/b44/"
+      ],
+      "deliverable": "Normalize prospective SDK run/turn usage and settlement records with explicit flight tags; instrumented traffic scope only, no new assistant UI.",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B45",
+      "plan_name": "dxfr-rat-b45-collectors-git-ai",
+      "role": "optional",
+      "owner": "native worker B45",
+      "paths": [
+        "packages/core/src/dx/collectors/git-ai/",
+        "packages/core/test/dx/b45.test.ts",
+        "packages/core/test/dx/fixtures/b45/"
+      ],
+      "deliverable": "Import versioned stats and authorship-note attestations without initialization/pushing; unknown additions remain unknown and stats ratio is not retention.",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B46",
+      "plan_name": "dxfr-rat-b46-collectors-entire",
+      "role": "optional",
+      "owner": "native worker B46",
+      "paths": [
+        "packages/core/src/dx/collectors/entire/",
+        "packages/core/test/dx/b46.test.ts",
+        "packages/core/test/dx/fixtures/b46/"
+      ],
+      "deliverable": "Import checkpoint/session metadata and delta transcript windows without double-counting root/session/cumulative usage; attribution remains source heuristic.",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B47",
+      "plan_name": "dxfr-rat-b47-collectors-github-content",
+      "role": "optional",
+      "owner": "native worker B47",
+      "paths": [
+        "packages/core/src/dx/collectors/github-content/",
+        "packages/core/test/dx/b47.test.ts",
+        "packages/core/test/dx/fixtures/b47/"
+      ],
+      "deliverable": "Import opt-in bounded failed-job logs, artifact/JUnit references, PR discussion/thread and environment/deployment metadata; enforce download/parse/redaction policies.",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "B48",
+      "plan_name": "dxfr-rat-b48-collectors-local-feedback",
+      "role": "optional",
+      "owner": "native worker B48",
+      "paths": [
+        "packages/core/src/dx/collectors/local-feedback/",
+        "packages/core/test/dx/b48.test.ts",
+        "packages/core/test/dx/fixtures/b48/"
+      ],
+      "deliverable": "Normalize selected IDE diagnostic/terminal, npm timing, compiler and Vite/HMR evidence through a small versioned adapter registry; unsupported subroutes report individually.",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "Expansion"
+    },
+    {
+      "id": "C01",
+      "plan_name": "dxfr-rat-c01-contract-audit",
+      "role": "verification",
+      "owner": "native worker C01",
+      "paths": [
+        "packages/core/test/dx/audits/c01.test.ts",
+        "packages/core/test/dx/fixtures/c01/",
+        "docs/execution/c01/"
+      ],
+      "deliverable": "Reject invalid envelopes, unknown versions, metric null/coverage rules",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "A03/A04"
+    },
+    {
+      "id": "C02",
+      "plan_name": "dxfr-rat-c02-replay-audit",
+      "role": "verification",
+      "owner": "native worker C02",
+      "paths": [
+        "packages/core/test/dx/audits/c02.test.ts",
+        "packages/core/test/dx/fixtures/c02/",
+        "docs/execution/c02/"
+      ],
+      "deliverable": "Replay twice, out-of-order snapshots, retained failed attempts, crash recovery",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "B01"
+    },
+    {
+      "id": "C03",
+      "plan_name": "dxfr-rat-c03-identity-audit",
+      "role": "verification",
+      "owner": "native worker C03",
+      "paths": [
+        "packages/core/test/dx/audits/c03.test.ts",
+        "packages/core/test/dx/fixtures/c03/",
+        "docs/execution/c03/"
+      ],
+      "deliverable": "Worktrees, branch reuse/rename, rebase, forks, detached/unborn HEAD",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "B02/B23/B24"
+    },
+    {
+      "id": "C04",
+      "plan_name": "dxfr-rat-c04-ci-audit",
+      "role": "verification",
+      "owner": "native worker C04",
+      "paths": [
+        "packages/core/test/dx/audits/c04.test.ts",
+        "packages/core/test/dx/fixtures/c04/",
+        "docs/execution/c04/"
+      ],
+      "deliverable": "Overlap, null/end clocks, reruns, cancellation and independent hand-calculated goldens",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "B15/B16/B27/B29"
+    },
+    {
+      "id": "C05",
+      "plan_name": "dxfr-rat-c05-accounting-audit",
+      "role": "verification",
+      "owner": "native worker C05",
+      "paths": [
+        "packages/core/test/dx/audits/c05.test.ts",
+        "packages/core/test/dx/fixtures/c05/",
+        "docs/execution/c05/"
+      ],
+      "deliverable": "Cache categories, duplicate imports, mixed branches, absent costs and tokens",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "B26/B30/B31"
+    },
+    {
+      "id": "C06",
+      "plan_name": "dxfr-rat-c06-source-version-audit",
+      "role": "verification",
+      "owner": "native worker C06",
+      "paths": [
+        "packages/core/test/dx/audits/c06.test.ts",
+        "packages/core/test/dx/fixtures/c06/",
+        "docs/execution/c06/"
+      ],
+      "deliverable": "Unsupported layout/version rejects safely; read-only snapshot evidence",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "B05-B10"
+    },
+    {
+      "id": "C07",
+      "plan_name": "dxfr-rat-c07-report-audit",
+      "role": "verification",
+      "owner": "native worker C07",
+      "paths": [
+        "packages/core/test/dx/audits/c07.test.ts",
+        "packages/core/test/dx/fixtures/c07/",
+        "docs/execution/c07/"
+      ],
+      "deliverable": "Golden analyze/explain, unavailable fields visible, evidence joins",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "B35-B37"
+    },
+    {
+      "id": "C08",
+      "plan_name": "dxfr-rat-c08-mcp-audit",
+      "role": "verification",
+      "owner": "native worker C08",
+      "paths": [
+        "packages/core/test/dx/audits/c08.test.ts",
+        "packages/core/test/dx/fixtures/c08/",
+        "docs/execution/c08/"
+      ],
+      "deliverable": "Launch process, protocol-only stdout, cancellation, bounded pagination",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "B39/A02"
+    },
+    {
+      "id": "C09",
+      "plan_name": "dxfr-rat-c09-cursor-live-smoke",
+      "role": "verification",
+      "owner": "native worker C09",
+      "paths": [
+        "docs/execution/c09/",
+        "packages/core/test/dx/fixtures/c09/"
+      ],
+      "deliverable": "v0 actual Cursor invocation of installed built package, replay/Git analyze and explain",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "B40/B39/A02"
+    },
+    {
+      "id": "C10",
+      "plan_name": "dxfr-rat-c10-privacy-audit",
+      "role": "verification",
+      "owner": "native worker C10",
+      "paths": [
+        "packages/core/test/dx/audits/c10.test.ts",
+        "packages/core/test/dx/fixtures/c10/",
+        "docs/execution/c10/"
+      ],
+      "deliverable": "Synthetic secrets/prompts/tool instructions redact and never execute",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "B37/source adapters"
+    },
+    {
+      "id": "C11",
+      "plan_name": "dxfr-rat-c11-api-failure-audit",
+      "role": "verification",
+      "owner": "native worker C11",
+      "paths": [
+        "packages/core/test/dx/audits/c11.test.ts",
+        "packages/core/test/dx/fixtures/c11/",
+        "docs/execution/c11/"
+      ],
+      "deliverable": "No auth, expired auth, partial pages, 403/429/5xx and cache behavior",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "B15-B19"
+    },
+    {
+      "id": "C12",
+      "plan_name": "dxfr-rat-c12-runtime-audit",
+      "role": "verification",
+      "owner": "native worker C12",
+      "paths": [
+        "packages/core/test/dx/audits/c12.test.ts",
+        "packages/core/test/dx/fixtures/c12/",
+        "docs/execution/c12/"
+      ],
+      "deliverable": "No repo, no GitHub, offline, store busy, corrupt spool, missing adapter",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "B01/B38"
+    },
+    {
+      "id": "C13",
+      "plan_name": "dxfr-rat-c13-installer",
+      "role": "verification",
+      "owner": "native worker C13",
+      "paths": [
+        "scripts/dx-install.ts",
+        "docs/install.md",
+        "packages/core/test/dx/c13.test.ts",
+        "docs/execution/install-config.json"
+      ],
+      "deliverable": "Installer owns MCP/hooks/skills merge into selected target, backup/uninstall, v0 MCP wiring and conditional v1 hook wiring",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "A01/B40"
+    },
+    {
+      "id": "C14",
+      "plan_name": "dxfr-rat-c14-demo",
+      "role": "verification",
+      "owner": "native worker C14",
+      "paths": [
+        "docs/execution/c14/",
+        "packages/core/test/dx/fixtures/c14/"
+      ],
+      "deliverable": "Rehearsable live flight plus separately labelled adversarial fixture flight",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "B35/B36/C09"
+    },
+    {
+      "id": "C15",
+      "plan_name": "dxfr-rat-c15-claims",
+      "role": "verification",
+      "owner": "native worker C15",
+      "paths": [
+        "docs/execution/c15/",
+        "packages/core/test/dx/fixtures/c15/"
+      ],
+      "deliverable": "Evidence-backed claims, product separation, no fabricated productivity causality",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "C07/C14"
+    },
+    {
+      "id": "C16",
+      "plan_name": "dxfr-rat-c16-release",
+      "role": "verification",
+      "owner": "native worker C16",
+      "paths": [
+        "docs/execution/c16/",
+        "packages/core/test/dx/fixtures/c16/"
+      ],
+      "deliverable": "Final frozen enabled-artifact verdict after optional disposition; no optional producer wait",
+      "acceptance": "Terminal handoff ready, unsupported, or disabled; never equate disabled handoff with functioning code.",
+      "upstream_notes": "C01-C15 as applicable"
+    },
+    {
+      "id": "A07",
+      "plan_name": "dxfr-rat-a07-live-integration",
+      "role": "core",
+      "owner": "same integration owner as A02, baton after G01",
+      "paths": [
+        "apps/cli/src/cli.ts",
+        "apps/cli/src/command.ts",
+        "apps/cli/src/surfaces.ts",
+        "packages/core/src/dx/registry/",
+        "packages/core/src/dx/capabilities.ts",
+        "packages/core/src/dx/composition.ts",
+        "packages/core/src/dx/index.ts",
+        "packages/core/test/dx/integration/"
+      ],
+      "deliverable": "v1 real-source composition and built-CLI collect/store/correlate/metric/report end-to-end test",
+      "acceptance": "Required checks and observable demo must pass on one candidate digest. Time and fixture tests cannot replace live evidence.",
+      "upstream_notes": "See phase-gates.md and canonical edges."
+    },
+    {
+      "id": "A08",
+      "plan_name": "dxfr-rat-a08-extension-integration",
+      "role": "optional",
+      "owner": "same integration owner as A02/A07, baton after G02",
+      "paths": [
+        "apps/cli/src/cli.ts",
+        "apps/cli/src/command.ts",
+        "apps/cli/src/surfaces.ts",
+        "packages/core/src/dx/registry/",
+        "packages/core/src/dx/capabilities.ts",
+        "packages/core/src/dx/composition.ts",
+        "packages/core/src/dx/index.ts",
+        "packages/core/test/dx/integration/"
+      ],
+      "deliverable": "v2 incremental enabled-adapter admission and freeze handoff",
+      "acceptance": "Required checks and observable demo must pass on one candidate digest. Time and fixture tests cannot replace live evidence.",
+      "upstream_notes": "See phase-gates.md and canonical edges."
+    },
+    {
+      "id": "A09",
+      "plan_name": "dxfr-rat-a09-real-source-probes",
+      "role": "core",
+      "owner": "source probe owner",
+      "paths": [
+        "docs/execution/source-receipts/"
+      ],
+      "deliverable": "Run built collector capabilities on selected real inputs and publish redacted probe receipts",
+      "acceptance": "Required checks and observable demo must pass on one candidate digest. Time and fixture tests cannot replace live evidence.",
+      "upstream_notes": "See phase-gates.md and canonical edges."
+    },
+    {
+      "id": "C17",
+      "plan_name": "dxfr-rat-c17-cursor-real-flight",
+      "role": "verification",
+      "owner": "Cursor validation owner",
+      "paths": [
+        "docs/execution/c17/"
+      ],
+      "deliverable": "Actual Cursor v1 built/install invocation on real flight; snapshot reuse and source links",
+      "acceptance": "Required checks and observable demo must pass on one candidate digest. Time and fixture tests cannot replace live evidence.",
+      "upstream_notes": "See phase-gates.md and canonical edges."
+    },
+    {
+      "id": "G00",
+      "plan_name": "dxfr-rat-g00-foundation",
+      "role": "gate",
+      "owner": "root phase authority",
+      "paths": [
+        "docs/execution/phases/g00.json"
+      ],
+      "deliverable": "P0 validated foundation and contract freeze",
+      "acceptance": "Required checks and observable demo must pass on one candidate digest. Time and fixture tests cannot replace live evidence.",
+      "upstream_notes": "See phase-gates.md and canonical edges."
+    },
+    {
+      "id": "G01",
+      "plan_name": "dxfr-rat-g01-v0",
+      "role": "gate",
+      "owner": "root phase authority",
+      "paths": [
+        "docs/execution/phases/g01.json"
+      ],
+      "deliverable": "P1 built v0 replay/Git in actual Cursor",
+      "acceptance": "Required checks and observable demo must pass on one candidate digest. Time and fixture tests cannot replace live evidence.",
+      "upstream_notes": "See phase-gates.md and canonical edges."
+    },
+    {
+      "id": "G02",
+      "plan_name": "dxfr-rat-g02-v1",
+      "role": "gate",
+      "owner": "root phase authority",
+      "paths": [
+        "docs/execution/phases/g02.json"
+      ],
+      "deliverable": "P2 real flight with validated AI route and honest CI/PR coverage",
+      "acceptance": "Required checks and observable demo must pass on one candidate digest. Time and fixture tests cannot replace live evidence.",
+      "upstream_notes": "See phase-gates.md and canonical edges."
+    },
+    {
+      "id": "G03",
+      "plan_name": "dxfr-rat-g03-optional-disposition",
+      "role": "gate",
+      "owner": "root phase authority",
+      "paths": [
+        "docs/execution/phases/g03.json"
+      ],
+      "deliverable": "P3 bounded disposition with no optional completion wait",
+      "acceptance": "Required checks and observable demo must pass on one candidate digest. Time and fixture tests cannot replace live evidence.",
+      "upstream_notes": "See phase-gates.md and canonical edges."
+    },
+    {
+      "id": "G04",
+      "plan_name": "dxfr-rat-g04-release",
+      "role": "gate",
+      "owner": "root phase authority",
+      "paths": [
+        "docs/execution/phases/g04.json"
+      ],
+      "deliverable": "P4 final restart/rehearsal and last-green release verdict",
+      "acceptance": "Required checks and observable demo must pass on one candidate digest. Time and fixture tests cannot replace live evidence.",
+      "upstream_notes": "See phase-gates.md and canonical edges."
+    }
+  ],
+  "edges": [
+    {
+      "source": "dxfr-rat-a01-scaffold",
+      "target": "dxfr-rat-g00-foundation",
+      "source_id": "A01",
+      "target_id": "G00"
+    },
+    {
+      "source": "dxfr-rat-a02-integration",
+      "target": "dxfr-rat-c06-source-version-audit",
+      "source_id": "A02",
+      "target_id": "C06"
+    },
+    {
+      "source": "dxfr-rat-a02-integration",
+      "target": "dxfr-rat-c08-mcp-audit",
+      "source_id": "A02",
+      "target_id": "C08"
+    },
+    {
+      "source": "dxfr-rat-a02-integration",
+      "target": "dxfr-rat-c09-cursor-live-smoke",
+      "source_id": "A02",
+      "target_id": "C09"
+    },
+    {
+      "source": "dxfr-rat-a02-integration",
+      "target": "dxfr-rat-c13-installer",
+      "source_id": "A02",
+      "target_id": "C13"
+    },
+    {
+      "source": "dxfr-rat-a02-integration",
+      "target": "dxfr-rat-g01-v0",
+      "source_id": "A02",
+      "target_id": "G01"
+    },
+    {
+      "source": "dxfr-rat-a03-contracts",
+      "target": "dxfr-rat-a04-fixtures",
+      "source_id": "A03",
+      "target_id": "A04"
+    },
+    {
+      "source": "dxfr-rat-a03-contracts",
+      "target": "dxfr-rat-c01-contract-audit",
+      "source_id": "A03",
+      "target_id": "C01"
+    },
+    {
+      "source": "dxfr-rat-a03-contracts",
+      "target": "dxfr-rat-g00-foundation",
+      "source_id": "A03",
+      "target_id": "G00"
+    },
+    {
+      "source": "dxfr-rat-a04-fixtures",
+      "target": "dxfr-rat-c01-contract-audit",
+      "source_id": "A04",
+      "target_id": "C01"
+    },
+    {
+      "source": "dxfr-rat-a04-fixtures",
+      "target": "dxfr-rat-g00-foundation",
+      "source_id": "A04",
+      "target_id": "G00"
+    },
+    {
+      "source": "dxfr-rat-a05-ownership",
+      "target": "dxfr-rat-g00-foundation",
+      "source_id": "A05",
+      "target_id": "G00"
+    },
+    {
+      "source": "dxfr-rat-a06-capability-probes",
+      "target": "dxfr-rat-c06-source-version-audit",
+      "source_id": "A06",
+      "target_id": "C06"
+    },
+    {
+      "source": "dxfr-rat-a06-capability-probes",
+      "target": "dxfr-rat-c09-cursor-live-smoke",
+      "source_id": "A06",
+      "target_id": "C09"
+    },
+    {
+      "source": "dxfr-rat-a06-capability-probes",
+      "target": "dxfr-rat-g00-foundation",
+      "source_id": "A06",
+      "target_id": "G00"
+    },
+    {
+      "source": "dxfr-rat-a07-live-integration",
+      "target": "dxfr-rat-a09-real-source-probes",
+      "source_id": "A07",
+      "target_id": "A09"
+    },
+    {
+      "source": "dxfr-rat-a07-live-integration",
+      "target": "dxfr-rat-c17-cursor-real-flight",
+      "source_id": "A07",
+      "target_id": "C17"
+    },
+    {
+      "source": "dxfr-rat-a07-live-integration",
+      "target": "dxfr-rat-g02-v1",
+      "source_id": "A07",
+      "target_id": "G02"
+    },
+    {
+      "source": "dxfr-rat-a09-real-source-probes",
+      "target": "dxfr-rat-c17-cursor-real-flight",
+      "source_id": "A09",
+      "target_id": "C17"
+    },
+    {
+      "source": "dxfr-rat-a09-real-source-probes",
+      "target": "dxfr-rat-g02-v1",
+      "source_id": "A09",
+      "target_id": "G02"
+    },
+    {
+      "source": "dxfr-rat-b01-storage",
+      "target": "dxfr-rat-a02-integration",
+      "source_id": "B01",
+      "target_id": "A02"
+    },
+    {
+      "source": "dxfr-rat-b01-storage",
+      "target": "dxfr-rat-c02-replay-audit",
+      "source_id": "B01",
+      "target_id": "C02"
+    },
+    {
+      "source": "dxfr-rat-b01-storage",
+      "target": "dxfr-rat-c12-runtime-audit",
+      "source_id": "B01",
+      "target_id": "C12"
+    },
+    {
+      "source": "dxfr-rat-b02-collectors-git-identity",
+      "target": "dxfr-rat-a02-integration",
+      "source_id": "B02",
+      "target_id": "A02"
+    },
+    {
+      "source": "dxfr-rat-b02-collectors-git-identity",
+      "target": "dxfr-rat-c03-identity-audit",
+      "source_id": "B02",
+      "target_id": "C03"
+    },
+    {
+      "source": "dxfr-rat-b03-collectors-git-history",
+      "target": "dxfr-rat-a02-integration",
+      "source_id": "B03",
+      "target_id": "A02"
+    },
+    {
+      "source": "dxfr-rat-b15-collectors-github-runs",
+      "target": "dxfr-rat-a07-live-integration",
+      "source_id": "B15",
+      "target_id": "A07"
+    },
+    {
+      "source": "dxfr-rat-b15-collectors-github-runs",
+      "target": "dxfr-rat-c04-ci-audit",
+      "source_id": "B15",
+      "target_id": "C04"
+    },
+    {
+      "source": "dxfr-rat-b15-collectors-github-runs",
+      "target": "dxfr-rat-c11-api-failure-audit",
+      "source_id": "B15",
+      "target_id": "C11"
+    },
+    {
+      "source": "dxfr-rat-b16-collectors-github-jobs",
+      "target": "dxfr-rat-a07-live-integration",
+      "source_id": "B16",
+      "target_id": "A07"
+    },
+    {
+      "source": "dxfr-rat-b16-collectors-github-jobs",
+      "target": "dxfr-rat-c04-ci-audit",
+      "source_id": "B16",
+      "target_id": "C04"
+    },
+    {
+      "source": "dxfr-rat-b16-collectors-github-jobs",
+      "target": "dxfr-rat-c11-api-failure-audit",
+      "source_id": "B16",
+      "target_id": "C11"
+    },
+    {
+      "source": "dxfr-rat-b17-collectors-github-pr",
+      "target": "dxfr-rat-a07-live-integration",
+      "source_id": "B17",
+      "target_id": "A07"
+    },
+    {
+      "source": "dxfr-rat-b17-collectors-github-pr",
+      "target": "dxfr-rat-c11-api-failure-audit",
+      "source_id": "B17",
+      "target_id": "C11"
+    },
+    {
+      "source": "dxfr-rat-b22-collectors-manual",
+      "target": "dxfr-rat-a02-integration",
+      "source_id": "B22",
+      "target_id": "A02"
+    },
+    {
+      "source": "dxfr-rat-b23-correlation-repo",
+      "target": "dxfr-rat-a02-integration",
+      "source_id": "B23",
+      "target_id": "A02"
+    },
+    {
+      "source": "dxfr-rat-b23-correlation-repo",
+      "target": "dxfr-rat-c03-identity-audit",
+      "source_id": "B23",
+      "target_id": "C03"
+    },
+    {
+      "source": "dxfr-rat-b24-correlation-flight",
+      "target": "dxfr-rat-a02-integration",
+      "source_id": "B24",
+      "target_id": "A02"
+    },
+    {
+      "source": "dxfr-rat-b24-correlation-flight",
+      "target": "dxfr-rat-c03-identity-audit",
+      "source_id": "B24",
+      "target_id": "C03"
+    },
+    {
+      "source": "dxfr-rat-b25-correlation-github",
+      "target": "dxfr-rat-a02-integration",
+      "source_id": "B25",
+      "target_id": "A02"
+    },
+    {
+      "source": "dxfr-rat-b26-correlation-ai",
+      "target": "dxfr-rat-a02-integration",
+      "source_id": "B26",
+      "target_id": "A02"
+    },
+    {
+      "source": "dxfr-rat-b26-correlation-ai",
+      "target": "dxfr-rat-c05-accounting-audit",
+      "source_id": "B26",
+      "target_id": "C05"
+    },
+    {
+      "source": "dxfr-rat-b27-metrics-intervals",
+      "target": "dxfr-rat-a02-integration",
+      "source_id": "B27",
+      "target_id": "A02"
+    },
+    {
+      "source": "dxfr-rat-b27-metrics-intervals",
+      "target": "dxfr-rat-c04-ci-audit",
+      "source_id": "B27",
+      "target_id": "C04"
+    },
+    {
+      "source": "dxfr-rat-b28-metrics-git",
+      "target": "dxfr-rat-a02-integration",
+      "source_id": "B28",
+      "target_id": "A02"
+    },
+    {
+      "source": "dxfr-rat-b29-metrics-ci",
+      "target": "dxfr-rat-a02-integration",
+      "source_id": "B29",
+      "target_id": "A02"
+    },
+    {
+      "source": "dxfr-rat-b29-metrics-ci",
+      "target": "dxfr-rat-c04-ci-audit",
+      "source_id": "B29",
+      "target_id": "C04"
+    },
+    {
+      "source": "dxfr-rat-b30-metrics-ai-usage",
+      "target": "dxfr-rat-a02-integration",
+      "source_id": "B30",
+      "target_id": "A02"
+    },
+    {
+      "source": "dxfr-rat-b30-metrics-ai-usage",
+      "target": "dxfr-rat-c05-accounting-audit",
+      "source_id": "B30",
+      "target_id": "C05"
+    },
+    {
+      "source": "dxfr-rat-b34-metrics-friction",
+      "target": "dxfr-rat-a02-integration",
+      "source_id": "B34",
+      "target_id": "A02"
+    },
+    {
+      "source": "dxfr-rat-b35-reports-analyze",
+      "target": "dxfr-rat-a02-integration",
+      "source_id": "B35",
+      "target_id": "A02"
+    },
+    {
+      "source": "dxfr-rat-b35-reports-analyze",
+      "target": "dxfr-rat-c07-report-audit",
+      "source_id": "B35",
+      "target_id": "C07"
+    },
+    {
+      "source": "dxfr-rat-b35-reports-analyze",
+      "target": "dxfr-rat-c14-demo",
+      "source_id": "B35",
+      "target_id": "C14"
+    },
+    {
+      "source": "dxfr-rat-b36-reports-explain",
+      "target": "dxfr-rat-a02-integration",
+      "source_id": "B36",
+      "target_id": "A02"
+    },
+    {
+      "source": "dxfr-rat-b36-reports-explain",
+      "target": "dxfr-rat-c07-report-audit",
+      "source_id": "B36",
+      "target_id": "C07"
+    },
+    {
+      "source": "dxfr-rat-b36-reports-explain",
+      "target": "dxfr-rat-c14-demo",
+      "source_id": "B36",
+      "target_id": "C14"
+    },
+    {
+      "source": "dxfr-rat-b37-reports-evidence",
+      "target": "dxfr-rat-a02-integration",
+      "source_id": "B37",
+      "target_id": "A02"
+    },
+    {
+      "source": "dxfr-rat-b37-reports-evidence",
+      "target": "dxfr-rat-c07-report-audit",
+      "source_id": "B37",
+      "target_id": "C07"
+    },
+    {
+      "source": "dxfr-rat-b37-reports-evidence",
+      "target": "dxfr-rat-c10-privacy-audit",
+      "source_id": "B37",
+      "target_id": "C10"
+    },
+    {
+      "source": "dxfr-rat-b38-cli-commands",
+      "target": "dxfr-rat-a02-integration",
+      "source_id": "B38",
+      "target_id": "A02"
+    },
+    {
+      "source": "dxfr-rat-b38-cli-commands",
+      "target": "dxfr-rat-c12-runtime-audit",
+      "source_id": "B38",
+      "target_id": "C12"
+    },
+    {
+      "source": "dxfr-rat-b39-mcp-handlers",
+      "target": "dxfr-rat-a02-integration",
+      "source_id": "B39",
+      "target_id": "A02"
+    },
+    {
+      "source": "dxfr-rat-b39-mcp-handlers",
+      "target": "dxfr-rat-c08-mcp-audit",
+      "source_id": "B39",
+      "target_id": "C08"
+    },
+    {
+      "source": "dxfr-rat-b40-cursor-skills-dx-analyze-cursor-skills-dx-explain",
+      "target": "dxfr-rat-a02-integration",
+      "source_id": "B40",
+      "target_id": "A02"
+    },
+    {
+      "source": "dxfr-rat-b40-cursor-skills-dx-analyze-cursor-skills-dx-explain",
+      "target": "dxfr-rat-c13-installer",
+      "source_id": "B40",
+      "target_id": "C13"
+    },
+    {
+      "source": "dxfr-rat-c01-contract-audit",
+      "target": "dxfr-rat-g01-v0",
+      "source_id": "C01",
+      "target_id": "G01"
+    },
+    {
+      "source": "dxfr-rat-c02-replay-audit",
+      "target": "dxfr-rat-g01-v0",
+      "source_id": "C02",
+      "target_id": "G01"
+    },
+    {
+      "source": "dxfr-rat-c03-identity-audit",
+      "target": "dxfr-rat-g01-v0",
+      "source_id": "C03",
+      "target_id": "G01"
+    },
+    {
+      "source": "dxfr-rat-c04-ci-audit",
+      "target": "dxfr-rat-g02-v1",
+      "source_id": "C04",
+      "target_id": "G02"
+    },
+    {
+      "source": "dxfr-rat-c05-accounting-audit",
+      "target": "dxfr-rat-g01-v0",
+      "source_id": "C05",
+      "target_id": "G01"
+    },
+    {
+      "source": "dxfr-rat-c06-source-version-audit",
+      "target": "dxfr-rat-g01-v0",
+      "source_id": "C06",
+      "target_id": "G01"
+    },
+    {
+      "source": "dxfr-rat-c07-report-audit",
+      "target": "dxfr-rat-c15-claims",
+      "source_id": "C07",
+      "target_id": "C15"
+    },
+    {
+      "source": "dxfr-rat-c07-report-audit",
+      "target": "dxfr-rat-g01-v0",
+      "source_id": "C07",
+      "target_id": "G01"
+    },
+    {
+      "source": "dxfr-rat-c08-mcp-audit",
+      "target": "dxfr-rat-c09-cursor-live-smoke",
+      "source_id": "C08",
+      "target_id": "C09"
+    },
+    {
+      "source": "dxfr-rat-c08-mcp-audit",
+      "target": "dxfr-rat-g01-v0",
+      "source_id": "C08",
+      "target_id": "G01"
+    },
+    {
+      "source": "dxfr-rat-c09-cursor-live-smoke",
+      "target": "dxfr-rat-c14-demo",
+      "source_id": "C09",
+      "target_id": "C14"
+    },
+    {
+      "source": "dxfr-rat-c09-cursor-live-smoke",
+      "target": "dxfr-rat-g01-v0",
+      "source_id": "C09",
+      "target_id": "G01"
+    },
+    {
+      "source": "dxfr-rat-c10-privacy-audit",
+      "target": "dxfr-rat-g01-v0",
+      "source_id": "C10",
+      "target_id": "G01"
+    },
+    {
+      "source": "dxfr-rat-c11-api-failure-audit",
+      "target": "dxfr-rat-g02-v1",
+      "source_id": "C11",
+      "target_id": "G02"
+    },
+    {
+      "source": "dxfr-rat-c12-runtime-audit",
+      "target": "dxfr-rat-g01-v0",
+      "source_id": "C12",
+      "target_id": "G01"
+    },
+    {
+      "source": "dxfr-rat-c13-installer",
+      "target": "dxfr-rat-c09-cursor-live-smoke",
+      "source_id": "C13",
+      "target_id": "C09"
+    },
+    {
+      "source": "dxfr-rat-c13-installer",
+      "target": "dxfr-rat-c16-release",
+      "source_id": "C13",
+      "target_id": "C16"
+    },
+    {
+      "source": "dxfr-rat-c13-installer",
+      "target": "dxfr-rat-c17-cursor-real-flight",
+      "source_id": "C13",
+      "target_id": "C17"
+    },
+    {
+      "source": "dxfr-rat-c13-installer",
+      "target": "dxfr-rat-g01-v0",
+      "source_id": "C13",
+      "target_id": "G01"
+    },
+    {
+      "source": "dxfr-rat-c14-demo",
+      "target": "dxfr-rat-c15-claims",
+      "source_id": "C14",
+      "target_id": "C15"
+    },
+    {
+      "source": "dxfr-rat-c14-demo",
+      "target": "dxfr-rat-g01-v0",
+      "source_id": "C14",
+      "target_id": "G01"
+    },
+    {
+      "source": "dxfr-rat-c15-claims",
+      "target": "dxfr-rat-c16-release",
+      "source_id": "C15",
+      "target_id": "C16"
+    },
+    {
+      "source": "dxfr-rat-c15-claims",
+      "target": "dxfr-rat-g01-v0",
+      "source_id": "C15",
+      "target_id": "G01"
+    },
+    {
+      "source": "dxfr-rat-c16-release",
+      "target": "dxfr-rat-g04-release",
+      "source_id": "C16",
+      "target_id": "G04"
+    },
+    {
+      "source": "dxfr-rat-c17-cursor-real-flight",
+      "target": "dxfr-rat-g02-v1",
+      "source_id": "C17",
+      "target_id": "G02"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-a02-integration",
+      "source_id": "G00",
+      "target_id": "A02"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b01-storage",
+      "source_id": "G00",
+      "target_id": "B01"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b02-collectors-git-identity",
+      "source_id": "G00",
+      "target_id": "B02"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b03-collectors-git-history",
+      "source_id": "G00",
+      "target_id": "B03"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b04-collectors-git-observation",
+      "source_id": "G00",
+      "target_id": "B04"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b05-collectors-cursor-hooks",
+      "source_id": "G00",
+      "target_id": "B05"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b06-collectors-cursor-local-db",
+      "source_id": "G00",
+      "target_id": "B06"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b07-collectors-cursor-transcripts",
+      "source_id": "G00",
+      "target_id": "B07"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b08-collectors-cursor-usage-export",
+      "source_id": "G00",
+      "target_id": "B08"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b09-collectors-cursor-extension",
+      "source_id": "G00",
+      "target_id": "B09"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b10-collectors-cursor-cli",
+      "source_id": "G00",
+      "target_id": "B10"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b11-collectors-claude",
+      "source_id": "G00",
+      "target_id": "B11"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b12-collectors-codex",
+      "source_id": "G00",
+      "target_id": "B12"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b13-collectors-opencode",
+      "source_id": "G00",
+      "target_id": "B13"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b14-collectors-provider-usage",
+      "source_id": "G00",
+      "target_id": "B14"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b15-collectors-github-runs",
+      "source_id": "G00",
+      "target_id": "B15"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b16-collectors-github-jobs",
+      "source_id": "G00",
+      "target_id": "B16"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b17-collectors-github-pr",
+      "source_id": "G00",
+      "target_id": "B17"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b18-collectors-github-review",
+      "source_id": "G00",
+      "target_id": "B18"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b19-collectors-github-checks",
+      "source_id": "G00",
+      "target_id": "B19"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b20-collectors-shell-command",
+      "source_id": "G00",
+      "target_id": "B20"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b21-collectors-local-test",
+      "source_id": "G00",
+      "target_id": "B21"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b22-collectors-manual",
+      "source_id": "G00",
+      "target_id": "B22"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b23-correlation-repo",
+      "source_id": "G00",
+      "target_id": "B23"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b24-correlation-flight",
+      "source_id": "G00",
+      "target_id": "B24"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b25-correlation-github",
+      "source_id": "G00",
+      "target_id": "B25"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b26-correlation-ai",
+      "source_id": "G00",
+      "target_id": "B26"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b27-metrics-intervals",
+      "source_id": "G00",
+      "target_id": "B27"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b28-metrics-git",
+      "source_id": "G00",
+      "target_id": "B28"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b29-metrics-ci",
+      "source_id": "G00",
+      "target_id": "B29"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b30-metrics-ai-usage",
+      "source_id": "G00",
+      "target_id": "B30"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b31-metrics-cost",
+      "source_id": "G00",
+      "target_id": "B31"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b32-metrics-review",
+      "source_id": "G00",
+      "target_id": "B32"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b33-metrics-provenance",
+      "source_id": "G00",
+      "target_id": "B33"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b34-metrics-friction",
+      "source_id": "G00",
+      "target_id": "B34"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b35-reports-analyze",
+      "source_id": "G00",
+      "target_id": "B35"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b36-reports-explain",
+      "source_id": "G00",
+      "target_id": "B36"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b37-reports-evidence",
+      "source_id": "G00",
+      "target_id": "B37"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b38-cli-commands",
+      "source_id": "G00",
+      "target_id": "B38"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b39-mcp-handlers",
+      "source_id": "G00",
+      "target_id": "B39"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b40-cursor-skills-dx-analyze-cursor-skills-dx-explain",
+      "source_id": "G00",
+      "target_id": "B40"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b41-ui-flight",
+      "source_id": "G00",
+      "target_id": "B41"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b42-ui-timeline",
+      "source_id": "G00",
+      "target_id": "B42"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b43-collectors-cursor-dashboard-response",
+      "source_id": "G00",
+      "target_id": "B43"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b44-collectors-cursor-sdk",
+      "source_id": "G00",
+      "target_id": "B44"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b45-collectors-git-ai",
+      "source_id": "G00",
+      "target_id": "B45"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b46-collectors-entire",
+      "source_id": "G00",
+      "target_id": "B46"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b47-collectors-github-content",
+      "source_id": "G00",
+      "target_id": "B47"
+    },
+    {
+      "source": "dxfr-rat-g00-foundation",
+      "target": "dxfr-rat-b48-collectors-local-feedback",
+      "source_id": "G00",
+      "target_id": "B48"
+    },
+    {
+      "source": "dxfr-rat-g01-v0",
+      "target": "dxfr-rat-a07-live-integration",
+      "source_id": "G01",
+      "target_id": "A07"
+    },
+    {
+      "source": "dxfr-rat-g01-v0",
+      "target": "dxfr-rat-g02-v1",
+      "source_id": "G01",
+      "target_id": "G02"
+    },
+    {
+      "source": "dxfr-rat-g02-v1",
+      "target": "dxfr-rat-a08-extension-integration",
+      "source_id": "G02",
+      "target_id": "A08"
+    },
+    {
+      "source": "dxfr-rat-g02-v1",
+      "target": "dxfr-rat-g03-optional-disposition",
+      "source_id": "G02",
+      "target_id": "G03"
+    },
+    {
+      "source": "dxfr-rat-g03-optional-disposition",
+      "target": "dxfr-rat-c16-release",
+      "source_id": "G03",
+      "target_id": "C16"
+    },
+    {
+      "source": "dxfr-rat-g03-optional-disposition",
+      "target": "dxfr-rat-g04-release",
+      "source_id": "G03",
+      "target_id": "G04"
+    }
+  ],
+  "phase_policy": {
+    "gate_order": [
+      "G00",
+      "G01",
+      "G02",
+      "G03",
+      "G04"
+    ],
+    "candidate_group": {
+      "G02": {
+        "at_least_one_ready_real": [
+          "B05",
+          "B07",
+          "B08"
+        ]
+      }
+    },
+    "max_workers": 49,
+    "repair_reserve": 4,
+    "optional_frontier_never_overrides_gate_priority": true,
+    "ready_optional_routes_require_probe_and_checks": true,
+    "dependency_completion_is_not_gate_pass": true
+  }
+}

@@ -1,0 +1,383 @@
+flowchart TD
+  subgraph plan_dxfr_rat_a01_scaffold["dxfr-rat-a01-scaffold"]
+    plan_dxfr_rat_a01_scaffold_todo_1["a01-handoff (pending)\nDeliver A01: Verified Ratstack scaffold, pinned install, app starts, runtime/MCP viability probe"]
+  end
+  subgraph plan_dxfr_rat_a02_integration["dxfr-rat-a02-integration"]
+    plan_dxfr_rat_a02_integration_todo_1["a02-handoff (pending)\nDeliver A02: v0 built CLI/MCP composition, real Git plus labelled replay analyze/explain spine"]
+  end
+  subgraph plan_dxfr_rat_a03_contracts["dxfr-rat-a03-contracts"]
+    plan_dxfr_rat_a03_contracts_todo_1["a03-handoff (pending)\nDeliver A03: Frozen interfaces and compile-only fake implementations"]
+  end
+  subgraph plan_dxfr_rat_a04_fixtures["dxfr-rat-a04-fixtures"]
+    plan_dxfr_rat_a04_fixtures_todo_1["a04-handoff (pending)\nDeliver A04: Redacted fixture vocabulary and common golden report inputs"]
+  end
+  subgraph plan_dxfr_rat_a05_ownership["dxfr-rat-a05-ownership"]
+    plan_dxfr_rat_a05_ownership_todo_1["a05-handoff (pending)\nDeliver A05: Exact ownership manifest and dependency-aware launch instructions"]
+  end
+  subgraph plan_dxfr_rat_a06_capability_probes["dxfr-rat-a06-capability-probes"]
+    plan_dxfr_rat_a06_capability_probes_todo_1["a06-handoff (pending)\nDeliver A06: Actual non-content version/presence facts and safe probe protocol"]
+  end
+  subgraph plan_dxfr_rat_a07_live_integration["dxfr-rat-a07-live-integration"]
+    plan_dxfr_rat_a07_live_integration_todo_1["a07-handoff (pending)\nDeliver A07: v1 real-source composition and built-CLI collect/store/correlate/metric/report end-to-end test"]
+  end
+  subgraph plan_dxfr_rat_a08_extension_integration["dxfr-rat-a08-extension-integration"]
+    plan_dxfr_rat_a08_extension_integration_todo_1["a08-handoff (pending)\nDeliver A08: v2 incremental enabled-adapter admission and freeze handoff"]
+  end
+  subgraph plan_dxfr_rat_a09_real_source_probes["dxfr-rat-a09-real-source-probes"]
+    plan_dxfr_rat_a09_real_source_probes_todo_1["a09-handoff (pending)\nDeliver A09: Run built collector capabilities on selected real inputs and publish redacted probe receipts"]
+  end
+  subgraph plan_dxfr_rat_b01_storage["dxfr-rat-b01-storage"]
+    plan_dxfr_rat_b01_storage_todo_1["b01-handoff (pending)\nDeliver B01: Single-writer store, schema, migrations, snapshot queries, replay idempotence"]
+  end
+  subgraph plan_dxfr_rat_b02_collectors_git_identity["dxfr-rat-b02-collectors-git-identity"]
+    plan_dxfr_rat_b02_collectors_git_identity_todo_1["b02-handoff (pending)\nDeliver B02: Repo common-dir, worktree, branch, HEAD, base-SHA context"]
+  end
+  subgraph plan_dxfr_rat_b03_collectors_git_history["dxfr-rat-b03-collectors-git-history"]
+    plan_dxfr_rat_b03_collectors_git_history_todo_1["b03-handoff (pending)\nDeliver B03: Commit times, numstat/diff metadata, explicit first-observed distinction"]
+  end
+  subgraph plan_dxfr_rat_b04_collectors_git_observation["dxfr-rat-b04-collectors-git-observation"]
+    plan_dxfr_rat_b04_collectors_git_observation_todo_1["b04-handoff (pending)\nDeliver B04: Opt-in future branch/edit observation; no claim of complete historical activity"]
+  end
+  subgraph plan_dxfr_rat_b05_collectors_cursor_hooks["dxfr-rat-b05-collectors-cursor-hooks"]
+    plan_dxfr_rat_b05_collectors_cursor_hooks_todo_1["b05-handoff (pending)\nDeliver B05: Decode supported Agent/Tab/tool hooks, atomic event spool and optional raw stop-token fields with version/presence/dedup checks."]
+  end
+  subgraph plan_dxfr_rat_b06_collectors_cursor_local_db["dxfr-rat-b06-collectors-cursor-local-db"]
+    plan_dxfr_rat_b06_collectors_cursor_local_db_todo_1["b06-handoff (pending)\nDeliver B06: Read only consistent opt-in IDE DB snapshots for recognized ItemTable/cursorDiskKV/composerHeaders and AI-tracking schemas; context meters stay separate from spend."]
+  end
+  subgraph plan_dxfr_rat_b07_collectors_cursor_transcripts["dxfr-rat-b07-collectors-cursor-transcripts"]
+    plan_dxfr_rat_b07_collectors_cursor_transcripts_todo_1["b07-handoff (pending)\nDeliver B07: Local exported transcript/chat parser with mapped/unmapped usage"]
+  end
+  subgraph plan_dxfr_rat_b08_collectors_cursor_usage_export["dxfr-rat-b08-collectors-cursor-usage-export"]
+    plan_dxfr_rat_b08_collectors_cursor_usage_export_todo_1["b08-handoff (pending)\nDeliver B08: Import user-provided personal CSV variants with raw category/cost semantics, rejected/unassigned rows, batch identity and truthful coverage."]
+  end
+  subgraph plan_dxfr_rat_b09_collectors_cursor_extension["dxfr-rat-b09-collectors-cursor-extension"]
+    plan_dxfr_rat_b09_collectors_cursor_extension_todo_1["b09-handoff (pending)\nDeliver B09: Supported VS Code/Cursor extension activity route feasibility and minimal descriptor"]
+  end
+  subgraph plan_dxfr_rat_b10_collectors_cursor_cli["dxfr-rat-b10-collectors-cursor-cli"]
+    plan_dxfr_rat_b10_collectors_cursor_cli_todo_1["b10-handoff (pending)\nDeliver B10: Decode recognized Cursor CLI output and opt-in legacy/new lowercase CLI database inputs; unsupported protobuf layouts return visible gaps."]
+  end
+  subgraph plan_dxfr_rat_b11_collectors_claude["dxfr-rat-b11-collectors-claude"]
+    plan_dxfr_rat_b11_collectors_claude_todo_1["b11-handoff (pending)\nDeliver B11: Consented Claude JSONL usage import for cross-agent development flights"]
+  end
+  subgraph plan_dxfr_rat_b12_collectors_codex["dxfr-rat-b12-collectors-codex"]
+    plan_dxfr_rat_b12_collectors_codex_todo_1["b12-handoff (pending)\nDeliver B12: Consented Codex session usage import with session allocation uncertainty"]
+  end
+  subgraph plan_dxfr_rat_b13_collectors_opencode["dxfr-rat-b13-collectors-opencode"]
+    plan_dxfr_rat_b13_collectors_opencode_todo_1["b13-handoff (pending)\nDeliver B13: OpenCode exported session/token import"]
+  end
+  subgraph plan_dxfr_rat_b14_collectors_provider_usage["dxfr-rat-b14-collectors-provider-usage"]
+    plan_dxfr_rat_b14_collectors_provider_usage_todo_1["b14-handoff (pending)\nDeliver B14: Explicit supplied provider receipt/usage file import; no account-wide auto-fetch"]
+  end
+  subgraph plan_dxfr_rat_b15_collectors_github_runs["dxfr-rat-b15-collectors-github-runs"]
+    plan_dxfr_rat_b15_collectors_github_runs_todo_1["b15-handoff (pending)\nDeliver B15: Actions runs and attempts with pagination/ETag/partial states; sole shared GitHub API broker/cache/auth service owner"]
+  end
+  subgraph plan_dxfr_rat_b16_collectors_github_jobs["dxfr-rat-b16-collectors-github-jobs"]
+    plan_dxfr_rat_b16_collectors_github_jobs_todo_1["b16-handoff (pending)\nDeliver B16: Attempt-specific jobs, start/end/status and missing timestamps"]
+  end
+  subgraph plan_dxfr_rat_b17_collectors_github_pr["dxfr-rat-b17-collectors-github-pr"]
+    plan_dxfr_rat_b17_collectors_github_pr_todo_1["b17-handoff (pending)\nDeliver B17: PR metadata, head/base repository IDs and commit links"]
+  end
+  subgraph plan_dxfr_rat_b18_collectors_github_review["dxfr-rat-b18-collectors-github-review"]
+    plan_dxfr_rat_b18_collectors_github_review_todo_1["b18-handoff (pending)\nDeliver B18: Review events/timeline and requested-review episodes"]
+  end
+  subgraph plan_dxfr_rat_b19_collectors_github_checks["dxfr-rat-b19-collectors-github-checks"]
+    plan_dxfr_rat_b19_collectors_github_checks_todo_1["b19-handoff (pending)\nDeliver B19: Check runs/statuses outside Actions; conservative duplication handling"]
+  end
+  subgraph plan_dxfr_rat_b20_collectors_shell_command["dxfr-rat-b20-collectors-shell-command"]
+    plan_dxfr_rat_b20_collectors_shell_command_todo_1["b20-handoff (pending)\nDeliver B20: Capture argv command lifecycle and optional selected shell history as reconstructed evidence; preserve exit/signal behavior and context."]
+  end
+  subgraph plan_dxfr_rat_b21_collectors_local_test["dxfr-rat-b21-collectors-local-test"]
+    plan_dxfr_rat_b21_collectors_local_test_todo_1["b21-handoff (pending)\nDeliver B21: JUnit/structured test import and command-session joins"]
+  end
+  subgraph plan_dxfr_rat_b22_collectors_manual["dxfr-rat-b22-collectors-manual"]
+    plan_dxfr_rat_b22_collectors_manual_todo_1["b22-handoff (pending)\nDeliver B22: Explicit start/stop/wait markers and labelled user claims"]
+  end
+  subgraph plan_dxfr_rat_b23_correlation_repo["dxfr-rat-b23-correlation-repo"]
+    plan_dxfr_rat_b23_correlation_repo_todo_1["b23-handoff (pending)\nDeliver B23: Canonical repo/worktree mapping and path containment"]
+  end
+  subgraph plan_dxfr_rat_b24_correlation_flight["dxfr-rat-b24-correlation-flight"]
+    plan_dxfr_rat_b24_correlation_flight_todo_1["b24-handoff (pending)\nDeliver B24: Immutable flight ID, aliases, explicit start, branch reuse and detached state"]
+  end
+  subgraph plan_dxfr_rat_b25_correlation_github["dxfr-rat-b25-correlation-github"]
+    plan_dxfr_rat_b25_correlation_github_todo_1["b25-handoff (pending)\nDeliver B25: PR/head-SHA/attempt joins, unassigned ambiguous events"]
+  end
+  subgraph plan_dxfr_rat_b26_correlation_ai["dxfr-rat-b26-correlation-ai"]
+    plan_dxfr_rat_b26_correlation_ai_todo_1["b26-handoff (pending)\nDeliver B26: Conversation/branch event joins and allocated/unallocated fractions"]
+  end
+  subgraph plan_dxfr_rat_b27_metrics_intervals["dxfr-rat-b27-metrics-intervals"]
+    plan_dxfr_rat_b27_metrics_intervals_todo_1["b27-handoff (pending)\nDeliver B27: Interval union and sum, censoring, clock errors"]
+  end
+  subgraph plan_dxfr_rat_b28_metrics_git["dxfr-rat-b28-metrics-git"]
+    plan_dxfr_rat_b28_metrics_git_todo_1["b28-handoff (pending)\nDeliver B28: Commit/file/churn summary with base-SHA definition"]
+  end
+  subgraph plan_dxfr_rat_b29_metrics_ci["dxfr-rat-b29-metrics-ci"]
+    plan_dxfr_rat_b29_metrics_ci_todo_1["b29-handoff (pending)\nDeliver B29: Feedback latency, job sum, overlap, failed attempts and retries"]
+  end
+  subgraph plan_dxfr_rat_b30_metrics_ai_usage["dxfr-rat-b30-metrics-ai-usage"]
+    plan_dxfr_rat_b30_metrics_ai_usage_todo_1["b30-handoff (pending)\nDeliver B30: Measured usage categories, duplicate detection, uncovered usage"]
+  end
+  subgraph plan_dxfr_rat_b31_metrics_cost["dxfr-rat-b31-metrics-cost"]
+    plan_dxfr_rat_b31_metrics_cost_todo_1["b31-handoff (pending)\nDeliver B31: Charges versus versioned price estimates versus subscription allocation"]
+  end
+  subgraph plan_dxfr_rat_b32_metrics_review["dxfr-rat-b32-metrics-review"]
+    plan_dxfr_rat_b32_metrics_review_todo_1["b32-handoff (pending)\nDeliver B32: Time-to-first-review/review episodes with missing boundaries"]
+  end
+  subgraph plan_dxfr_rat_b33_metrics_provenance["dxfr-rat-b33-metrics-provenance"]
+    plan_dxfr_rat_b33_metrics_provenance_todo_1["b33-handoff (pending)\nDeliver B33: Project observed strict line-instance survival from canonical ordered edit/preimage evidence; keep unknown, heuristic and source-attributed values distinct."]
+  end
+  subgraph plan_dxfr_rat_b34_metrics_friction["dxfr-rat-b34-metrics-friction"]
+    plan_dxfr_rat_b34_metrics_friction_todo_1["b34-handoff (pending)\nDeliver B34: Ranked evidenced findings, thresholds and null-safe recommendation templates"]
+  end
+  subgraph plan_dxfr_rat_b35_reports_analyze["dxfr-rat-b35-reports-analyze"]
+    plan_dxfr_rat_b35_reports_analyze_todo_1["b35-handoff (pending)\nDeliver B35: Deterministic analyze report from typed metric outputs"]
+  end
+  subgraph plan_dxfr_rat_b36_reports_explain["dxfr-rat-b36-reports-explain"]
+    plan_dxfr_rat_b36_reports_explain_todo_1["b36-handoff (pending)\nDeliver B36: Stable timeline, source lanes, uncertain ordering and pagination"]
+  end
+  subgraph plan_dxfr_rat_b37_reports_evidence["dxfr-rat-b37-reports-evidence"]
+    plan_dxfr_rat_b37_reports_evidence_todo_1["b37-handoff (pending)\nDeliver B37: Redaction and bounded original source links/refs"]
+  end
+  subgraph plan_dxfr_rat_b38_cli_commands["dxfr-rat-b38-cli-commands"]
+    plan_dxfr_rat_b38_cli_commands_todo_1["b38-handoff (pending)\nDeliver B38: start, collect/import, analyze, explain, status with cached report path"]
+  end
+  subgraph plan_dxfr_rat_b39_mcp_handlers["dxfr-rat-b39-mcp-handlers"]
+    plan_dxfr_rat_b39_mcp_handlers_todo_1["b39-handoff (pending)\nDeliver B39: MCP analyze/explain/status/evidence handlers, stdout protocol isolation"]
+  end
+  subgraph plan_dxfr_rat_b40_cursor_skills_dx_analyze_cursor_skills_dx_explain["dxfr-rat-b40-cursor-skills-dx-analyze-cursor-skills-dx-explain"]
+    plan_dxfr_rat_b40_cursor_skills_dx_analyze_cursor_skills_dx_explain_todo_1["b40-handoff (pending)\nDeliver B40: Cursor skill files and static routing checks; actual client invocation belongs to C09/C17"]
+  end
+  subgraph plan_dxfr_rat_b41_ui_flight["dxfr-rat-b41-ui-flight"]
+    plan_dxfr_rat_b41_ui_flight_todo_1["b41-handoff (pending)\nDeliver B41: Ratstack flight page using report JSON and capability table Use the report contract only; no cloud/auth/deployment baseline and no shared app wiring edits."]
+  end
+  subgraph plan_dxfr_rat_b42_ui_timeline["dxfr-rat-b42-ui-timeline"]
+    plan_dxfr_rat_b42_ui_timeline_todo_1["b42-handoff (pending)\nDeliver B42: Timeline/evidence drill-down from frozen report JSON Use the report contract only; no cloud/auth/deployment baseline and no shared app wiring edits."]
+  end
+  subgraph plan_dxfr_rat_b43_collectors_cursor_dashboard_response["dxfr-rat-b43-collectors-cursor-dashboard-response"]
+    plan_dxfr_rat_b43_collectors_cursor_dashboard_response_todo_1["b43-handoff (pending)\nDeliver B43: Validate explicit user-owned dashboard-response JSON exports, request/conversation keys, cost fields and pagination completeness; no cookie/HAR credentials."]
+  end
+  subgraph plan_dxfr_rat_b44_collectors_cursor_sdk["dxfr-rat-b44-collectors-cursor-sdk"]
+    plan_dxfr_rat_b44_collectors_cursor_sdk_todo_1["b44-handoff (pending)\nDeliver B44: Normalize prospective SDK run/turn usage and settlement records with explicit flight tags; instrumented traffic scope only, no new assistant UI."]
+  end
+  subgraph plan_dxfr_rat_b45_collectors_git_ai["dxfr-rat-b45-collectors-git-ai"]
+    plan_dxfr_rat_b45_collectors_git_ai_todo_1["b45-handoff (pending)\nDeliver B45: Import versioned stats and authorship-note attestations without initialization/pushing; unknown additions remain unknown and stats ratio is not retention."]
+  end
+  subgraph plan_dxfr_rat_b46_collectors_entire["dxfr-rat-b46-collectors-entire"]
+    plan_dxfr_rat_b46_collectors_entire_todo_1["b46-handoff (pending)\nDeliver B46: Import checkpoint/session metadata and delta transcript windows without double-counting root/session/cumulative usage; attribution remains source heuristic."]
+  end
+  subgraph plan_dxfr_rat_b47_collectors_github_content["dxfr-rat-b47-collectors-github-content"]
+    plan_dxfr_rat_b47_collectors_github_content_todo_1["b47-handoff (pending)\nDeliver B47: Import opt-in bounded failed-job logs, artifact/JUnit references, PR discussion/thread and environment/deployment metadata; enforce download/parse/redaction policies."]
+  end
+  subgraph plan_dxfr_rat_b48_collectors_local_feedback["dxfr-rat-b48-collectors-local-feedback"]
+    plan_dxfr_rat_b48_collectors_local_feedback_todo_1["b48-handoff (pending)\nDeliver B48: Normalize selected IDE diagnostic/terminal, npm timing, compiler and Vite/HMR evidence through a small versioned adapter registry; unsupported subroutes report individually."]
+  end
+  subgraph plan_dxfr_rat_c01_contract_audit["dxfr-rat-c01-contract-audit"]
+    plan_dxfr_rat_c01_contract_audit_todo_1["c01-handoff (pending)\nDeliver C01: Reject invalid envelopes, unknown versions, metric null/coverage rules"]
+  end
+  subgraph plan_dxfr_rat_c02_replay_audit["dxfr-rat-c02-replay-audit"]
+    plan_dxfr_rat_c02_replay_audit_todo_1["c02-handoff (pending)\nDeliver C02: Replay twice, out-of-order snapshots, retained failed attempts, crash recovery"]
+  end
+  subgraph plan_dxfr_rat_c03_identity_audit["dxfr-rat-c03-identity-audit"]
+    plan_dxfr_rat_c03_identity_audit_todo_1["c03-handoff (pending)\nDeliver C03: Worktrees, branch reuse/rename, rebase, forks, detached/unborn HEAD"]
+  end
+  subgraph plan_dxfr_rat_c04_ci_audit["dxfr-rat-c04-ci-audit"]
+    plan_dxfr_rat_c04_ci_audit_todo_1["c04-handoff (pending)\nDeliver C04: Overlap, null/end clocks, reruns, cancellation and independent hand-calculated goldens"]
+  end
+  subgraph plan_dxfr_rat_c05_accounting_audit["dxfr-rat-c05-accounting-audit"]
+    plan_dxfr_rat_c05_accounting_audit_todo_1["c05-handoff (pending)\nDeliver C05: Cache categories, duplicate imports, mixed branches, absent costs and tokens"]
+  end
+  subgraph plan_dxfr_rat_c06_source_version_audit["dxfr-rat-c06-source-version-audit"]
+    plan_dxfr_rat_c06_source_version_audit_todo_1["c06-handoff (pending)\nDeliver C06: Unsupported layout/version rejects safely; read-only snapshot evidence"]
+  end
+  subgraph plan_dxfr_rat_c07_report_audit["dxfr-rat-c07-report-audit"]
+    plan_dxfr_rat_c07_report_audit_todo_1["c07-handoff (pending)\nDeliver C07: Golden analyze/explain, unavailable fields visible, evidence joins"]
+  end
+  subgraph plan_dxfr_rat_c08_mcp_audit["dxfr-rat-c08-mcp-audit"]
+    plan_dxfr_rat_c08_mcp_audit_todo_1["c08-handoff (pending)\nDeliver C08: Launch process, protocol-only stdout, cancellation, bounded pagination"]
+  end
+  subgraph plan_dxfr_rat_c09_cursor_live_smoke["dxfr-rat-c09-cursor-live-smoke"]
+    plan_dxfr_rat_c09_cursor_live_smoke_todo_1["c09-handoff (pending)\nDeliver C09: v0 actual Cursor invocation of installed built package, replay/Git analyze and explain"]
+  end
+  subgraph plan_dxfr_rat_c10_privacy_audit["dxfr-rat-c10-privacy-audit"]
+    plan_dxfr_rat_c10_privacy_audit_todo_1["c10-handoff (pending)\nDeliver C10: Synthetic secrets/prompts/tool instructions redact and never execute"]
+  end
+  subgraph plan_dxfr_rat_c11_api_failure_audit["dxfr-rat-c11-api-failure-audit"]
+    plan_dxfr_rat_c11_api_failure_audit_todo_1["c11-handoff (pending)\nDeliver C11: No auth, expired auth, partial pages, 403/429/5xx and cache behavior"]
+  end
+  subgraph plan_dxfr_rat_c12_runtime_audit["dxfr-rat-c12-runtime-audit"]
+    plan_dxfr_rat_c12_runtime_audit_todo_1["c12-handoff (pending)\nDeliver C12: No repo, no GitHub, offline, store busy, corrupt spool, missing adapter"]
+  end
+  subgraph plan_dxfr_rat_c13_installer["dxfr-rat-c13-installer"]
+    plan_dxfr_rat_c13_installer_todo_1["c13-handoff (pending)\nDeliver C13: Installer owns MCP/hooks/skills merge into selected target, backup/uninstall, v0 MCP wiring and conditional v1 hook wiring"]
+  end
+  subgraph plan_dxfr_rat_c14_demo["dxfr-rat-c14-demo"]
+    plan_dxfr_rat_c14_demo_todo_1["c14-handoff (pending)\nDeliver C14: Rehearsable live flight plus separately labelled adversarial fixture flight"]
+  end
+  subgraph plan_dxfr_rat_c15_claims["dxfr-rat-c15-claims"]
+    plan_dxfr_rat_c15_claims_todo_1["c15-handoff (pending)\nDeliver C15: Evidence-backed claims, product separation, no fabricated productivity causality"]
+  end
+  subgraph plan_dxfr_rat_c16_release["dxfr-rat-c16-release"]
+    plan_dxfr_rat_c16_release_todo_1["c16-handoff (pending)\nDeliver C16: Final frozen enabled-artifact verdict after optional disposition; no optional producer wait"]
+  end
+  subgraph plan_dxfr_rat_c17_cursor_real_flight["dxfr-rat-c17-cursor-real-flight"]
+    plan_dxfr_rat_c17_cursor_real_flight_todo_1["c17-handoff (pending)\nDeliver C17: Actual Cursor v1 built/install invocation on real flight; snapshot reuse and source links"]
+  end
+  subgraph plan_dxfr_rat_g00_foundation["dxfr-rat-g00-foundation"]
+    plan_dxfr_rat_g00_foundation_todo_1["g00-handoff (pending)\nDeliver G00: P0 validated foundation and contract freeze"]
+  end
+  subgraph plan_dxfr_rat_g01_v0["dxfr-rat-g01-v0"]
+    plan_dxfr_rat_g01_v0_todo_1["g01-handoff (pending)\nDeliver G01: P1 built v0 replay/Git in actual Cursor"]
+  end
+  subgraph plan_dxfr_rat_g02_v1["dxfr-rat-g02-v1"]
+    plan_dxfr_rat_g02_v1_todo_1["g02-handoff (pending)\nDeliver G02: P2 real flight with validated AI route and honest CI/PR coverage"]
+  end
+  subgraph plan_dxfr_rat_g03_optional_disposition["dxfr-rat-g03-optional-disposition"]
+    plan_dxfr_rat_g03_optional_disposition_todo_1["g03-handoff (pending)\nDeliver G03: P3 bounded disposition with no optional completion wait"]
+  end
+  subgraph plan_dxfr_rat_g04_release["dxfr-rat-g04-release"]
+    plan_dxfr_rat_g04_release_todo_1["g04-handoff (pending)\nDeliver G04: P4 final restart/rehearsal and last-green release verdict"]
+  end
+  plan_dxfr_rat_a01_scaffold_todo_1 --> plan_dxfr_rat_g00_foundation_todo_1
+  plan_dxfr_rat_a02_integration_todo_1 --> plan_dxfr_rat_c06_source_version_audit_todo_1
+  plan_dxfr_rat_a02_integration_todo_1 --> plan_dxfr_rat_c08_mcp_audit_todo_1
+  plan_dxfr_rat_a02_integration_todo_1 --> plan_dxfr_rat_c09_cursor_live_smoke_todo_1
+  plan_dxfr_rat_a02_integration_todo_1 --> plan_dxfr_rat_c13_installer_todo_1
+  plan_dxfr_rat_a02_integration_todo_1 --> plan_dxfr_rat_g01_v0_todo_1
+  plan_dxfr_rat_a03_contracts_todo_1 --> plan_dxfr_rat_a04_fixtures_todo_1
+  plan_dxfr_rat_a03_contracts_todo_1 --> plan_dxfr_rat_c01_contract_audit_todo_1
+  plan_dxfr_rat_a03_contracts_todo_1 --> plan_dxfr_rat_g00_foundation_todo_1
+  plan_dxfr_rat_a04_fixtures_todo_1 --> plan_dxfr_rat_c01_contract_audit_todo_1
+  plan_dxfr_rat_a04_fixtures_todo_1 --> plan_dxfr_rat_g00_foundation_todo_1
+  plan_dxfr_rat_a05_ownership_todo_1 --> plan_dxfr_rat_g00_foundation_todo_1
+  plan_dxfr_rat_a06_capability_probes_todo_1 --> plan_dxfr_rat_c06_source_version_audit_todo_1
+  plan_dxfr_rat_a06_capability_probes_todo_1 --> plan_dxfr_rat_c09_cursor_live_smoke_todo_1
+  plan_dxfr_rat_a06_capability_probes_todo_1 --> plan_dxfr_rat_g00_foundation_todo_1
+  plan_dxfr_rat_a07_live_integration_todo_1 --> plan_dxfr_rat_a09_real_source_probes_todo_1
+  plan_dxfr_rat_a07_live_integration_todo_1 --> plan_dxfr_rat_c17_cursor_real_flight_todo_1
+  plan_dxfr_rat_a07_live_integration_todo_1 --> plan_dxfr_rat_g02_v1_todo_1
+  plan_dxfr_rat_a09_real_source_probes_todo_1 --> plan_dxfr_rat_c17_cursor_real_flight_todo_1
+  plan_dxfr_rat_a09_real_source_probes_todo_1 --> plan_dxfr_rat_g02_v1_todo_1
+  plan_dxfr_rat_b01_storage_todo_1 --> plan_dxfr_rat_a02_integration_todo_1
+  plan_dxfr_rat_b01_storage_todo_1 --> plan_dxfr_rat_c02_replay_audit_todo_1
+  plan_dxfr_rat_b01_storage_todo_1 --> plan_dxfr_rat_c12_runtime_audit_todo_1
+  plan_dxfr_rat_b02_collectors_git_identity_todo_1 --> plan_dxfr_rat_a02_integration_todo_1
+  plan_dxfr_rat_b02_collectors_git_identity_todo_1 --> plan_dxfr_rat_c03_identity_audit_todo_1
+  plan_dxfr_rat_b03_collectors_git_history_todo_1 --> plan_dxfr_rat_a02_integration_todo_1
+  plan_dxfr_rat_b15_collectors_github_runs_todo_1 --> plan_dxfr_rat_a07_live_integration_todo_1
+  plan_dxfr_rat_b15_collectors_github_runs_todo_1 --> plan_dxfr_rat_c04_ci_audit_todo_1
+  plan_dxfr_rat_b15_collectors_github_runs_todo_1 --> plan_dxfr_rat_c11_api_failure_audit_todo_1
+  plan_dxfr_rat_b16_collectors_github_jobs_todo_1 --> plan_dxfr_rat_a07_live_integration_todo_1
+  plan_dxfr_rat_b16_collectors_github_jobs_todo_1 --> plan_dxfr_rat_c04_ci_audit_todo_1
+  plan_dxfr_rat_b16_collectors_github_jobs_todo_1 --> plan_dxfr_rat_c11_api_failure_audit_todo_1
+  plan_dxfr_rat_b17_collectors_github_pr_todo_1 --> plan_dxfr_rat_a07_live_integration_todo_1
+  plan_dxfr_rat_b17_collectors_github_pr_todo_1 --> plan_dxfr_rat_c11_api_failure_audit_todo_1
+  plan_dxfr_rat_b22_collectors_manual_todo_1 --> plan_dxfr_rat_a02_integration_todo_1
+  plan_dxfr_rat_b23_correlation_repo_todo_1 --> plan_dxfr_rat_a02_integration_todo_1
+  plan_dxfr_rat_b23_correlation_repo_todo_1 --> plan_dxfr_rat_c03_identity_audit_todo_1
+  plan_dxfr_rat_b24_correlation_flight_todo_1 --> plan_dxfr_rat_a02_integration_todo_1
+  plan_dxfr_rat_b24_correlation_flight_todo_1 --> plan_dxfr_rat_c03_identity_audit_todo_1
+  plan_dxfr_rat_b25_correlation_github_todo_1 --> plan_dxfr_rat_a02_integration_todo_1
+  plan_dxfr_rat_b26_correlation_ai_todo_1 --> plan_dxfr_rat_a02_integration_todo_1
+  plan_dxfr_rat_b26_correlation_ai_todo_1 --> plan_dxfr_rat_c05_accounting_audit_todo_1
+  plan_dxfr_rat_b27_metrics_intervals_todo_1 --> plan_dxfr_rat_a02_integration_todo_1
+  plan_dxfr_rat_b27_metrics_intervals_todo_1 --> plan_dxfr_rat_c04_ci_audit_todo_1
+  plan_dxfr_rat_b28_metrics_git_todo_1 --> plan_dxfr_rat_a02_integration_todo_1
+  plan_dxfr_rat_b29_metrics_ci_todo_1 --> plan_dxfr_rat_a02_integration_todo_1
+  plan_dxfr_rat_b29_metrics_ci_todo_1 --> plan_dxfr_rat_c04_ci_audit_todo_1
+  plan_dxfr_rat_b30_metrics_ai_usage_todo_1 --> plan_dxfr_rat_a02_integration_todo_1
+  plan_dxfr_rat_b30_metrics_ai_usage_todo_1 --> plan_dxfr_rat_c05_accounting_audit_todo_1
+  plan_dxfr_rat_b34_metrics_friction_todo_1 --> plan_dxfr_rat_a02_integration_todo_1
+  plan_dxfr_rat_b35_reports_analyze_todo_1 --> plan_dxfr_rat_a02_integration_todo_1
+  plan_dxfr_rat_b35_reports_analyze_todo_1 --> plan_dxfr_rat_c07_report_audit_todo_1
+  plan_dxfr_rat_b35_reports_analyze_todo_1 --> plan_dxfr_rat_c14_demo_todo_1
+  plan_dxfr_rat_b36_reports_explain_todo_1 --> plan_dxfr_rat_a02_integration_todo_1
+  plan_dxfr_rat_b36_reports_explain_todo_1 --> plan_dxfr_rat_c07_report_audit_todo_1
+  plan_dxfr_rat_b36_reports_explain_todo_1 --> plan_dxfr_rat_c14_demo_todo_1
+  plan_dxfr_rat_b37_reports_evidence_todo_1 --> plan_dxfr_rat_a02_integration_todo_1
+  plan_dxfr_rat_b37_reports_evidence_todo_1 --> plan_dxfr_rat_c07_report_audit_todo_1
+  plan_dxfr_rat_b37_reports_evidence_todo_1 --> plan_dxfr_rat_c10_privacy_audit_todo_1
+  plan_dxfr_rat_b38_cli_commands_todo_1 --> plan_dxfr_rat_a02_integration_todo_1
+  plan_dxfr_rat_b38_cli_commands_todo_1 --> plan_dxfr_rat_c12_runtime_audit_todo_1
+  plan_dxfr_rat_b39_mcp_handlers_todo_1 --> plan_dxfr_rat_a02_integration_todo_1
+  plan_dxfr_rat_b39_mcp_handlers_todo_1 --> plan_dxfr_rat_c08_mcp_audit_todo_1
+  plan_dxfr_rat_b40_cursor_skills_dx_analyze_cursor_skills_dx_explain_todo_1 --> plan_dxfr_rat_a02_integration_todo_1
+  plan_dxfr_rat_b40_cursor_skills_dx_analyze_cursor_skills_dx_explain_todo_1 --> plan_dxfr_rat_c13_installer_todo_1
+  plan_dxfr_rat_c01_contract_audit_todo_1 --> plan_dxfr_rat_g01_v0_todo_1
+  plan_dxfr_rat_c02_replay_audit_todo_1 --> plan_dxfr_rat_g01_v0_todo_1
+  plan_dxfr_rat_c03_identity_audit_todo_1 --> plan_dxfr_rat_g01_v0_todo_1
+  plan_dxfr_rat_c04_ci_audit_todo_1 --> plan_dxfr_rat_g02_v1_todo_1
+  plan_dxfr_rat_c05_accounting_audit_todo_1 --> plan_dxfr_rat_g01_v0_todo_1
+  plan_dxfr_rat_c06_source_version_audit_todo_1 --> plan_dxfr_rat_g01_v0_todo_1
+  plan_dxfr_rat_c07_report_audit_todo_1 --> plan_dxfr_rat_c15_claims_todo_1
+  plan_dxfr_rat_c07_report_audit_todo_1 --> plan_dxfr_rat_g01_v0_todo_1
+  plan_dxfr_rat_c08_mcp_audit_todo_1 --> plan_dxfr_rat_c09_cursor_live_smoke_todo_1
+  plan_dxfr_rat_c08_mcp_audit_todo_1 --> plan_dxfr_rat_g01_v0_todo_1
+  plan_dxfr_rat_c09_cursor_live_smoke_todo_1 --> plan_dxfr_rat_c14_demo_todo_1
+  plan_dxfr_rat_c09_cursor_live_smoke_todo_1 --> plan_dxfr_rat_g01_v0_todo_1
+  plan_dxfr_rat_c10_privacy_audit_todo_1 --> plan_dxfr_rat_g01_v0_todo_1
+  plan_dxfr_rat_c11_api_failure_audit_todo_1 --> plan_dxfr_rat_g02_v1_todo_1
+  plan_dxfr_rat_c12_runtime_audit_todo_1 --> plan_dxfr_rat_g01_v0_todo_1
+  plan_dxfr_rat_c13_installer_todo_1 --> plan_dxfr_rat_c09_cursor_live_smoke_todo_1
+  plan_dxfr_rat_c13_installer_todo_1 --> plan_dxfr_rat_c16_release_todo_1
+  plan_dxfr_rat_c13_installer_todo_1 --> plan_dxfr_rat_c17_cursor_real_flight_todo_1
+  plan_dxfr_rat_c13_installer_todo_1 --> plan_dxfr_rat_g01_v0_todo_1
+  plan_dxfr_rat_c14_demo_todo_1 --> plan_dxfr_rat_c15_claims_todo_1
+  plan_dxfr_rat_c14_demo_todo_1 --> plan_dxfr_rat_g01_v0_todo_1
+  plan_dxfr_rat_c15_claims_todo_1 --> plan_dxfr_rat_c16_release_todo_1
+  plan_dxfr_rat_c15_claims_todo_1 --> plan_dxfr_rat_g01_v0_todo_1
+  plan_dxfr_rat_c16_release_todo_1 --> plan_dxfr_rat_g04_release_todo_1
+  plan_dxfr_rat_c17_cursor_real_flight_todo_1 --> plan_dxfr_rat_g02_v1_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_a02_integration_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b01_storage_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b02_collectors_git_identity_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b03_collectors_git_history_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b04_collectors_git_observation_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b05_collectors_cursor_hooks_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b06_collectors_cursor_local_db_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b07_collectors_cursor_transcripts_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b08_collectors_cursor_usage_export_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b09_collectors_cursor_extension_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b10_collectors_cursor_cli_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b11_collectors_claude_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b12_collectors_codex_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b13_collectors_opencode_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b14_collectors_provider_usage_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b15_collectors_github_runs_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b16_collectors_github_jobs_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b17_collectors_github_pr_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b18_collectors_github_review_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b19_collectors_github_checks_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b20_collectors_shell_command_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b21_collectors_local_test_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b22_collectors_manual_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b23_correlation_repo_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b24_correlation_flight_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b25_correlation_github_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b26_correlation_ai_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b27_metrics_intervals_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b28_metrics_git_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b29_metrics_ci_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b30_metrics_ai_usage_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b31_metrics_cost_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b32_metrics_review_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b33_metrics_provenance_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b34_metrics_friction_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b35_reports_analyze_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b36_reports_explain_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b37_reports_evidence_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b38_cli_commands_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b39_mcp_handlers_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b40_cursor_skills_dx_analyze_cursor_skills_dx_explain_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b41_ui_flight_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b42_ui_timeline_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b43_collectors_cursor_dashboard_response_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b44_collectors_cursor_sdk_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b45_collectors_git_ai_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b46_collectors_entire_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b47_collectors_github_content_todo_1
+  plan_dxfr_rat_g00_foundation_todo_1 --> plan_dxfr_rat_b48_collectors_local_feedback_todo_1
+  plan_dxfr_rat_g01_v0_todo_1 --> plan_dxfr_rat_a07_live_integration_todo_1
+  plan_dxfr_rat_g01_v0_todo_1 --> plan_dxfr_rat_g02_v1_todo_1
+  plan_dxfr_rat_g02_v1_todo_1 --> plan_dxfr_rat_a08_extension_integration_todo_1
+  plan_dxfr_rat_g02_v1_todo_1 --> plan_dxfr_rat_g03_optional_disposition_todo_1
+  plan_dxfr_rat_g03_optional_disposition_todo_1 --> plan_dxfr_rat_c16_release_todo_1
+  plan_dxfr_rat_g03_optional_disposition_todo_1 --> plan_dxfr_rat_g04_release_todo_1

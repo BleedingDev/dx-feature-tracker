@@ -1,0 +1,22 @@
+{
+  "graph_validation": {
+    "errors": [],
+    "warnings": [],
+    "plan_count": 79
+  },
+  "plan_count": 79,
+  "edge_count": 145,
+  "optional_ancestors_by_gate": {
+    "G00": [],
+    "G01": [],
+    "G02": [],
+    "G03": [],
+    "G04": []
+  },
+  "installer_precedes_cursor_gates": true,
+  "sequential_integration_baton": true,
+  "all_tasks_pending": true,
+  "active_links_resolve": true,
+  "runtime_gate_tests_executed": false,
+  "review_model_argument": "factory/claude-opus-5-5"
+}
