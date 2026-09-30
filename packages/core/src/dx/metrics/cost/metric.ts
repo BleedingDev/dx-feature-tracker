@@ -18,7 +18,11 @@ import {
 } from "../../model/ids.js";
 import type { MetricDefinitionRef, MetricResult } from "../../model/metric.js";
 import { assignedBranches } from "../ai-usage/ledger.js";
-import type { PriceTable, UnpricedReason } from "./price-table.js";
+import type {
+  PriceOutcome,
+  PriceTable,
+  UnpricedReason,
+} from "./price-table.js";
 import { priceMethodLabel, priceReading } from "./price-table.js";
 import type {
   ExtractedReadings,
@@ -315,10 +319,52 @@ const priceMeasurement = (
   return unpriced > 0 ? "partial" : "estimated";
 };
 
+export const CURSOR_LIST_PRICE_METHOD = "cursor-list-price";
+
+interface RequestEstimate {
+  readonly kind: "cursor-list-price" | "price-table";
+  readonly usd: number;
+}
+
+type EstimateOutcome =
+  | RequestEstimate
+  | { readonly kind: "unpriced"; readonly reason: UnpricedReason };
+
+const estimateRequest = (
+  reading: TokenReading,
+  table: PriceTable | null,
+  listPrices: ReadonlyMap<string, number>
+): EstimateOutcome => {
+  const outcome: PriceOutcome =
+    table === null
+      ? { kind: "unpriced", reason: "model-not-in-table" }
+      : priceReading(reading, table);
+
+  if (outcome.kind === "priced") {
+    return { kind: "price-table", usd: outcome.usd };
+  }
+
+  const listPrice = listPrices.get(reading.dedupeKey);
+
+  return listPrice === undefined
+    ? outcome
+    : { kind: "cursor-list-price", usd: listPrice };
+};
+
+const methodLabel = (table: PriceTable | null, fromCursor: number) => {
+  const parts = [
+    ...(table === null ? [] : [priceMethodLabel(table)]),
+    ...(fromCursor > 0 ? [CURSOR_LIST_PRICE_METHOD] : []),
+  ];
+
+  return `method=${parts.join("+")}`;
+};
+
 const priceTableResult = (
   ctx: GroupContext,
   tokens: readonly TokenReading[],
-  table: PriceTable | null
+  table: PriceTable | null,
+  listPrices: ReadonlyMap<string, number>
 ): MetricResult => {
   const selection = selectPreferredSource(
     tokens.filter((item) => Object.keys(item.tokens).length > 0)
@@ -331,7 +377,11 @@ const priceTableResult = (
     method: "estimated" as const,
   };
 
-  if (table === null) {
+  const hasListPrice = withTokens.some((item) =>
+    listPrices.has(item.dedupeKey)
+  );
+
+  if (table === null && !hasListPrice) {
     return result(ctx, {
       ...base,
       attribution: "not-applicable",
@@ -345,8 +395,6 @@ const priceTableResult = (
     });
   }
 
-  const label = `method=${priceMethodLabel(table)}`;
-
   if (withTokens.length === 0) {
     return result(ctx, {
       ...base,
@@ -356,28 +404,43 @@ const priceTableResult = (
       evidence: [],
       measurement: "unavailable",
       numerator: 0,
-      reason: `${label}; no source-reported token readings in the selected sources.`,
+      reason: `${methodLabel(table, 0)}; no source-reported token readings in the selected sources.`,
       value: null,
     });
   }
 
   const priced: TokenReading[] = [];
   const unpriced: UnpricedReason[] = [];
+  const counted = new Set<string>();
+  let fromCursor = 0;
   let usd = 0;
 
   for (const reading of withTokens) {
-    const outcome = priceReading(reading, table);
-
-    if (outcome.kind === "priced") {
-      priced.push(reading);
-      usd += outcome.usd;
-    } else {
-      unpriced.push(outcome.reason);
+    if (counted.has(reading.dedupeKey)) {
+      continue;
     }
+
+    counted.add(reading.dedupeKey);
+
+    const outcome = estimateRequest(reading, table, listPrices);
+
+    if (outcome.kind === "unpriced") {
+      unpriced.push(outcome.reason);
+      continue;
+    }
+
+    priced.push(reading);
+    usd += outcome.usd;
+    fromCursor += outcome.kind === "cursor-list-price" ? 1 : 0;
   }
 
   const unpricedNote =
     unpriced.length > 0 ? `; unpriced readings: ${tally(unpriced)}` : "";
+
+  const cursorNote =
+    fromCursor > 0
+      ? `; ${String(fromCursor)} request(s) the table cannot price (for example Cursor Auto) use Cursor's per-request list price`
+      : "";
 
   const altNote = alternativesNote(selection.alternatives);
 
@@ -385,11 +448,11 @@ const priceTableResult = (
     ...base,
     attribution: attributionOf(priced),
     coverage: coverageFor(ctx, withTokens),
-    denominator: withTokens.length,
+    denominator: counted.size,
     evidence: priced,
     measurement: priceMeasurement(priced.length, unpriced.length),
     numerator: priced.length,
-    reason: `${label}; estimate from source-reported tokens, not a charge${unpricedNote}.${altNote === null ? "" : ` ${altNote}`}`,
+    reason: `${methodLabel(table, fromCursor)}; estimate from source-reported tokens, not a charge${cursorNote}${unpricedNote}.${altNote === null ? "" : ` ${altNote}`}`,
     value: priced.length === 0 ? null : usd,
   });
 };
@@ -518,7 +581,12 @@ const computeGroup = (
     ledgerResult(ctx, readings.money, "charge", rejected, superseded),
     ledgerResult(ctx, readings.money, "metered", rejected, superseded),
     ledgerResult(ctx, readings.money, "list-price-estimate", 0, superseded),
-    priceTableResult(ctx, readings.tokens, options.priceTable),
+    priceTableResult(
+      ctx,
+      readings.tokens,
+      options.priceTable,
+      readings.listPrices
+    ),
     subscriptionResult(
       ctx,
       readings.tokens,
@@ -655,6 +723,7 @@ export const costByBranch = (
         ctx,
         {
           collapsedDuplicates: 0,
+          listPrices: readings.listPrices,
           money: money.get(branch) ?? [],
           rejections: readings.rejections.filter(
             (item) => branchOfEvent.get(item.eventId) === branch

@@ -12,6 +12,7 @@ import { fakeManifest } from "../../src/dx/contracts/fakes.js";
 import type { StoreSnapshot } from "../../src/dx/contracts/services.js";
 import {
   computeCost,
+  costByBranch,
   priceTableEstimateDefinition,
 } from "../../src/dx/metrics/cost/metric.js";
 import { priceMethodLabel } from "../../src/dx/metrics/cost/price-table.js";
@@ -24,6 +25,7 @@ import {
   selectPriceTable,
 } from "../../src/dx/metrics/cost/price-tables/defaults.js";
 import type { DxEventEnvelope } from "../../src/dx/model/event.js";
+import { EventIdSchema } from "../../src/dx/model/ids.js";
 import type { MetricResult } from "../../src/dx/model/metric.js";
 
 const STREAM = path.join(
@@ -252,4 +254,119 @@ describe("P1 user price override", () => {
         expect(broken.kind).toBe("invalid");
       }).pipe(Effect.provide(NodeServices.layer))
   );
+});
+
+interface UsageRowSpec {
+  readonly branch: string | null;
+  readonly id: string;
+  readonly listPriceUsd: number | null;
+  readonly model: string;
+  readonly requestKey: string;
+  readonly sourceKind: string;
+}
+
+const usageEvent = (spec: UsageRowSpec): DxEventEnvelope => {
+  const template = liveEvents().find((event) => event.kind === "ai.usage");
+
+  if (template === undefined) {
+    throw new Error("missing live usage event");
+  }
+
+  return {
+    ...template,
+    context: { ...template.context, branch: spec.branch },
+    eventId: EventIdSchema.make(spec.id),
+    payload: {
+      costLedger: spec.listPriceUsd === null ? null : "metered",
+      costRawField: spec.listPriceUsd === null ? null : "tokenUsage.totalCents",
+      costUsd: spec.listPriceUsd,
+      currency: spec.listPriceUsd === null ? null : "USD",
+      model: spec.model,
+      requestKey: spec.requestKey,
+      sourceKind: spec.sourceKind,
+      tokens: { input: 1_000_000, output: 100_000 },
+    },
+  };
+};
+
+const SONNET_USD = 3 + 1.5;
+
+describe("P1 Cursor Auto list-price estimate", () => {
+  const auto = usageEvent({
+    branch: BRANCH,
+    id: "evt-auto",
+    listPriceUsd: 0.42,
+    model: "auto",
+    requestKey: "req-auto",
+    sourceKind: "dashboard-response",
+  });
+
+  const sonnetWithRow = usageEvent({
+    branch: BRANCH,
+    id: "evt-sonnet",
+    listPriceUsd: 9.99,
+    model: "Claude 4.5 Sonnet",
+    requestKey: "req-sonnet",
+    sourceKind: "dashboard-response",
+  });
+
+  const bare = usageEvent({
+    branch: "other",
+    id: "evt-bare",
+    listPriceUsd: null,
+    model: "default",
+    requestKey: "req-bare",
+    sourceKind: "dashboard-response",
+  });
+
+  it("uses Cursor's per-request list price for an Auto request", () => {
+    const estimate = estimateOf(
+      computeCost(snapshotOf([auto]), defaultCostOptions()).results
+    );
+
+    expect(estimate.value).toBeCloseTo(0.42, 6);
+    expect(estimate.reason).toContain(`${LABEL}+cursor-list-price`);
+    expect(estimate.measurement).toBe("estimated");
+  });
+
+  it("prices a table model from the table and never double counts its usage row", () => {
+    const estimate = estimateOf(
+      computeCost(snapshotOf([auto, sonnetWithRow]), defaultCostOptions())
+        .results
+    );
+
+    expect(estimate.value).toBeCloseTo(SONNET_USD + 0.42, 6);
+    expect(estimate.numerator).toBe(2);
+    expect(estimate.denominator).toBe(2);
+  });
+
+  it("keeps the table-only label when no request needs Cursor's list price", () => {
+    const estimate = estimateOf(
+      computeCost(snapshotOf([sonnetWithRow]), defaultCostOptions()).results
+    );
+
+    expect(estimate.value).toBeCloseTo(SONNET_USD, 6);
+    expect(estimate.reason).not.toContain("cursor-list-price");
+  });
+
+  it("sums per-request estimates per branch and leaves unmatched Auto unpriced", () => {
+    const branches = costByBranch(
+      snapshotOf([auto, sonnetWithRow, bare]),
+      defaultCostOptions()
+    );
+
+    const valueOf = (branch: string) =>
+      estimateOf(
+        branches.find((entry) => entry.branch === branch)?.results ?? []
+      ).value;
+
+    expect(valueOf(BRANCH)).toBeCloseTo(SONNET_USD + 0.42, 6);
+    expect(valueOf("other")).toBeNull();
+
+    const metered = branches
+      .find((entry) => entry.branch === BRANCH)
+      ?.results.find((entry) => entry.metricId === "dx.cost.metered.usd");
+
+    expect(metered?.value).toBeCloseTo(0.42 + 9.99, 6);
+  });
 });

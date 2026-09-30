@@ -47,6 +47,7 @@ export interface Rejection {
 
 export interface ExtractedReadings {
   readonly collapsedDuplicates: number;
+  readonly listPrices: ReadonlyMap<string, number>;
   readonly money: readonly MoneyReading[];
   readonly rejections: readonly Rejection[];
   readonly tokens: readonly TokenReading[];
@@ -316,6 +317,21 @@ const baseOf = (event: DxEventEnvelope): ReadingBase => {
   };
 };
 
+export const CURSOR_LIST_PRICE_FIELD = "tokenUsage.totalCents";
+
+const cursorListPriceOf = (event: DxEventEnvelope): number | null => {
+  const { payload } = event;
+
+  if (
+    orNull(decodeText(payload.costRawField)) !== CURSOR_LIST_PRICE_FIELD ||
+    !isUsd(orNull(decodeText(payload.currency)))
+  ) {
+    return null;
+  }
+
+  return orNull(decodeNumber(payload.costUsd));
+};
+
 const extractEvent = (event: DxEventEnvelope) => {
   const base = baseOf(event);
   const out: Collector = { money: [], rejections: [], tokens: {} };
@@ -404,6 +420,7 @@ export const extractReadings = (
   const money: MoneyReading[] = [];
   const tokens: TokenReading[] = [];
   const rejections: Rejection[] = [];
+  const listPrices = new Map<string, number>();
   const seen = new Set<string>();
 
   for (const event of events) {
@@ -414,6 +431,12 @@ export const extractReadings = (
     seen.add(event.eventId);
 
     const extracted = extractEvent(event);
+    const listPrice = cursorListPriceOf(event);
+    const key = baseOf(event).dedupeKey;
+
+    if (listPrice !== null && !listPrices.has(key)) {
+      listPrices.set(key, listPrice);
+    }
 
     money.push(...extracted.money);
     rejections.push(...extracted.rejections);
@@ -432,6 +455,7 @@ export const extractReadings = (
 
   return {
     collapsedDuplicates: moneyKept.collapsed + tokensKept.collapsed,
+    listPrices,
     money: moneyKept.kept,
     rejections,
     tokens: tokensKept.kept,

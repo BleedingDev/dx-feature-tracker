@@ -372,6 +372,10 @@ export interface AnalyzeExtras {
 }
 
 const priceTableLabel = (reason: string | null): string => {
+  if (/^method=[^;]*cursor-list-price/u.test(reason ?? "")) {
+    return "list price; Auto from Cursor";
+  }
+
   const match = /price-table:(?<table>[^@;\s]+)@(?<date>[\d-]+)/u.exec(
     reason ?? ""
   );
