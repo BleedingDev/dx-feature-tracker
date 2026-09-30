@@ -1,0 +1,55 @@
+{
+  "fixture": "synthetic account-usage fixture shaped like get-filtered-usage-events rows with extra id fields; not a live observation",
+  "totalUsageEventsCount": 4,
+  "usageEventsDisplay": [
+    {
+      "timestamp": "1790740800000",
+      "model": "claude-opus-5-5",
+      "kind": "USAGE_EVENT_KIND_USAGE_BASED",
+      "isChargeable": true,
+      "tokenUsage": {
+        "inputTokens": 1000,
+        "outputTokens": 200,
+        "totalCents": 12.5
+      },
+      "conversationId": "conv-dashboard-1",
+      "composerId": "composer-local-1",
+      "requestId": "req-1",
+      "bubbleId": "bubble-1"
+    },
+    {
+      "timestamp": "1790744400000",
+      "model": "gpt-6",
+      "kind": "USAGE_EVENT_KIND_USAGE_BASED",
+      "isChargeable": true,
+      "tokenUsage": {
+        "inputTokens": 300,
+        "outputTokens": 100,
+        "totalCents": 4
+      },
+      "conversationId": "composer-local-2",
+      "clientRequestId": "client-req-2",
+      "serverBubbleId": "server-bubble-2",
+      "generationId": "gen-2"
+    },
+    {
+      "timestamp": "1790748000000",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "tokenUsage": { "totalTokens": 900, "totalCents": 1 },
+      "conversationId": "  "
+    },
+    {
+      "timestamp": "1790751600000",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_USAGE_BASED",
+      "isChargeable": true,
+      "tokenUsage": {
+        "inputTokens": 50,
+        "outputTokens": 10,
+        "totalCents": 0.5
+      },
+      "conversationId": "conv-legacy"
+    }
+  ]
+}

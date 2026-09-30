@@ -5,7 +5,10 @@ import { SourceUnavailable } from "../../contracts/error-source-unavailable.js";
 import type { DxCollector } from "../../contracts/services.js";
 import type { DxEventEnvelope } from "../../model/event.js";
 import { emptyFlightContext } from "../../model/event.js";
-import { parseCursorDashboardResponse } from "../cursor-dashboard-response/parse.js";
+import {
+  parseCursorDashboardResponse,
+  rowKeysOf,
+} from "../cursor-dashboard-response/parse.js";
 import { fetchUsagePages, PAGE_SIZE, pagesDocument, redact } from "./client.js";
 import type { FetchLike, FetchWindow, UsagePage } from "./client.js";
 import { cursorUsageApiDescriptor } from "./descriptor.js";
@@ -64,6 +67,11 @@ const isoOf = (value: number | string | undefined): string | null => {
   });
 };
 
+const chargeKey = (at: string, conversationId: string | null): string =>
+  `${at}|${conversationId ?? ""}`;
+
+const decodeText = Schema.decodeUnknownOption(Schema.NonEmptyString);
+
 const chargedIndex = (
   pages: readonly UsagePage[]
 ): ReadonlyMap<string, number> => {
@@ -73,7 +81,16 @@ const chargedIndex = (
     const at = isoOf(row.timestamp);
 
     if (at !== null && row.chargedCents !== undefined) {
-      index.set(`${at}|${row.conversationId ?? ""}`, row.chargedCents);
+      const keys = rowKeysOf(row);
+
+      index.set(
+        chargeKey(at, keys.conversationId ?? keys.composerId),
+        row.chargedCents
+      );
+
+      if (keys.requestId !== null) {
+        index.set(`request:${keys.requestId}`, row.chargedCents);
+      }
     }
   }
 
@@ -96,8 +113,20 @@ export const toApiEvent = (
   event: DxEventEnvelope,
   charged: ReadonlyMap<string, number>
 ): DxEventEnvelope => {
-  const key = `${event.occurredAt ?? ""}|${event.identity.sessionId ?? ""}`;
-  const cents = charged.get(key);
+  const byRequest =
+    event.identity.requestId === null
+      ? undefined
+      : charged.get(`request:${event.identity.requestId}`);
+
+  const cents =
+    byRequest ??
+    charged.get(
+      chargeKey(
+        event.occurredAt ?? "",
+        Option.getOrNull(decodeText(event.payload.conversationId)) ??
+          event.identity.sessionId
+      )
+    );
 
   const chargedUsd =
     cents === undefined ? null : Math.round(cents * 10_000) / 1_000_000;

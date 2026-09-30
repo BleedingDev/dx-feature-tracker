@@ -1,0 +1,52 @@
+{
+  "capturedAt": "2026-09-30T12:32:58.445Z",
+  "git": {
+    "branch": "main",
+    "headSha": "@head:main@",
+    "repoCommonDir": "/replay/parallel-worktrees/main/.git",
+    "worktreePath": "/replay/parallel-worktrees/main"
+  },
+  "hook": {
+    "attachmentCount": 0,
+    "commandBin": null,
+    "commandHash": null,
+    "composerMode": null,
+    "conversationId": "ddb00c12-6425-4f64-ad9d-c23838809f31",
+    "cursorVersion": "2026.09.28-64d2043",
+    "durationMs": null,
+    "editCount": null,
+    "filePath": "/replay/parallel-worktrees/main/math.test.js",
+    "finalStatus": null,
+    "generationId": "ddb00c12-6425-4f64-ad9d-c23838809f31",
+    "hookEvent": "beforeReadFile",
+    "isBackgroundAgent": null,
+    "linesAdded": null,
+    "linesRemoved": null,
+    "loopCount": null,
+    "model": "default",
+    "presentKeys": [
+      "attachments",
+      "content",
+      "conversation_id",
+      "cursor_version",
+      "file_path",
+      "generation_id",
+      "hook_event_name",
+      "model",
+      "session_id",
+      "transcript_path",
+      "user_email",
+      "workspace_roots"
+    ],
+    "promptChars": null,
+    "rawUsage": [],
+    "reason": null,
+    "sessionId": "ddb00c12-6425-4f64-ad9d-c23838809f31",
+    "status": null,
+    "toolName": null,
+    "toolUseId": null,
+    "workspaceRoots": ["/replay/parallel-worktrees/main"]
+  },
+  "recordHash": "a7f34e809ee86b58312e2ae0813f6a0cccec4b76a019e7993115ef648fd8a424",
+  "spoolVersion": "dxfr.cursor-hook-spool.v1"
+}

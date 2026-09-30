@@ -37,6 +37,24 @@ export interface AutoSource {
   readonly source: string;
 }
 
+export const worktreeSources = (
+  worktree: string,
+  dftHome: string = defaultDftHome()
+): readonly AutoSource[] => {
+  const spool = hookSpoolDirFor(worktree, dftHome);
+  const legacySpool = legacyHookSpoolDirFor(worktree);
+
+  return [
+    { input: worktree, source: "collector.git-history" },
+    ...(existsSync(spool)
+      ? [{ input: spool, source: "collector.cursor-hooks" }]
+      : []),
+    ...(existsSync(legacySpool)
+      ? [{ input: legacySpool, source: "collector.cursor-hooks" }]
+      : []),
+  ];
+};
+
 export const autoSources = (
   context: FlightContext,
   cwd: string,
@@ -44,21 +62,8 @@ export const autoSources = (
   dftHome: string = defaultDftHome()
 ): readonly AutoSource[] => {
   const worktree = context.worktreePath ?? cwd;
-  const spool = hookSpoolDirFor(worktree, dftHome);
-  const legacySpool = legacyHookSpoolDirFor(worktree);
   const commands = commandLogPath(storePath);
-
-  const sources: AutoSource[] = [
-    { input: worktree, source: "collector.git-history" },
-  ];
-
-  if (existsSync(spool)) {
-    sources.push({ input: spool, source: "collector.cursor-hooks" });
-  }
-
-  if (existsSync(legacySpool)) {
-    sources.push({ input: legacySpool, source: "collector.cursor-hooks" });
-  }
+  const sources: AutoSource[] = [...worktreeSources(worktree, dftHome)];
 
   if (existsSync(commands)) {
     sources.push({ input: commands, source: "collector/shell-command" });

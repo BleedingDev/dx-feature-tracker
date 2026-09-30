@@ -2,9 +2,26 @@ import { Schema } from "effect";
 
 export const SPOOL_VERSION = "dxfr.cursor-hook-spool.v1" as const;
 
+export const LocatedBySchema = Schema.Literals([
+  "tool-cwd",
+  "file-path",
+  "modified-files",
+  "workspace-root",
+  "process-cwd",
+]);
+
+export type LocatedBy = typeof LocatedBySchema.Type;
+
+export const OWN_PATH_LOCATIONS: ReadonlySet<LocatedBy> = new Set([
+  "tool-cwd",
+  "file-path",
+  "modified-files",
+]);
+
 export const SpoolGitContextSchema = Schema.Struct({
   branch: Schema.NullOr(Schema.String),
   headSha: Schema.NullOr(Schema.String),
+  locatedBy: Schema.optionalKey(LocatedBySchema),
   repoCommonDir: Schema.NullOr(Schema.String),
   worktreePath: Schema.NullOr(Schema.String),
 });
@@ -25,13 +42,17 @@ export const RawUsageEntrySchema = Schema.Struct({
 
 export type RawUsageEntry = typeof RawUsageEntrySchema.Type;
 
+const OptionalText = Schema.optionalKey(Schema.NullOr(Schema.String));
+
 export const SanitizedHookSchema = Schema.Struct({
   attachmentCount: Schema.NullOr(Schema.Int),
+  childConversationId: OptionalText,
   commandBin: Schema.NullOr(Schema.String),
   commandHash: Schema.NullOr(Schema.String),
   composerMode: Schema.NullOr(Schema.String),
   conversationId: Schema.NullOr(Schema.String),
   cursorVersion: Schema.NullOr(Schema.String),
+  cwd: OptionalText,
   durationMs: Schema.NullOr(Schema.Finite),
   editCount: Schema.NullOr(Schema.Int),
   filePath: Schema.NullOr(Schema.String),
@@ -43,12 +64,20 @@ export const SanitizedHookSchema = Schema.Struct({
   linesRemoved: Schema.NullOr(Schema.Int),
   loopCount: Schema.NullOr(Schema.Finite),
   model: Schema.NullOr(Schema.String),
+  modifiedFiles: Schema.optionalKey(Schema.Array(Schema.String)),
+  parentConversationId: OptionalText,
+  parentToolCallId: OptionalText,
   presentKeys: Schema.Array(Schema.String),
   promptChars: Schema.NullOr(Schema.Int),
   rawUsage: Schema.Array(RawUsageEntrySchema),
   reason: Schema.NullOr(Schema.String),
+  reportedBranch: OptionalText,
   sessionId: Schema.NullOr(Schema.String),
   status: Schema.NullOr(Schema.String),
+  subagentId: OptionalText,
+  subagentModel: OptionalText,
+  subagentType: OptionalText,
+  toolCallId: OptionalText,
   toolName: Schema.NullOr(Schema.String),
   toolUseId: Schema.NullOr(Schema.String),
   workspaceRoots: Schema.Array(Schema.String),

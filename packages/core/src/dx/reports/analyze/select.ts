@@ -62,11 +62,17 @@ const retroactive = (
   Effect.gen(function* retroactiveSnapshot() {
     const { events, wide } = yield* accountAwareEvents(store, selector);
     const retro = yield* reattributeIfPossible(events);
+    const narrowed = narrowToBranch(wide, selector, retro.events);
+
+    const manifest =
+      selector.branch === null
+        ? narrowed.manifest
+        : (yield* store.snapshot(selector)).manifest;
 
     return {
       attribution: summaryToJson(retro.summary),
       disclosure: disclosureOf(retro.applied, summaryToJson(retro.summary)),
-      snapshot: narrowToBranch(wide, selector, retro.events),
+      snapshot: { ...narrowed, manifest },
     };
   });
 

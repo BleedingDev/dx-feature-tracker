@@ -218,6 +218,21 @@ const activitySpan = (events: readonly DxEventEnvelope[]) => {
     : { first: Math.min(...times), last: Math.max(...times) };
 };
 
+const latestWorktree = (events: readonly DxEventEnvelope[]): string | null => {
+  let best: { readonly at: string; readonly path: string } | null = null;
+
+  for (const event of events) {
+    const path = event.context.worktreePath;
+    const at = event.occurredAt ?? event.observedAt;
+
+    if (path !== null && (best === null || at > best.at)) {
+      best = { at, path };
+    }
+  }
+
+  return best?.path ?? null;
+};
+
 const repoKey = (repo: string | null): string => repo ?? "";
 
 interface FlightGroup {
@@ -341,6 +356,7 @@ const buildRow = (
     ),
     status: statusOf(flight, options.resolveStatus),
     tokens: tokenMeasures(usage),
+    worktree: latestWorktree(flight.events),
     worktrees: [
       ...new Set(
         flight.events.flatMap((event) =>

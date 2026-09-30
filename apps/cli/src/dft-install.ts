@@ -5,6 +5,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  realpathSync,
   writeFileSync,
 } from "node:fs";
 import path from "node:path";
@@ -87,7 +88,7 @@ export const parseHooksFile = (text: string): HooksFile | null => {
 };
 
 export const isDftHookCommand = (command: string): boolean =>
-  /\bdft(?:\.js)?['"]?\s+hook\b/u.test(command) ||
+  /\bdft(?:-main)?(?:\.js)?['"]?\s+hook\b/u.test(command) ||
   /\bdx\s+hook\b/u.test(command);
 
 export const mergeCursorHooks = (existing: HooksFile, command: string) => {
@@ -211,6 +212,72 @@ export const installSkills = (
     };
   });
 };
+
+const samePath = (file: string): string => {
+  try {
+    return realpathSync(file);
+  } catch {
+    return path.resolve(file);
+  }
+};
+
+export const parseWorktreeList = (porcelain: string): readonly string[] =>
+  porcelain
+    .split(/\n\s*\n/u)
+    .map((block) => block.split("\n"))
+    .filter((lines) => !lines.includes("bare"))
+    .flatMap((lines) => {
+      const head = lines.find((line) => line.startsWith("worktree "));
+
+      return head === undefined ? [] : [head.slice("worktree ".length)];
+    });
+
+export const repoWorktrees = (worktree: string): readonly string[] => {
+  try {
+    return parseWorktreeList(
+      execFileSync("git", ["worktree", "list", "--porcelain"], {
+        cwd: worktree,
+        encoding: "utf-8",
+        stdio: ["ignore", "pipe", "ignore"],
+      })
+    ).filter((file) => existsSync(file));
+  } catch {
+    return [];
+  }
+};
+
+export const otherWorktrees = (worktree: string): readonly string[] => {
+  const self = samePath(worktree);
+
+  return repoWorktrees(worktree).filter((file) => samePath(file) !== self);
+};
+
+export const hasDftHooks = (worktree: string): boolean => {
+  const file = path.join(worktree, ".cursor", "hooks.json");
+
+  if (!existsSync(file)) {
+    return false;
+  }
+
+  const parsed = parseHooksFile(readFileSync(file, "utf-8"));
+
+  return parsed !== null && mergeCursorHooks(parsed, "").added.length === 0;
+};
+
+export interface WorktreeInstall {
+  readonly hooks: InstallStep;
+  readonly skills: readonly InstallStep[];
+  readonly worktree: string;
+}
+
+export const installWorktree = (
+  worktree: string,
+  hookCommand: string
+): WorktreeInstall => ({
+  hooks: installCursorHooks(worktree, hookCommand),
+  skills: installSkills(worktree),
+  worktree,
+});
 
 export const gitHooksDir = (worktree: string): string =>
   path.resolve(
@@ -415,7 +482,9 @@ const isDone = (step: InstallStep): boolean =>
 export interface InstallResult {
   readonly git: readonly InstallStep[] | null;
   readonly hooks: InstallStep;
+  readonly others?: readonly WorktreeInstall[] | null;
   readonly skills: readonly InstallStep[];
+  readonly waiting?: readonly string[];
   readonly worktree: string;
 }
 
@@ -543,11 +612,57 @@ const NEXT_STEPS: readonly Row[] = [
     text: "cost of this branch (or type /dx-analyze in Cursor chat)",
   },
   { label: "dft history", text: "cost of every branch" },
+  { label: "dft dashboard", text: "the same as a web page" },
+  {
+    label: "New worktree?",
+    text: "run dft install --all-worktrees if you open it in Cursor",
+  },
   { label: "dft --help", text: "all commands" },
 ];
 
 const section = (title: string, lines: readonly string[]): string =>
   [title, ...lines].join("\n");
+
+const folder = (file: string): string => path.basename(file) || file;
+
+const otherLine = (other: WorktreeInstall): string => {
+  if (other.hooks.action === "skipped") {
+    return `  - ${folder(other.worktree)}: .cursor/hooks.json is not valid JSON, so dft left it alone`;
+  }
+
+  const note = other.hooks.action === "unchanged" ? " (already there)" : "";
+
+  return row("✓", {
+    label: folder(other.worktree),
+    text: `Cursor hooks and skills${note}`,
+  });
+};
+
+const worktreeBlocks = (result: InstallResult): readonly string[] => {
+  if (result.others !== undefined && result.others !== null) {
+    return result.others.length === 0
+      ? [section("Other worktrees", ["  none found"])]
+      : [section("Other worktrees", result.others.map(otherLine))];
+  }
+
+  const waiting = result.waiting ?? [];
+
+  if (waiting.length === 0) {
+    return [];
+  }
+
+  const count =
+    waiting.length === 1
+      ? "1 other worktree of this repo has"
+      : `${String(waiting.length)} other worktrees of this repo have`;
+
+  return [
+    section("Other worktrees", [
+      `  ${count} no dft hooks yet: ${waiting.map(folder).join(", ")}`,
+      "  Set them up too:  dft install --all-worktrees",
+    ]),
+  ];
+};
 
 export const installText = (
   result: InstallResult,
@@ -600,6 +715,8 @@ export const installText = (
       ])
     );
   }
+
+  blocks.push(...worktreeBlocks(result));
 
   if (skipped.length > 0) {
     blocks.push(

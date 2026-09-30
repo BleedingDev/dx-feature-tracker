@@ -205,8 +205,14 @@ const byScoredCommit =
         };
   };
 
+const isPlaced = (event: DxEventEnvelope): boolean =>
+  event.payload.worktreePlacement !== undefined &&
+  event.payload.worktreePlacement !== null;
+
 const byLiveCapture: Resolver = (event) =>
-  LIVE_ACQUISITIONS.has(event.acquisition) && event.context.branch !== null
+  LIVE_ACQUISITIONS.has(event.acquisition) &&
+  event.context.branch !== null &&
+  !isPlaced(event)
     ? {
         ...base(event),
         attribution: "strong",
@@ -245,6 +251,20 @@ const byWorktreeAtTime =
           reason: resolved.reason,
         };
   };
+
+const byPlacedWorktree: Resolver = (event) =>
+  isPlaced(event) && event.context.branch !== null
+    ? {
+        ...base(event),
+        attribution: "provisional",
+        basis: "worktree-at-time",
+        branch: event.context.branch,
+        confidence: 0.6,
+        method: "collected",
+        reason:
+          "moved to the worktree its paths point to; no checkout history covers that time, so it takes the branch that worktree has now",
+      }
+    : null;
 
 const untimedCollected = (
   event: DxEventEnvelope
@@ -303,6 +323,7 @@ export const attributeHistoricalBranches = (
     byLiveCapture,
     byScoredCommit(input.commitBranches),
     byWorktreeAtTime(input.timelines, options),
+    byPlacedWorktree,
   ];
 
   const resolveDirect = (event: DxEventEnvelope) => {

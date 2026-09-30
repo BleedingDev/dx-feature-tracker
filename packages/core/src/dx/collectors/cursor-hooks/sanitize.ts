@@ -15,6 +15,8 @@ const MAX_USAGE_DEPTH = 3;
 
 const MAX_ROOTS = 8;
 
+const MAX_MODIFIED_FILES = 16;
+
 const decodeObject = Schema.decodeUnknownOption(RawObjectSchema);
 
 const decodePayload = Schema.decodeUnknownOption(RawHookPayloadSchema);
@@ -88,6 +90,10 @@ const firstToken = (command: string): string | null => {
 
 const orNull = <A>(value: A | null | undefined): A | null => value ?? null;
 
+const decodeText = Schema.decodeUnknownOption(Schema.NonEmptyString);
+
+const decodeTexts = Schema.decodeUnknownOption(Schema.Array(Schema.Unknown));
+
 const commandFields = (raw: RawHookPayload) => {
   const command = raw.command ?? raw.tool_input?.command ?? null;
 
@@ -102,13 +108,44 @@ const editFields = (raw: RawHookPayload) => {
 
   return {
     editCount: edits === null ? null : edits.length,
-    filePath: raw.file_path ?? raw.tool_input?.file_path ?? null,
+    filePath:
+      raw.file_path ??
+      raw.tool_input?.file_path ??
+      Option.getOrNull(decodeText(raw.tool_input?.path)),
     linesAdded:
       edits === null ? null : sumLines(edits, (edit) => edit.new_string),
     linesRemoved:
       edits === null ? null : sumLines(edits, (edit) => edit.old_string),
   };
 };
+
+const locationFields = (raw: RawHookPayload) => ({
+  cwd:
+    Option.getOrNull(decodeText(raw.cwd)) ??
+    Option.getOrNull(decodeText(raw.tool_input?.cwd)) ??
+    Option.getOrNull(decodeText(raw.tool_input?.working_directory)),
+  modifiedFiles: Option.getOrElse(decodeTexts(raw.modified_files), () => [])
+    .flatMap((item) =>
+      Option.match(decodeText(item), {
+        onNone: () => [],
+        onSome: (text) => [text],
+      })
+    )
+    .slice(0, MAX_MODIFIED_FILES),
+  reportedBranch: Option.getOrNull(decodeText(raw.git_branch)),
+});
+
+const subagentFields = (raw: RawHookPayload) => ({
+  childConversationId: Option.getOrNull(decodeText(raw.child_conversation_id)),
+  parentConversationId: Option.getOrNull(
+    decodeText(raw.parent_conversation_id)
+  ),
+  parentToolCallId: Option.getOrNull(decodeText(raw.parent_tool_call_id)),
+  subagentId: Option.getOrNull(decodeText(raw.subagent_id)),
+  subagentModel: Option.getOrNull(decodeText(raw.subagent_model)),
+  subagentType: Option.getOrNull(decodeText(raw.subagent_type)),
+  toolCallId: Option.getOrNull(decodeText(raw.tool_call_id)),
+});
 
 const identityFields = (raw: RawHookPayload) => ({
   composerMode: orNull(raw.composer_mode),
@@ -153,7 +190,9 @@ export const sanitizeHookPayload = (
     ...commandFields(raw),
     ...editFields(raw),
     ...identityFields(raw),
+    ...locationFields(raw),
     ...outcomeFields(raw),
+    ...subagentFields(raw),
     ...sizeFields(raw),
     presentKeys: Object.keys(source).toSorted(),
     rawUsage: extractRawUsage(source),

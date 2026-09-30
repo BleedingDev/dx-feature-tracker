@@ -34,7 +34,9 @@ export type FetchLike = (
 
 const LiteRowSchema = Schema.Struct({
   chargedCents: Schema.optionalKey(Schema.Finite),
+  composerId: Schema.optionalKey(Schema.String),
   conversationId: Schema.optionalKey(Schema.String),
+  requestId: Schema.optionalKey(Schema.String),
   timestamp: Schema.optionalKey(Schema.Union([Schema.Finite, Schema.String])),
 });
 

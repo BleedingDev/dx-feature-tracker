@@ -85,6 +85,12 @@ export const FlightHistoryRowSchema = Schema.Struct({
   requests: HistoryMeasureSchema,
   status: FlightStatusReportSchema,
   tokens: Schema.Array(TokenMeasureSchema),
+  worktree: Schema.optionalKey(
+    Schema.NullOr(Schema.String).annotate({
+      description:
+        "Worktree of the branch's latest activity; each linked worktree gets its own row through its branch",
+    })
+  ),
   worktrees: Schema.Array(Schema.String),
 });
 

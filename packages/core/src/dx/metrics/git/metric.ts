@@ -37,7 +37,7 @@ const definition = (
 export const commitsDefinition = definition(
   "dx.git.commits",
   "commits",
-  "Distinct commits in baseSha..HEAD, merges included. baseSha is the merge-base with the default branch (origin/HEAD, main or master), so a branch created from another feature branch also counts that parent's unmerged commits."
+  "Distinct commits in baseSha..HEAD, merges included. baseSha is the branch fork point (reflog creation point, closest ancestor branch, or default-branch merge-base, labelled by baseMethod), so a branch created from another feature branch counts only its own commits."
 );
 
 export const mergeCommitsDefinition = definition(
@@ -169,7 +169,24 @@ const rangeCheckpoint = (summary: GitChurnSummary): string | null => {
   return `range:${single(summary.baseShas, "unbounded")}..${single(summary.headShas, "unknown")}`;
 };
 
+const baseLabel = (summary: GitChurnSummary): readonly string[] => {
+  const [base] = summary.bases;
+
+  if (
+    summary.bases.length !== 1 ||
+    base === undefined ||
+    base.method === null
+  ) {
+    return [];
+  }
+
+  return [
+    `base: method=${base.method} ref=${base.ref ?? "unknown"} sha=${base.sha}`,
+  ];
+};
+
 const committedCaveats = (summary: GitChurnSummary): readonly string[] => [
+  ...baseLabel(summary),
   ...(summary.baseShas.length === 0 && summary.commits > 0
     ? [
         "no-base-ref: no base SHA resolved; range may include pre-branch commits",

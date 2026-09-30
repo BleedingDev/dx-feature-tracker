@@ -980,12 +980,61 @@ const repoName = (commonDir: string): string => {
 const rowBilled = (row: FlightHistoryRow): number | null =>
   measureValue(row.money.billed) ?? measureValue(row.money.metered);
 
+const mainWorktree = (commonDir: string | null): string | null =>
+  commonDir !== null && commonDir.endsWith("/.git")
+    ? commonDir.slice(0, -"/.git".length)
+    : null;
+
+const baseName = (file: string): string =>
+  file.split("/").findLast((part) => part !== "") ?? file;
+
+const worktreeCandidates = (row: FlightHistoryRow): readonly string[] => {
+  if (row.worktree === undefined) {
+    return row.worktrees;
+  }
+
+  return row.worktree === null ? [] : [row.worktree];
+};
+
+export const linkedWorktree = (row: FlightHistoryRow): string | null => {
+  const main = mainWorktree(row.repoCommonDir);
+
+  if (main === null) {
+    return null;
+  }
+
+  const linked = worktreeCandidates(row).find((file) => file !== main);
+
+  return linked === undefined ? null : baseName(linked);
+};
+
+const withWorktree = (name: string, row: FlightHistoryRow | null): string => {
+  const worktree = row === null ? null : linkedWorktree(row);
+
+  return worktree === null ? name : `${name} (worktree: ${worktree})`;
+};
+
+const worktreeFolder = (row: FlightHistoryRow): string => {
+  const linked = linkedWorktree(row);
+
+  if (linked !== null) {
+    return linked;
+  }
+
+  const main = mainWorktree(row.repoCommonDir);
+
+  return main !== null && worktreeCandidates(row).includes(main)
+    ? baseName(main)
+    : DASH;
+};
+
 const historyRowCells = (
   row: FlightHistoryRow,
   now: number,
-  showRepo: boolean
+  options: { readonly showRepo: boolean; readonly showWorktree: boolean }
 ): readonly string[] => [
-  `${showRepo && row.repoCommonDir !== null ? `${repoName(row.repoCommonDir)}:` : ""}${row.branch ?? "(no branch)"}`,
+  `${options.showRepo && row.repoCommonDir !== null ? `${repoName(row.repoCommonDir)}:` : ""}${row.branch ?? "(no branch)"}`,
+  ...(options.showWorktree ? [worktreeFolder(row)] : []),
   row.status.value === "unknown" ? DASH : row.status.value,
   formatAgo(row.lastActivityAt, now),
   show(measureValue(row.agentTime), formatDuration),
@@ -1032,12 +1081,16 @@ export const historyText = (
   const branches = visible.filter((row) => row.repoCommonDir !== null);
   const account = visible.filter((row) => row.repoCommonDir === null);
 
+  const showWorktree = branches.some((row) => linkedWorktree(row) !== null);
+  const shift = showWorktree ? 1 : 0;
+
   const lines =
     branches.length === 0
       ? ["No branches with activity in this window."]
       : table(
           [
             "BRANCH",
+            ...(showWorktree ? ["WORKTREE"] : []),
             "STATUS",
             "LAST ACTIVE",
             "AGENT TIME",
@@ -1048,9 +1101,12 @@ export const historyText = (
             "COMMITS",
           ],
           branches.map((row) =>
-            historyRowCells(row, options.now, options.allRepos)
+            historyRowCells(row, options.now, {
+              showRepo: options.allRepos,
+              showWorktree,
+            })
           ),
-          new Set([3, 4, 5, 6, 7, 8])
+          new Set([3, 4, 5, 6, 7, 8].map((column) => column + shift))
         );
 
   const hasMoney = visible.some(
@@ -1071,34 +1127,124 @@ export const historyText = (
   ].join("\n");
 };
 
+export interface LineFacts {
+  readonly agentMs: number | null;
+  readonly billed: number | null;
+  readonly chats: number | null;
+  readonly commits: number | null;
+  readonly estimate: number | null;
+  readonly tokens: number | null;
+}
+
+export const rowFacts = (row: FlightHistoryRow): LineFacts => ({
+  agentMs: measureValue(row.agentTime),
+  billed: rowBilled(row),
+  chats: measureValue(row.chats),
+  commits: measureValue(row.commits),
+  estimate: rowEstimate(row),
+  tokens: rowTokens(row),
+});
+
+const sumPresent = (values: readonly (number | null)[]): number | null => {
+  const kept = values.filter((value): value is number => value !== null);
+
+  return kept.length === 0 ? null : kept.reduce((sum, n) => sum + n, 0);
+};
+
+export const reportFacts = (report: AnalyzeLike): LineFacts => {
+  const byId = new Map(report.metrics.map((m) => [m.metricId, m.value]));
+  const metric = (id: string): number | null => byId.get(id) ?? null;
+
+  return {
+    agentMs: metric("dx.flight.agent.ms"),
+    billed: metric("dx.cost.charge.usd") ?? metric("dx.cost.metered.usd"),
+    chats: null,
+    commits: metric("dx.flight.commits"),
+    estimate:
+      metric("dx.cost.list-price-estimate.price-table.usd") ??
+      metric("dx.cost.list-price-estimate.source.usd"),
+    tokens: sumPresent([
+      metric("dx.ai-usage.tokens.input"),
+      metric("dx.ai-usage.tokens.cached-input"),
+      metric("dx.ai-usage.tokens.cache-write"),
+      metric("dx.ai-usage.tokens.output"),
+    ]),
+  };
+};
+
+const positive = (
+  value: number | null,
+  text: (n: number) => string
+): readonly string[] => (value === null || value <= 0 ? [] : [text(value)]);
+
+export const onelineText = (label: string, facts: LineFacts | null): string => {
+  const ai =
+    facts === null
+      ? []
+      : [
+          ...positive(facts.billed, (n) => `${formatUsd(n)} billed`),
+          ...positive(facts.estimate, (n) => `${formatUsd(n)} est`),
+          ...positive(facts.tokens, (n) => `${formatCount(n)} tokens`),
+          ...positive(facts.agentMs, (n) => `${formatDuration(n)} agent`),
+          ...positive(facts.chats, (n) => plural(n, "chat")),
+        ];
+
+  const commits = positive(facts?.commits ?? null, (n) => plural(n, "commit"));
+
+  const parts =
+    ai.length === 0 ? ["no AI usage yet", ...commits] : [...ai, ...commits];
+
+  return `${label}  ${parts.join(" · ")}`;
+};
+
+const rowName = (row: FlightHistoryRow, showRepo: boolean): string =>
+  row.repoCommonDir === null
+    ? "Cursor account"
+    : `${showRepo ? `${repoName(row.repoCommonDir)}:` : ""}${row.branch ?? "(no branch)"}`;
+
+export const branchOneline = (
+  branch: string,
+  row: FlightHistoryRow | null,
+  fallback: LineFacts | null = null
+): string =>
+  onelineText(
+    withWorktree(branch, row),
+    row === null ? fallback : rowFacts(row)
+  );
+
+export const historyOneline = (
+  rows: readonly FlightHistoryRow[],
+  options: { readonly allRepos: boolean }
+): string => {
+  const visible = rows
+    .filter((row) => options.allRepos || row.repoCommonDir !== null)
+    .toSorted(
+      (a, b) =>
+        Date.parse(b.lastActivityAt ?? "1970-01-01") -
+        Date.parse(a.lastActivityAt ?? "1970-01-01")
+    );
+
+  if (visible.length === 0) {
+    return "No branches with activity in this window.";
+  }
+
+  const labels = visible.map((row) =>
+    withWorktree(rowName(row, options.allRepos), row)
+  );
+
+  const width = Math.max(...labels.map((label) => label.length));
+
+  return visible
+    .map((row, index) =>
+      onelineText((labels[index] ?? "").padEnd(width), rowFacts(row))
+    )
+    .join("\n");
+};
+
 export const snapshotLine = (
   branch: string | null,
   row: FlightHistoryRow | null
-): string => {
-  const name = `dft: ${branch ?? "(detached)"}`;
-
-  if (row === null) {
-    return `${name}  no AI activity yet`;
-  }
-
-  const billed =
-    measureValue(row.money.billed) ?? measureValue(row.money.metered);
-
-  const estimate = rowEstimate(row);
-  const tokens = rowTokens(row);
-  const agent = measureValue(row.agentTime);
-
-  const parts = [
-    ...(billed === null ? [] : [`${formatUsd(billed)} billed`]),
-    ...(estimate === null ? [] : [`${formatUsd(estimate)} estimate`]),
-    ...(tokens === null ? [] : [`${formatCount(tokens)} tokens`]),
-    ...(agent === null ? [] : [`${formatDuration(agent)} agent`]),
-  ];
-
-  return parts.length === 0
-    ? `${name}  no cost or tokens recorded yet`
-    : `${name}  ${parts.join(" · ")}`;
-};
+): string => `dft: ${branchOneline(branch ?? "(detached)", row)}`;
 
 export const ledgerValues = (row: FlightHistoryRow): readonly number[] =>
   [

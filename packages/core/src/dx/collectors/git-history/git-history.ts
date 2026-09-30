@@ -21,8 +21,10 @@ import type {
 } from "../../model/event.js";
 import { DescriptorIdSchema, EventIdSchema } from "../../model/ids.js";
 import {
+  FIELD_SEPARATOR,
   LOG_FORMAT,
   branchCreatedFrom,
+  checkoutMovedFrom,
   parseLog,
   parseNumstat,
   parseReflog,
@@ -82,6 +84,11 @@ export const gitHistoryDescriptor: ModuleDescriptor = {
       message:
         "Branch creation time comes only from the local reflog; expired or absent reflog leaves it unavailable.",
     },
+    {
+      code: "fork-point-heuristic",
+      message:
+        "Without a usable branch reflog the fork point is the closest merge-base with another local branch; a sibling branch forked from this branch's own history can shorten the counted range.",
+    },
   ],
   id: DescriptorIdSchema.make("collector.git-history"),
   kind: "collector",
@@ -98,6 +105,9 @@ export const gitHistoryDescriptor: ModuleDescriptor = {
     "git.commit.linesDeleted",
     "git.commit.binaryFiles",
     "git.commit.paths",
+    "git.commit.baseSha",
+    "git.commit.baseMethod",
+    "git.commit.baseRef",
     "git.diff.worktree.filesChanged",
     "git.diff.worktree.linesAdded",
     "git.diff.worktree.linesDeleted",
@@ -201,6 +211,20 @@ const COMMIT_SEMANTICS: readonly FieldSemantics[] = [
     "binary files excluded"
   ),
   sem("filesChanged", "observed", "files", "numstat", null),
+  sem(
+    "baseSha",
+    "derived",
+    "sha",
+    "fork point",
+    "commit the branch forked from; counts cover baseSha..HEAD"
+  ),
+  sem(
+    "baseMethod",
+    "derived",
+    null,
+    null,
+    "explicit --base merge-base, branch reflog 'Created from' start, closest merge-base with another local branch (ancestor-branch), or merge-base with the default branch"
+  ),
   sem("observedAt", "observed", "iso8601", null, OBSERVED_AT_NOTE),
 ];
 
@@ -244,7 +268,7 @@ const REFLOG_SEMANTICS: readonly FieldSemantics[] = [
 export const commitDraft = (
   commit: ParsedCommit,
   branchKey: string,
-  baseSha: string | null
+  base: ResolvedBase | null
 ): EventDraft => {
   const summary = summarizeNumstat(commit.files);
 
@@ -255,7 +279,9 @@ export const commitDraft = (
     occurredAt: commit.committedAt,
     payload: {
       authoredAt: commit.authoredAt,
-      baseSha,
+      baseMethod: base?.method ?? null,
+      baseRef: base?.ref ?? null,
+      baseSha: base?.sha ?? null,
       binaryFiles: summary.binaryFiles,
       committedAt: commit.committedAt,
       filesChanged: summary.filesChanged,
@@ -352,6 +378,10 @@ const optional = (
     Effect.orElseSucceed(() => null)
   );
 
+type Git = (
+  args: readonly string[]
+) => Effect.Effect<string, SourceUnavailable>;
+
 const BASE_CANDIDATES = [
   "refs/remotes/origin/HEAD",
   "refs/heads/main",
@@ -366,8 +396,36 @@ export interface GitHistoryOptions {
   readonly runner?: GitRunner;
 }
 
+export type BaseMethod = "explicit" | "reflog" | "ancestor-branch" | "default";
+
+export interface ResolvedBase {
+  readonly method: BaseMethod;
+  readonly ref: string;
+  readonly sha: string;
+}
+
+export const GIT_HISTORY_MAX_ANCESTOR_BRANCHES = 200;
+
+const LOCAL_HEADS = "refs/heads/";
+
+const DEFAULT_BRANCH_NAMES = new Set(
+  BASE_CANDIDATES.flatMap((ref) =>
+    ref.startsWith(LOCAL_HEADS) ? [ref.slice(LOCAL_HEADS.length)] : []
+  )
+);
+
+const METHOD_PRIORITY: Readonly<Record<BaseMethod, number>> = {
+  "ancestor-branch": 1,
+  default: 2,
+  explicit: 0,
+  reflog: 0,
+};
+
+const resolveRef = (git: Git, ref: string) =>
+  optional(git(["rev-parse", "--verify", "--quiet", `${ref}^{commit}`]));
+
 const resolveBase = (
-  git: (args: readonly string[]) => Effect.Effect<string, SourceUnavailable>,
+  git: Git,
   explicit: string | null,
   branch: string | null
 ) =>
@@ -378,9 +436,7 @@ const resolveBase = (
         : [explicit];
 
     for (const ref of candidates) {
-      const sha = yield* optional(
-        git(["rev-parse", "--verify", "--quiet", `${ref}^{commit}`])
-      );
+      const sha = yield* resolveRef(git, ref);
 
       if (sha !== null) {
         return { ref, sha };
@@ -390,9 +446,238 @@ const resolveBase = (
     return null;
   });
 
-type Git = (
-  args: readonly string[]
-) => Effect.Effect<string, SourceUnavailable>;
+const isAncestor = (git: Git, ancestor: string, headSha: string) =>
+  git(["merge-base", "--is-ancestor", ancestor, headSha]).pipe(
+    Effect.as(true),
+    Effect.orElseSucceed(() => false)
+  );
+
+const mergeBaseOf = (git: Git, sha: string, headSha: string) =>
+  optional(git(["merge-base", sha, headSha]));
+
+const isDefaultBranch = (git: Git, branch: string) =>
+  Effect.gen(function* check() {
+    if (DEFAULT_BRANCH_NAMES.has(branch)) {
+      return true;
+    }
+
+    const originHead = yield* optional(
+      git(["rev-parse", "--abbrev-ref", "refs/remotes/origin/HEAD"])
+    );
+
+    return originHead === `origin/${branch}`;
+  });
+
+export const GIT_HISTORY_MAX_HEAD_REFLOG = 10_000;
+
+const parentFromHeadReflog = (git: Git, branch: string, startSha: string) =>
+  optional(
+    git([
+      "reflog",
+      "show",
+      `--max-count=${GIT_HISTORY_MAX_HEAD_REFLOG}`,
+      "--format=%H%x1f%gs",
+      "HEAD",
+      "--",
+    ])
+  ).pipe(
+    Effect.map((text) => {
+      const suffix = ` to ${branch}`;
+
+      const parents = (text ?? "").split("\n").flatMap((line) => {
+        const [sha = "", subject = ""] = line.split(FIELD_SEPARATOR);
+        const from = checkoutMovedFrom(subject.trimEnd(), suffix);
+
+        return sha === startSha && from !== null && from !== branch
+          ? [from]
+          : [];
+      });
+
+      return parents.at(-1) ?? null;
+    })
+  );
+
+const reflogCandidates = (
+  git: Git,
+  branch: string,
+  entries: readonly ReflogEntry[],
+  headSha: string
+) =>
+  Effect.gen(function* reflog() {
+    const oldest = entries.at(-1);
+
+    const recorded =
+      oldest === undefined ? null : branchCreatedFrom(oldest.subject);
+
+    if (oldest === undefined || recorded === null) {
+      return [];
+    }
+
+    const createdFrom =
+      recorded === "HEAD"
+        ? ((yield* parentFromHeadReflog(git, branch, oldest.sha)) ?? recorded)
+        : recorded;
+
+    const found: ResolvedBase[] = [];
+
+    if (yield* isAncestor(git, oldest.sha, headSha)) {
+      found.push({ method: "reflog", ref: createdFrom, sha: oldest.sha });
+    }
+
+    if (createdFrom !== "HEAD") {
+      const fromSha = yield* resolveRef(git, createdFrom);
+
+      const fork =
+        fromSha === null ? null : yield* mergeBaseOf(git, fromSha, headSha);
+
+      if (fork !== null && fork !== headSha) {
+        found.push({ method: "reflog", ref: createdFrom, sha: fork });
+      }
+    }
+
+    return found;
+  });
+
+const SHA_LINE_PATTERN = /^[0-9a-f]{40,64}$/u;
+
+const ancestorBranchCandidates = (git: Git, branch: string, headSha: string) =>
+  Effect.gen(function* ancestors() {
+    const listing = yield* optional(
+      git([
+        "for-each-ref",
+        "--sort=-committerdate",
+        `--count=${GIT_HISTORY_MAX_ANCESTOR_BRANCHES}`,
+        "--format=%(refname:short)%1f%(objectname)",
+        "refs/heads/",
+      ])
+    );
+
+    const tips = (listing ?? "")
+      .split("\n")
+      .flatMap((line) => {
+        const [name = "", sha = ""] = line.trim().split(FIELD_SEPARATOR);
+
+        return name === "" || !SHA_LINE_PATTERN.test(sha)
+          ? []
+          : [{ name, sha }];
+      })
+      .filter(
+        (tip) => tip.name !== branch && !DEFAULT_BRANCH_NAMES.has(tip.name)
+      );
+
+    const found: ResolvedBase[] = [];
+
+    for (const tip of tips) {
+      const fork = yield* mergeBaseOf(git, tip.sha, headSha);
+
+      if (fork !== null && fork !== headSha) {
+        found.push({ method: "ancestor-branch", ref: tip.name, sha: fork });
+      }
+    }
+
+    return found;
+  });
+
+const distanceTo = (git: Git, sha: string, headSha: string) =>
+  optional(git(["rev-list", "--count", `${sha}..${headSha}`])).pipe(
+    Effect.map((text) =>
+      text === null || !/^\d+$/u.test(text)
+        ? Number.POSITIVE_INFINITY
+        : Number(text)
+    )
+  );
+
+const closest = (
+  git: Git,
+  candidates: readonly ResolvedBase[],
+  headSha: string
+) =>
+  Effect.gen(function* pick() {
+    const ranked = candidates.toSorted(
+      (a, b) => METHOD_PRIORITY[a.method] - METHOD_PRIORITY[b.method]
+    );
+
+    const bySha = new Map<string, ResolvedBase>();
+
+    for (const candidate of ranked) {
+      if (!bySha.has(candidate.sha)) {
+        bySha.set(candidate.sha, candidate);
+      }
+    }
+
+    const unique = [...bySha.values()];
+
+    if (unique.length <= 1) {
+      return unique[0] ?? null;
+    }
+
+    let best: {
+      readonly base: ResolvedBase;
+      readonly distance: number;
+    } | null = null;
+
+    for (const base of unique) {
+      const distance = yield* distanceTo(git, base.sha, headSha);
+
+      if (best === null || distance < best.distance) {
+        best = { base, distance };
+      }
+    }
+
+    return best?.base ?? null;
+  });
+
+export const resolveForkPoint = (
+  git: Git,
+  input: {
+    readonly branch: string | null;
+    readonly explicit: string | null;
+    readonly headSha: string;
+    readonly reflog: readonly ReflogEntry[];
+  }
+): Effect.Effect<ResolvedBase | null> =>
+  Effect.gen(function* fork() {
+    const { branch, explicit, headSha } = input;
+    const base = yield* resolveBase(git, explicit, branch);
+
+    const defaultFork =
+      base === null ? null : yield* mergeBaseOf(git, base.sha, headSha);
+
+    const fallback: ResolvedBase | null =
+      base === null || defaultFork === null
+        ? null
+        : {
+            method: explicit === null ? "default" : "explicit",
+            ref: base.ref,
+            sha: defaultFork,
+          };
+
+    if (
+      explicit !== null ||
+      branch === null ||
+      (yield* isDefaultBranch(git, branch))
+    ) {
+      return fallback;
+    }
+
+    const fromReflog = yield* reflogCandidates(
+      git,
+      branch,
+      input.reflog,
+      headSha
+    );
+
+    const forks =
+      fromReflog.length > 0
+        ? fromReflog
+        : yield* ancestorBranchCandidates(git, branch, headSha);
+
+    return yield* closest(
+      git,
+      fallback === null ? forks : [...forks, fallback],
+      headSha
+    );
+  });
 
 const unbornBatch = (): EventBatch => ({
   coverage: {
@@ -446,12 +731,12 @@ const readEnv = (git: Git, input: CollectInput, observedAt: string) =>
 const collectCommits = (
   git: Git,
   headSha: string,
-  mergeBase: string | null,
+  base: ResolvedBase | null,
   branchKey: string
 ) =>
   Effect.gen(function* commits() {
     const gaps: SourceGap[] = [];
-    const range = mergeBase === null ? [headSha] : [`${mergeBase}..${headSha}`];
+    const range = base === null ? [headSha] : [`${base.sha}..${headSha}`];
 
     const logText = yield* git([
       "log",
@@ -483,9 +768,7 @@ const collectCommits = (
       });
     }
 
-    const drafts = kept.map((commit) =>
-      commitDraft(commit, branchKey, mergeBase)
-    );
+    const drafts = kept.map((commit) => commitDraft(commit, branchKey, base));
 
     return { drafts, gaps, kept, truncated };
   });
@@ -510,7 +793,7 @@ const collectWorktree = (git: Git, branchKey: string, headSha: string) =>
     return worktreeDraft(numstat ?? "", untrackedCount, branchKey, headSha);
   });
 
-const collectReflog = (git: Git, branch: string, branchKey: string) =>
+const readReflog = (git: Git, branch: string) =>
   optional(
     git([
       "reflog",
@@ -520,7 +803,7 @@ const collectReflog = (git: Git, branch: string, branchKey: string) =>
       `refs/heads/${branch}`,
       "--",
     ])
-  ).pipe(Effect.map((text) => reflogDraft(parseReflog(text ?? ""), branchKey)));
+  ).pipe(Effect.map((text) => parseReflog(text ?? "")));
 
 const TOLERATED_GAPS = new Set(["merge-numstat-omitted", "reflog-unavailable"]);
 
@@ -585,16 +868,18 @@ export const collectGitHistory = (
     }
 
     const branchKey = branch ?? `detached:${headSha}`;
-    const base = yield* resolveBase(git, options.baseRef ?? null, branch);
+    const entries = branch === null ? [] : yield* readReflog(git, branch);
 
-    const mergeBase =
-      base === null
-        ? null
-        : yield* optional(git(["merge-base", base.sha, headSha]));
+    const base = yield* resolveForkPoint(git, {
+      branch,
+      explicit: options.baseRef ?? null,
+      headSha,
+      reflog: entries,
+    });
 
     const gaps: SourceGap[] = [];
 
-    if (mergeBase === null) {
+    if (base === null) {
       gaps.push({
         code: "no-base-ref",
         message:
@@ -602,7 +887,7 @@ export const collectGitHistory = (
       });
     }
 
-    const commits = yield* collectCommits(git, headSha, mergeBase, branchKey);
+    const commits = yield* collectCommits(git, headSha, base, branchKey);
     const drafts: EventDraft[] = [...commits.drafts];
     const worktree = yield* collectWorktree(git, branchKey, headSha);
 
@@ -610,8 +895,7 @@ export const collectGitHistory = (
       drafts.push(worktree);
     }
 
-    const reflog =
-      branch === null ? null : yield* collectReflog(git, branch, branchKey);
+    const reflog = branch === null ? null : reflogDraft(entries, branchKey);
 
     if (reflog === null) {
       gaps.push({

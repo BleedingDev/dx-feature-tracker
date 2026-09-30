@@ -1,4 +1,5 @@
 // @effect-diagnostics nodeBuiltinImport:off -- Runtime wiring resolves the selected repo path and the store path once per invocation at the process boundary.
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { realpathSync } from "node:fs";
 import { homedir } from "node:os";
@@ -14,6 +15,7 @@ import {
 import type {
   GitResolver,
   HookResult,
+  HookWorktree,
 } from "../collectors/cursor-hooks/handler.js";
 import {
   HOOK_SPOOL_FOLDER,
@@ -21,6 +23,7 @@ import {
 } from "../collectors/cursor-hooks/spool.js";
 import type { EventStore } from "../contracts/event-store.js";
 import type { StoreFailure } from "../contracts/services.js";
+import { parseWorktreePorcelain } from "../correlation/repo/worktree-map.js";
 import type { SelectorResolver } from "../mcp/handlers/deps.js";
 import type { FlightContext } from "../model/event.js";
 import { FlightIdSchema } from "../model/ids.js";
@@ -131,6 +134,38 @@ export const contextForRepo = (
   };
 };
 
+const WORKTREE_LIST_TIMEOUT_MS = 3000;
+
+export const listRepoWorktrees = (
+  repoPath: string
+): readonly HookWorktree[] => {
+  try {
+    const text = execFileSync(
+      "git",
+      ["-C", canonical(repoPath), "worktree", "list", "--porcelain"],
+      {
+        encoding: "utf-8",
+        stdio: ["ignore", "pipe", "ignore"],
+        timeout: WORKTREE_LIST_TIMEOUT_MS,
+      }
+    );
+
+    return parseWorktreePorcelain(text)
+      .filter((w) => !w.bare && !w.prunable)
+      .map((w) => ({
+        branch: w.detached ? null : w.branch,
+        headSha: w.headSha,
+        path: canonical(w.path),
+      }));
+  } catch {
+    return [];
+  }
+};
+
+export const repoWorktrees = (repoPath: string): readonly string[] => [
+  ...new Set(listRepoWorktrees(repoPath).map((w) => w.path)),
+];
+
 export const selectorForContext = (
   context: FlightContext,
   options: { readonly branch?: string | null } = {}
@@ -181,6 +216,7 @@ export const runCursorHook = (
 ): HookResult =>
   handleCursorHook(stdinText, {
     cwd,
+    listWorktrees: listRepoWorktrees,
     now,
     resolveGit: resolveCanonicalGit,
     spoolDirFor: (worktreePath) => hookSpoolDirFor(worktreePath, dftHome),

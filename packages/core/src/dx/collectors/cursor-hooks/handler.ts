@@ -1,5 +1,6 @@
 // @effect-diagnostics nodeBuiltinImport:off -- The Cursor hook handler runs synchronously inside the hook process: it reads local git state read-only and writes one bounded spool file, with no Effect runtime or network.
 import { execFileSync } from "node:child_process";
+import { realpathSync } from "node:fs";
 import path from "node:path";
 
 import { Option, Schema } from "effect";
@@ -7,6 +8,7 @@ import { Option, Schema } from "effect";
 import { RawObjectSchema } from "./raw-payload.js";
 import { sanitizeHookPayload, sha256Hex } from "./sanitize.js";
 import type {
+  LocatedBy,
   SanitizedHook,
   SpoolGitContext,
   SpoolRecord,
@@ -66,6 +68,7 @@ export interface HookRuntime {
   readonly now: Date;
   readonly spoolDirFor: (worktreePath: string) => string;
   readonly resolveGit: GitResolver;
+  readonly listWorktrees?: WorktreeLister;
 }
 
 export type HookOutcome =
@@ -109,6 +112,129 @@ export const buildSpoolRecord = (
   spoolVersion: SPOOL_VERSION,
 });
 
+export interface HookLocation {
+  readonly by: LocatedBy;
+  readonly path: string;
+}
+
+export interface HookWorktree {
+  readonly branch: string | null;
+  readonly headSha: string | null;
+  readonly path: string;
+}
+
+export type WorktreeLister = (root: string) => readonly HookWorktree[];
+
+const canonicalTarget = (target: string): string => {
+  try {
+    return realpathSync(target);
+  } catch {
+    return path.resolve(target);
+  }
+};
+
+const isWithin = (root: string, target: string): boolean => {
+  const relative = path.relative(root, target);
+
+  return (
+    relative === "" ||
+    (!relative.startsWith("..") && !path.isAbsolute(relative))
+  );
+};
+
+export const worktreeContaining = (
+  worktrees: readonly HookWorktree[],
+  target: string
+): HookWorktree | null =>
+  worktrees
+    .filter((w) => isWithin(w.path, target))
+    .toSorted((a, b) => b.path.length - a.path.length)[0] ?? null;
+
+const absoluteFrom = (base: string, target: string): string =>
+  path.isAbsolute(target) ? target : path.resolve(base, target);
+
+export const ownHookPaths = (
+  hook: SanitizedHook,
+  root: string
+): readonly HookLocation[] => {
+  const base = hook.cwd ?? root;
+
+  return [
+    ...(hook.cwd === null || hook.cwd === undefined
+      ? []
+      : [{ by: "tool-cwd" as const, path: absoluteFrom(root, hook.cwd) }]),
+    ...(hook.filePath === null
+      ? []
+      : [
+          {
+            by: "file-path" as const,
+            path: path.dirname(absoluteFrom(base, hook.filePath)),
+          },
+        ]),
+    ...(hook.modifiedFiles ?? []).map((file) => ({
+      by: "modified-files" as const,
+      path: path.dirname(absoluteFrom(base, file)),
+    })),
+  ];
+};
+
+export interface LocatedHook {
+  readonly git: SpoolGitContext;
+  readonly path: string;
+}
+
+export const locateHook = (
+  hook: SanitizedHook,
+  runtime: HookRuntime
+): LocatedHook => {
+  const root = hook.workspaceRoots[0] ?? runtime.cwd;
+  const rootGit = runtime.resolveGit(root);
+
+  const fallback: LocatedHook = {
+    git: {
+      ...rootGit,
+      locatedBy:
+        hook.workspaceRoots[0] === undefined ? "process-cwd" : "workspace-root",
+    },
+    path: root,
+  };
+
+  const own = ownHookPaths(hook, root);
+  const { listWorktrees } = runtime;
+
+  if (
+    listWorktrees === undefined ||
+    rootGit.worktreePath === null ||
+    own.length === 0
+  ) {
+    return fallback;
+  }
+
+  const worktrees = listWorktrees(root);
+
+  for (const location of own) {
+    const worktree = worktreeContaining(
+      worktrees,
+      canonicalTarget(location.path)
+    );
+
+    if (worktree !== null) {
+      return {
+        git: {
+          branch: worktree.branch,
+          headSha: worktree.headSha,
+          locatedBy: location.by,
+          repoCommonDir: rootGit.repoCommonDir,
+          worktreePath: worktree.path,
+        },
+        path: worktree.path,
+      };
+    }
+  }
+
+  return fallback;
+};
+
 const skipped = (reason: string, hookEvent: string | null): HookResult => ({
   outcome: { reason, state: "skipped" },
   stdout: hookResponseFor(hookEvent),
@@ -130,12 +256,12 @@ export const handleCursorHook = (
     return skipped("payload lacks hook_event_name", null);
   }
 
-  const root = hook.workspaceRoots[0] ?? runtime.cwd;
-  const git = runtime.resolveGit(root);
+  const located = locateHook(hook, runtime);
+  const { git } = located;
 
   try {
     const written = writeSpoolRecord(
-      runtime.spoolDirFor(git.worktreePath ?? root),
+      runtime.spoolDirFor(git.worktreePath ?? located.path),
       buildSpoolRecord(hook, git, runtime.now)
     );
 

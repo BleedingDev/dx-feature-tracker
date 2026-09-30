@@ -5,7 +5,11 @@ import path from "node:path";
 import { Console, Effect } from "effect";
 
 import { runCollect } from "../cli/commands/collect.js";
-import { autoSources } from "../composition.js";
+import {
+  HOOK_SPOOL_FOLDER,
+  latestSpoolRecord,
+} from "../collectors/cursor-hooks/spool.js";
+import { autoSources, worktreeSources } from "../composition.js";
 import type { AutoSource } from "../composition.js";
 import type { EventStoreService } from "../contracts/services.js";
 import type { FlightContext } from "../model/event.js";
@@ -14,6 +18,7 @@ import {
   contextForRepo,
   defaultDftHome,
   legacyHookSpoolDirFor,
+  repoWorktrees,
 } from "./runtime.js";
 
 export interface SyncStep {
@@ -134,21 +139,62 @@ export const unavailableSteps = (
   ];
 };
 
+export const leftoverSpoolSources = (
+  dftHome: string,
+  repoCommonDir: string | null,
+  planned: ReadonlySet<string>
+): readonly AutoSource[] =>
+  repoCommonDir === null
+    ? []
+    : listDirs(path.join(dftHome, "spool"))
+        .map((dir) => path.join(dir, HOOK_SPOOL_FOLDER))
+        .filter(
+          (dir) =>
+            !planned.has(dir) &&
+            latestSpoolRecord(dir)?.git.repoCommonDir === repoCommonDir
+        )
+        .map((input) => ({ input, source: "collector.cursor-hooks" }));
+
+export interface PlannedSource extends AutoSource {
+  readonly context: FlightContext;
+}
+
+const withContext =
+  (context: FlightContext) =>
+  (source: AutoSource): PlannedSource => ({ ...source, context });
+
 export const planSources = (
   context: FlightContext,
-  options: AutoSyncOptions
-): readonly AutoSource[] => {
+  options: AutoSyncOptions,
+  worktrees: readonly string[] = []
+): readonly PlannedSource[] => {
   const worktree = context.worktreePath ?? options.cwd;
+  const dftHome = options.dftHome ?? defaultDftHome();
 
-  return [
-    ...autoSources(
-      context,
-      options.cwd,
-      options.storePath,
-      options.dftHome ?? defaultDftHome()
+  const siblings = worktrees.filter(
+    (other) => path.resolve(other) !== path.resolve(worktree)
+  );
+
+  const live = [
+    ...[
+      ...autoSources(context, options.cwd, options.storePath, dftHome),
+      ...transcriptSources(options.home, worktree),
+    ].map(withContext(context)),
+    ...siblings.flatMap((other) =>
+      [
+        ...worktreeSources(other, dftHome),
+        ...transcriptSources(options.home, other),
+      ].map(withContext(contextForRepo(other)))
     ),
-    ...transcriptSources(options.home, worktree),
   ];
+
+  const leftovers = leftoverSpoolSources(
+    dftHome,
+    context.repoCommonDir,
+    new Set(live.map((step) => step.input))
+  ).map(withContext(context));
+
+  return [...live, ...leftovers];
 };
 
 export const autoSync = (
@@ -158,12 +204,12 @@ export const autoSync = (
 ): Effect.Effect<SyncReport, never, DxCollectorServices> =>
   Effect.gen(function* syncRepo() {
     const context = contextForRepo(options.repo);
-    const plan = planSources(context, options);
+    const plan = planSources(context, options, repoWorktrees(options.repo));
 
     // oxlint-disable-next-line unicorn/no-array-method-this-argument -- Effect.forEach takes an options object, not a thisArg.
     const steps = yield* Effect.forEach(plan, (step) =>
       runCollect({ store, storePath: options.storePath }, collectors, {
-        context,
+        context: step.context,
         input: step.input,
         source: step.source,
       }).pipe(

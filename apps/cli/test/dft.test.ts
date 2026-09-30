@@ -15,13 +15,17 @@ import { resolveDftStore } from "@rat-stack/core/dx";
 
 import {
   CURSOR_HOOK_EVENTS,
+  hasDftHooks,
   installCursorHooks,
   installGitHooks,
   installSkills,
   installText,
   installWarnings,
+  installWorktree,
   isOldNode,
   mergeCursorHooks,
+  otherWorktrees,
+  parseWorktreeList,
 } from "../src/dft-install.js";
 
 const created: string[] = [];
@@ -72,6 +76,16 @@ describe("dft install cursor hooks", () => {
     expect(mergeCursorHooks(first.file, "node /r/bin/dft hook").added).toEqual(
       []
     );
+
+    const fromBuild = mergeCursorHooks(
+      existing,
+      "/n/node /r/apps/cli/dist/dft-main.js hook"
+    ).file;
+
+    expect(
+      mergeCursorHooks(fromBuild, "/n/node /r/apps/cli/dist/dft-main.js hook")
+        .added
+    ).toEqual([]);
   });
 
   it("writes only the project .cursor/hooks.json and leaves invalid JSON alone", () => {
@@ -181,5 +195,112 @@ describe("dft install output", () => {
     ).toEqual([]);
     expect(isOldNode("v24.17.9")).toBe(true);
     expect(isOldNode("v25.0.0")).toBe(false);
+  });
+});
+
+describe("dft install --all-worktrees", () => {
+  const checks = {
+    cursorInstalled: true,
+    gitRepo: true,
+    login: "yes" as const,
+    nodeVersion: "v24.18.0",
+  };
+
+  const repoWithWorktree = () => {
+    const repo = scratchRepo();
+
+    const git = (...args: string[]) =>
+      execFileSync("git", ["-C", repo, ...args], { stdio: "ignore" });
+
+    git(
+      "-c",
+      "user.email=t@t",
+      "-c",
+      "user.name=t",
+      "commit",
+      "-q",
+      "--allow-empty",
+      "-m",
+      "init"
+    );
+
+    const linked = path.join(repo, "..", `${path.basename(repo)}-w1`);
+    created.push(linked);
+    git("worktree", "add", "-q", "-b", "feature/w1", linked);
+
+    return { linked, repo };
+  };
+
+  it("finds the other worktrees and says how to set them up", () => {
+    const { linked, repo } = repoWithWorktree();
+    const others = otherWorktrees(repo);
+
+    expect(others.map((file) => path.basename(file))).toEqual([
+      path.basename(linked),
+    ]);
+    expect(otherWorktrees(linked).map((file) => path.basename(file))).toEqual([
+      path.basename(repo),
+    ]);
+
+    const text = installText(
+      {
+        git: null,
+        hooks: installCursorHooks(repo, "dft hook"),
+        others: null,
+        skills: installSkills(repo),
+        waiting: others.filter((other) => !hasDftHooks(other)),
+        worktree: repo,
+      },
+      checks
+    );
+
+    expect(hasDftHooks(repo)).toBe(true);
+    expect(text).toContain(
+      `1 other worktree of this repo has no dft hooks yet: ${path.basename(linked)}`
+    );
+    expect(text).toContain("dft install --all-worktrees");
+  });
+
+  it("sets up every other worktree when asked", () => {
+    const { linked, repo } = repoWithWorktree();
+
+    const others = otherWorktrees(repo).map((other) =>
+      installWorktree(other, "dft hook")
+    );
+
+    expect(hasDftHooks(linked)).toBe(true);
+    expect(
+      readFileSync(
+        path.join(linked, ".cursor", "skills", "dx-analyze", "SKILL.md"),
+        "utf-8"
+      )
+    ).toContain("dft analyze");
+
+    const text = installText(
+      {
+        git: null,
+        hooks: installCursorHooks(repo, "dft hook"),
+        others,
+        skills: installSkills(repo),
+        worktree: repo,
+      },
+      checks
+    );
+
+    expect(text).toMatch(
+      new RegExp(
+        `Other worktrees\\n  ✓ ${path.basename(linked)}\\s+Cursor hooks and skills\\n`,
+        "u"
+      )
+    );
+    expect(text).not.toContain("no dft hooks yet");
+  });
+
+  it("skips bare entries in git worktree list", () => {
+    expect(
+      parseWorktreeList(
+        "worktree /r/bare.git\nbare\n\nworktree /r/a\nHEAD abc\nbranch refs/heads/a\n\nworktree /r/b\nHEAD def\ndetached\n"
+      )
+    ).toEqual(["/r/a", "/r/b"]);
   });
 });

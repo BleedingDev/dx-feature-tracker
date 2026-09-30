@@ -30,7 +30,7 @@ dft install
 - `.cursor/hooks.json`: adds `dft hook` entries next to any hooks already there.
 - `.cursor/skills/`: copies the `dx-analyze` and `dx-explain` Cursor skills.
 
-It never writes `~/.cursor/hooks.json` or anything else under `~/.cursor`. Run it once per repository: running it again currently adds a second set of `dft hook` entries to `.cursor/hooks.json` (the skills and git hooks are left as they are).
+It never writes `~/.cursor/hooks.json` or anything else under `~/.cursor`. Run it once per repository. Running it again is safe: it adds nothing that is already there.
 
 To also record a snapshot on every commit and push:
 
@@ -40,7 +40,7 @@ dft install --git-hooks
 
 This appends `dft snapshot` to the `pre-commit` and `pre-push` hooks. Existing hooks are kept, not replaced. If the repo uses lefthook, `dft` prints a snippet to add yourself instead of editing hooks.
 
-Other flags: `--repo <path>` to install into another repository, `--json` for machine output.
+Other flags: `--all-worktrees` to also set up every other git worktree of the repository (see [Many worktrees and subagents](#many-worktrees-and-subagents)), `--repo <path>` to install into another repository, `--json` for machine output.
 
 ## Daily use
 
@@ -48,15 +48,18 @@ Work in Cursor as usual. Then:
 
 ```sh
 dft analyze               # cost report for the current branch
+dft line                  # the same, on one line
 dft chats                 # chat tree for the branch, model and reasoning level per turn
 dft history --since 30d   # every branch you worked on, with time, tokens and each money line
-dft explain               # the evidence timeline behind the current branch's numbers
+dft history --all-repos   # every branch in every repository
+dft dashboard             # every branch as a web page, opened in your browser
+dft explain               # what happened on the current branch, by time
 dft status                # store location, enabled sources, readiness
 ```
 
 A good habit is `dft analyze` before you commit.
 
-Report commands (`analyze`, `chats`, `history`, `explain`, `snapshot`, `status`) share these flags:
+Report commands (`analyze`, `line`, `chats`, `history`, `explain`, `snapshot`, `status`) share these flags:
 
 | Flag | Meaning |
 | --- | --- |
@@ -69,6 +72,61 @@ Report commands (`analyze`, `chats`, `history`, `explain`, `snapshot`, `status`)
 | `--db <path>` | Use another SQLite store |
 
 `dft analyse` is an alias of `dft analyze`.
+
+## One-line output
+
+```sh
+dft line                  # the checked-out branch
+dft analyze --oneline     # the same (short form: -1)
+dft history --oneline     # one line per branch
+```
+
+```text
+feature/x  $0.42 billed · $1.10 est · 230k tokens · 42m agent · 3 chats · 7 commits
+```
+
+Parts that are unknown or zero are left out. A branch with no AI usage reads `feature/x  no AI usage yet`. A branch in a linked git worktree gets the worktree folder after its name: `feature/x (worktree: feature-x)`. `--json` wins over `--oneline`, and the JSON is the same as without it.
+
+The git hook line from `dft snapshot` uses the same format.
+
+## Dashboard
+
+```sh
+dft dashboard                          # this repository
+dft dashboard --all-repos --since 30d  # every repository, last 30 days
+dft dashboard --out costs.html --no-open
+```
+
+`dft dashboard` saves one HTML page and opens it in your browser (`open` on macOS, `xdg-open` on Linux). The page shows totals at the top and one row per branch: worktree, status, last active, agent time, tokens, billed, estimate and a cost bar. Click a column to sort, type to filter, and click a branch to see its chats, the models they used and their subagents.
+
+- The page is saved to `~/.dft/dashboard.html` (or `$DFT_HOME/dashboard.html`). `--out <file>` saves it somewhere else.
+- `--no-open` saves it without opening the browser. `--json` prints where it was saved.
+- It is one local file. It loads nothing from the internet and never contains your prompts. Chat titles are included, so treat the file like your chat history before you share it.
+- Run it again to refresh it. It does not update by itself.
+
+## Many worktrees and subagents
+
+`dft` counts each git worktree's work on the branch checked out in that worktree. `dft history` and `dft dashboard` show every branch of the repository, whichever worktree it lives in, with a `WORKTREE` column when any branch is in a linked worktree.
+
+**One agent that starts subagents in worktrees.** Run `dft install` once, in the main checkout, and start the agent there. Cursor reads hooks from `.cursor/hooks.json` in the folder the agent was started in, so its subagents are recorded too, even when they work in other worktrees. `dft` puts each subagent's edits and commands on the branch of the worktree they touched, and shows each subagent as its own chat under the parent in `dft chats` and the dashboard.
+
+**Worktrees you open on their own.** When you open a worktree in its own Cursor window, or start a separate `cursor-agent` in it, Cursor reads that worktree's own `.cursor/hooks.json`. A new worktree does not get that file, because `dft install` does not commit it. Set them all up at once:
+
+```sh
+dft install --all-worktrees
+```
+
+This adds the Cursor hooks and skills to every existing worktree of the repository. Run it again after you add worktrees. `dft install` without the flag lists the worktrees that are not set up yet. Git hooks from `--git-hooks` are shared by all worktrees, so they need no extra step.
+
+**Token split.** Cursor reports usage per chat. When subagents run inside one parent chat, some of their tokens are reported under the parent chat and stay on the parent's branch. For a clean per-branch token count, run one agent per worktree, each started in its own worktree.
+
+**Check the result:**
+
+```sh
+dft history --oneline     # one line per branch, with its worktree
+dft chats --branch feature/w1
+dft dashboard
+```
 
 ## What the money lines mean
 

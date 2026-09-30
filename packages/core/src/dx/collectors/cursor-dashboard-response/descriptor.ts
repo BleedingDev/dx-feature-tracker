@@ -68,6 +68,8 @@ export const cursorDashboardResponseDescriptor: ModuleDescriptor = {
     "payload.charge",
     "payload.requestUnits",
     "payload.requestKey",
+    "payload.conversationId",
+    "payload.correlationKeys",
     "payload.batchId",
   ],
   version: CURSOR_DASHBOARD_RESPONSE_ADAPTER_VERSION,

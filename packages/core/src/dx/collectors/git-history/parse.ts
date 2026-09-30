@@ -155,3 +155,21 @@ const CREATED_PATTERN = /^branch: Created from (?<from>\S+)/u;
 
 export const branchCreatedFrom = (subject: string): string | null =>
   CREATED_PATTERN.exec(subject)?.groups?.from ?? null;
+
+const CHECKOUT_PREFIX = "checkout: moving from ";
+
+export const checkoutMovedFrom = (
+  subject: string,
+  suffix: string
+): string | null => {
+  if (!subject.startsWith(CHECKOUT_PREFIX) || !subject.endsWith(suffix)) {
+    return null;
+  }
+
+  const from = subject.slice(
+    CHECKOUT_PREFIX.length,
+    subject.length - suffix.length
+  );
+
+  return from === "" || from.includes(" ") ? null : from;
+};

@@ -1,0 +1,53 @@
+{
+  "capturedAt": "2026-09-30T12:33:18.858Z",
+  "git": {
+    "branch": "feature/sub-c",
+    "headSha": "@head:sub-c@",
+    "repoCommonDir": "/replay/parallel-worktrees/main/.git",
+    "worktreePath": "/replay/parallel-worktrees/sub-c"
+  },
+  "hook": {
+    "attachmentCount": null,
+    "commandBin": null,
+    "commandHash": null,
+    "composerMode": null,
+    "conversationId": "0fb8ee44-14fd-4ec5-aeed-4932443cf059",
+    "cursorVersion": "2026.09.28-64d2043",
+    "durationMs": 20023,
+    "editCount": null,
+    "filePath": null,
+    "finalStatus": "completed",
+    "generationId": "0fb8ee44-14fd-4ec5-aeed-4932443cf059",
+    "hookEvent": "sessionEnd",
+    "isBackgroundAgent": false,
+    "linesAdded": null,
+    "linesRemoved": null,
+    "loopCount": null,
+    "model": "default",
+    "presentKeys": [
+      "conversation_id",
+      "cursor_version",
+      "duration_ms",
+      "final_status",
+      "generation_id",
+      "hook_event_name",
+      "is_background_agent",
+      "model",
+      "reason",
+      "session_id",
+      "transcript_path",
+      "user_email",
+      "workspace_roots"
+    ],
+    "promptChars": null,
+    "rawUsage": [],
+    "reason": "completed",
+    "sessionId": "0fb8ee44-14fd-4ec5-aeed-4932443cf059",
+    "status": null,
+    "toolName": null,
+    "toolUseId": null,
+    "workspaceRoots": ["/replay/parallel-worktrees/sub-c"]
+  },
+  "recordHash": "df9d9ad1b15a0be07a6b8637fe94a9ee200d6faddc3ed37f810d32a03a7654b2",
+  "spoolVersion": "dxfr.cursor-hook-spool.v1"
+}

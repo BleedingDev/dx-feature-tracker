@@ -140,7 +140,49 @@ const baseSemantics = (hook: SanitizedHook): FieldSemantics[] => {
   return out;
 };
 
-const payloadFor = (hook: SanitizedHook, surface: "agent" | "tab") => ({
+const SUBAGENT_EVENTS: ReadonlySet<string> = new Set([
+  "subagentStart",
+  "subagentStop",
+]);
+
+export const childSessionOf = (hook: SanitizedHook): string | null =>
+  SUBAGENT_EVENTS.has(hook.hookEvent)
+    ? (hook.childConversationId ?? hook.subagentId ?? null)
+    : null;
+
+const parentSessionOf = (hook: SanitizedHook): string | null => {
+  const parent = hook.parentConversationId ?? hook.conversationId;
+  const child = childSessionOf(hook);
+
+  return child === null || parent === null || parent === child ? null : parent;
+};
+
+const sessionIdOf = (hook: SanitizedHook): string | null =>
+  childSessionOf(hook) ?? hook.conversationId ?? hook.sessionId;
+
+const subagentPayload = (hook: SanitizedHook) => {
+  const parentSessionId = parentSessionOf(hook);
+
+  return parentSessionId === null
+    ? {}
+    : {
+        isSubagent: true,
+        parentSessionId,
+        subagentId: hook.subagentId ?? null,
+        subagentType: hook.subagentType ?? null,
+        toolCallId: hook.toolCallId ?? null,
+      };
+};
+
+const locationPayload = (record: SpoolRecord) => ({
+  cwd: record.hook.cwd ?? null,
+  locatedBy: record.git.locatedBy ?? null,
+  modifiedFiles: record.hook.modifiedFiles ?? [],
+  parentToolCallId: record.hook.parentToolCallId ?? null,
+  reportedBranch: record.hook.reportedBranch ?? null,
+});
+
+const payloadCore = (hook: SanitizedHook, surface: "agent" | "tab") => ({
   attachmentCount: hook.attachmentCount,
   commandBin: hook.commandBin,
   commandHash: hook.commandHash,
@@ -155,7 +197,7 @@ const payloadFor = (hook: SanitizedHook, surface: "agent" | "tab") => ({
   linesAdded: hook.linesAdded,
   linesRemoved: hook.linesRemoved,
   loopCount: hook.loopCount,
-  model: hook.model,
+  model: hook.subagentModel ?? hook.model,
   presentKeys: hook.presentKeys,
   promptChars: hook.promptChars,
   rawUsagePresent: hook.rawUsage.length > 0,
@@ -165,6 +207,12 @@ const payloadFor = (hook: SanitizedHook, surface: "agent" | "tab") => ({
   surface,
   toolCall: TOOL_CALL_EVENTS.has(hook.hookEvent),
   toolName: hook.toolName,
+});
+
+const payloadFor = (record: SpoolRecord, surface: "agent" | "tab") => ({
+  ...payloadCore(record.hook, surface),
+  ...locationPayload(record),
+  ...subagentPayload(record.hook),
 });
 
 interface EnvelopeInput {
@@ -211,7 +259,7 @@ const envelope = (
       githubRunId: null,
       prNumber: null,
       requestId: null,
-      sessionId: hook.conversationId ?? hook.sessionId,
+      sessionId: sessionIdOf(hook),
       turnId,
     },
     kind: input.kind,
@@ -269,7 +317,7 @@ export const decodeSpoolRecord = (
   const main = envelope(record, origin, {
     fieldSemantics: baseSemantics(hook),
     kind,
-    payload: payloadFor(hook, surfaceFor(hook.hookEvent)),
+    payload: payloadFor(record, surfaceFor(hook.hookEvent)),
     upstreamKey,
   });
 

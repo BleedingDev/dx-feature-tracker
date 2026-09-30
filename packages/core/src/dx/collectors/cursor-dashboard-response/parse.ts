@@ -75,8 +75,11 @@ const TokenUsageSchema = Schema.Struct({
 type TokenUsage = typeof TokenUsageSchema.Type;
 
 const UsageRowSchema = Schema.Struct({
+  bubbleId: Schema.optionalKey(Schema.String),
+  clientRequestId: Schema.optionalKey(Schema.String),
   composerId: Schema.optionalKey(Schema.String),
   conversationId: Schema.optionalKey(Schema.String),
+  generationId: Schema.optionalKey(Schema.String),
   isChargeable: Schema.optionalKey(Schema.Boolean),
   isTokenBasedCall: Schema.optionalKey(Schema.Boolean),
   kind: Schema.optionalKey(Schema.String),
@@ -84,6 +87,7 @@ const UsageRowSchema = Schema.Struct({
   model: Schema.optionalKey(Schema.String),
   requestId: Schema.optionalKey(Schema.String),
   requestsCosts: Schema.optionalKey(NumberLike),
+  serverBubbleId: Schema.optionalKey(Schema.String),
   timestamp: Schema.optionalKey(Schema.Union([Schema.Finite, Schema.String])),
   tokenUsage: Schema.optionalKey(TokenUsageSchema),
   usageBasedCosts: Schema.optionalKey(
@@ -340,10 +344,52 @@ const readCost = (row: UsageRow): CostReading => {
   return { amountUsd: null, ledger, rawField: null };
 };
 
+export interface RowKeys {
+  readonly clientRequestId: string | null;
+  readonly composerId: string | null;
+  readonly conversationId: string | null;
+  readonly generationId: string | null;
+  readonly requestId: string | null;
+}
+
+export const rowKeysOf = (row: {
+  readonly bubbleId?: string;
+  readonly clientRequestId?: string;
+  readonly composerId?: string;
+  readonly conversationId?: string;
+  readonly generationId?: string;
+  readonly requestId?: string;
+  readonly serverBubbleId?: string;
+}): RowKeys => ({
+  clientRequestId: trimmed(row.clientRequestId),
+  composerId: trimmed(row.composerId),
+  conversationId: trimmed(row.conversationId),
+  generationId:
+    trimmed(row.generationId) ??
+    trimmed(row.serverBubbleId) ??
+    trimmed(row.bubbleId),
+  requestId: trimmed(row.requestId),
+});
+
+const unique = (values: readonly (string | null)[]): readonly string[] => [
+  ...new Set(values.filter((value): value is string => value !== null)),
+];
+
+export const correlationKeysOfRow = (keys: RowKeys): readonly string[] => [
+  ...unique([keys.requestId, keys.clientRequestId]).map(
+    (id) => `request:${id}`
+  ),
+  ...unique([keys.generationId]).map((id) => `generation:${id}`),
+  ...unique([keys.composerId, keys.conversationId]).map(
+    (id) => `session:${id}`
+  ),
+];
+
 interface AcceptedRow {
   readonly canonical: string;
   readonly conversationId: string | null;
   readonly cost: CostReading;
+  readonly keys: RowKeys;
   readonly kind: string | null;
   readonly maxMode: boolean | null;
   readonly model: string | null;
@@ -366,8 +412,9 @@ const parseRow = (row: UsageRow, at: string): AcceptedRow | RejectedRow => {
   const cost = readCost(row);
   const model = trimmed(row.model);
   const kind = trimmed(row.kind);
-  const requestId = trimmed(row.requestId);
-  const conversationId = trimmed(row.conversationId) ?? trimmed(row.composerId);
+  const keys = rowKeysOf(row);
+  const { requestId } = keys;
+  const conversationId = keys.conversationId ?? keys.composerId;
   const requestUnits = row.requestsCosts ?? null;
   const maxMode = row.maxMode ?? null;
 
@@ -385,6 +432,7 @@ const parseRow = (row: UsageRow, at: string): AcceptedRow | RejectedRow => {
     ]),
     conversationId,
     cost,
+    keys,
     kind,
     maxMode,
     model,
@@ -495,7 +543,7 @@ const buildGaps = (
     .join(", ");
 
   const missingKeys = events.filter(
-    (row) => row.requestId === null && row.conversationId === null
+    (row) => correlationKeysOfRow(row.keys).length === 0
   ).length;
 
   const candidates: readonly (SourceGap | null)[] = [
@@ -540,6 +588,14 @@ const buildGaps = (
   return candidates.filter((gap): gap is SourceGap => gap !== null);
 };
 
+const turnIdOf = (keys: RowKeys): string | null => {
+  const session = keys.composerId ?? keys.conversationId;
+
+  return session === null || keys.generationId === null
+    ? null
+    : `${session}:${keys.generationId}`;
+};
+
 const toEvent = (
   row: AcceptedRow,
   hashes: {
@@ -569,13 +625,13 @@ const toEvent = (
   fieldSemantics,
   identity: {
     commitSha: null,
-    generationId: null,
+    generationId: row.keys.generationId,
     githubAttempt: null,
     githubRunId: null,
     prNumber: null,
-    requestId: row.requestId,
-    sessionId: row.conversationId,
-    turnId: null,
+    requestId: row.keys.requestId ?? row.keys.clientRequestId,
+    sessionId: row.keys.composerId ?? row.conversationId,
+    turnId: turnIdOf(row.keys),
   },
   kind: "ai.usage",
   observedAt: options.observedAt,
@@ -588,6 +644,8 @@ const toEvent = (
       "dashboard usage rows carry no branch; assignment needs request/conversation key or time-window correlation",
     batchId: hashes.batchId,
     charge: row.cost.ledger === "charge" ? row.cost.amountUsd : null,
+    conversationId: row.conversationId,
+    correlationKeys: correlationKeysOfRow(row.keys),
     costLedger: row.cost.ledger,
     costRawField: row.cost.rawField,
     costUsd: row.cost.amountUsd,

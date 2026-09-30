@@ -17,3 +17,12 @@ Settled with the product owner on 2026-09-30. Phase 1 is local tracking of Curso
 | D12 | Installing hooks | `dft install` adds only project Cursor hooks and the skill. Git hooks need `--git-hooks` and never overwrite or mutate existing hooks. |
 | D13 | History view | `dft history` defaults to the last 30 days in the current repo, one row per branch. |
 | D7 | Storage | One global database per user (`~/.dft/`). Commands default to the current repo; `--all-repos` widens. |
+| D14 | Dashboard app | `dft dashboard` is the long-running app: it keeps syncing and serves a live local page. `dft dashboard --one-time` writes the static HTML file instead. |
+| D15 | Sync | Fully automatic, no "sync now" button unless polling has to be reduced. Hooks and git are picked up within seconds, Cursor account usage every few minutes, cursor-agent output and the Cursor local database automatically too. |
+| D16 | Network | The dashboard listens on 127.0.0.1 only (default port 7420). |
+| D17 | Control | The page can run safe actions (track or untrack repos, install hooks into a repo, turn the Cursor usage import on or off, export) and destructive ones (delete a repo's data, reset the store). Destructive actions show exactly what will be removed, need a typed confirmation and keep a backup that can be restored. |
+| D18 | Screens | Three: Branches (totals and all branches), Branch (cost, tokens, time, commits, chats with models and subagents, timeline), Setup (sources, tracked repos, actions). |
+| D19 | Refresh | The server pushes new data and the page updates in place. A small, unobtrusive "updated" indicator only. |
+| D20 | Running | Foreground now (Ctrl+C to stop). A login service (launchd, systemd) comes later. |
+| D21 | API | No public JSON API for now. A later paid enterprise tier may add one with SSO. |
+| D22 | Wording | Plain, unslopped text everywhere. No em dashes. |

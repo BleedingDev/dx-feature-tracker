@@ -65,6 +65,23 @@ export interface SpoolReadResult {
 
 export const spoolExists = (spoolDir: string): boolean => existsSync(spoolDir);
 
+export const latestSpoolRecord = (spoolDir: string): SpoolRecord | null => {
+  try {
+    const last = readdirSync(spoolDir)
+      .filter((name) => name.endsWith(SPOOL_SUFFIX) && !name.startsWith("."))
+      .toSorted()
+      .at(-1);
+
+    return last === undefined
+      ? null
+      : Option.getOrNull(
+          decodeRecordJson(readFileSync(path.join(spoolDir, last), "utf-8"))
+        );
+  } catch {
+    return null;
+  }
+};
+
 export const readSpool = (
   spoolDir: string,
   afterFile: string | null

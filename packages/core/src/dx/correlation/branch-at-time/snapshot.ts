@@ -11,6 +11,9 @@ import type { SnapshotSelector } from "../../model/snapshot.js";
 import { summarizeAttribution } from "./attribute.js";
 import type { BranchAttributionSummary } from "./attribute.js";
 import { reattributeHistoricalBranches } from "./pipeline.js";
+import { joinAccountRows } from "./session-join.js";
+
+export { joinAccountRows } from "./session-join.js";
 
 export interface RetroactiveEvents {
   readonly applied: boolean;
@@ -68,96 +71,6 @@ export const summaryToJson = (summary: readonly BranchAttributionSummary[]) =>
     events: s.events,
     movedFromCollectedBranch: s.movedFromCollectedBranch,
   }));
-
-const instantOf = (event: DxEventEnvelope): number | null => {
-  const ms = Date.parse(event.occurredAt ?? event.observedAt);
-
-  return Number.isNaN(ms) ? null : ms;
-};
-
-const nearestInTime = (
-  candidates: readonly DxEventEnvelope[],
-  target: DxEventEnvelope
-): DxEventEnvelope | undefined => {
-  const at = instantOf(target);
-
-  if (at === null) {
-    return candidates[0];
-  }
-
-  let best: DxEventEnvelope | undefined;
-  let bestGap = Number.POSITIVE_INFINITY;
-
-  for (const candidate of candidates) {
-    const t = instantOf(candidate);
-    const gap = t === null ? Number.POSITIVE_INFINITY : Math.abs(t - at);
-
-    if (best === undefined || gap < bestGap) {
-      best = candidate;
-      bestGap = gap;
-    }
-  }
-
-  return best;
-};
-
-export const joinAccountRows = (
-  events: readonly DxEventEnvelope[]
-): readonly DxEventEnvelope[] => {
-  const local = new Map<string, DxEventEnvelope[]>();
-
-  for (const e of events) {
-    const { sessionId } = e.identity;
-
-    if (
-      sessionId !== null &&
-      sessionId !== "" &&
-      e.context.repoCommonDir !== null
-    ) {
-      local.set(sessionId, [...(local.get(sessionId) ?? []), e]);
-    }
-  }
-
-  return events.map((e) => {
-    const { sessionId } = e.identity;
-
-    if (e.context.repoCommonDir !== null || sessionId === null) {
-      return e;
-    }
-
-    const members = local.get(sessionId) ?? [];
-    const nearest = nearestInTime(members, e);
-
-    if (nearest === undefined) {
-      return e;
-    }
-
-    const withWorktree = nearestInTime(
-      members.filter((m) => m.context.worktreePath !== null),
-      e
-    );
-
-    return {
-      ...e,
-      context: {
-        ...e.context,
-        branch: nearest.context.branch,
-        flightId: nearest.context.flightId,
-        repoCommonDir: nearest.context.repoCommonDir,
-        worktreePath:
-          withWorktree?.context.worktreePath ?? nearest.context.worktreePath,
-      },
-      payload: {
-        ...e.payload,
-        sessionJoin: {
-          attribution: "provisional",
-          branchFrom: nearest.eventId,
-          method: "nearest-session-event",
-        },
-      },
-    };
-  });
-};
 
 const joinWithinRepo = (
   repoEvents: readonly DxEventEnvelope[],

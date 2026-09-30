@@ -9,9 +9,11 @@ import { EvidenceIdSchema } from "../../model/ids.js";
 export const GIT_CHURN_SOURCE_ADAPTER_ID = "git-history";
 
 export const BASE_SHA_DEFINITION =
-  "baseSha = git merge-base(resolved base ref, HEAD) recorded by the git-history collector; base ref is the explicit --base ref, else the first of origin/HEAD, main, master, origin/main, origin/master that is not the current branch. Branch totals cover commits in baseSha..HEAD; merge commits carry no numstat and contribute no lines. A branch created from another feature branch is still measured from the default-branch merge-base, so its totals include the parent branch's unmerged commits (dft does not yet use the reflog 'branch: Created from' parent or the closest ancestor branch as the base).";
+  "baseSha = the branch fork point recorded by the git-history collector, labelled by baseMethod: explicit (merge-base with the --base ref), reflog (the commit the branch pointed at when the reflog recorded 'branch: Created from <ref>', or the merge-base with that ref when closer), ancestor-branch (the closest merge-base with another local branch tip, used when the reflog is expired or absent) or default (merge-base with the first of origin/HEAD, main, master, origin/main, origin/master that is not the current branch). The default branch itself always uses the default method. Among candidates the one closest to HEAD wins, so a branch that later merged its parent is not over-counted. Branch totals cover commits in baseSha..HEAD; merge commits carry no numstat and contribute no lines.";
 
 export interface CommitFacts {
+  readonly baseMethod: string | null;
+  readonly baseRef: string | null;
   readonly baseSha: string | null;
   readonly binaryFiles: number;
   readonly evidenceId: EvidenceId;
@@ -34,7 +36,14 @@ export interface WorktreeFacts {
   readonly untrackedFiles: number | null;
 }
 
+export interface GitChurnBase {
+  readonly method: string | null;
+  readonly ref: string | null;
+  readonly sha: string;
+}
+
 export interface GitChurnSummary {
+  readonly bases: readonly GitChurnBase[];
   readonly baseShas: readonly string[];
   readonly binaryFiles: number;
   readonly branches: readonly string[];
@@ -54,6 +63,8 @@ export interface GitChurnSummary {
 }
 
 const CommitPayloadSchema = Schema.Struct({
+  baseMethod: Schema.optional(Schema.NullOr(Schema.String)),
+  baseRef: Schema.optional(Schema.NullOr(Schema.String)),
   baseSha: Schema.optional(Schema.NullOr(Schema.String)),
   binaryFiles: Schema.optional(Schema.NullOr(Schema.Finite)),
   filesChanged: Schema.optional(Schema.NullOr(Schema.Finite)),
@@ -95,6 +106,8 @@ export const commitFacts = (event: DxEventEnvelope): CommitFacts | null =>
       const isMerge = payload.isMerge === true;
 
       return {
+        baseMethod: payload.baseMethod ?? null,
+        baseRef: payload.baseRef ?? null,
         baseSha: payload.baseSha ?? null,
         binaryFiles: payload.binaryFiles ?? 0,
         evidenceId: EvidenceIdSchema.make(event.eventId),
@@ -183,6 +196,32 @@ const dedupeCommits = (
   return [...bySha.values()];
 };
 
+const distinctBases = (
+  commits: readonly CommitFacts[]
+): readonly GitChurnBase[] => {
+  const byKey = new Map<string, GitChurnBase>();
+
+  for (const commit of commits) {
+    if (commit.baseSha === null) {
+      continue;
+    }
+
+    const base = {
+      method: commit.baseMethod,
+      ref: commit.baseRef,
+      sha: commit.baseSha,
+    };
+
+    byKey.set(`${base.sha}\u0000${base.method}\u0000${base.ref}`, base);
+  }
+
+  return [...byKey.values()].toSorted((a, b) =>
+    a.sha === b.sha
+      ? `${a.method}${a.ref}`.localeCompare(`${b.method}${b.ref}`)
+      : a.sha.localeCompare(b.sha)
+  );
+};
+
 const pathTouchCounts = (
   commits: readonly CommitFacts[]
 ): ReadonlyMap<string, number> => {
@@ -215,6 +254,7 @@ export const summarizeGitChurn = (snapshot: StoreSnapshot): GitChurnSummary => {
 
   return {
     baseShas: distinct(commits.map((commit) => commit.baseSha)),
+    bases: distinctBases(commits),
     binaryFiles: measured.reduce((total, c) => total + c.binaryFiles, 0),
     branches: distinct(events.map((event) => event.context.branch)),
     commitEvidence: commits.map((commit) => commit.evidenceId),
