@@ -108,7 +108,11 @@ describe("dft install cursor hooks", () => {
 
     expect(steps.map((step) => step.detail).toSorted()).toEqual([
       "dx-analyze",
+      "dx-chats",
+      "dx-dashboard",
       "dx-explain",
+      "dx-history",
+      "dx-line",
     ]);
     expect(
       readFileSync(
@@ -168,7 +172,8 @@ describe("dft install output", () => {
     );
 
     expect(text).toContain("  ✓ Cursor hooks    .cursor/hooks.json\n");
-    expect(text).toContain("/dx-analyze, /dx-explain");
+    expect(text).toContain("/dx-analyze");
+    expect(text).toContain("/dx-history");
     expect(text).toContain("dft install --git-hooks");
     expect(text).toContain("Next steps");
     expect(text).toMatch(/1\. Restart Cursor/u);

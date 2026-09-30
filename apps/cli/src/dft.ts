@@ -874,7 +874,7 @@ const installCommand = Command.make(
     })
 ).pipe(
   Command.withDescription(
-    "Set up dft in this repo: add Cursor hooks to .cursor/hooks.json and the /dx-analyze and /dx-explain skills. Agents and subagents started from this folder are covered, even when they work in other worktrees. Add --all-worktrees to also set up every other worktree of the repo, for worktrees you open in Cursor on their own. Changes only this repo, never ~/.cursor. Safe to run again."
+    "Set up dft in this repo: add Cursor hooks to .cursor/hooks.json and the Cursor skills (/dx-line, /dx-analyze, /dx-history, /dx-chats, /dx-explain, /dx-dashboard). Agents and subagents started from this folder are covered, even when they work in other worktrees. Add --all-worktrees to also set up every other worktree of the repo, for worktrees you open in Cursor on their own. Changes only this repo, never ~/.cursor. Safe to run again."
   ),
   Command.withShortDescription("Set up Cursor hooks and skills in this repo"),
   Command.withExamples([
