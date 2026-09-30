@@ -9,7 +9,7 @@ Full guide: [docs/USAGE.md](https://github.com/BleedingDev/dx-feature-tracker/bl
 Requires Node.js **24.18.0 or newer** (`node --version`).
 
 ```sh
-npm i -g dx-feature-tracker
+npm i -g https://github.com/BleedingDev/dx-feature-tracker/releases/latest/download/dx-feature-tracker.tgz
 dft --help
 ```
 
