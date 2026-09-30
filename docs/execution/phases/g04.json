@@ -1,43 +1,116 @@
 {
   "gate": "G04",
   "attempt": 1,
-  "milestone": "P4 release verdict: last-green artifact 1439ef3 (G03 content) re-fenced, installer/uninstall and pinned-snapshot restart rehearsed with a real Cursor client; degraded-live",
+  "milestone": "P4 release verdict: 742a76c (G03 content + replay-consistent p1-final-wire D8/prices/account join + dft usage docs) fenced, installer/uninstall and pinned-snapshot restart rehearsed with a real Cursor client; degraded-live",
   "verdict": "pass",
-  "verdictScope": "degraded-live release. The released artifact is exactly commit 1439ef38fcb294b7643f487828251e4b769d5a47 (clean tree). Recorder-side checks all pass on that digest. The live Cursor model turn could not run: the Cursor account hit its usage limit (cursor-agent: 'ActionRequiredError: You've hit your usage limit'), so this digest carries NO live token/cost observation and must not be described as a live token capture. The claims audit's live-origin check fails for that reason and is recorded as exit 1, not waived. Late work after 1439ef3 (p1-final-wire D8 wiring) is NOT released.",
-  "decidedAt": "2026-09-30T15:31+02:00",
+  "verdictScope": "degraded-live release. The released artifact is exactly commit 742a76c1bcf81dadab774aca663589c39a464858 (clean tree, already on origin/main). Recorder-side checks all pass on that digest. The live Cursor model turn could not run: the Cursor account hit its usage limit (cursor-agent: 'ActionRequiredError: You've hit your usage limit'), so this digest carries NO live token/cost observation and must not be described as a live token capture. The claims audit's live-origin check fails for that reason and is recorded as exit 1, not waived. 1439ef3 (G03) was also re-fenced and rehearsed first and remains the fallback artifact.",
+  "decidedAt": "2026-09-30T15:34+02:00",
   "deadline": "2026-09-30T15:47+02:00",
   "candidate": {
-    "commit": "1439ef38fcb294b7643f487828251e4b769d5a47",
-    "originMain": "1439ef38fcb294b7643f487828251e4b769d5a47",
-    "freezeMethod": "APFS clone (cp -Rc) of the live checkout into the gate scratchpad at 15:26:23. Attempt A kept the staged p1-final-wire changes (input digest f2a38507ce07c949817b5659d647b0bfc86166a98072d0a7d09585364663d19a) and failed the fence. Disposition: clone reset to HEAD, stray docs/execution/scratch_c12.bak and apps/web/ (disabled B42, not a workspace package) removed. The released candidate is the clean HEAD tree.",
-    "testedDigest": "sha256:2537654229adb9b5bb1d08723f3f97111ec181540ba52e5b4167d28634fb6163",
-    "digestMethod": "sha256 of the HEAD sha line; the clone had zero modified or untracked non-ignored files at test time",
+    "commit": "742a76c1bcf81dadab774aca663589c39a464858",
+    "originMain": "742a76c1bcf81dadab774aca663589c39a464858",
+    "freezeMethod": "APFS clone (cp -Rc) of the live checkout at 15:32:26 after a concurrent commit (742a76c, pushed by another session at 15:31:29) landed the p1-final-wire work with a replay-consistency fix. Stray docs/execution/scratch_c12.bak and apps/web/ (disabled B42, not a workspace package) removed from the clone; zero modified/untracked files remained.",
+    "testedDigest": "sha256:ac113962a3abc27dabeb74cdc9924b4e79c4f1b32cd3fa75c5c4e52c5ba28f9f",
+    "digestMethod": "sha256 of the HEAD sha line; clean tree at test time",
     "contractVersion": "dx.contracts.v1",
     "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+    "contractNote": "packages/core/src/dx/contracts and model unchanged vs 1439ef3",
     "cliDistSha256": "4c39549492a2d28c4a53e3de4e0641fe9b154a91f0e6f81aa57099a01b430ba6",
-    "installerSha256": "4bc956fda622e1946ccee0a42424853a6b0dd86657f1f659d592f71e0245b2c4"
+    "installerSha256": "4bc956fda622e1946ccee0a42424853a6b0dd86657f1f659d592f71e0245b2c4",
+    "note": "742a76c also swept in an earlier draft of this receipt (docs/execution/phases/g04.json); this version supersedes it."
   },
   "disposition": {
     "excluded": [
       {
-        "item": "p1-final-wire (staged in the live checkout: apps/cli/src/dft-render.ts, apps/cli/src/dft.ts, packages/core/src/dx/chats/capability.ts, packages/core/src/dx/correlation/branch-at-time/snapshot.ts, packages/core/src/dx/history/capability.ts, packages/core/src/dx/reports/analyze/select.ts, packages/core/test/dx/p1-final-wire.test.ts, docs/execution/nodes/p1-final-wire.md)",
-        "reason": "fence exit 1: packages/core/test/dx/integration/a07-rebuild.test.ts:226 pinned-snapshot metric hash != first-analysis hash (expected 69759cfb..., received de67d68a...). Same regression G03 saw with the earlier D8 wiring. A pinned snapshot must replay identical metrics; that is the restart guarantee this gate checks. Handoff has no .json receipt and did not run a07-rebuild.",
-        "state": "left staged and untouched in the live checkout; not released"
+        "item": "apps/web/",
+        "reason": "B42 disabled optional web drilldown; not a workspace package; untracked, not committed"
       },
-      { "item": "apps/web/", "reason": "B42 disabled optional web drilldown; not a workspace package" },
-      { "item": "docs/execution/scratch_c12.bak", "reason": "stray scratch file" }
-    ]
+      {
+        "item": "docs/execution/scratch_c12.bak",
+        "reason": "stray scratch file; untracked, not committed"
+      }
+    ],
+    "history": "Attempt A (15:26, live freeze with the earlier staged p1-final-wire) failed the fence: a07-rebuild.test.ts:226 pinned-snapshot metric hash mismatch. Attempt B (15:27) re-fenced clean 1439ef3: exit 0, rehearsal as below. 742a76c then landed with 'replaying a snapshot by id runs the same attribution pipeline as a fresh analyze'; attempt C fenced it: exit 0 including a07-rebuild."
   },
   "enabledModules": {
-    "note": "Unchanged from G03 (same commit).",
-    "ready": ["a01","a02","a03","a04","a05","a06","a09","b01","b02","b03","b04","b06","b20","b22","b23","b24","b26","b27","b28","b30","b34","b35","b36","b37","b38","b39","b40","flight-time","auto-usage","npm-package","p1-prices","p1-history","p1-wire"],
-    "degraded": ["a07","a08","b05","b07","b08","b10","b11","b12","b13","b14","b21","b31","b46","b48","backfill","p1-chats"],
-    "disabled": ["b09","b33","b41","b42","b43","b44","b45","p1-final-wire"]
+    "note": "G03 set plus p1-final-wire promoted (replay-consistent fix verified by a07-rebuild in the exit-0 fence).",
+    "ready": [
+      "a01",
+      "a02",
+      "a03",
+      "a04",
+      "a05",
+      "a06",
+      "a09",
+      "b01",
+      "b02",
+      "b03",
+      "b04",
+      "b06",
+      "b20",
+      "b22",
+      "b23",
+      "b24",
+      "b26",
+      "b27",
+      "b28",
+      "b30",
+      "b34",
+      "b35",
+      "b36",
+      "b37",
+      "b38",
+      "b39",
+      "b40",
+      "flight-time",
+      "auto-usage",
+      "npm-package",
+      "p1-prices",
+      "p1-history",
+      "p1-wire",
+      "p1-final-wire"
+    ],
+    "degraded": [
+      "a07",
+      "a08",
+      "b05",
+      "b07",
+      "b08",
+      "b10",
+      "b11",
+      "b12",
+      "b13",
+      "b14",
+      "b21",
+      "b31",
+      "b46",
+      "b48",
+      "backfill",
+      "p1-chats"
+    ],
+    "disabled": [
+      "b09",
+      "b33",
+      "b41",
+      "b42",
+      "b43",
+      "b44",
+      "b45"
+    ]
   },
   "commands": [
     {
       "name": "fence attempt A (live freeze incl. staged p1-final-wire)",
-      "argv": ["pnpm","exec","turbo","run","check","test","build","--continue"],
+      "argv": [
+        "pnpm",
+        "exec",
+        "turbo",
+        "run",
+        "check",
+        "test",
+        "build",
+        "--continue"
+      ],
       "cwd": "<gate scratchpad>/g04clone",
       "at": "15:26:30-15:26:57",
       "exit": 1,
@@ -45,45 +118,159 @@
       "superseded": true
     },
     {
-      "name": "fence (released candidate = clean 1439ef3)",
-      "argv": ["pnpm","exec","turbo","run","check","test","build","--continue"],
+      "name": "fence attempt B (clean 1439ef3, fallback artifact)",
+      "argv": [
+        "pnpm",
+        "exec",
+        "turbo",
+        "run",
+        "check",
+        "test",
+        "build",
+        "--continue"
+      ],
       "cwd": "<gate scratchpad>/g04clone",
       "at": "15:27:09-15:27:38",
       "exit": 0,
       "result": "18/18 tasks successful; capability 72/72, devtools 19/19, cli 20/20, core 70 files 567 passed + 3 expected-fail. Includes c13 installer merge/backup/uninstall fixture (4 tests) and a07-rebuild fresh-store rebuild (same metrics)."
     },
     {
-      "name": "real Cursor rehearsal on the released candidate (C17 script)",
-      "argv": ["/Users/satan/bin/owned-temp-dir","--run","g04-c17","--","bash","docs/execution/c17/run.sh"],
+      "name": "real Cursor rehearsal on 1439ef3 (C17 script)",
+      "argv": [
+        "/Users/satan/bin/owned-temp-dir",
+        "--run",
+        "g04-c17",
+        "--",
+        "bash",
+        "docs/execution/c17/run.sh"
+      ],
       "env": "C17_OUT=<gate scratchpad>/c17out-g04",
       "at": "15:27:59-15:29:12",
       "exit": 1,
-      "steps": {"install":0,"cursor-agent run 1":1,"cursor-agent run 2":1,"collect-git":0,"collect-hooks":0,"collect-cli":0,"collect-test-operator":1,"collect-gitobs":0,"collect-transcripts-imported":0,"recollect-cli":0,"analyze1":0,"analyze2-same-snapshot (fresh process)":0,"explain-snapshot":0,"evidence-follow":0,"status":0,"uninstall":0},
+      "steps": {
+        "install": 0,
+        "cursor-agent run 1": 1,
+        "cursor-agent run 2": 1,
+        "collect-git": 0,
+        "collect-hooks": 0,
+        "collect-cli": 0,
+        "collect-test-operator": 1,
+        "collect-gitobs": 0,
+        "collect-transcripts-imported": 0,
+        "recollect-cli": 0,
+        "analyze1": 0,
+        "analyze2-same-snapshot (fresh process)": 0,
+        "explain-snapshot": 0,
+        "evidence-follow": 0,
+        "status": 0,
+        "uninstall": 0
+      },
       "result": "Script exit 1 comes from cursor-agent (usage limit) and the operator junit step (no agent edit), not from the recorder."
     },
     {
       "name": "cursor-agent failure probe",
-      "argv": ["cursor-agent","-p","--output-format","stream-json","--trust","Reply with the word ok only."],
+      "argv": [
+        "cursor-agent",
+        "-p",
+        "--output-format",
+        "stream-json",
+        "--trust",
+        "Reply with the word ok only."
+      ],
       "at": "15:29:22-15:29:26",
       "exit": 1,
       "result": "stderr: ActionRequiredError: You've hit your usage limit. `cursor-agent status`: logged in. Probe dir deleted."
     },
     {
-      "name": "C15 claims audit on this digest's live flight",
-      "argv": ["bash","docs/execution/c15/audit-claims.sh","<scratch>/g04-analyze1.json","<scratch>/g04-explain-snapshot.json","live"],
+      "name": "C15 claims audit on 1439ef3 live flight",
+      "argv": [
+        "bash",
+        "docs/execution/c15/audit-claims.sh",
+        "<scratch>/g04-analyze1.json",
+        "<scratch>/g04-explain-snapshot.json",
+        "live"
+      ],
       "cwd": "<gate scratchpad>/g04clone",
       "at": "15:30",
       "exit": 1,
       "result": "13 pass, 1 fail. FAIL 'live flight contains live-origin evidence' (originMix {imported:7}): with the model turn blocked, no cursor-cli usage line exists, so no live-origin event was recorded. All honesty checks pass: null metrics carry reasons, no valued unavailable metric, estimates labelled method=estimated with method=, source values cite evidence, no savings/productivity/human-waiting metric, no AI ownership without lineage, branch age/active/agent time separate, partial sources named, shipped source has no causal copy."
+    },
+    {
+      "name": "fence attempt C (released candidate = clean 742a76c)",
+      "argv": [
+        "pnpm",
+        "exec",
+        "turbo",
+        "run",
+        "check",
+        "test",
+        "build",
+        "--continue"
+      ],
+      "cwd": "<gate scratchpad>/g04clone",
+      "at": "15:32:26-15:32:32",
+      "exit": 0,
+      "result": "18/18 tasks successful (12 turbo cache hits: identical inputs were executed at 15:31 by the lefthook pre-commit check+test run on this same tree, which also exited 0); capability 72/72, devtools 19/19, cli 20/20, core 71 files 570 passed + 3 expected-fail, including a07-rebuild, p1-final-wire and c13 installer fixture."
+    },
+    {
+      "name": "real Cursor rehearsal on 742a76c (C17 script)",
+      "argv": [
+        "/Users/satan/bin/owned-temp-dir",
+        "--run",
+        "g04-c17b",
+        "--",
+        "bash",
+        "docs/execution/c17/run.sh"
+      ],
+      "env": "C17_OUT=<gate scratchpad>/c17out-g04b",
+      "at": "15:32:41-15:32:54",
+      "exit": 1,
+      "steps": {
+        "install": 0,
+        "cursor-agent run 1": 1,
+        "cursor-agent run 2": 1,
+        "collect-git": 0,
+        "collect-hooks": 0,
+        "collect-cli": 0,
+        "collect-test-operator": 1,
+        "collect-gitobs": 0,
+        "collect-transcripts-imported": 0,
+        "recollect-cli": 0,
+        "analyze1": 0,
+        "analyze2-same-snapshot (fresh process)": 0,
+        "explain-snapshot": 0,
+        "evidence-follow": 0,
+        "status": 0,
+        "uninstall": 0
+      },
+      "result": "Script exit 1 from cursor-agent (usage limit) and operator junit (no agent edit), not from the recorder. recorder_head 742a76c, dirty paths 0."
+    },
+    {
+      "name": "C15 claims audit on 742a76c live flight",
+      "argv": [
+        "bash",
+        "docs/execution/c15/audit-claims.sh",
+        "<scratch>/g04b-analyze1.json",
+        "<scratch>/g04b-explain-snapshot.json",
+        "live"
+      ],
+      "at": "15:32:55",
+      "exit": 1,
+      "result": "13 pass, 1 fail: 'live flight contains live-origin evidence' (originMix {imported:7}); same cause as attempt B. All honesty checks pass."
     }
   ],
   "restartRehearsal": {
-    "snapshotId": "snap_7a7c81c3109ec4e50ae892911caf26f2",
-    "method": "analyze1 creates the snapshot; analyze2 is a separate node process reopening the same SQLite store with --snapshotId; explain and evidence follow run in further processes",
+    "snapshotId": "snap_aa297ab1cd87f4a07d01a6fa3a02d292",
+    "method": "analyze1 creates the snapshot; analyze2 is a separate node process reopening the same SQLite store with --snapshotId; explain and evidence follow in further processes",
     "metricsEqual": true,
-    "metricsSha256Prefix": "c1734f8862fa3a58",
+    "metricsSha256Prefix": "29628fd0fda8c10a",
     "evidenceFollowed": 5,
-    "fixtureRebuild": "a07-rebuild in the fence: fresh store rebuild yields the same metric hash"
+    "fixtureRebuild": "a07-rebuild in the exit-0 fence: pinned snapshot replays the first analysis and a fresh store rebuilds the same metric hash",
+    "fallbackArtifact": {
+      "commit": "1439ef3",
+      "snapshotId": "snap_7a7c81c3109ec4e50ae892911caf26f2",
+      "metricsEqual": true
+    }
   },
   "installerRehearsal": {
     "install": "exit 0; project-level .cursor/mcp.json, .cursor/hooks.json, 2 skills, .git/info/exclude in the scratch demo repo",
@@ -95,14 +282,14 @@
     "client": "cursor-agent 2026.09.28-64d2043 (logged in; account usage limit reached)",
     "node": "v24.18.0",
     "branch": "scratch demo repo branch in owned temp dir (deleted by wrapper)",
-    "snapshotId": "snap_7a7c81c3109ec4e50ae892911caf26f2",
+    "snapshotId": "snap_aa297ab1cd87f4a07d01a6fa3a02d292",
     "observed": {
-      "dx.flight.agent.ms": 8904,
-      "dx.flight.active.ms": 14875,
+      "dx.flight.agent.ms": 5532,
+      "dx.flight.active.ms": 6234,
       "dx.flight.active.intervals": 1,
-      "dx.flight.branch-age.ms": 57158,
+      "dx.flight.branch-age.ms": 10023,
       "dx.git.commits": 0,
-      "hookSpoolFiles": 2,
+      "hookSpoolFiles": 4,
       "transcriptFound": true,
       "tokens": "unavailable (cursor-agent usage limit; no result line)",
       "money": "unavailable (no source charge; price-table estimate unavailable without token readings)"
@@ -115,7 +302,7 @@
   },
   "coverage": {
     "git": "live",
-    "cursorHooks": "live capture (2 spool files, recorded with origin=imported via spool collection)",
+    "cursorHooks": "live capture (4 spool files, recorded with origin=imported via spool collection)",
     "cursorCliUsage": "none this run (usage limit); route verified on earlier digests",
     "localTests": "operator junit absent this run (agent made no change); local-test collector covered by fence tests",
     "ciPr": "out of scope"
@@ -124,19 +311,15 @@
     "No live token/cost observation on the released digest: Cursor account usage limit.",
     "Claims audit live-origin check exit 1 for the same reason; do not present this flight as live token capture.",
     "Tool-call count flagged overcounted by C15 (24 vs 12); do not quote it.",
-    "Money per branch: source charges only via imported usage exports/dashboard; the account's $3.53 Auto usage stays unattributed until D8/session join (p1-final-wire) is fixed and released.",
-    "Cursor IDE MCP analyze/explain operator observation pending."
+    "Cursor IDE MCP analyze/explain operator observation pending.",
+    "Money per branch: source charges come only from imported usage exports/dashboard rows; the account's Auto usage joins a branch only when its session id matches a local event (p1-final-wire account join), otherwise it stays 'account (unattributed)'.",
+    "Fence attempt C relied on turbo cache replay of the 15:31 pre-commit run for identical inputs."
   ],
   "blockers": [
     {
-      "owner": "p1-final-wire",
-      "problem": "D8 retroactive reattribution breaks pinned-snapshot reproducibility: a07-rebuild.test.ts:226 metric hash mismatch.",
-      "fix": "Make selectAnalyzeSnapshot apply reattribution only when building a new snapshot (or persist the reattributed events/attribution into the snapshot) so --snapshotId replays the stored metrics unchanged; rerun a07-rebuild plus the full fence before a new gate."
-    },
-    {
       "owner": "operator (Cursor account)",
-      "problem": "cursor-agent refuses model turns: usage limit reached.",
-      "fix": "After the limit resets, rerun C17_OUT=<dir> /Users/satan/bin/owned-temp-dir --run c17 -- bash docs/execution/c17/run.sh and the C15 audit with label live on 1439ef3."
+      "problem": "cursor-agent refuses model turns: usage limit reached, so no token/cost observation and no live-origin event on the released digest.",
+      "fix": "After the limit resets, rerun C17_OUT=<dir> /Users/satan/bin/owned-temp-dir --run c17 -- bash docs/execution/c17/run.sh on 742a76c and the C15 audit with label live; record tokens/cost in a G04 addendum."
     }
   ]
 }
