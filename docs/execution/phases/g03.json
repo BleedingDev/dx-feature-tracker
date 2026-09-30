@@ -1,0 +1,256 @@
+{
+ "gate": "G03",
+ "attempt": 1,
+ "milestone": "P3 bounded disposition: v1 (G02) plus promoted optional routes that pass the fence (npm-publishable dft package outside the workspace, observed-model price-catalog expansion with fast-tier slug fix and live-catalog price provider for dft, account-row history header); in-flight D8 retroactive-attribution wiring excluded",
+ "verdict": "pass",
+ "verdictScope": "degraded-live pass, same Cursor posture as G02. Whole-workspace fence exit 0 on the frozen, disposed candidate; C17 real Cursor flight re-run on this candidate: project hooks installed, cursor-agent invoked, 4 hook spool files collected through the built CLI, analyze/explain/evidence-follow exit 0 on one snapshot with identical metrics on re-analysis, user ~/.cursor/hooks.json unchanged. cursor-agent exited 1 twice with no result line (same outcome as G01/G02, attributed there to the Cursor free-plan usage limit; not re-diagnosed here), so no token-bearing turn was observed on this digest: tokens/money stay unavailable with reasons. CI/PR evidence out of scope by product decision.",
+ "decidedAt": "2026-09-30T15:26+02:00",
+ "deadline": {
+  "hardStop": "2026-09-30T15:47+02:00",
+  "freezeAt": "15:21:05",
+  "note": "2-hour override; frozen after the optional cut (15:02) and the correctness-only cut (15:17); no optional producer was waited on"
+ },
+ "candidate": {
+  "baseCommit": "ec8f6000e9d9608e75a0d5fc1ebe633ad0b8eac6",
+  "freezeMethod": "APFS clone (cp -Rc) of the live checkout into the gate scratchpad at 15:21:05, then disposition applied in the clone only (live checkout untouched): docs/demo/phase1-demo.md re-formatted with oxfmt (byte-identical to HEAD again, same repair as G02); in-flight D8 wiring reverted to HEAD (see disposition.excluded); stray docs/execution/scratch_c12.bak removed from the candidate.",
+  "testedDigest": "sha256:f07a60f6bf505c74a9465066069dad61a0243bf4c5fd126fd729a7c1340663fb",
+  "digestMethod": "sha256 of (HEAD sha line + `shasum -a 256` lines of sorted modified+untracked non-ignored files), computed in the clone after disposition and immediately before the exit-0 fence",
+  "contractVersion": "dx.contracts.v1",
+  "contractDigest": "sha256:b9623bd4bb6a9b20598a6f0186930153fdf4be77ff40545e03b8e0ba153eb090",
+  "contractNote": "packages/core/src/dx/contracts and model unchanged vs ec8f600",
+  "commitContents": "the disposed candidate's tracked changes plus docs/execution/nodes/npm-package.md and this receipt, committed from the frozen clone",
+  "excludedFromCommit": [
+   "apps/web/ (B42 disabled optional web drilldown; no package.json, not a workspace package)",
+   "docs/execution/scratch_c12.bak",
+   "packages/dft-npm/dist (gitignored build output)",
+   "all D8 wiring listed in disposition.excluded",
+   "post-freeze live edits (docs/execution/nodes/p1-final-wire.md, packages/core/test/dx/p1-final-wire.test.ts and any later edits)"
+  ]
+ },
+ "disposition": {
+  "promoted": [
+   {
+    "route": "npm-package",
+    "receipt": "docs/execution/nodes/npm-package.md",
+    "files": [
+     "packages/dft-npm/{package.json,README.md,LICENSE,scripts/bundle.sh}",
+     "pnpm-workspace.yaml (!packages/dft-npm)",
+     ".gitignore",
+     "apps/cli/src/dft-skills.ts"
+    ],
+    "state": "ready (not published)"
+   },
+   {
+    "route": "p1-final-wire price subset (D10/D11 + fast-tier slug)",
+    "receipt": "docs/execution/nodes/p1-final-wire.md (live, post-freeze)",
+    "files": [
+     "packages/core/src/dx/metrics/cost/price-catalog/observed.ts",
+     "packages/core/src/dx/metrics/cost/price-catalog/slug.ts",
+     "packages/core/src/dx/registry/registry.ts",
+     "packages/core/src/dx/index.ts",
+     "apps/cli/src/dft.ts",
+     "apps/cli/src/dft-render.ts"
+    ],
+    "state": "ready; estimates stay labelled price-table:<id>@<version>"
+   }
+  ],
+  "excluded": [
+   {
+    "route": "p1-final-wire D8 retroactive attribution in analyze/explain/history/chats",
+    "files": [
+     "packages/core/src/dx/reports/analyze/select.ts",
+     "packages/core/src/dx/chats/capability.ts",
+     "packages/core/src/dx/history/capability.ts",
+     "packages/core/src/dx/correlation/branch-at-time/snapshot.ts"
+    ],
+    "reason": "Breaks the P1 immutable-snapshot-reuse regression: fence attempt 1 on the unmodified freeze failed core test test/dx/integration/a07-rebuild.test.ts (pinned snapshotId re-analysis metric hash edd36c68... != latest ef9045cb...), because latest/as-of analyze re-attributes events while getSnapshot(pinned) replays the stored filter (the handoff lists this as a known gap). history/capability.ts was reverted whole, so dx_history also runs without the observed-model price expansion in this candidate.",
+    "owner": "p1-final-wire (backfill D8 wiring)"
+   }
+  ],
+  "disabledStillDisabled": [
+   "b09",
+   "b33",
+   "b41",
+   "b42",
+   "b43",
+   "b44",
+   "b45"
+  ],
+  "staleDescriptorCheck": "No descriptor references excluded code: snapshot.ts has no descriptor and branch-at-time historicalBranchDescriptor stays exported, not registered (backfill handoff)."
+ },
+ "enabledModules": {
+  "note": "G02 set plus the promoted routes above; registry descriptors unchanged.",
+  "ready": [
+   "a01",
+   "a02",
+   "a03",
+   "a04",
+   "a05",
+   "a06",
+   "a09",
+   "b01",
+   "b02",
+   "b03",
+   "b04",
+   "b06",
+   "b20",
+   "b22",
+   "b23",
+   "b24",
+   "b26",
+   "b27",
+   "b28",
+   "b30",
+   "b34",
+   "b35",
+   "b36",
+   "b37",
+   "b38",
+   "b39",
+   "b40",
+   "flight-time",
+   "auto-usage",
+   "npm-package",
+   "p1-prices",
+   "p1-history",
+   "p1-wire"
+  ],
+  "degraded": [
+   "a07",
+   "a08",
+   "b05",
+   "b07",
+   "b08",
+   "b10",
+   "b11",
+   "b12",
+   "b13",
+   "b14",
+   "b21",
+   "b31",
+   "b46",
+   "b48",
+   "backfill",
+   "p1-chats"
+  ],
+  "disabled": [
+   "b09",
+   "b33",
+   "b41",
+   "b42",
+   "b43",
+   "b44",
+   "b45"
+  ],
+  "validators": {
+   "ready": [
+    "c01",
+    "c02",
+    "c03",
+    "c06",
+    "c07",
+    "c08",
+    "c09",
+    "c10",
+    "c12",
+    "c13",
+    "c14",
+    "c15",
+    "c17"
+   ],
+   "degraded": [
+    "c05",
+    "c16"
+   ]
+  }
+ },
+ "commands": [
+  {
+   "name": "fence attempt 1 (frozen live freeze, before disposition)",
+   "argv": [
+    "pnpm",
+    "exec",
+    "turbo",
+    "run",
+    "check",
+    "test",
+    "build",
+    "--continue"
+   ],
+   "cwd": "<gate scratchpad>/g03clone",
+   "at": "15:21:17-15:21:45",
+   "exit": 1,
+   "result": "17/18 tasks ok; @rat-stack/core#test 1 failed | 566 passed | 3 expected fail: a07-rebuild pinned-vs-latest metric hash mismatch",
+   "superseded": true
+  },
+  {
+   "name": "fence (disposed frozen candidate)",
+   "argv": [
+    "pnpm",
+    "exec",
+    "turbo",
+    "run",
+    "check",
+    "test",
+    "build",
+    "--continue"
+   ],
+   "cwd": "<gate scratchpad>/g03clone",
+   "at": "15:23:01-15:23:29",
+   "exit": 0,
+   "result": "18/18 tasks successful; //#lint 0 warnings 0 errors; capability 72/72, devtools 19/19, cli 20/20, core 70 files 567 passed + 3 expected-fail"
+  },
+  {
+   "name": "C17 real Cursor flight on the disposed candidate",
+   "argv": [
+    "/Users/satan/bin/owned-temp-dir",
+    "--run",
+    "g03-c17",
+    "--",
+    "bash",
+    "docs/execution/c17/run.sh"
+   ],
+   "env": "C17_OUT=<gate scratchpad>/c17out",
+   "at": "15:23:34-15:23:48",
+   "exit": 1,
+   "result": "install 0, cursor-agent 1 and 1 (no result line), spool_files 4, collect-git 0, collect-hooks 0, collect-cli 0 (0 usage items; gap run-without-result), collect-test-operator 1 (operator test junit absent because agent made no change), collect-gitobs 0, collect-transcripts-imported 0, recollect-cli 0, analyze1 0, analyze2-same-snapshot 0 (metrics identical), explain-snapshot 0, evidence-follow 0 (5 evidence ids), status 0, uninstall 0; user ~/.cursor/hooks.json byte-identical before/after; temp dir cleaned by wrapper. Script exit 1 reflects the cursor-agent/operator steps, not the recorder."
+  }
+ ],
+ "cursorEvidence": {
+  "client": "cursor-agent 2026.09.28-64d2043",
+  "node": "v24.18.0",
+  "cliDistSha256": "4c39549492a2d28c4a53e3de4e0641fe9b154a91f0e6f81aa57099a01b430ba6",
+  "installerSha256": "4bc956fda622e1946ccee0a42424853a6b0dd86657f1f659d592f71e0245b2c4",
+  "branch": "feature/c17-real-flight (scratch demo repo in owned temp dir)",
+  "snapshotId": "snap_692219827e95ab2e349abdf8e4ef1b4c",
+  "observed": {
+   "dx.flight.active.ms": 6971,
+   "dx.flight.agent.ms": 6096,
+   "dx.flight.active.intervals": 1,
+   "dx.flight.branch-age.ms": 11480,
+   "dx.git.commits": 0,
+   "tokens": "unavailable (no result line from cursor-agent)",
+   "money": "unavailable (cursor-agent reports no charge; no source charge observed)"
+  },
+  "tokenRoute": "B10 cursor-cli stream token capture rests on C17's earlier real run (14:48, exit 0, 22150 input / 1275 output / 153984 cached tokens), as in G02; not re-observed on this digest",
+  "pendingObservation": [
+   "token-bearing cursor-agent turn on this digest (blocked by cursor-agent exit 1)",
+   "interactive Cursor IDE MCP analyze/explain by an operator"
+  ]
+ },
+ "coverage": {
+  "git": "live",
+  "cursorHooks": "live (4 spool files)",
+  "cursorCliUsage": "route verified earlier; none this run",
+  "localTests": "operator junit absent this run",
+  "ciPr": "out of scope"
+ },
+ "gaps": [
+  "D8 retroactive attribution not in the candidate until pinned-snapshot replay applies the same reattribution (or a07 is deliberately re-specified by its owner)",
+  "dx_history in this candidate does not expand the price table with observed model slugs (that edit lived in the excluded history/capability.ts)",
+  "dft analyze may fetch models.dev/litellm price catalogs over the network when no prices.json exists; falls back to cache then the bundled table",
+  "surfaces.ts (MCP) still uses the bundled price table",
+  "No token-bearing Cursor turn on this digest"
+ ],
+ "blockers": []
+}

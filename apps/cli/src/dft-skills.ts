@@ -7,8 +7,13 @@ export interface DftSkill {
   readonly name: string;
 }
 
-export const skillsSourceDir = (): string =>
-  path.resolve(import.meta.dirname, "..", "..", "..", ".cursor", "skills");
+export const skillsSourceDir = (): string => {
+  const bundled = path.resolve(import.meta.dirname, "skills");
+
+  return existsSync(bundled)
+    ? bundled
+    : path.resolve(import.meta.dirname, "..", "..", "..", ".cursor", "skills");
+};
 
 export const loadSkills = (
   dir: string = skillsSourceDir()

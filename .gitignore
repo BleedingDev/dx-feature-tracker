@@ -25,3 +25,7 @@ BRAIN.md
 .env.*.local
 env.d.ts
 apps/mischief/src/bundled-content.generated.ts
+
+# dx-feature-tracker npm bundle
+packages/dft-npm/dist/
+*.tgz

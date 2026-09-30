@@ -45,6 +45,8 @@ export {
 
 export type { UserPriceTableLoad } from "./metrics/cost/price-tables/defaults.js";
 
+export { defaultPriceProvider } from "./metrics/cost/price-catalog/provider.js";
+
 export {
   contextForRepo,
   dxStoreLayer,

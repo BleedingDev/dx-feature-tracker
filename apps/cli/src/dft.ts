@@ -12,6 +12,7 @@ import {
   buildRegistry,
   contextForRepo,
   defaultCostOptions,
+  defaultPriceProvider,
   dxStoreLayer,
   formatSyncLine,
   loadUserPriceTable,
@@ -116,7 +117,21 @@ const dftSession = (flags: ReportFlags) =>
       yield* Console.error(selection.warning);
     }
 
-    const costOptions = defaultCostOptions(userTable);
+    const costOptions =
+      userTable.kind === "loaded"
+        ? defaultCostOptions(userTable)
+        : yield* defaultPriceProvider(paths.home).pipe(
+            Effect.tap((provider) =>
+              Console.error(provider.warnings.join("\n")).pipe(
+                Effect.when(Effect.succeed(provider.warnings.length > 0))
+              )
+            ),
+            Effect.map((provider) => ({
+              priceTable: provider.table,
+              subscription: null,
+            }))
+          );
+
     const now = yield* DateTime.now;
     const from = yield* resolveSince(flags.since, DateTime.toEpochMillis(now));
     const registry = buildRegistry(allCollectors, metricsWithCost(costOptions));

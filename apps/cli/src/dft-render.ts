@@ -31,7 +31,9 @@ export const usageLines = (row: FlightHistoryRow): readonly string[] => [
 ];
 
 export const rowHeader = (row: FlightHistoryRow): string =>
-  `${row.branch ?? "(no branch)"} [${row.status.value}] ${row.repoCommonDir ?? "(no repo)"} last ${row.lastActivityAt ?? "unknown"}`;
+  row.repoCommonDir === null
+    ? `account (unattributed) last ${row.lastActivityAt ?? "unknown"}`
+    : `${row.branch ?? "(no branch)"} [${row.status.value}] ${row.repoCommonDir} last ${row.lastActivityAt ?? "unknown"}`;
 
 export const historyText = (rows: readonly FlightHistoryRow[]): string =>
   rows.length === 0

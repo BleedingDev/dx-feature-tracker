@@ -39,7 +39,17 @@ export const candidateIds = (slug: string): readonly string[] => {
     ? [base.replace(/(?<major>\d)-(?<minor>\d)/u, "$<major>.$<minor>")]
     : [];
 
-  return [...new Set([base, dashed, ...claude, ...dotted])];
+  const ids = [...new Set([base, dashed, ...claude, ...dotted])];
+
+  const fast = slug
+    .trim()
+    .toLowerCase()
+    .replace(/\[[^\]]*\]$/u, "")
+    .slice(base.length)
+    .split("-")
+    .includes("fast");
+
+  return fast ? ids.map((id) => `${id}-fast`) : ids;
 };
 
 export const matchSlug = (

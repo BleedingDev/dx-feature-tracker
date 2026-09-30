@@ -30,6 +30,7 @@ import { repoCorrelationDescriptor } from "../correlation/repo/descriptor.js";
 import { mcpQueryHandlersDescriptor } from "../mcp/handlers/descriptor.js";
 import { aiUsageMetric } from "../metrics/ai-usage/metric.js";
 import * as CostMetric from "../metrics/cost/metric.js";
+import { withObservedModels } from "../metrics/cost/price-catalog/observed.js";
 import { flightTimeMetric } from "../metrics/flight-time/metric.js";
 import { frictionMetric } from "../metrics/friction/metric.js";
 import { gitChurnMetric } from "../metrics/git/metric.js";
@@ -87,7 +88,13 @@ export const metricsWithCost = (
 ): readonly DxMetric[] =>
   metrics.map((metric) =>
     metric === CostMetric.costMetric
-      ? CostMetric.makeCostMetric(options)
+      ? {
+          ...CostMetric.makeCostMetric(options),
+          compute: (snapshot) =>
+            CostMetric.makeCostMetric(
+              withObservedModels(options, snapshot.events)
+            ).compute(snapshot),
+        }
       : metric
   );
 
