@@ -14,7 +14,7 @@ Run `dft --help` or `dft <command> --help` for the full flag list.
 ## Install
 
 ```sh
-npm i -g dx-feature-tracker
+npm i -g https://github.com/BleedingDev/dx-feature-tracker/releases/latest/download/dx-feature-tracker.tgz
 dft --help
 ```
 
