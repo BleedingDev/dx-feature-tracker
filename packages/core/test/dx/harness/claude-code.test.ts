@@ -1,7 +1,9 @@
 // @effect-diagnostics nodeBuiltinImport:off -- The Claude Code fixture tier builds owned temp homes (symlinked and XDG project folders) with node:fs.
 import {
+  cpSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -481,6 +483,120 @@ describe("Claude Code session discovery", () => {
         })
       )
     )
+  );
+});
+
+const orchestratorId = "24ae293e-278a-483e-a09d-62c57aa4728e";
+
+const fixtureFolder = path.join(
+  fixtureHome,
+  "projects",
+  "-home-user-work-claude-code"
+);
+
+const orchestratorHome = path.join(tempHome, "orchestrator");
+
+const orchestratorFolder = path.join(
+  orchestratorHome,
+  "projects",
+  "-home-user-work-claude-code"
+);
+
+const writeOrchestratorMain = () => {
+  mkdirSync(orchestratorFolder, { recursive: true });
+  writeFileSync(
+    path.join(orchestratorFolder, `${orchestratorId}.jsonl`),
+    readFileSync(path.join(fixtureFolder, `${orchestratorId}.jsonl`), "utf-8")
+      .replaceAll(
+        /\{"type":"tool_use","id":"[^"]+","name":"Bash","input":\{"command":"cd \.\/repo"\}\}/gu,
+        '{"type":"text","text":"synthetic text"}'
+      )
+      .replaceAll(`"cwd":"${repo}"`, `"cwd":"${work}"`)
+  );
+};
+
+const writeOrchestratorSubagents = () => {
+  cpSync(
+    path.join(fixtureFolder, orchestratorId),
+    path.join(orchestratorFolder, orchestratorId),
+    { recursive: true }
+  );
+};
+
+const orchestratorHarness = claudeAt("/home/user", {
+  CLAUDE_CONFIG_DIR: orchestratorHome,
+});
+
+const readOrchestrator = (scope: HarnessScope, cursors: Map<string, string>) =>
+  Effect.gen(function* readOrchestratorFamily() {
+    const harness = yield* ClaudeCodeHarness;
+    const refs = yield* harness.locate(scope);
+    const events: DxEventEnvelope[] = [];
+
+    for (const ref of refs) {
+      const prior = cursors.get(ref.id);
+
+      const batch = yield* harness.read(ref, {
+        context:
+          scope.worktrees.length === 0 ? emptyFlightContext : repoContext,
+        cursor:
+          prior === undefined
+            ? null
+            : { adapterId: "claude-code", value: prior },
+        origin: "fixture",
+      });
+
+      if (batch.cursor !== null) {
+        cursors.set(ref.id, batch.cursor.value);
+      }
+
+      events.push(...batch.events);
+    }
+
+    return events;
+  }).pipe(Effect.provide(orchestratorHarness));
+
+const requestKeys = (events: readonly DxEventEnvelope[]) =>
+  events
+    .flatMap((event) =>
+      event.kind === "ai.usage" ? [event.usage?.requestKey ?? ""] : []
+    )
+    .toSorted();
+
+describe("Claude Code orchestrator outside the repo", () => {
+  it.effect(
+    "keeps every request of a parent-folder family once any of its requests points into the repo",
+    () =>
+      Effect.gen(function* orchestratorKept() {
+        rmSync(orchestratorHome, { force: true, recursive: true });
+        writeOrchestratorMain();
+
+        const cursors = new Map<string, string>();
+
+        expect(
+          requestKeys(yield* readOrchestrator(scopeOf(repo), cursors))
+        ).toStrictEqual([]);
+
+        writeOrchestratorSubagents();
+
+        const scoped = yield* readOrchestrator(scopeOf(repo), cursors);
+        const all = yield* readOrchestrator(everywhere, new Map());
+
+        expect(
+          all.some(
+            (event) =>
+              event.kind === "ai.usage" &&
+              event.ai?.agentId === null &&
+              (event.ai.touchedPaths ?? []).length === 0
+          )
+        ).toBe(true);
+        expect(requestKeys(scoped)).toStrictEqual(requestKeys(all));
+        expect(
+          scoped.some(
+            (event) => event.kind === "ai.session" && event.usage !== null
+          )
+        ).toBe(true);
+      })
   );
 });
 

@@ -39,7 +39,7 @@ import {
   slugMayHold,
 } from "./paths.js";
 import type { SessionFamily } from "./paths.js";
-import { placePicks, pointingIntoWorktree } from "./placement.js";
+import { anyPointsIntoWorktree, placePicks } from "./placement.js";
 import type { PlacedPick } from "./placement.js";
 import { decodeClaudeLine } from "./rows.js";
 import { scanChunks } from "./scan.js";
@@ -469,10 +469,13 @@ export class ClaudeCodeHarness extends Context.Service<
         return chunk;
       });
 
-    const readSession = (ref: SessionRef, input: ReadInput) =>
-      Effect.gen(function* readClaudeSession() {
-        const files = yield* store.listFamily(ref.path);
-        const prior = readSessionCursor(input.cursor, ref.id);
+    const readFamily = (
+      ref: SessionRef,
+      input: ReadInput,
+      files: readonly StoredSession[],
+      prior: ReadonlyMap<string, FileState>
+    ) =>
+      Effect.gen(function* readClaudeFamily() {
         const now = clock.currentTimeMillisUnsafe();
         const kept: FileState[] = [];
         const chunks: FileChunk[] = [];
@@ -499,10 +502,37 @@ export class ClaudeCodeHarness extends Context.Service<
           store.isRepoRoot
         );
 
-        const placed =
+        return { kept, picked, scan };
+      });
+
+    const readSession = (ref: SessionRef, input: ReadInput) =>
+      Effect.gen(function* readClaudeSession() {
+        const files = yield* store.listFamily(ref.path);
+        const prior = readSessionCursor(input.cursor, ref.id);
+
+        const scoped =
           ref.worktree === null || isOwnFolderFamily(ref.path, ref.worktree)
-            ? picked
-            : pointingIntoWorktree(ref.worktree, store.home, picked);
+            ? null
+            : ref.worktree;
+
+        const first = yield* readFamily(
+          ref,
+          input,
+          files,
+          scoped !== null && prior.pointsIn === null ? new Map() : prior.files
+        );
+
+        const pointsIn =
+          scoped === null ||
+          prior.pointsIn === true ||
+          anyPointsIntoWorktree(scoped, store.home, first.picked);
+
+        const { kept, picked, scan } =
+          pointsIn && prior.pointsIn === false && prior.files.size > 0
+            ? yield* readFamily(ref, input, files, new Map())
+            : first;
+
+        const placed = pointsIn ? picked : [];
 
         const observedAt = DateTime.formatIso(yield* DateTime.now);
 
@@ -522,7 +552,7 @@ export class ClaudeCodeHarness extends Context.Service<
           ...batchOf(
             emitted,
             scan.tally,
-            sessionCursorOf(ref.id, [...kept, ...scan.states])
+            sessionCursorOf(ref.id, [...kept, ...scan.states], pointsIn)
           ),
           unsettled: scan.states.some((state) => state.pending),
         };

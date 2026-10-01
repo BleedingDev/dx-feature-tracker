@@ -66,12 +66,12 @@ const placeEverywhere = (
         : outsideWorktree(pick),
   }));
 
-export const pointingIntoWorktree = (
+export const anyPointsIntoWorktree = (
   worktree: string,
   home: string | null,
   placed: readonly PlacedPick[]
-): readonly PlacedPick[] =>
-  placed.filter(
+): boolean =>
+  placed.some(
     ({ pick, placement }) =>
       placement.context.worktreePath !== null ||
       touchedPaths({ calls: pick.calls, cwd: pick.row.cwd, home }).some(

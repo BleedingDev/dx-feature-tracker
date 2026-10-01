@@ -13,6 +13,7 @@ const FileStateSchema = Schema.Struct({
 
 const SessionCursorSchema = Schema.Struct({
   files: Schema.Array(FileStateSchema),
+  pointsIn: Schema.optional(Schema.Boolean),
   ref: Schema.String,
 });
 
@@ -20,9 +21,17 @@ const decodeSessionCursor = Schema.decodeUnknownOption(
   Schema.fromJsonString(SessionCursorSchema)
 );
 
+export interface SessionCursor {
+  readonly files: ReadonlyMap<string, FileState>;
+  readonly pointsIn: boolean | null;
+}
+
+const NO_CURSOR: SessionCursor = { files: new Map(), pointsIn: null };
+
 export const sessionCursorOf = (
   ref: string,
-  files: readonly FileState[]
+  files: readonly FileState[],
+  pointsIn: boolean
 ): CollectCursor => ({
   adapterId: CLAUDE_CODE_ADAPTER_ID,
   value: JSON.stringify({
@@ -34,6 +43,7 @@ export const sessionCursorOf = (
       size: file.size,
       turnId: file.turnId,
     })),
+    pointsIn,
     ref,
   }),
 });
@@ -41,17 +51,20 @@ export const sessionCursorOf = (
 export const readSessionCursor = (
   cursor: CollectCursor | null,
   ref: string
-): ReadonlyMap<string, FileState> => {
+): SessionCursor => {
   if (cursor === null) {
-    return new Map();
+    return NO_CURSOR;
   }
 
   return Option.match(decodeSessionCursor(cursor.value), {
-    onNone: () => new Map(),
+    onNone: () => NO_CURSOR,
     onSome: (decoded) =>
       decoded.ref === ref
-        ? new Map(decoded.files.map((file) => [file.path, file]))
-        : new Map(),
+        ? {
+            files: new Map(decoded.files.map((file) => [file.path, file])),
+            pointsIn: decoded.pointsIn ?? null,
+          }
+        : NO_CURSOR,
   });
 };
 
