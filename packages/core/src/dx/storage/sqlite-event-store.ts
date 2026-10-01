@@ -1,7 +1,5 @@
 // @effect-diagnostics-next-line nodeBuiltinImport:off -- Event ids and watermarks are sha256 digests from node:crypto.
 import { createHash } from "node:crypto";
-// @effect-diagnostics-next-line nodeBuiltinImport:off -- The store creates its parent directory before opening SQLite.
-import { mkdirSync } from "node:fs";
 // @effect-diagnostics-next-line nodeBuiltinImport:off -- Store directory derives from the resolved store path.
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -28,6 +26,11 @@ import type { SnapshotId } from "../model/ids.js";
 import { SnapshotManifestSchema } from "../model/snapshot.js";
 import type { SnapshotManifest, SnapshotSelector } from "../model/snapshot.js";
 import { STORE_MIGRATIONS, STORE_SCHEMA_VERSION } from "./migrations.js";
+import {
+  ensurePrivateDir,
+  tightenPrivateFile,
+  writePrivateFile,
+} from "./private-files.js";
 import type { StoreKind } from "./store-path.js";
 
 export interface SqliteEventStoreOptions {
@@ -190,8 +193,18 @@ const comparableManifest = (manifest: SnapshotManifest): string =>
     metricDefinitions: [],
   });
 
+const STORE_SIDE_FILES = ["", "-wal", "-shm"] as const;
+
+const keepStorePrivate = (file: string): void => {
+  for (const suffix of STORE_SIDE_FILES) {
+    tightenPrivateFile(`${file}${suffix}`);
+  }
+};
+
 const openDatabase = (options: SqliteEventStoreOptions): DatabaseSync => {
-  mkdirSync(path.dirname(options.path), { recursive: true });
+  ensurePrivateDir(path.dirname(options.path));
+  writePrivateFile(options.path, "", "a");
+  keepStorePrivate(options.path);
 
   const db = new DatabaseSync(options.path, {
     timeout: options.busyTimeoutMs ?? 5000,
@@ -199,6 +212,7 @@ const openDatabase = (options: SqliteEventStoreOptions): DatabaseSync => {
 
   db.exec("PRAGMA journal_mode = WAL");
   db.exec("PRAGMA foreign_keys = ON");
+  keepStorePrivate(options.path);
 
   return db;
 };

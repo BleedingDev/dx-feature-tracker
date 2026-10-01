@@ -1,16 +1,14 @@
 // @effect-diagnostics nodeBuiltinImport:off -- The tracked-repo list is a small JSON file under DFT_HOME, read and replaced with a temp-file rename at the process boundary.
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  renameSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, readFileSync, renameSync } from "node:fs";
 import path from "node:path";
 
 import { Effect, Option, Schema } from "effect";
 
 import { contextForRepo } from "../registry/runtime.js";
+import {
+  ensurePrivateDir,
+  writePrivateFile,
+} from "../storage/private-files.js";
 import { configPath, LiveActionError } from "./home.js";
 import type { LiveHome } from "./home.js";
 
@@ -102,8 +100,8 @@ export const writeLiveConfig = (
       const file = configPath(home);
       const temp = `${file}.${process.pid}.tmp`;
 
-      mkdirSync(home.dftHome, { recursive: true });
-      writeFileSync(
+      ensurePrivateDir(home.dftHome);
+      writePrivateFile(
         temp,
         `${JSON.stringify({ cursorUsageImport: config.cursorUsageImport, repos: config.repos }, null, 2)}\n`
       );

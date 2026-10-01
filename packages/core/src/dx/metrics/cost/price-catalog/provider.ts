@@ -1,9 +1,13 @@
 // @effect-diagnostics nodeBuiltinImport:off -- The price catalog cache lives under ~/.dft/price-catalog and is read and written synchronously at the process boundary.
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import { DateTime, Effect, Option, Schema } from "effect";
 
+import {
+  ensurePrivateDir,
+  writePrivateFile,
+} from "../../../storage/private-files.js";
 import type { PriceBookApi } from "../price-book/book.js";
 import {
   bookFromTimeline,
@@ -81,8 +85,8 @@ export const readCached = (dir: string): readonly Catalog[] => {
 
 const writeCache = (dir: string, catalog: Catalog): string | null => {
   try {
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(cacheFile(dir, catalog), `${JSON.stringify(catalog)}\n`);
+    ensurePrivateDir(dir);
+    writePrivateFile(cacheFile(dir, catalog), `${JSON.stringify(catalog)}\n`);
 
     return null;
   } catch (error) {

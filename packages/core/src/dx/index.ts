@@ -171,6 +171,16 @@ export {
   openSqliteEventStore,
 } from "./storage/sqlite-event-store.js";
 
+export {
+  PRIVATE_DIR_MODE,
+  PRIVATE_FILE_MODE,
+  appendPrivateFile,
+  copyPrivateFile,
+  ensurePrivateDir,
+  tightenPrivateDir,
+  writePrivateFile,
+} from "./storage/private-files.js";
+
 export { resolveStorePath } from "./storage/store-path.js";
 
 export { buildTimeline } from "./reports/explain/timeline.js";

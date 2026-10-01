@@ -1,16 +1,12 @@
 // @effect-diagnostics nodeBuiltinImport:off -- Delete, reset and restore work on the SQLite store, the hook spool and snapshots.jsonl under DFT_HOME with synchronous file moves at the process boundary.
 import {
-  appendFileSync,
-  copyFileSync,
   cpSync,
   existsSync,
-  mkdirSync,
   readdirSync,
   readFileSync,
   renameSync,
   rmSync,
   statSync,
-  writeFileSync,
 } from "node:fs";
 import path from "node:path";
 import { backup, DatabaseSync } from "node:sqlite";
@@ -27,6 +23,13 @@ import type { HookObservation } from "../harness/hook-observation.js";
 import { HOOK_SPOOL_ROOT } from "../harness/hook-spool.js";
 import { repoWorktrees, worktreeSpoolId } from "../registry/runtime.js";
 import { STORE_SCHEMA_VERSION } from "../storage/migrations.js";
+import {
+  appendPrivateFile,
+  copyPrivateFile,
+  ensurePrivateDir,
+  tightenPrivateFile,
+  writePrivateFile,
+} from "../storage/private-files.js";
 import { openSqliteEventStore } from "../storage/sqlite-event-store.js";
 import {
   addRepo,
@@ -370,8 +373,8 @@ const appendLines = (file: string, lines: readonly string[]): void => {
     return;
   }
 
-  mkdirSync(path.dirname(file), { mode: 0o700, recursive: true });
-  appendFileSync(file, `${lines.join("\n")}\n`, { mode: 0o600 });
+  ensurePrivateDir(path.dirname(file));
+  appendPrivateFile(file, `${lines.join("\n")}\n`);
 };
 
 const replaceLines = (file: string, lines: readonly string[]): void => {
@@ -383,7 +386,7 @@ const replaceLines = (file: string, lines: readonly string[]): void => {
 
   const temp = `${file}.${process.pid}.tmp`;
 
-  writeFileSync(temp, `${lines.join("\n")}\n`, { mode: 0o600 });
+  writePrivateFile(temp, `${lines.join("\n")}\n`);
   renameSync(temp, file);
 };
 
@@ -629,7 +632,7 @@ const infoOf = (home: LiveHome, meta: BackupMeta): BackupInfo => {
 };
 
 const moveInto = (source: string, destination: string): void => {
-  mkdirSync(path.dirname(destination), { recursive: true });
+  ensurePrivateDir(path.dirname(destination));
 
   try {
     renameSync(source, destination);
@@ -664,9 +667,13 @@ const createBackup = (
             storeError(`Could not write the backup: ${messageOf(cause)}`),
           // @effect-diagnostics-next-line asyncFunction:off -- node:sqlite backup() only exists as a Promise API; Effect.tryPromise wraps it.
           try: async () => {
-            mkdirSync(backupsDir(home), { recursive: true });
+            ensurePrivateDir(backupsDir(home));
 
-            return await backup(db, file);
+            const pages = await backup(db, file);
+
+            tightenPrivateFile(file);
+
+            return pages;
           },
         })
       )
@@ -684,7 +691,7 @@ const createBackup = (
       catch: (cause) =>
         storeError(`Could not write the backup: ${messageOf(cause)}`),
       try: () => {
-        writeFileSync(
+        writePrivateFile(
           backupMetaPath(home, id),
           `${JSON.stringify(meta, null, 2)}\n`
         );
@@ -692,8 +699,8 @@ const createBackup = (
         const snapshots = commitSnapshotsPath(home);
 
         if (existsSync(snapshots)) {
-          mkdirSync(backupFilesDir(home, id), { recursive: true });
-          copyFileSync(
+          ensurePrivateDir(backupFilesDir(home, id));
+          copyPrivateFile(
             snapshots,
             path.join(backupFilesDir(home, id), path.basename(snapshots))
           );
@@ -788,7 +795,7 @@ export const deleteRepoData = (
         const file = commitSnapshotsPath(home);
         const temp = `${file}.${process.pid}.tmp`;
 
-        writeFileSync(temp, kept.length === 0 ? "" : `${kept.join("\n")}\n`);
+        writePrivateFile(temp, kept.length === 0 ? "" : `${kept.join("\n")}\n`);
         renameSync(temp, file);
       }
     });
@@ -924,7 +931,7 @@ const upgradedCopy = (home: LiveHome, file: string, id: string) =>
           const dir = path.join(backupsDir(home), `.upgrade-${id}`);
 
           rmSync(dir, { force: true, recursive: true });
-          mkdirSync(dir, { recursive: true });
+          ensurePrivateDir(dir);
 
           return dir;
         },
@@ -941,7 +948,7 @@ const upgradedCopy = (home: LiveHome, file: string, id: string) =>
       catch: (cause) =>
         storeError(`Could not copy the backup: ${messageOf(cause)}`),
       try: () => {
-        copyFileSync(file, copy);
+        copyPrivateFile(file, copy);
       },
     });
 
@@ -1046,7 +1053,7 @@ export const restoreBackup = (
       }
 
       if (existsSync(snapshots)) {
-        copyFileSync(snapshots, commitSnapshotsPath(home));
+        copyPrivateFile(snapshots, commitSnapshotsPath(home));
       }
 
       if (existsSync(usage)) {

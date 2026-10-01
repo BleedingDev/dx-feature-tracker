@@ -7,6 +7,10 @@ import { Effect, Option, Schema } from "effect";
 
 import { StoreError } from "../../contracts/error-store-error.js";
 import type { AnalyzeReport } from "../../model/report.js";
+import {
+  ensurePrivateDir,
+  writePrivateFile,
+} from "../../storage/private-files.js";
 
 export const REPORT_CACHE_DIR = "reports" as const;
 
@@ -45,10 +49,10 @@ export const writeCachedReport = (
     catch: (cause) => cacheFailure("report-cache.write", cause),
     try: () => {
       const dir = reportCacheDirFor(storePath);
-      fs.mkdirSync(dir, { recursive: true });
+      ensurePrivateDir(dir);
       const target = reportPathFor(storePath, report.snapshot.snapshotId);
       const temporary = `${target}.${process.pid}.tmp`;
-      fs.writeFileSync(temporary, `${JSON.stringify(report, null, 2)}\n`);
+      writePrivateFile(temporary, `${JSON.stringify(report, null, 2)}\n`);
       fs.renameSync(temporary, target);
 
       const pointer: CachedReportPointer = {
@@ -59,7 +63,7 @@ export const writeCachedReport = (
 
       const pointerPath = path.join(dir, LATEST_REPORT_POINTER);
       const pointerTemp = `${pointerPath}.${process.pid}.tmp`;
-      fs.writeFileSync(pointerTemp, `${JSON.stringify(pointer, null, 2)}\n`);
+      writePrivateFile(pointerTemp, `${JSON.stringify(pointer, null, 2)}\n`);
       fs.renameSync(pointerTemp, pointerPath);
 
       return target;

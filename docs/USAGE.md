@@ -213,5 +213,6 @@ dft snapshot --max-cost 5
 ## Privacy
 
 - All data stays in `~/.dft` (or `$DFT_HOME`). Nothing is uploaded.
+- Only your user account can read it: `dft` keeps that folder at mode 700 and its store, backups, config and saved pages at 600, and tightens a folder an older version left open.
 - Network calls: the Cursor usage import (to cursor.com only, turn off with `DFT_CURSOR_USAGE=off`) and the price catalog fetch (models.dev or LiteLLM, prices only, no usage data, turn off with `DFT_PRICE_CATALOG=off`).
 - Hook data is sanitized before it is stored.

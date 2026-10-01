@@ -1,6 +1,6 @@
 // @effect-diagnostics nodeBuiltinImport:off -- The dft composition root resolves the user home, reads the hook payload from stdin and asks git for the dirty flag at the process boundary.
 import { execFileSync } from "node:child_process";
-import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 
@@ -8,18 +8,21 @@ import { toCommand } from "@rat-stack/capability";
 import {
   EventStore,
   allCollectors,
+  appendPrivateFile,
   autoSync,
   buildRegistry,
   cachedPriceProvider,
   contextForRepo,
   dxStoreLayer,
   makeDxCapabilities,
+  ensurePrivateDir,
   metricsWithCost,
   rebuildUsageFacts,
   resolveDftHome,
   resolveDftStore,
   resolveSince,
   runToolHook,
+  tightenPrivateDir,
 } from "@rat-stack/core/dx";
 import type {
   DxUsageOutputType,
@@ -1126,8 +1129,8 @@ const persistSnapshot = (flags: ReportFlags) =>
     );
 
     yield* Effect.sync(() => {
-      mkdirSync(path.dirname(snapshotsFile), { recursive: true });
-      appendFileSync(snapshotsFile, `${JSON.stringify(record)}\n`);
+      ensurePrivateDir(path.dirname(snapshotsFile));
+      appendPrivateFile(snapshotsFile, `${JSON.stringify(record)}\n`);
     });
 
     yield* printOutput(
@@ -1698,9 +1701,16 @@ export const isTopLevelHelp = (args: readonly string[]): boolean =>
   args.length === 0 ||
   (args.length === 1 && (args[0] === "--help" || args[0] === "-h"));
 
+const keepDftHomePrivate = Effect.try(() => {
+  tightenPrivateDir(resolveDftHome(process.env, homedir()));
+}).pipe(Effect.ignore);
+
 export const runDft = (args: readonly string[]) =>
-  isTopLevelHelp(args)
-    ? runCommand(args).pipe(
-        Effect.ensuring(Console.log(`\n${enterpriseLine(stdoutColor())}`))
-      )
-    : runCommand(args);
+  Effect.andThen(
+    keepDftHomePrivate,
+    isTopLevelHelp(args)
+      ? runCommand(args).pipe(
+          Effect.ensuring(Console.log(`\n${enterpriseLine(stdoutColor())}`))
+        )
+      : runCommand(args)
+  );

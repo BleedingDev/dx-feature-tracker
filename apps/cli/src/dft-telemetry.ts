@@ -1,6 +1,5 @@
 // @effect-diagnostics nodeBuiltinImport:off -- dft install --telemetry edits the user's Claude Code settings and Codex config at the process boundary, with a backup, using synchronous node:fs calls.
 import {
-  copyFileSync,
   existsSync,
   mkdirSync,
   readFileSync,
@@ -9,6 +8,11 @@ import {
 } from "node:fs";
 import path from "node:path";
 
+import {
+  copyPrivateFile,
+  ensurePrivateDir,
+  writePrivateFile,
+} from "@rat-stack/core/dx";
 import { Result, Schema, Struct } from "effect";
 
 export const otlpLogsEndpoint = (port: number): string =>
@@ -141,10 +145,10 @@ const backupFile = (
     return null;
   }
 
-  mkdirSync(backupDir, { recursive: true });
+  ensurePrivateDir(backupDir);
 
   const target = path.join(backupDir, name);
-  copyFileSync(file, target);
+  copyPrivateFile(file, target);
 
   return target;
 };
@@ -189,8 +193,8 @@ const readRecord = (file: string): TelemetryRecord => {
 };
 
 const writeRecord = (file: string, record: TelemetryRecord): void => {
-  mkdirSync(path.dirname(file), { recursive: true });
-  writeFileSync(file, `${JSON.stringify(record, null, 2)}\n`);
+  ensurePrivateDir(path.dirname(file));
+  writePrivateFile(file, `${JSON.stringify(record, null, 2)}\n`);
 };
 
 const withCreated = (

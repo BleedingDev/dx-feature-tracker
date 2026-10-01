@@ -10,6 +10,7 @@ import { DateTime, Effect, Exit, Schema } from "effect";
 import { StoreError } from "../contracts/error-store-error.js";
 import type { EventStoreService, StoreFailure } from "../contracts/services.js";
 import type { EventBatch } from "../model/event.js";
+import { ensurePrivateDir, writePrivateFile } from "./private-files.js";
 import { StoredBatchSchema, toCurrentBatch } from "./upgrade-v1.js";
 
 export interface SpoolDrainResult {
@@ -40,12 +41,12 @@ export const writeSpoolBatch = (
       Effect.try({
         catch: (cause) => spoolFailure("spool.write", cause),
         try: () => {
-          fs.mkdirSync(spoolDir, { recursive: true });
+          ensurePrivateDir(spoolDir);
           const name = `${DateTime.formatIso(now).replaceAll(":", "-")}-${randomUUID()}${PENDING_SUFFIX}`;
           const temporary = path.join(spoolDir, `.${name}.tmp`);
           const target = path.join(spoolDir, name);
 
-          fs.writeFileSync(temporary, JSON.stringify(batch), { flag: "wx" });
+          writePrivateFile(temporary, JSON.stringify(batch), "wx");
           fs.renameSync(temporary, target);
 
           return target;
@@ -66,7 +67,7 @@ const pendingFiles = (spoolDir: string): readonly string[] => {
 };
 
 const moveTo = (spoolDir: string, folder: string, name: string): void => {
-  fs.mkdirSync(path.join(spoolDir, folder), { recursive: true });
+  ensurePrivateDir(path.join(spoolDir, folder));
   fs.renameSync(path.join(spoolDir, name), path.join(spoolDir, folder, name));
 };
 

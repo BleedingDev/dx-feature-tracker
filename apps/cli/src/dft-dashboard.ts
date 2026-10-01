@@ -1,9 +1,14 @@
 // @effect-diagnostics nodeBuiltinImport:off -- The dashboard writes one HTML file and hands it to the system browser at the process boundary.
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import path from "node:path";
 
-import { gitSelectorResolver, makeDxChatsCapability } from "@rat-stack/core/dx";
+import {
+  gitSelectorResolver,
+  makeDxChatsCapability,
+  ensurePrivateDir,
+  writePrivateFile,
+} from "@rat-stack/core/dx";
 import type {
   DxUsageInputType,
   DxUsageOutputType,
@@ -1019,8 +1024,8 @@ export const writeDashboard = <HE, HR, CE, CR, UE = never, UR = never>(
           path: file,
         }),
       try: () => {
-        mkdirSync(path.dirname(file), { recursive: true });
-        writeFileSync(file, html, "utf-8");
+        ensurePrivateDir(path.dirname(file));
+        writePrivateFile(file, html);
       },
     });
 
