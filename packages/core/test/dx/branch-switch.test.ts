@@ -11,10 +11,6 @@ import { Effect, Layer } from "effect";
 import { makeDxChatsCapability } from "../../src/dx/chats/capability.js";
 import type { ChatNode } from "../../src/dx/chats/contract.js";
 import { EventStore } from "../../src/dx/contracts/event-store.js";
-import {
-  FakeEventStoreLayer,
-  fakeManifest,
-} from "../../src/dx/contracts/fakes.js";
 import { attributeHistoricalBranches } from "../../src/dx/correlation/branch-at-time/attribute.js";
 import { joinAccountRows } from "../../src/dx/correlation/branch-at-time/snapshot.js";
 import { withCollectorBlocks } from "../../src/dx/harness/collector-blocks.js";
@@ -27,6 +23,7 @@ import {
 } from "../../src/dx/model/event.js";
 import { EventIdSchema, SnapshotIdSchema } from "../../src/dx/model/ids.js";
 import { selectAnalyzeSnapshot } from "../../src/dx/reports/analyze/select.js";
+import { FakeEventStoreLayer, fakeManifest } from "./fakes.js";
 
 const CONVERSATION = "conv-C";
 

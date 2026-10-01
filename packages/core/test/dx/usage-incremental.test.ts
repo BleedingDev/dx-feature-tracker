@@ -3,7 +3,6 @@ import { describe, expect, it } from "@effect/vitest";
 import { Effect, FileSystem, Layer, Path } from "effect";
 
 import { EventStore } from "../../src/dx/contracts/event-store.js";
-import { FakeEventStoreLayer } from "../../src/dx/contracts/fakes.js";
 import { unknownTokens } from "../../src/dx/model/attribution.js";
 import type { DxEventEnvelope, EventBatch } from "../../src/dx/model/event.js";
 import {
@@ -18,6 +17,7 @@ import { usageOfRows } from "../../src/dx/usage/derive.js";
 import type { DerivedRows, UsageFact } from "../../src/dx/usage/fact.js";
 import { deriveRowsOf } from "../../src/dx/usage/load.js";
 import { UsageFactStore } from "../../src/dx/usage/store.js";
+import { FakeEventStoreLayer } from "./fakes.js";
 
 interface Spec {
   readonly at: string | null;

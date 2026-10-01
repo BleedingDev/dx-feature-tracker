@@ -5,12 +5,6 @@ import path from "node:path";
 import { describe, expect, it } from "@effect/vitest";
 import { Effect, Schema } from "effect";
 
-import {
-  emptyCoverage,
-  emptySelector,
-  fakeManifest,
-  makeFakeEventStore,
-} from "../../src/dx/contracts/fakes.js";
 import type { StoreSnapshot } from "../../src/dx/contracts/services.js";
 import { ModuleDescriptorSchema } from "../../src/dx/model/descriptor.js";
 import type { DxEventEnvelope } from "../../src/dx/model/event.js";
@@ -34,6 +28,12 @@ import {
   MAX_EVIDENCE_IDS,
   resolveEvidence,
 } from "../../src/dx/reports/evidence/resolve.js";
+import {
+  emptyCoverage,
+  emptySelector,
+  fakeManifest,
+  makeFakeEventStore,
+} from "./fakes.js";
 
 const FixtureSchema = Schema.Struct({
   events: Schema.Array(

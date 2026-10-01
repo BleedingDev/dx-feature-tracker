@@ -16,7 +16,6 @@ import { DatabaseSync } from "node:sqlite";
 import { afterAll, describe, expect, it } from "@effect/vitest";
 import { Effect, Schema } from "effect";
 
-import { emptySelector } from "../../../src/dx/contracts/fakes.js";
 import type {
   EventStoreService,
   StoreFailure,
@@ -29,6 +28,7 @@ import { drainSpool, writeSpoolBatch } from "../../../src/dx/storage/spool.js";
 import { openSqliteEventStore } from "../../../src/dx/storage/sqlite-event-store.js";
 import type { SqliteEventStoreOptions } from "../../../src/dx/storage/sqlite-event-store.js";
 import { spoolDirFor } from "../../../src/dx/storage/store-path.js";
+import { emptySelector } from "../fakes.js";
 
 const FixtureDocSchema = Schema.Struct({
   batches: Schema.Array(EventBatchSchema),

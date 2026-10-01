@@ -5,10 +5,6 @@ import path from "node:path";
 import { describe, expect, it } from "@effect/vitest";
 import { Effect, Schema } from "effect";
 
-import {
-  fakeManifest,
-  makeFakeEventStore,
-} from "../../src/dx/contracts/fakes.js";
 import { ReportComposer } from "../../src/dx/contracts/report-composer.js";
 import type {
   MetricOutput,
@@ -41,6 +37,7 @@ import {
   ReportComposerLive,
 } from "../../src/dx/reports/analyze/layer.js";
 import { selectAnalyzeSnapshot } from "../../src/dx/reports/analyze/select.js";
+import { fakeManifest, makeFakeEventStore } from "./fakes.js";
 
 const MetricSpecSchema = Schema.Struct({
   attribution: AttributionStateSchema,

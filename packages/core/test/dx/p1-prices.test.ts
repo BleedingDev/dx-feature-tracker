@@ -8,7 +8,6 @@ import { afterAll, describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { parseCursorCliOutput } from "../../src/dx/collectors/cursor-cli/collector.js";
-import { fakeManifest } from "../../src/dx/contracts/fakes.js";
 import type { StoreSnapshot } from "../../src/dx/contracts/services.js";
 import {
   computeCost,
@@ -27,6 +26,7 @@ import {
 import type { DxEventEnvelope } from "../../src/dx/model/event.js";
 import { EventIdSchema } from "../../src/dx/model/ids.js";
 import type { MetricResult } from "../../src/dx/model/metric.js";
+import { fakeManifest } from "./fakes.js";
 
 const STREAM = path.join(
   import.meta.dirname,

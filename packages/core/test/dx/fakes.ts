@@ -1,29 +1,33 @@
 import { Effect, Layer } from "effect";
 
-import type { SourceCoverage } from "../model/coverage.js";
-import type { ModuleDescriptor } from "../model/descriptor.js";
-import type { DxEventEnvelope } from "../model/event.js";
+import { SnapshotNotFound } from "../../src/dx/contracts/error-snapshot-not-found.js";
+import { EventStore } from "../../src/dx/contracts/event-store.js";
+import { ReportComposer } from "../../src/dx/contracts/report-composer.js";
+import type {
+  DxCollector,
+  DxMetric,
+  EventStoreService,
+  ReportComposerService,
+  StoreSnapshot,
+} from "../../src/dx/contracts/services.js";
+import {
+  CONTRACT_DIGEST,
+  CONTRACT_VERSION,
+} from "../../src/dx/contracts/version.js";
+import type { SourceCoverage } from "../../src/dx/model/coverage.js";
+import type { ModuleDescriptor } from "../../src/dx/model/descriptor.js";
+import type { DxEventEnvelope } from "../../src/dx/model/event.js";
 import {
   DescriptorIdSchema,
   EvidenceIdSchema,
   MetricIdSchema,
   SnapshotIdSchema,
-} from "../model/ids.js";
-import type { AnalyzeReport } from "../model/report.js";
-import type { SnapshotManifest, SnapshotSelector } from "../model/snapshot.js";
-import { SnapshotNotFound } from "./error-snapshot-not-found.js";
-import { EventStore } from "./event-store.js";
-import { GitHubApiBroker } from "./github-api-broker.js";
-import { ReportComposer } from "./report-composer.js";
+} from "../../src/dx/model/ids.js";
+import type { AnalyzeReport } from "../../src/dx/model/report.js";
 import type {
-  DxCollector,
-  DxMetric,
-  EventStoreService,
-  GitHubApiBrokerService,
-  ReportComposerService,
-  StoreSnapshot,
-} from "./services.js";
-import { CONTRACT_DIGEST, CONTRACT_VERSION } from "./version.js";
+  SnapshotManifest,
+  SnapshotSelector,
+} from "../../src/dx/model/snapshot.js";
 
 export const FAKE_TIMESTAMP = "2026-01-01T00:00:00.000Z";
 
@@ -149,11 +153,6 @@ export const makeFakeEventStore = (): EventStoreService => {
   };
 };
 
-export const fakeGitHubApiBroker: GitHubApiBrokerService = {
-  probe: Effect.succeed({ authenticated: false, rateLimitRemaining: null }),
-  request: () => Effect.succeed([]),
-};
-
 export const fakeMetric: DxMetric = {
   compute: () => ({
     findings: [],
@@ -198,11 +197,6 @@ export const fakeReportComposer: ReportComposerService = {
 };
 
 export const FakeEventStoreLayer = Layer.sync(EventStore, makeFakeEventStore);
-
-export const FakeGitHubApiBrokerLayer = Layer.succeed(
-  GitHubApiBroker,
-  fakeGitHubApiBroker
-);
 
 export const FakeReportComposerLayer = Layer.succeed(
   ReportComposer,

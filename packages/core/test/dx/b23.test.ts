@@ -1,15 +1,10 @@
 import { NodeServices } from "@effect/platform-node";
 import { describe, expect, it } from "@effect/vitest";
-import { Effect, FileSystem, Path, Schema } from "effect";
+import { Effect, FileSystem, Layer, Path, Schema } from "effect";
 
 import { gitRunFor } from "../../src/dx/collectors/git-identity/git-runner.js";
+import { repoLocator } from "../../src/dx/correlation/attribution/locator.js";
 import { repoCorrelationDescriptor } from "../../src/dx/correlation/repo/descriptor.js";
-import {
-  canonicalizePath,
-  discoverGitLocation,
-  loadRepoMap,
-  repoMapForPath,
-} from "../../src/dx/correlation/repo/git-dir.js";
 import {
   containedJoin,
   isContained,
@@ -23,6 +18,7 @@ import {
   resolvePath,
 } from "../../src/dx/correlation/repo/worktree-map.js";
 import type { RepoMap } from "../../src/dx/correlation/repo/worktree-map.js";
+import { GitRunner, notARepo } from "../../src/dx/harness/git.js";
 import { ModuleDescriptorSchema } from "../../src/dx/model/descriptor.js";
 import { emptyFlightContext } from "../../src/dx/model/event.js";
 
@@ -181,6 +177,8 @@ describe("B23 worktree mapping (fixture b23-worktree-porcelain)", () => {
 });
 
 describe("B23 live Git layout (fixture b23-live-linked-worktree)", () => {
+  const liveGit = Layer.provideMerge(GitRunner.layer, NodeServices.layer);
+
   const GIT_CONFIG = [
     "-c",
     "user.name=Fixture",
@@ -222,76 +220,53 @@ describe("B23 live Git layout (fixture b23-live-linked-worktree)", () => {
   });
 
   it.effect(
-    "discovers a linked worktree and enumerates worktrees read-only",
+    "places a linked worktree's file and lists worktrees read-only",
     () =>
       Effect.gen(function* testBody() {
         const path = yield* Path.Path;
+        const runner = yield* GitRunner;
+        const locator = yield* repoLocator;
         const { head, linked, main, root } = yield* makeRepo();
 
-        const location = yield* discoverGitLocation(
-          path.join(linked, "src", "a.ts")
-        );
-
-        expect(location).toEqual({
-          gitDir: `${main}/.git/worktrees/repo-feature`,
-          isLinkedWorktree: true,
+        expect(yield* runner.at(path.join(linked, "src"))).toEqual({
+          branch: "feature/cost",
+          headSha: head,
           repoCommonDir: `${main}/.git`,
           worktreePath: linked,
         });
 
-        const found = yield* repoMapForPath(path.join(main, "src"));
-        const map = found?.map ?? null;
-
-        expect(found?.location.isLinkedWorktree).toBe(false);
-        expect(map?.worktrees).toEqual([
+        expect(yield* locator.locate(path.join(linked, "src", "a.ts"))).toEqual(
           {
-            bare: false,
-            branch: "main",
-            detached: false,
-            headSha: head,
-            path: main,
-            prunable: false,
-          },
-          {
-            bare: false,
-            branch: "feature/cost",
-            detached: false,
-            headSha: head,
-            path: linked,
-            prunable: false,
-          },
-        ]);
-
-        const cwd = yield* canonicalizePath(path.join(linked, "src"));
-
-        const correlation = correlateContext(
-          map === null ? [] : [map],
-          emptyFlightContext,
-          [cwd ?? ""]
+            kind: "repo",
+            location: {
+              branch: "feature/cost",
+              headSha: head,
+              repoCommonDir: `${main}/.git`,
+              worktreePath: linked,
+            },
+          }
         );
 
-        expect(correlation.assignment).toBe("assigned");
-        expect(correlation.context.branch).toBe("feature/cost");
-        expect(correlation.context.worktreePath).toBe(linked);
-        expect(yield* discoverGitLocation(root)).toBeNull();
-      }).pipe(Effect.scoped, Effect.provide(NodeServices.layer))
+        expect(yield* runner.worktrees(path.join(main, "src"))).toEqual([
+          { branch: "main", headSha: head, path: main },
+          { branch: "feature/cost", headSha: head, path: linked },
+        ]);
+
+        expect(yield* runner.at(root)).toEqual(notARepo);
+      }).pipe(Effect.scoped, Effect.provide(liveGit))
   );
 
-  it.effect(
-    "marks a deleted linked worktree prunable and its detached HEAD unassigned",
-    () =>
-      Effect.gen(function* testBody() {
-        const fs = yield* FileSystem.FileSystem;
-        const { linked, main } = yield* makeRepo();
-        yield* git(linked, ["checkout", "-q", "--detach"]);
-        yield* fs.remove(linked, { recursive: true });
-        const map = yield* loadRepoMap(`${main}/.git`);
-        const gone = map?.worktrees.find((w) => w.path === linked);
+  it.effect("leaves a deleted linked worktree out of the worktree list", () =>
+    Effect.gen(function* testBody() {
+      const fs = yield* FileSystem.FileSystem;
+      const runner = yield* GitRunner;
+      const { head, linked, main } = yield* makeRepo();
+      yield* git(linked, ["checkout", "-q", "--detach"]);
+      yield* fs.remove(linked, { recursive: true });
 
-        expect(map?.worktrees.length).toBe(2);
-        expect(gone?.prunable).toBe(true);
-        expect(gone?.detached).toBe(true);
-        expect(gone?.branch).toBeNull();
-      }).pipe(Effect.scoped, Effect.provide(NodeServices.layer))
+      expect(yield* runner.worktrees(main)).toEqual([
+        { branch: "main", headSha: head, path: main },
+      ]);
+    }).pipe(Effect.scoped, Effect.provide(liveGit))
   );
 });

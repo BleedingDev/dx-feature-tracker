@@ -19,7 +19,6 @@ import { handleCursorHook } from "../../../src/dx/collectors/cursor-hooks/handle
 import type { GitResolver } from "../../../src/dx/collectors/cursor-hooks/handler.js";
 import { SpoolRecordSchema } from "../../../src/dx/collectors/cursor-hooks/spool-record.js";
 import { parseCursorTranscript } from "../../../src/dx/collectors/cursor-transcripts/parse.js";
-import { fakeManifest } from "../../../src/dx/contracts/fakes.js";
 import type { StoreSnapshot } from "../../../src/dx/contracts/services.js";
 import type { DxEventEnvelope } from "../../../src/dx/model/event.js";
 import { emptyFlightContext } from "../../../src/dx/model/event.js";
@@ -30,6 +29,7 @@ import {
   redactText,
 } from "../../../src/dx/reports/evidence/redact.js";
 import { resolveEvidence } from "../../../src/dx/reports/evidence/resolve.js";
+import { fakeManifest } from "../fakes.js";
 
 const SECRETS = {
   AWS_SECRET: ["wJalrXUtnFEMI", "/K7MDENG/", "bPxRfiCY", "C10EXAMPLEKEY"].join(

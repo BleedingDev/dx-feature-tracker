@@ -7,7 +7,6 @@ import { DatabaseSync } from "node:sqlite";
 import { afterAll, describe, expect, it } from "@effect/vitest";
 import { Effect, Schema } from "effect";
 
-import { emptySelector } from "../../src/dx/contracts/fakes.js";
 import type {
   EventStoreService,
   StoreFailure,
@@ -27,6 +26,7 @@ import {
   resolveStorePath,
   spoolDirFor,
 } from "../../src/dx/storage/store-path.js";
+import { emptySelector } from "./fakes.js";
 
 const FixtureDocSchema = Schema.Struct({
   batches: Schema.Array(EventBatchSchema),

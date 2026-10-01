@@ -9,11 +9,11 @@ import { ChatsReportSchema } from "../../src/dx/chats/contract.js";
 import { buildChatTree } from "../../src/dx/chats/tree.js";
 import { mapStateDb } from "../../src/dx/collectors/cursor-local-db/map-state.js";
 import { EventStore } from "../../src/dx/contracts/event-store.js";
-import { makeFakeEventStore } from "../../src/dx/contracts/fakes.js";
 import { withCollectorBlocks } from "../../src/dx/harness/collector-blocks.js";
 import { cursorModelEffort } from "../../src/dx/harness/cursor/rules.js";
 import type { DxEventEnvelope } from "../../src/dx/model/event.js";
 import { EventIdSchema } from "../../src/dx/model/ids.js";
+import { makeFakeEventStore } from "./fakes.js";
 
 const BRANCH = "feature/chats-fixture";
 

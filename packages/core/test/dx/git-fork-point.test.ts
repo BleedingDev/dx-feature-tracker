@@ -8,11 +8,11 @@ import { afterAll, describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 
 import { collectGitHistory } from "../../src/dx/collectors/git-history/git-history.js";
-import { fakeManifest } from "../../src/dx/contracts/fakes.js";
 import type { CollectInput } from "../../src/dx/contracts/services.js";
 import { gitChurnMetric } from "../../src/dx/metrics/git/metric.js";
 import { emptyFlightContext } from "../../src/dx/model/event.js";
 import type { EventBatch } from "../../src/dx/model/event.js";
+import { fakeManifest } from "./fakes.js";
 
 const OBSERVED_AT = "2026-09-30T13:00:00.000Z";
 

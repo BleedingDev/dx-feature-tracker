@@ -8,10 +8,6 @@ import { afterAll, describe, expect, it } from "@effect/vitest";
 import { Effect, Schema } from "effect";
 
 import { EventStore } from "../../src/dx/contracts/event-store.js";
-import {
-  FakeEventStoreLayer,
-  fakeManifest,
-} from "../../src/dx/contracts/fakes.js";
 import type { StoreSnapshot } from "../../src/dx/contracts/services.js";
 import { withCollectorBlocks } from "../../src/dx/harness/collector-blocks.js";
 import { makeDxHistoryCapability } from "../../src/dx/history/capability.js";
@@ -39,6 +35,7 @@ import {
   emptyFlightContext,
 } from "../../src/dx/model/event.js";
 import { EventIdSchema } from "../../src/dx/model/ids.js";
+import { FakeEventStoreLayer, fakeManifest } from "./fakes.js";
 
 const REPO = "/fixture/history/.git";
 

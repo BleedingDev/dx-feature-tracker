@@ -7,8 +7,6 @@ import { Effect, FileSystem, Layer, Path } from "effect";
 
 import { accountUsageSummary } from "../../src/dx/account/summary.js";
 import { EventStore } from "../../src/dx/contracts/event-store.js";
-import { FakeEventStoreLayer } from "../../src/dx/contracts/fakes.js";
-import { toClaim } from "../../src/dx/correlation/ai/claim.js";
 import type { HarnessId } from "../../src/dx/harness/ids.js";
 import { accountAiUsage } from "../../src/dx/metrics/ai-usage/ledger.js";
 import type { AiTokens } from "../../src/dx/model/attribution.js";
@@ -29,6 +27,7 @@ import { prepareFacts, queryUsage } from "../../src/dx/usage/query.js";
 import type { UsageQuery } from "../../src/dx/usage/query.js";
 import { UsageFactStore } from "../../src/dx/usage/store.js";
 import { zoneClock } from "../../src/dx/usage/time.js";
+import { FakeEventStoreLayer } from "./fakes.js";
 
 const tokens = (input: number, output: number): AiTokens => ({
   ...unknownTokens,
@@ -575,7 +574,7 @@ describe("usage facts", () => {
     ]);
   });
 
-  it("counts a new tool's request in the ledger, the claims and nowhere twice", () => {
+  it("counts a new tool's request in the ledger and nowhere twice", () => {
     const account = accountAiUsage(sameRequestTwice);
 
     expect(account.uncovered).toEqual([]);
@@ -588,14 +587,6 @@ describe("usage facts", () => {
     ]);
     expect(account.totals[0]?.sources).toEqual(["claude-code/session-file"]);
 
-    const [, fromFile] = sameRequestTwice;
-    const claim = fromFile === undefined ? null : toClaim(fromFile);
-
-    expect(claim?.sourceKind).toBe("claude-code/session-file");
-    expect(claim?.amounts).toEqual([
-      { category: "input", currency: null, ledger: "tokens", value: 1000 },
-      { category: "output", currency: null, ledger: "tokens", value: 100 },
-    ]);
     expect(
       accountUsageSummary(sameRequestTwice, { since: null }).linked.requests
     ).toBe(0);

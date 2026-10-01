@@ -8,7 +8,6 @@ import { afterAll, describe, expect, it } from "@effect/vitest";
 import { DateTime, Effect, Layer, Ref } from "effect";
 
 import { EventStore } from "../../../src/dx/contracts/event-store.js";
-import { FakeEventStoreLayer } from "../../../src/dx/contracts/fakes.js";
 import type { Harness, SessionRef } from "../../../src/dx/harness/contract.js";
 import { everywhere } from "../../../src/dx/harness/contract.js";
 import { HOOK_DECODERS } from "../../../src/dx/harness/hook-decoders.js";
@@ -21,6 +20,7 @@ import { HarnessRegistry } from "../../../src/dx/harness/registry.js";
 import { emptyFlightContext } from "../../../src/dx/model/event.js";
 import { runPlannedStep } from "../../../src/dx/registry/sync.js";
 import { HarnessCursors } from "../../../src/dx/storage/harness-cursors.js";
+import { FakeEventStoreLayer } from "../fakes.js";
 
 const dftHome = mkdtempSync(path.join(os.tmpdir(), "dft-hook-cursors-"));
 

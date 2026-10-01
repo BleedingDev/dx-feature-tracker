@@ -7,7 +7,6 @@ import { DatabaseSync } from "node:sqlite";
 import { afterAll, describe, expect, it } from "@effect/vitest";
 import { Effect, Exit, Schema } from "effect";
 
-import { emptySelector } from "../../../src/dx/contracts/fakes.js";
 import type {
   DxMetric,
   EventStoreService,
@@ -37,6 +36,7 @@ import type { MetricResult } from "../../../src/dx/model/metric.js";
 import { SnapshotManifestSchema } from "../../../src/dx/model/snapshot.js";
 import { openSqliteEventStore } from "../../../src/dx/storage/sqlite-event-store.js";
 import type { SqliteEventStoreOptions } from "../../../src/dx/storage/sqlite-event-store.js";
+import { emptySelector } from "../fakes.js";
 
 const FixtureDocSchema = Schema.Struct({
   batches: Schema.Array(EventBatchSchema),

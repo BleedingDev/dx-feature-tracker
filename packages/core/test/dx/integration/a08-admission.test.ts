@@ -1,6 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
 
-import { fakeDescriptor } from "../../../src/dx/contracts/fakes.js";
 import type { ModuleDescriptor } from "../../../src/dx/model/descriptor.js";
 import {
   admitDescriptors,
@@ -8,6 +7,7 @@ import {
   enabledDescriptorRefs,
   snapshotCompatible,
 } from "../../../src/dx/registry/admission.js";
+import { fakeDescriptor } from "../fakes.js";
 
 const d = (
   id: string,

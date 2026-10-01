@@ -5,12 +5,9 @@ import { Effect, Exit, FileSystem, Path } from "effect";
 import { collectGitIdentity } from "../../../src/dx/collectors/git-identity/collector.js";
 import { gitRunFor } from "../../../src/dx/collectors/git-identity/git-runner.js";
 import type { CollectInput } from "../../../src/dx/contracts/services.js";
+import { repoLocator } from "../../../src/dx/correlation/attribution/locator.js";
 import { correlateFlights } from "../../../src/dx/correlation/flight/correlator.js";
-import {
-  canonicalizePath,
-  repoMapForPath,
-} from "../../../src/dx/correlation/repo/git-dir.js";
-import { correlateContext } from "../../../src/dx/correlation/repo/worktree-map.js";
+import { GitRunner } from "../../../src/dx/harness/git.js";
 import {
   EVENT_SCHEMA_VERSION,
   emptyEventIdentity,
@@ -77,6 +74,13 @@ const makeRepo = Effect.fn("c03.makeRepo")(function* makeRepo() {
 
   return { mainSha, repo, root };
 });
+
+const placeOf = Effect.fn("c03.placeOf")(function* placeOf(target: string) {
+  const locator = yield* repoLocator;
+  const found = yield* locator.locate(target);
+
+  return found.kind === "repo" ? found.location : null;
+}, Effect.provide(GitRunner.layer));
 
 const collectOne = Effect.fn("c03.collectOne")(function* collectOne(
   repo: string
@@ -170,29 +174,14 @@ it.layer(NodeServices.layer)("C03 identity audit on real Git", (test) => {
         expect(b.event.context.branch).toBe("feat/b");
         expect(a.event.payload.worktreeCount).toBe(3);
 
-        const found = yield* repoMapForPath(repo);
-        expect(found).not.toBe(null);
-        const edited = yield* canonicalizePath(path.join(wtA, "a2.txt"));
+        const edited = yield* placeOf(path.join(wtA, "a2.txt"));
 
-        const mapped = correlateContext(
-          found === null ? [] : [found.map],
-          emptyFlightContext,
-          [edited ?? ""]
+        expect(edited?.branch).toBe("feat/a");
+        expect(edited?.worktreePath).toBe(a.event.context.worktreePath);
+        expect(edited?.repoCommonDir).toBe(a.event.context.repoCommonDir);
+        expect((yield* placeOf(wtB))?.worktreePath).toBe(
+          b.event.context.worktreePath
         );
-
-        expect(mapped.assignment).toBe("assigned");
-        expect(mapped.context.branch).toBe("feat/a");
-        expect(mapped.context.repoCommonDir).toBe(
-          a.event.context.repoCommonDir
-        );
-
-        const both = correlateContext(
-          found === null ? [] : [found.map],
-          emptyFlightContext,
-          [edited ?? "", (yield* canonicalizePath(wtB)) ?? ""]
-        );
-
-        expect(both.assignment).not.toBe("assigned");
 
         const flights = targetOf([
           at(a.event, "2026-09-30T10:00:00Z"),
@@ -395,16 +384,12 @@ it.layer(NodeServices.layer)("C03 identity audit on real Git", (test) => {
           flights.byId(down.event.eventId)?.target
         );
 
-        const upMap = yield* repoMapForPath(repo);
-        const forkFile = yield* canonicalizePath(path.join(fork, "a.txt"));
+        const forkFile = yield* placeOf(path.join(fork, "a.txt"));
 
-        const cross = correlateContext(
-          upMap === null ? [] : [upMap.map],
-          emptyFlightContext,
-          [forkFile ?? ""]
+        expect(forkFile?.repoCommonDir).toBe(down.event.context.repoCommonDir);
+        expect(forkFile?.repoCommonDir).not.toBe(
+          up.event.context.repoCommonDir
         );
-
-        expect(cross.assignment).toBe("unassigned");
       })
   );
 
@@ -435,16 +420,10 @@ it.layer(NodeServices.layer)("C03 identity audit on real Git", (test) => {
       expect(flights.byId(det.event.eventId)?.target).toBe(null);
       expect(flights.byId(detWt.event.eventId)?.attribution).toBe("unassigned");
 
-      const found = yield* repoMapForPath(wt);
+      const placed = yield* placeOf(wt);
 
-      const mapped = correlateContext(
-        found === null ? [] : [found.map],
-        emptyFlightContext,
-        [(yield* canonicalizePath(wt)) ?? ""]
-      );
-
-      expect(mapped.assignment).toBe("detached");
-      expect(mapped.context.branch).toBe(null);
+      expect(placed?.worktreePath).toBe(detWt.event.context.worktreePath);
+      expect(placed?.branch).toBe(null);
     })
   );
 
@@ -473,8 +452,10 @@ it.layer(NodeServices.layer)("C03 identity audit on real Git", (test) => {
           );
         }
 
-        const found = yield* repoMapForPath(repo);
-        expect(found).not.toBe(null);
+        const placed = yield* placeOf(repo);
+
+        expect(placed?.branch).toBe("feat/unborn");
+        expect(placed?.headSha).toBe(null);
       })
   );
 });

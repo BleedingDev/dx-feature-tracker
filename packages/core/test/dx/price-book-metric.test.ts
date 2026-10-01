@@ -1,6 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
 
-import { fakeManifest } from "../../src/dx/contracts/fakes.js";
 import type { StoreSnapshot } from "../../src/dx/contracts/services.js";
 import {
   computeCost,
@@ -24,6 +23,7 @@ import {
 import { EventIdSchema } from "../../src/dx/model/ids.js";
 import { deriveUsageFacts } from "../../src/dx/usage/derive.js";
 import { factEstimator } from "../../src/dx/usage/estimate.js";
+import { fakeManifest } from "./fakes.js";
 
 const MAKER: PriceSheet = {
   id: "maker",

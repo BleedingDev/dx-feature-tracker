@@ -5,7 +5,6 @@ import path from "node:path";
 import { describe, expect, it } from "@effect/vitest";
 import { Schema } from "effect";
 
-import { fakeManifest } from "../../src/dx/contracts/fakes.js";
 import type { StoreSnapshot } from "../../src/dx/contracts/services.js";
 import { alignUnique } from "../../src/dx/metrics/provenance/alignment.js";
 import {
@@ -29,6 +28,7 @@ import {
   MetricResultSchema,
 } from "../../src/dx/model/metric.js";
 import type { MetricResult } from "../../src/dx/model/metric.js";
+import { fakeManifest } from "./fakes.js";
 
 const FixtureEventSchema = Schema.Struct({
   id: Schema.String,

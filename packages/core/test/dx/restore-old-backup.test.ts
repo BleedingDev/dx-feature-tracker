@@ -7,13 +7,13 @@ import { DatabaseSync } from "node:sqlite";
 import { afterAll, describe, expect, it } from "@effect/vitest";
 import { Effect, Schema } from "effect";
 
-import { emptySelector } from "../../src/dx/contracts/fakes.js";
 import { liveHome } from "../../src/dx/live/home.js";
 import { resetStore, restoreBackup } from "../../src/dx/live/store-admin.js";
 import { DxEventEnvelopeSchema } from "../../src/dx/model/event.js";
 import type { DxEventEnvelope } from "../../src/dx/model/event.js";
 import { openSqliteEventStore } from "../../src/dx/storage/sqlite-event-store.js";
 import { V1_EVENT_SCHEMA_VERSION } from "../../src/dx/storage/upgrade-v1.js";
+import { emptySelector } from "./fakes.js";
 
 const dftHome = mkdtempSync(path.join(os.tmpdir(), "dft-old-backup-"));
 

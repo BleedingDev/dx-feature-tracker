@@ -13,7 +13,6 @@ import {
   dxStatusContract,
 } from "../../src/dx/contracts/capabilities.js";
 import { EventStore } from "../../src/dx/contracts/event-store.js";
-import { fakeDescriptor } from "../../src/dx/contracts/fakes.js";
 import type {
   DxMetric,
   EventStoreService,
@@ -40,6 +39,7 @@ import {
   StatusReportSchema,
 } from "../../src/dx/model/report.js";
 import { openSqliteEventStore } from "../../src/dx/storage/sqlite-event-store.js";
+import { fakeDescriptor } from "./fakes.js";
 
 const FixtureEventSchema = Schema.Struct({
   adapterId: Schema.String,

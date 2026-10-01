@@ -10,7 +10,6 @@ import { Effect, Schema } from "effect";
 import { collectGitHistory } from "../../src/dx/collectors/git-history/git-history.js";
 import type { GitRunner } from "../../src/dx/collectors/git-history/git-history.js";
 import { SourceUnavailable } from "../../src/dx/contracts/error-source-unavailable.js";
-import { fakeManifest } from "../../src/dx/contracts/fakes.js";
 import type {
   CollectInput,
   StoreSnapshot,
@@ -27,6 +26,7 @@ import {
   isHonestMetric,
 } from "../../src/dx/model/metric.js";
 import type { MetricResult } from "../../src/dx/model/metric.js";
+import { fakeManifest } from "./fakes.js";
 
 const fixtureDir = path.join(import.meta.dirname, "fixtures", "b28");
 

@@ -21,7 +21,6 @@ import { manualCollector } from "../collectors/manual/collector.js";
 import { providerUsageCollector } from "../collectors/provider-usage/collector.js";
 import { shellCommandCollector } from "../collectors/shell-command/collector.js";
 import type { DxCollector, DxMetric } from "../contracts/services.js";
-import { aiCorrelationDescriptor } from "../correlation/ai/descriptor.js";
 import { flightCorrelationDescriptor } from "../correlation/flight/correlator.js";
 import { repoCorrelationDescriptor } from "../correlation/repo/descriptor.js";
 import { harnessCollectors } from "../harness/collector.js";
@@ -98,7 +97,6 @@ export const supportDescriptors: readonly ModuleDescriptor[] = [
   eventStoreDescriptor,
   repoCorrelationDescriptor,
   flightCorrelationDescriptor,
-  aiCorrelationDescriptor,
   intervalsDescriptor,
   analyzeReportDescriptor,
   explainReportDescriptor,

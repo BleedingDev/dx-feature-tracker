@@ -13,7 +13,6 @@ import { DatabaseSync } from "node:sqlite";
 import { afterAll, describe, expect, it } from "@effect/vitest";
 import { Effect, Schema } from "effect";
 
-import { emptySelector, fakeManifest } from "../../src/dx/contracts/fakes.js";
 import { accountAiUsage } from "../../src/dx/metrics/ai-usage/ledger.js";
 import { normalizeAiUsage } from "../../src/dx/metrics/ai-usage/normalize.js";
 import { computeCost } from "../../src/dx/metrics/cost/metric.js";
@@ -25,6 +24,7 @@ import { STORE_MIGRATIONS } from "../../src/dx/storage/migrations.js";
 import { drainSpool } from "../../src/dx/storage/spool.js";
 import { openSqliteEventStore } from "../../src/dx/storage/sqlite-event-store.js";
 import { V1_EVENT_SCHEMA_VERSION } from "../../src/dx/storage/upgrade-v1.js";
+import { emptySelector, fakeManifest } from "./fakes.js";
 
 const tempRoot = mkdtempSync(path.join(os.tmpdir(), "dft-store-v2-"));
 

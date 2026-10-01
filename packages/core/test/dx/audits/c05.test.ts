@@ -2,7 +2,6 @@ import { NodeServices } from "@effect/platform-node";
 import { describe, expect, it } from "@effect/vitest";
 import { Effect, FileSystem, Path, Schema } from "effect";
 
-import { fakeManifest } from "../../../src/dx/contracts/fakes.js";
 import type { StoreSnapshot } from "../../../src/dx/contracts/services.js";
 import {
   accountAiUsage,
@@ -21,6 +20,7 @@ import { DxEventEnvelopeSchema } from "../../../src/dx/model/event.js";
 import type { DxEventEnvelope } from "../../../src/dx/model/event.js";
 import { isHonestMetric } from "../../../src/dx/model/metric.js";
 import type { MetricResult } from "../../../src/dx/model/metric.js";
+import { fakeManifest } from "../fakes.js";
 
 const FIXTURE_URL = new URL(
   "../fixtures/c05/accounting-audit.json",

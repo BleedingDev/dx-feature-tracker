@@ -8,7 +8,6 @@ import { Effect, Schema } from "effect";
 
 import { cursorDashboardResponseCollector } from "../../../src/dx/collectors/cursor-dashboard-response/collector.js";
 import { toApiEvent } from "../../../src/dx/collectors/cursor-usage-api/collector.js";
-import { fakeManifest } from "../../../src/dx/contracts/fakes.js";
 import type { StoreSnapshot } from "../../../src/dx/contracts/services.js";
 import { withCollectorBlocks } from "../../../src/dx/harness/collector-blocks.js";
 import {
@@ -36,6 +35,7 @@ import {
 } from "../../../src/dx/model/event.js";
 import { EventIdSchema } from "../../../src/dx/model/ids.js";
 import type { MetricResult } from "../../../src/dx/model/metric.js";
+import { fakeManifest } from "../fakes.js";
 
 const fixturePath = (relative: string) =>
   path.join(import.meta.dirname, "..", "fixtures", relative);

@@ -4,7 +4,6 @@ import { Effect, Layer, Ref } from "effect";
 import { TestClock } from "effect/testing";
 
 import { EventStore } from "../../src/dx/contracts/event-store.js";
-import { FakeEventStoreLayer } from "../../src/dx/contracts/fakes.js";
 import {
   ClaudeCodeHarness,
   ClaudeCodeStore,
@@ -27,6 +26,7 @@ import { emptyFlightContext } from "../../src/dx/model/event.js";
 import { runPlannedStep } from "../../src/dx/registry/sync.js";
 import type { PlannedSource } from "../../src/dx/registry/sync.js";
 import { HarnessCursors } from "../../src/dx/storage/harness-cursors.js";
+import { FakeEventStoreLayer } from "./fakes.js";
 
 const ref = (size: number, mtimeMs: number): SessionRef => ({
   channel: "session-file",

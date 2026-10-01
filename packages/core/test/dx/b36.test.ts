@@ -5,10 +5,6 @@ import path from "node:path";
 import { describe, expect, it } from "@effect/vitest";
 import { Effect, Result, Schema } from "effect";
 
-import {
-  fakeManifest,
-  makeFakeEventStore,
-} from "../../src/dx/contracts/fakes.js";
 import type { StoreSnapshot } from "../../src/dx/contracts/services.js";
 import { ValueMethodSchema } from "../../src/dx/model/common.js";
 import { ModuleDescriptorSchema } from "../../src/dx/model/descriptor.js";
@@ -29,6 +25,7 @@ import {
   buildTimeline,
   encodeCursor,
 } from "../../src/dx/reports/explain/timeline.js";
+import { fakeManifest, makeFakeEventStore } from "./fakes.js";
 
 const FixtureEventSchema = Schema.Struct({
   adapterId: Schema.String,
