@@ -20,8 +20,24 @@ const root = "/h/.claude/projects";
 
 const project = `${root}/-w-repo`;
 
+interface ToolInput {
+  readonly command?: string;
+  readonly file_path?: string;
+  readonly path?: string;
+}
+
+type ContentBlock =
+  | { readonly text: string; readonly type: "text" }
+  | {
+      readonly id: string;
+      readonly input: ToolInput;
+      readonly name: string;
+      readonly type: "tool_use";
+    };
+
 interface RowSpec {
   readonly agentId?: string;
+  readonly content?: readonly ContentBlock[];
   readonly branch?: string;
   readonly cacheRead?: number | null;
   readonly cacheWrite?: number;
@@ -45,7 +61,7 @@ const assistant = (spec: RowSpec): string =>
     gitBranch: spec.branch ?? "feature/a",
     isSidechain: spec.agentId !== undefined,
     message: {
-      content: [{ text: "synthetic", type: "text" }],
+      content: spec.content ?? [{ text: "synthetic", type: "text" }],
       id: spec.messageId,
       model: spec.model ?? "claude-sonnet-5",
       role: "assistant",
@@ -392,6 +408,65 @@ describe("Claude Code dedupe rules", () => {
         ])
       )
     )
+  );
+
+  it.effect(
+    "lists every path the request's tool calls touched, across its streamed rows",
+    () =>
+      Effect.gen(function* touched() {
+        const usage = usageOf(yield* readAll);
+
+        expect(usage.map((event) => event.ai?.touchedPaths)).toStrictEqual([
+          ["/h/notes/a.md", "/w/other", "/w/repo/src/b.ts"],
+        ]);
+        expect(usage[0]?.payload.toolCalls).toBe(3);
+      }).pipe(
+        Effect.provide(
+          storeWith(
+            [
+              {
+                path: `${project}/s1.jsonl`,
+                text: lines(
+                  assistant({
+                    content: [
+                      {
+                        id: "t1",
+                        input: { file_path: "~/notes/a.md" },
+                        name: "Read",
+                        type: "tool_use",
+                      },
+                    ],
+                    messageId: "m1",
+                    output: 30,
+                    session: "s1",
+                    stop: null,
+                  }),
+                  assistant({
+                    content: [
+                      {
+                        id: "t2",
+                        input: { command: "cd /w/other && ls" },
+                        name: "Bash",
+                        type: "tool_use",
+                      },
+                      {
+                        id: "t3",
+                        input: { path: "src/b.ts" },
+                        name: "Grep",
+                        type: "tool_use",
+                      },
+                    ],
+                    messageId: "m1",
+                    output: 60,
+                    session: "s1",
+                  })
+                ),
+              },
+            ],
+            { home: "/h" }
+          )
+        )
+      )
   );
 
   it.effect("never treats a HEAD branch as a branch name", () =>

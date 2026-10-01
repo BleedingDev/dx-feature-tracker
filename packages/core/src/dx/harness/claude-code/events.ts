@@ -294,6 +294,7 @@ export const usageEvent = (
       sourceKind: CLAUDE_SOURCE_KIND,
       stopReason: row.stopReason,
       tokens: legacyTokens(tokens),
+      toolCalls: pick.calls.length,
       webFetchRequests: count(serverTools?.web_fetch_requests),
       webSearchRequests: count(serverTools?.web_search_requests),
     },
