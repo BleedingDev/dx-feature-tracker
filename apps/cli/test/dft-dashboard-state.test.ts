@@ -75,8 +75,15 @@ describe("dashboard URL state", () => {
     expect(kit.segment({ ...base, since: "24h" })).toBe("custom");
   });
 
-  it("links straight to a branch and keeps the other filters beside it", () => {
-    const state = { ...base, filters: [["tool", "codex"] as const] };
+  it("links straight to a branch with the time range but none of the usage filters", () => {
+    const state: UsageViewState = {
+      ...base,
+      filters: [
+        ["tool", "codex"],
+        ["model", "gpt-5.6-luna"],
+      ],
+      since: "7d",
+    };
 
     const hash = kit.encode({
       branch: "feature/x",
@@ -85,12 +92,19 @@ describe("dashboard URL state", () => {
       state,
     });
 
+    expect(hash).not.toContain("tool=");
     expect(kit.decode(hash)).toEqual({
       branch: "feature/x",
       name: "branch",
       repo,
-      state,
+      state: { ...state, filters: [] },
     });
+
+    expect(
+      kit.decode(
+        `#/branch?repo=${encodeURIComponent(repo)}&branch=main&tool=claude-code&model=claude-sonnet-5`
+      ).state.filters
+    ).toEqual([]);
 
     expect(kit.decode("#/setup?since=7d")).toEqual({
       name: "setup",
@@ -153,6 +167,28 @@ describe("dashboard drilldown", () => {
     });
 
     expect(kit.drill(repos?.state ?? base, repo)).toEqual({
+      branch: "main",
+      name: "branch",
+      repo,
+      state: { ...base, by: "repo" },
+    });
+  });
+
+  it("opens the whole branch from a tool and model drilldown instead of a silently filtered one", () => {
+    const repos = kit.drill(
+      {
+        ...base,
+        by: "repo",
+        filters: [
+          ["tool", "claude-code"],
+          ["model", "claude-sonnet-5"],
+          ["branch", "main"],
+        ],
+      },
+      repo
+    );
+
+    expect(repos).toEqual({
       branch: "main",
       name: "branch",
       repo,
@@ -332,6 +368,40 @@ describe("dashboard usage queries", () => {
     expect(kit.addDays("2026-01-01", -1)).toBe("2025-12-31");
     expect(kit.addDays("2026-09-25", 30)).toBe("2026-10-25");
     expect(kit.addDays("soon", 1)).toBeNull();
+  });
+});
+
+describe("dashboard session labels", () => {
+  const parent = "01a0f71d-2ce1-7c3a-9f10-5b2d8e4a6c01";
+  const subagent = "01a0f71d-900e-7a41-8b22-1c3d5e7f9a02";
+  const later = "01a0f71d-fae9-7d55-a301-4e6f8a0b2c03";
+
+  it("keeps the millisecond part of a UUIDv7 session, so sessions started in the same minute differ", () => {
+    expect([parent, subagent, later].map(kit.shortSession)).toEqual([
+      "01a0f71d-2ce1",
+      "01a0f71d-900e",
+      "01a0f71d-fae9",
+    ]);
+    expect(kit.shortSession("6f1c2a9e-4b7d-4e21-9c3a-8d5e7f1a2b3c")).toBe(
+      "6f1c2a9e"
+    );
+    expect(kit.shortSession("ses_short")).toBe("ses_short");
+  });
+
+  it("shows more of an id only where two short labels would collide", () => {
+    const v4a = "6f1c2a9e-4b7d-4e21-9c3a-8d5e7f1a2b3c";
+    const v4b = "6f1c2a9e-4b7d-4e21-9c3a-000000000000";
+    const v4c = "6f1c2a9e-1111-4e21-9c3a-8d5e7f1a2b3c";
+    const lone = "0b2d4f6a-8c0e-4a2b-9d4f-6a8c0e2a4b6d";
+
+    expect(kit.sessionLabels([v4a, v4b, v4c, lone, "(none)"])).toEqual([
+      v4a,
+      v4b,
+      "6f1c2a9e-1111",
+      "0b2d4f6a",
+      "(none)",
+    ]);
+    expect(new Set(kit.sessionLabels([parent, subagent, later])).size).toBe(3);
   });
 });
 

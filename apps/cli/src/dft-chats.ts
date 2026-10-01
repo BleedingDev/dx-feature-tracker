@@ -1,3 +1,4 @@
+import { dashboardStateKit } from "./dft-dashboard-state.js";
 import {
   collapseTurns,
   formatAgo,
@@ -169,10 +170,12 @@ export const chatStatsParts = (
   ];
 };
 
+const { shortSession } = dashboardStateKit();
+
 const shortId = (sessionId: string): string => {
   const tail = sessionId.split(/[:/]/u).at(-1) ?? sessionId;
 
-  return tail.replace(/^agent-/u, "").slice(0, 8);
+  return shortSession(tail.replace(/^agent-/u, ""));
 };
 
 export const chatLabel = (

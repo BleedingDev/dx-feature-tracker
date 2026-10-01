@@ -146,15 +146,20 @@ const BRANCH_METRICS = [
   "billed",
 ];
 
-const branchUsageQuery = (
+export const branchUsageQuery = (
   url: URL,
   groupBy: "model" | "tool",
   since: string | undefined
 ): URLSearchParams => {
-  const params = new URLSearchParams(url.searchParams);
+  const params = new URLSearchParams();
 
-  params.delete("since");
-  params.delete("until");
+  for (const name of ["repo", "branch", "tz"]) {
+    const value = url.searchParams.get(name);
+
+    if (value !== null) {
+      params.set(name, value);
+    }
+  }
 
   if (since !== undefined) {
     params.set("since", since);
@@ -289,6 +294,36 @@ const stepView = (step: SyncStep) => ({
   note: sourceNote(step),
   ok: step.status === "synced",
 });
+
+const usageOffByEnv = (): boolean =>
+  (process.env.DFT_CURSOR_USAGE ?? "").toLowerCase() === "off";
+
+const usageView = (
+  saved: boolean,
+  usage: {
+    readonly lastError: string | null;
+    readonly lastRunAt: string | null;
+  },
+  now: number
+) => {
+  if (usageOffByEnv()) {
+    return {
+      enabled: false,
+      locked: true,
+      note: "Off because DFT_CURSOR_USAGE=off is set. Unset it to turn the import on here.",
+    };
+  }
+
+  return {
+    enabled: saved,
+    locked: false,
+    note:
+      usage.lastError ??
+      (usage.lastRunAt === null
+        ? "not run yet"
+        : `last checked ${formatAgo(usage.lastRunAt, now)}`),
+  };
+};
 
 const fail = (status: number, message: string) =>
   Effect.fail(new DashboardServerError({ message, status }));
@@ -558,14 +593,7 @@ export const serveDashboard = (options: LiveServerOptions) =>
             ),
           })
         ),
-        usage: {
-          enabled: config.cursorUsageImport,
-          note:
-            status.usage.lastError ??
-            (status.usage.lastRunAt === null
-              ? "not run yet"
-              : `last checked ${formatAgo(status.usage.lastRunAt, now)}`),
-        },
+        usage: usageView(config.cursorUsageImport, status.usage, now),
       };
     });
 

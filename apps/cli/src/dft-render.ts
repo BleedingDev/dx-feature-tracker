@@ -287,6 +287,12 @@ export const sourceNote = (step: SyncStep): string => {
     );
   }
 
+  const seen = (step.duplicates ?? 0) + (step.inserted ?? 0);
+
+  if (seen === 0) {
+    return "up to date";
+  }
+
   return step.inserted === 0 || step.inserted === null
     ? plural(step.duplicates ?? 0, "event")
     : `${plural((step.duplicates ?? 0) + step.inserted, "event")} (${formatCount(step.inserted)} new)`;

@@ -13,7 +13,7 @@ import { DateTime, Effect, Schema } from "effect";
 
 import { dashboardStateKit } from "../src/dft-dashboard-state.js";
 import type { UsageViewState } from "../src/dft-dashboard-state.js";
-import { serveDashboard } from "../src/dft-live.js";
+import { branchUsageQuery, serveDashboard } from "../src/dft-live.js";
 import type { LiveServer } from "../src/dft-live.js";
 import { costOptionsFor } from "../src/dft-session.js";
 import { claudeLogsJson } from "./otlp-payloads.js";
@@ -578,6 +578,11 @@ const SetupTools = Schema.fromJsonString(
         tool: Schema.String,
       })
     ),
+    usage: Schema.Struct({
+      enabled: Schema.Boolean,
+      locked: Schema.Boolean,
+      note: Schema.String,
+    }),
   })
 );
 
@@ -688,9 +693,33 @@ describe("dft dashboard page queries", () => {
         );
         expect(reply.tools.every((tool) => !tool.installed)).toBe(true);
         expect(reply.sources.facts).toBe(0);
+        expect(reply.usage.enabled).toBe(false);
+        expect(reply.usage.locked).toBe(true);
+        expect(reply.usage.note).toContain("DFT_CURSOR_USAGE=off");
       })
     )
   );
+
+  it("asks for a branch's tiles and models with only its repo, branch and window", () => {
+    const params = branchUsageQuery(
+      new URL(
+        "http://127.0.0.1/api/branch?repo=%2Fw%2Fapp%2F.git&branch=main&since=all&tz=UTC&tool=claude-code&model=claude-sonnet-5&provider=anthropic"
+      ),
+      "model",
+      "7d"
+    );
+
+    expect(Object.fromEntries(params)).toEqual({
+      branch: "main",
+      groupBy: "model",
+      limit: "12",
+      metrics: "tokens,requests,estimate,toolFigure,billed",
+      repo: "/w/app/.git",
+      since: "7d",
+      sortBy: "tokens",
+      tz: "UTC",
+    });
+  });
 
   it.live("gives the branch screen its usage by tool and by model", () =>
     withDashboard((server) =>

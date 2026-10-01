@@ -57,6 +57,27 @@ describe("dft chats", () => {
     expect(text.filter((line) => line.includes("Also on"))).toHaveLength(1);
   });
 
+  it("names untitled chats apart when their UUIDv7 ids start in the same minute", () => {
+    const text = chatsText(
+      {
+        branch: "main",
+        chats: [
+          node("01a0f79d-11aa-7c3a-9f10-5b2d8e4a6c01"),
+          node("01a0f79d-22bb-7a41-8b22-1c3d5e7f9a02"),
+        ],
+        rootSessionIds: [
+          "01a0f79d-11aa-7c3a-9f10-5b2d8e4a6c01",
+          "01a0f79d-22bb-7a41-8b22-1c3d5e7f9a02",
+        ],
+        unattributed: { events: 0 },
+      },
+      { now: NOW, verbose: false }
+    ).split("\n");
+
+    expect(text).toContain("chat 01a0f79d-11aa");
+    expect(text).toContain("chat 01a0f79d-22bb");
+  });
+
   it("lists every tool's chats with tool, title, models, money and the subagent under its parent", () => {
     const text = chatsText(
       {

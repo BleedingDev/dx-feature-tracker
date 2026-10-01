@@ -58,6 +58,8 @@ export interface DashboardStateKit {
     dimension: string
   ) => string;
   readonly segment: (state: UsageViewState) => string;
+  readonly sessionLabels: (keys: readonly string[]) => readonly string[];
+  readonly shortSession: (key: string) => string;
   readonly tableQuery: (state: UsageViewState, tz: string) => string;
   readonly toolsQuery: (state: UsageViewState, tz: string) => string;
   readonly withFilter: (
@@ -204,8 +206,15 @@ export const dashboardStateKit = (): DashboardStateKit => {
     return query === "" ? `#${path}` : `#${path}?${query}`;
   };
 
+  const branchState = (state: UsageViewState): UsageViewState => ({
+    ...state,
+    filters: [],
+  });
+
   const encode = (route: DashboardRoute): string => {
-    const params = stateParams(route.state);
+    const params = stateParams(
+      route.name === "branch" ? branchState(route.state) : route.state
+    );
 
     if (route.name === "branch") {
       const branch = new URLSearchParams();
@@ -234,12 +243,7 @@ export const dashboardStateKit = (): DashboardStateKit => {
         branch: params.get("branch") ?? "",
         name: "branch",
         repo: params.get("repo") ?? "",
-        state: {
-          ...state,
-          filters: state.filters.filter(
-            ([name]) => name !== "repo" && name !== "branch"
-          ),
-        },
+        state: branchState(state),
       };
     }
 
@@ -420,6 +424,38 @@ export const dashboardStateKit = (): DashboardStateKit => {
     );
   };
 
+  const UUID_V7 = /^[\da-f]{8}-[\da-f]{4}-7[\da-f]{3}-/iu;
+
+  const shortSession = (key: string): string => {
+    if (key.length <= 14) {
+      return key;
+    }
+
+    return key.slice(0, UUID_V7.test(key) ? 13 : 8);
+  };
+
+  const sessionCuts: readonly ((key: string) => string)[] = [
+    shortSession,
+    (key) => (key.length <= 14 ? key : key.slice(0, 13)),
+    (key) => key,
+  ];
+
+  const sessionLabels = (keys: readonly string[]): readonly string[] => {
+    const levels = sessionCuts.map((cut) => keys.map((key) => cut(key)));
+
+    return keys.map((key, index) => {
+      const unique = levels.find((labels) => {
+        const label = labels[index];
+
+        return labels.every(
+          (other, at) => at === index || other !== label || keys[at] === key
+        );
+      });
+
+      return unique?.[index] ?? key;
+    });
+  };
+
   const drill = (state: UsageViewState, key: string): DashboardRoute | null => {
     if (key === "(other)" || key === "(unattributed)") {
       return null;
@@ -459,12 +495,7 @@ export const dashboardStateKit = (): DashboardStateKit => {
         branch: branches[0] ?? "",
         name: "branch",
         repo: key,
-        state: {
-          ...state,
-          filters: state.filters.filter(
-            ([name]) => name !== "repo" && name !== "branch"
-          ),
-        },
+        state: branchState(state),
       };
     }
 
@@ -524,6 +555,8 @@ export const dashboardStateKit = (): DashboardStateKit => {
     encode,
     facetQuery,
     segment,
+    sessionLabels,
+    shortSession,
     tableQuery,
     toolsQuery,
     withFilter,

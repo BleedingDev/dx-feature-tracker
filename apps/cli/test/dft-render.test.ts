@@ -6,6 +6,7 @@ import {
   formatCount,
   formatDuration,
   formatUsd,
+  sourceNote,
   syncText,
 } from "../src/dft-render.js";
 
@@ -69,5 +70,22 @@ describe("dft human output", () => {
       "dft: synced 12 new events from 1 source"
     );
     expect(syncText(report, true).split("\n")).toHaveLength(3);
+  });
+
+  it("calls a source with nothing new up to date instead of 0 events", () => {
+    const step = {
+      duplicates: 0,
+      input: null,
+      inserted: 0,
+      reason: null,
+      source: "harness.claude-code",
+      status: "synced" as const,
+    };
+
+    expect(sourceNote(step)).toBe("up to date");
+    expect(sourceNote({ ...step, duplicates: 30 })).toBe("30 events");
+    expect(sourceNote({ ...step, duplicates: 30, inserted: 2 })).toBe(
+      "32 events (2 new)"
+    );
   });
 });
