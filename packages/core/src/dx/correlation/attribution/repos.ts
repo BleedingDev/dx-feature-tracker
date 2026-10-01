@@ -140,10 +140,11 @@ const leavesStoredWorktree = (
   );
 };
 
-const placedByToolCalls = (located: Located): boolean =>
-  located.ai.branchSource === "tool-calls" &&
+const placedByHarness = (located: Located): boolean =>
   located.event.context.repoCommonDir !== null &&
-  (located.ai.touchedPaths ?? []).length === 0;
+  (located.ai.branchSource === "subagent-split" ||
+    (located.ai.branchSource === "tool-calls" &&
+      (located.ai.touchedPaths ?? []).length === 0));
 
 const placeKey = (place: RepoPlace): string =>
   `${place.repoCommonDir}\u0000${place.worktreePath ?? ""}`;
@@ -550,7 +551,7 @@ export const attributeRepos = (
       } else if (
         at.kind === "missing" ||
         contextCovers(located) ||
-        placedByToolCalls(located)
+        placedByHarness(located)
       ) {
         kept.add(located.event.eventId);
       } else {

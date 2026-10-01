@@ -7,9 +7,11 @@ import { NodeServices } from "@effect/platform-node";
 import { afterAll, describe, expect, it } from "@effect/vitest";
 import { Effect, Layer, Schema } from "effect";
 
+import { makeRepoLocator } from "../../../src/dx/correlation/attribution/locator.js";
+import { attributeRepos } from "../../../src/dx/correlation/attribution/repos.js";
 import { everywhere } from "../../../src/dx/harness/contract.js";
 import type { Harness, SessionRef } from "../../../src/dx/harness/contract.js";
-import { GitRunner } from "../../../src/dx/harness/git.js";
+import { GitRunner, memoryGitAt } from "../../../src/dx/harness/git.js";
 import { HarnessHome } from "../../../src/dx/harness/home.js";
 import { LocalSqlite } from "../../../src/dx/harness/local-sqlite.js";
 import type { MemoryTables } from "../../../src/dx/harness/local-sqlite.js";
@@ -142,6 +144,18 @@ const readEverything = Effect.gen(function* readEverything() {
 const usageOf = (events: readonly DxEventEnvelope[], sessionId: string) =>
   events.filter(
     (event) => event.usage !== null && event.ai?.sessionId === sessionId
+  );
+
+const placedLikeTheStore = (events: readonly DxEventEnvelope[]) =>
+  Effect.map(
+    attributeRepos(
+      makeRepoLocator({
+        at: (target) => Effect.succeed(memoryGitAt(FIXTURE_REPOS, target)),
+        worktrees: () => Effect.succeed([]),
+      }),
+      events
+    ),
+    (placed) => placed.events
   );
 
 const sum = (
@@ -914,9 +928,9 @@ describe("OpenCode dedupe rules", () => {
           new Set(pieces.map((event) => event.usage?.requestKey)).size
         ).toBe(2);
 
-        const orchestrator = deriveUsageFacts(events).facts.filter(
-          (fact) => fact.session === S
-        );
+        const orchestrator = deriveUsageFacts(
+          yield* placedLikeTheStore(events)
+        ).facts.filter((fact) => fact.session === S);
 
         expect(
           orchestrator
