@@ -8,4 +8,4 @@ export const CLAUDE_CODE_CHANNELS = [
   "transcript",
 ] as const satisfies readonly Channel[];
 
-export const CLAUDE_CODE_READINESS: ModuleReadiness = "unsupported";
+export const CLAUDE_CODE_READINESS: ModuleReadiness = "ready";
