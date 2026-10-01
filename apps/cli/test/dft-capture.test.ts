@@ -43,7 +43,7 @@ import {
   uninstallTelemetry,
 } from "../src/dft-telemetry.js";
 import type { TelemetryOptions } from "../src/dft-telemetry.js";
-import { codexTrusts, detectedFrom } from "../src/dft-tools.js";
+import { captureText, codexTrusts, detectedFrom } from "../src/dft-tools.js";
 
 const created: string[] = [];
 
@@ -306,6 +306,14 @@ describe("dft install project capture (D39)", () => {
     ).toEqual(["skipped", "skipped"]);
     expect(read(repo, CODEX_PROJECT_HOOKS)).toBe('{"hooks": {}}\n');
     expect(read(repo, PI_EXTENSION_PATH)).toBe("export default () => {};\n");
+
+    const text = captureText(repo, [], install, { codexTrusted: false });
+
+    expect(text).not.toContain("approve the hooks");
+    expect(text).not.toContain("Pi asks once");
+    expect(text).toContain(
+      "Live capture is off for Codex in this folder because dft wrote nothing here"
+    );
   });
 
   it("leaves invalid hook JSON alone", () => {

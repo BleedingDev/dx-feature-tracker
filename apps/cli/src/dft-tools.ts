@@ -295,7 +295,11 @@ export const captureText = (
 
   const blocks = install.tools.map((capture) => {
     const name = CAPTURE_TOOL_NAMES[capture.tool];
-    const note = toolNote(capture.tool, notes);
+    const live = capture.steps.some((item) => item.action !== "skipped");
+
+    const note = live
+      ? toolNote(capture.tool, notes)
+      : `Live capture is off for ${name} in this folder because dft wrote nothing here; dft still reads its session files on each sync.`;
 
     return [
       name,
