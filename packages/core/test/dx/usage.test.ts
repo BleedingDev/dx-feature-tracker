@@ -755,6 +755,157 @@ describe("usage facts", () => {
     });
   });
 
+  describe("a session figure whose cost state names the router alias", () => {
+    const served = (
+      id: string,
+      model: string,
+      provider: "anthropic" | "openai",
+      via: string | null
+    ): DxEventEnvelope => {
+      const base = usageEvent(
+        id,
+        "claude-code",
+        "session-file",
+        100,
+        model,
+        "main",
+        `req-${id}`
+      );
+
+      return base.ai === null
+        ? base
+        : { ...base, ai: { ...base.ai, provider, via } };
+    };
+
+    const sessionCost = (models: Record<string, number>): DxEventEnvelope => {
+      const base = usageEvent(
+        "cost",
+        "claude-code",
+        "session-file",
+        0,
+        "claude-opus-5",
+        "main"
+      );
+
+      const amount = Object.values(models).reduce((sum, cost) => sum + cost, 0);
+
+      return {
+        ...base,
+        ai:
+          base.ai === null
+            ? null
+            : { ...base.ai, model: null, modelRaw: null, provider: "unknown" },
+        identity: { ...emptyEventIdentity, sessionId: "session-1" },
+        kind: "ai.session",
+        payload: {
+          costState: {
+            models: Object.fromEntries(
+              Object.entries(models).map(([model, costUsd]) => [
+                model,
+                { costUsd },
+              ])
+            ),
+          },
+        },
+        usage: {
+          premiumRequests: null,
+          requestKey: null,
+          serviceTier: null,
+          speed: null,
+          tokens: unknownTokens,
+          toolFigure: { amount, currency: "USD", kind: "api-equivalent" },
+        },
+      };
+    };
+
+    it("keeps the figure whole when an alias served no request", () => {
+      const derived = deriveUsageFacts([
+        served("astra", "gpt-6-astra", "openai", "gateway"),
+        served("fable", "claude-fable-5-1", "anthropic", null),
+        sessionCost({ "claude-astra": 0.6, "claude-fable-5-1[1m]": 0.15 }),
+      ]);
+
+      const byModel = run(derived.facts, { groupBy: "model" });
+      const byProvider = run(derived.facts, { groupBy: "provider" });
+
+      expect(byModel.groups.map((group) => group.key)).not.toContain(
+        "claude-astra"
+      );
+      expect(byModel.unattributed?.values.toolFigure).toBeCloseTo(0.75);
+      expect(
+        byProvider.groups.map((group) => [group.key, group.values.toolFigure])
+      ).not.toContainEqual(["anthropic", 0.6]);
+      expect(byProvider.unattributed?.values.toolFigure).toBeCloseTo(0.75);
+    });
+
+    it("puts the figure on the one model the session's requests used", () => {
+      const derived = deriveUsageFacts([
+        served("astra", "gpt-6-astra", "openai", "gateway"),
+        sessionCost({ "claude-astra": 0.6 }),
+      ]);
+
+      expect(
+        run(derived.facts, { groupBy: "model" }).groups.map((group) => [
+          group.key,
+          group.values.toolFigure,
+        ])
+      ).toEqual([["gpt-6-astra", 0.6]]);
+      expect(
+        run(derived.facts, { filters: { provider: ["openai"] } }).total.values
+          .toolFigure
+      ).toBeCloseTo(0.6);
+    });
+
+    it("still splits by the models its subagents' requests used", () => {
+      const subagent = served("haiku", "claude-haiku-4-5", "anthropic", null);
+
+      const derived = deriveUsageFacts([
+        served("opus", "claude-opus-5", "anthropic", null),
+        {
+          ...subagent,
+          ai:
+            subagent.ai === null
+              ? null
+              : {
+                  ...subagent.ai,
+                  parentSessionId: "session-1",
+                  sessionId: "agent-1",
+                },
+          identity: { ...subagent.identity, sessionId: "agent-1" },
+        },
+        sessionCost({
+          "claude-haiku-4-5-20251001": 0.15,
+          "claude-opus-5": 0.6,
+        }),
+      ]);
+
+      const byModel = run(derived.facts, { groupBy: "model" });
+
+      expect(
+        byModel.groups.map((group) => [group.key, group.values.toolFigure])
+      ).toEqual([
+        ["claude-haiku-4-5", 0.15],
+        ["claude-opus-5", 0.6],
+      ]);
+      expect(byModel.unattributed).toBeNull();
+    });
+
+    it("takes the provider and gateway of the requests that served each model", () => {
+      const derived = deriveUsageFacts([
+        served("opus", "claude-opus-5", "anthropic", "gateway"),
+        served("fable", "claude-fable-5-1", "anthropic", null),
+        sessionCost({ "claude-fable-5-1[1m]": 0.15, "claude-opus-5": 0.6 }),
+      ]);
+
+      expect(
+        run(derived.facts, { groupBy: "via" }).groups.map((group) => [
+          group.key,
+          group.values.toolFigure,
+        ])
+      ).toContainEqual(["gateway", 0.6]);
+    });
+  });
+
   it("leaves out an OpenTelemetry row without a request id when the session file has the session", () => {
     const fromFile = usageEvent(
       "codex-file",

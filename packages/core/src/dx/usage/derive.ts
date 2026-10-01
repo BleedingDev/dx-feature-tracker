@@ -20,6 +20,7 @@ import {
   hasKnownTokens,
   unknownTokens,
 } from "../model/attribution.js";
+import type { AiAttribution } from "../model/attribution.js";
 import type { DxEventEnvelope } from "../model/event.js";
 import type {
   DerivedRow,
@@ -506,7 +507,87 @@ const addsUpTo = (
   Math.abs(costs.reduce((total, [, cost]) => total + cost, 0) - amount) <=
   FIGURE_TOLERANCE * Math.max(1, amount);
 
-const byModel = (whole: UsageFact, event: DxEventEnvelope): UsageFact[] => {
+type ServedModel = Pick<AiAttribution, "provider" | "via">;
+
+type ServedModels = ReadonlyMap<string, ServedModel>;
+
+const sessionParents = (
+  events: readonly DxEventEnvelope[]
+): ReadonlyMap<string, string> => {
+  const parents = new Map<string, string>();
+
+  for (const event of events) {
+    const key = harnessSessionKey(event);
+    const parent = event.ai?.parentSessionId ?? null;
+
+    if (key !== null && event.ai !== null && present(parent)) {
+      const parentKey = `${event.ai.harness}|${parent}`;
+
+      if (parentKey !== key && !parents.has(key)) {
+        parents.set(key, parentKey);
+      }
+    }
+  }
+
+  return parents;
+};
+
+const lineageOf = (
+  key: string,
+  parents: ReadonlyMap<string, string>
+): readonly string[] => {
+  const seen = new Set<string>();
+  let current: string | undefined = key;
+
+  while (current !== undefined && !seen.has(current)) {
+    seen.add(current);
+    current = parents.get(current);
+  }
+
+  return [...seen];
+};
+
+const servedModelsBySession = (
+  events: readonly DxEventEnvelope[]
+): ReadonlyMap<string, ServedModels> => {
+  const parents = sessionParents(events);
+  const served = new Map<string, Map<string, ServedModel>>();
+
+  for (const event of events) {
+    const key = harnessSessionKey(event);
+    const { ai } = event;
+
+    if (key !== null && ai !== null && usageBearing(event)) {
+      const names = new Set(
+        [ai.model, ai.modelRaw].flatMap((name) => {
+          const model = normalizeModel(name);
+
+          return model === null ? [] : [model];
+        })
+      );
+
+      for (const session of lineageOf(key, parents)) {
+        const models = served.get(session) ?? new Map<string, ServedModel>();
+
+        for (const name of names) {
+          if (!models.has(name)) {
+            models.set(name, { provider: ai.provider, via: ai.via });
+          }
+        }
+
+        served.set(session, models);
+      }
+    }
+  }
+
+  return served;
+};
+
+const byModel = (
+  whole: UsageFact,
+  event: DxEventEnvelope,
+  served: ServedModels | undefined
+): UsageFact[] => {
   const figure = whole.toolFigure;
   const costs = modelCosts(event);
 
@@ -519,17 +600,47 @@ const byModel = (whole: UsageFact, event: DxEventEnvelope): UsageFact[] => {
     return [whole];
   }
 
-  return costs.map(([raw, cost]) => ({
+  const parts = costs.map(([raw, cost]) => {
+    const model = normalizeModel(raw);
+
+    return {
+      cost,
+      model,
+      raw,
+      request: model === null ? undefined : served?.get(model),
+    };
+  });
+
+  if (
+    served !== undefined &&
+    parts.some((part) => part.request === undefined)
+  ) {
+    return [whole];
+  }
+
+  const providerFor = (
+    raw: string,
+    request: ServedModel | undefined
+  ): UsageFact["provider"] => {
+    if (whole.provider !== null && whole.provider !== "unknown") {
+      return whole.provider;
+    }
+
+    return request === undefined || request.provider === "unknown"
+      ? inferProvider(raw)
+      : request.provider;
+  };
+
+  return parts.map(({ cost, model, raw, request }) => ({
     ...whole,
     factId: digestId(`${whole.factId}\n${raw}`),
-    model: normalizeModel(raw),
+    model,
     modelRaw: raw,
-    provider:
-      whole.provider === null || whole.provider === "unknown"
-        ? inferProvider(raw)
-        : whole.provider,
+    provider: providerFor(raw, request),
     toolFigure: { ...figure, amount: cost },
-    via: whole.via ?? viaFor(raw, null),
+    via:
+      whole.via ??
+      (request === undefined ? viaFor(raw, null) : (request.via ?? null)),
   }));
 };
 
@@ -575,6 +686,8 @@ const sessionFigureFacts = (
     return ranked[0] ?? [];
   });
 
+  const served = servedModelsBySession(events);
+
   return largest.flatMap((event) => {
     const whole: UsageFact = {
       ...factOf([event]),
@@ -582,7 +695,13 @@ const sessionFigureFacts = (
       tokens: unknownTokens,
     };
 
-    return byModel(whole, event).map((fact) => ({
+    const key = harnessSessionKey(event);
+
+    return byModel(
+      whole,
+      event,
+      key === null ? undefined : served.get(key)
+    ).map((fact) => ({
       fact,
       sources: [event.eventId],
     }));
