@@ -256,8 +256,7 @@ export const sourcesView = (output: DxUsageOutputType, now: number) => {
   return {
     derivedAt:
       coverage.derivedAt === null ? null : formatAgo(coverage.derivedAt, now),
-    facts: coverage.facts,
-    matched: coverage.matched,
+    requests: output.total.values.requests ?? 0,
     tools: tools.map((tool) => {
       const fields = coverage.disagreements
         .filter((entry) => entry.tool === tool)

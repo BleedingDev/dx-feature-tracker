@@ -24,6 +24,7 @@ import type {
   DashboardData,
   DashboardHistoryQuery,
 } from "../src/dft-dashboard.js";
+import { sourcesView } from "../src/dft-live.js";
 
 const EVIL = `<script>alert("x")</script>`;
 
@@ -272,6 +273,35 @@ const staticUsage = {
     }),
   ]),
 };
+
+describe("dft dashboard sources panel", () => {
+  it("counts requests, not usage facts with no request", () => {
+    const view = sourcesView(
+      usageOutput(
+        "tool",
+        [
+          usageRow("claude-code", { requests: 4 }),
+          usageRow("codex", { requests: 5 }),
+        ],
+        {
+          coverage: {
+            ...usageOutput(null, []).coverage,
+            facts: 12,
+            matched: 12,
+          },
+        }
+      ),
+      Date.parse("2026-09-30T14:00:00.000Z")
+    );
+
+    expect(view.requests).toBe(9);
+    expect(view).not.toHaveProperty("matched");
+    expect(view.tools.map((tool) => [tool.tool, tool.requests])).toEqual([
+      ["claude-code", 4],
+      ["codex", 5],
+    ]);
+  });
+});
 
 describe("dft dashboard", () => {
   it("renders one balanced, self-contained HTML page", () => {

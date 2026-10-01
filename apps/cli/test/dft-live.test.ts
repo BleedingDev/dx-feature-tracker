@@ -588,7 +588,7 @@ const decodePageQuery = Schema.decodeUnknownSync(PageQueryReply);
 const SetupTools = Schema.fromJsonString(
   Schema.Struct({
     sources: Schema.Struct({
-      facts: Schema.Int,
+      requests: Schema.Int,
       tools: Schema.Array(Schema.Struct({ tool: Schema.String })),
     }),
     tools: Schema.Array(
@@ -712,7 +712,7 @@ describe("dft dashboard page queries", () => {
           ].toSorted()
         );
         expect(reply.tools.every((tool) => !tool.installed)).toBe(true);
-        expect(reply.sources.facts).toBe(0);
+        expect(reply.sources.requests).toBe(0);
         expect(reply.usage.enabled).toBe(false);
         expect(reply.usage.locked).toBe(true);
         expect(reply.usage.note).toContain("DFT_CURSOR_USAGE=off");
