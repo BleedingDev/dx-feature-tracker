@@ -18,6 +18,7 @@ export interface HeadMove {
   readonly branch: string | null;
   readonly detached: boolean;
   readonly owner?: string;
+  readonly renamedFrom?: string;
 }
 
 export type EvidencePointSource = "branch-reflog" | "commit";
@@ -60,6 +61,9 @@ const RETURNING = /\(finish\): returning to refs\/heads\/(?<to>\S+)$/u;
 
 const REBASE_START = /\(start\): checkout (?<to>\S+)$/u;
 
+const RENAMED =
+  /^Branch: renamed refs\/heads\/(?<from>\S+) to refs\/heads\/(?<to>\S+)$/u;
+
 const BRANCH_ACTIVITY = /^(?:commit|merge|cherry-pick|revert)\b/u;
 
 export const isoOf = (ms: number): string =>
@@ -89,6 +93,7 @@ export const parseReflogLines = (text: string): readonly RawReflogEntry[] =>
 
 interface Transition {
   readonly from: string | null;
+  readonly renamed?: boolean;
   readonly returning?: boolean;
   readonly to: string | null;
 }
@@ -98,6 +103,12 @@ const transitionOf = (subject: string): Transition | null => {
 
   if (checkout?.to !== undefined) {
     return { from: checkout.from ?? null, to: checkout.to };
+  }
+
+  const renamed = RENAMED.exec(subject)?.groups;
+
+  if (renamed?.from !== undefined && renamed.to !== undefined) {
+    return { from: renamed.from, renamed: true, to: renamed.to };
   }
 
   const returning = RETURNING.exec(subject)?.groups?.to;
@@ -126,6 +137,43 @@ const stateOf = (
   name !== null && (branches.has(name) || looksLikeBranch(name))
     ? { branch: name.replace(/^refs\/heads\//u, ""), detached: false }
     : { branch: null, detached: true };
+
+const renamedMove = (move: HeadMove, from: string, to: string): HeadMove => {
+  const renamed: HeadMove = {
+    ...move,
+    branch: move.branch === from ? to : move.branch,
+  };
+
+  return move.owner === from ? { ...renamed, owner: to } : renamed;
+};
+
+export const followRenames = (
+  moves: readonly HeadMove[]
+): readonly HeadMove[] => {
+  const followed = [...moves];
+
+  for (const [index, rename] of moves.entries()) {
+    const from = rename.renamedFrom;
+    const to = rename.branch;
+
+    if (from !== undefined && to !== null) {
+      for (const [earlier, move] of followed.slice(0, index).entries()) {
+        followed[earlier] = renamedMove(move, from, to);
+      }
+    }
+  }
+
+  return followed;
+};
+
+const moveAt = (
+  atMs: number,
+  state: { readonly branch: string | null; readonly detached: boolean },
+  transition: Transition | null
+): HeadMove =>
+  transition?.renamed === true && transition.from !== null
+    ? { atMs, ...state, renamedFrom: transition.from }
+    : { atMs, ...state };
 
 export const buildHeadMoves = (
   entries: readonly RawReflogEntry[],
@@ -172,13 +220,13 @@ export const buildHeadMoves = (
         last.detached !== state.detached)
     ) {
       moves.push({
-        move: { atMs, ...state },
+        move: moveAt(atMs, state, transition),
         returning: transition?.returning === true,
       });
     }
   }
 
-  return moves.map(({ move }, index) => {
+  const owned = moves.map(({ move }, index) => {
     if (!move.detached) {
       return move;
     }
@@ -198,6 +246,8 @@ export const buildHeadMoves = (
 
     return owner === null ? move : { ...move, owner };
   });
+
+  return followRenames(owned);
 };
 
 export const branchActivityPoints = (

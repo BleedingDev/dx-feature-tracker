@@ -1,7 +1,7 @@
 import { Option, Schema } from "effect";
 
 import type { DxEventEnvelope } from "../../model/event.js";
-import { buildHeadMoves } from "./timeline.js";
+import { buildHeadMoves, followRenames } from "./timeline.js";
 import type { HeadMove, RawReflogEntry, WorktreeTimeline } from "./timeline.js";
 
 const HeadMovesSchema = Schema.Struct({
@@ -124,7 +124,7 @@ export const withStoredHistory = (
     ? timeline
     : {
         ...timeline,
-        moves: [...moves, ...timeline.moves],
+        moves: followRenames([...moves, ...timeline.moves]),
         reflogFromMs: first.atMs,
       };
 };

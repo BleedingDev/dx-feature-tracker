@@ -386,6 +386,39 @@ describe("branch-at-time pure timeline", () => {
     expect(branchAt(bare, ms(MONTH_AGO)).method).toBe("unknown");
   });
 
+  it("follows a branch renamed while checked out, before and after the rename", () => {
+    const entries = parseReflogLines(
+      [
+        "HEAD@{2026-09-01T12:52:00+00:00}\u001FBranch: renamed refs/heads/feat/tmp to refs/heads/feat/final",
+        "HEAD@{2026-09-01T12:50:00+00:00}\u001Fcheckout: moving from main to feat/tmp",
+        "HEAD@{2026-09-01T12:00:00+00:00}\u001Fcommit (initial): subject",
+      ].join("\n")
+    );
+
+    const moves = buildHeadMoves(
+      entries,
+      new Set(["main", "feat/final"]),
+      "feat/final"
+    );
+
+    const timeline: WorktreeTimeline = {
+      currentBranch: "feat/final",
+      currentSinceMs: null,
+      moves,
+      points: [],
+      reflogFromMs: moves[0]?.atMs ?? null,
+      worktree: "/fixture",
+    };
+
+    expect(
+      [
+        "2026-09-01T12:30:00+00:00",
+        "2026-09-01T12:51:00+00:00",
+        "2026-09-01T12:54:00+00:00",
+      ].map((at) => branchAt(timeline, ms(at)).branch)
+    ).toStrictEqual(["main", "feat/final", "feat/final"]);
+  });
+
   it("attributes a detached bisect to the branch checked out before it", () => {
     const entries = parseReflogLines(
       [
