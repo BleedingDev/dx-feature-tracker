@@ -365,6 +365,7 @@ export interface AnalyzeLike {
 export interface AnalyzeExtras {
   readonly models: readonly (readonly [string, number])[];
   readonly status: string | null;
+  readonly toolFigure: number | null;
 }
 
 const priceTableLabel = (reason: string | null): string => {
@@ -445,15 +446,22 @@ const AUTO_MODELS = new Set(["auto", "default"]);
 const modelLabel = (model: string): string =>
   AUTO_MODELS.has(model.toLowerCase()) ? "Auto" : model;
 
-export const modelShares = (
-  chats: readonly ChatNode[]
+export interface ModelGroup {
+  readonly key: string;
+  readonly values: Readonly<Record<string, number | null>>;
+}
+
+export const tokenShares = (
+  groups: readonly ModelGroup[]
 ): readonly (readonly [string, number])[] => {
   const counts = new Map<string, number>();
 
-  for (const chat of chats) {
-    for (const turn of chat.modelTimeline) {
-      const model = modelLabel(turn.model);
-      counts.set(model, (counts.get(model) ?? 0) + 1);
+  for (const group of groups) {
+    const tokens = group.values.tokens ?? 0;
+
+    if (tokens > 0) {
+      const model = modelLabel(group.key);
+      counts.set(model, (counts.get(model) ?? 0) + tokens);
     }
   }
 
@@ -501,10 +509,12 @@ const linesChanged = (added: number | null, deleted: number | null) =>
     ? null
     : `+${show(added, formatCount)} −${show(deleted, formatCount)} lines`;
 
+const TOOL_FIGURE = "tool's figure";
+
 const NO_AI_HINT = [
   "",
   "No AI cost or tokens recorded for this branch yet.",
-  "Use Cursor on this branch, then run dft analyze again.",
+  "Use any AI coding tool on this branch, then run dft analyze again.",
 ];
 
 export const analyzeText = (
@@ -515,7 +525,10 @@ export const analyzeText = (
   const { missing, quiet, value, byId } = analyzeMetrics(report);
   const branchAge = value("dx.flight.branch-age.ms", "branch age");
   const billed = value("dx.cost.charge.usd", "billed");
-  const metered = value("dx.cost.metered.usd", "Cursor's figure");
+
+  const metered =
+    extras?.toolFigure ?? value("dx.cost.metered.usd", TOOL_FIGURE);
+
   const estimate = estimateText(byId, missing);
   const input = value("dx.ai-usage.tokens.input", "tokens");
   const output = value("dx.ai-usage.tokens.output", "tokens");
@@ -528,7 +541,7 @@ export const analyzeText = (
       "Cost",
       present([
         piece(billed, (n) => `${formatUsd(n)} billed`),
-        piece(metered, (n) => `${formatUsd(n)} Cursor's figure`),
+        piece(metered, (n) => `${formatUsd(n)} ${TOOL_FIGURE}`),
         estimate,
       ]),
     ],
@@ -584,9 +597,9 @@ export const analyzeText = (
   const noAi = [billed, metered, estimate, input].every((x) => x === null);
 
   const shown =
-    billed === null
+    billed === null && metered === null
       ? missing
-      : missing.filter((item) => item.label !== "Cursor's figure");
+      : missing.filter((item) => item.label !== TOOL_FIGURE);
 
   return [
     analyzeHead(report, extras, branchAge),

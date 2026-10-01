@@ -66,6 +66,7 @@ import {
   formatDuration,
   sourceLabel,
   sourceNote,
+  tokenShares,
 } from "./dft-render.js";
 import { capabilitiesFor, capabilityAt } from "./dft-session.js";
 import type { CostOptions } from "./dft-session.js";
@@ -164,18 +165,6 @@ const branchUsageQuery = (
   params.set("limit", groupBy === "model" ? "12" : "50");
 
   return params;
-};
-
-const tokenShares = (
-  output: DxUsageOutputType
-): readonly (readonly [string, number])[] => {
-  const total = output.total.values.tokens ?? 0;
-
-  return total <= 0
-    ? []
-    : output.groups.map(
-        (group) => [group.key, (group.values.tokens ?? 0) / total] as const
-      );
 };
 
 interface FoundTool {
@@ -529,7 +518,11 @@ export const serveDashboard = (options: LiveServerOptions) =>
             repoRoot: mainRoot(row.repoCommonDir),
             report: analyzeText(
               report,
-              { models: tokenShares(models), status: row.status.value },
+              {
+                models: tokenShares(models.groups),
+                status: row.status.value,
+                toolFigure: models.total.values.toolFigure ?? null,
+              },
               { now, verbose: false }
             ),
             root: repo,

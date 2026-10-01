@@ -555,6 +555,29 @@ describe("orchestrator outside a repo (D36)", () => {
       ]);
     }).pipe(Effect.provide(memory))
   );
+
+  it.effect(
+    "keeps a request its tool placed by its tool calls when it carries no paths",
+    () =>
+      Effect.gen(function* scenario() {
+        const placed = event({
+          branch: "main",
+          branchSource: "tool-calls",
+          context: { repoCommonDir: APP_GIT, worktreePath: APP },
+          cwd: ORCHESTRATOR,
+          id: "omp-turn",
+        });
+
+        const result = yield* attribute([placed]);
+
+        expect(result.attributions).toStrictEqual([]);
+        expect(placeOf(byId(result.events).get("omp-turn"))).toStrictEqual({
+          branchSource: "tool-calls",
+          repo: APP_GIT,
+          worktree: APP,
+        });
+      }).pipe(Effect.provide(memory))
+  );
 });
 
 describe("subagents (D29)", () => {

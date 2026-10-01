@@ -28,7 +28,7 @@ export const providerCostOptions = (provider: PriceProvider): CostOptions => ({
   subscription: null,
 });
 
-export const costOptionsFor = (dftHome: string, home: string) =>
+export const costOptionsFor = (dftHome: string) =>
   Effect.gen(function* costOptions() {
     const userTable = yield* loadUserPriceTable(dftHome);
     const selection = selectPriceTable(userTable);
@@ -42,7 +42,7 @@ export const costOptionsFor = (dftHome: string, home: string) =>
     }
 
     const catalog = priceCatalogEnabled(process.env);
-    const provider = yield* defaultPriceProvider(home, catalog);
+    const provider = yield* defaultPriceProvider(dftHome, catalog);
 
     if (catalog && provider.warnings.length > 0) {
       yield* Console.error(provider.warnings.join("\n"));

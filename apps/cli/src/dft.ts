@@ -69,7 +69,7 @@ import {
   historyOneline,
   historyText,
   ledgerValues,
-  modelShares,
+  tokenShares,
   reportFacts,
   snapshotLine,
   statusText,
@@ -196,7 +196,7 @@ export const dftPaths = (flags: Pick<ReportFlags, "db" | "repo">) => {
 const dftSession = (flags: ReportFlags) =>
   Effect.gen(function* session() {
     const paths = dftPaths(flags);
-    const costOptions = yield* costOptionsFor(paths.dftHome, paths.home);
+    const costOptions = yield* costOptionsFor(paths.dftHome);
     const now = yield* DateTime.now;
     const from = yield* resolveSince(flags.since, DateTime.toEpochMillis(now));
 
@@ -414,15 +414,32 @@ const wantedRow = (flags: ReportFlags, session: Session) =>
 
 const analyzeExtras = (flags: ReportFlags, session: Session) =>
   Effect.gen(function* extras() {
-    const chats = yield* capabilityAt(session)
-      .chats.handler(optionalInput({ repo: session.paths.repo }, flags))
-      .pipe(Effect.option);
+    const branch = wantedBranch(flags, session);
+
+    const usage = yield* usageInputOf({
+      by: "model",
+      filters: {
+        branch: branch === null ? [] : [branch],
+        repo: [session.paths.repo],
+      },
+      limit: 50,
+      metrics: ["tokens", "toolFigure"],
+      since: flags.since,
+      tz: undefined,
+      until: undefined,
+    }).pipe(
+      Effect.flatMap((input) => capabilityAt(session).usage.handler(input)),
+      Effect.option
+    );
 
     const row = yield* wantedRow(flags, session);
 
     return {
-      models: Option.isSome(chats) ? modelShares(chats.value.chats) : [],
+      models: Option.isSome(usage) ? tokenShares(usage.value.groups) : [],
       status: row === null ? null : row.status.value,
+      toolFigure: Option.isSome(usage)
+        ? (usage.value.total.values.toolFigure ?? null)
+        : null,
     } satisfies AnalyzeExtras;
   });
 
@@ -507,7 +524,7 @@ const analyzeExamples = [
 
 const analyzeCommand = onelineCommand(
   "analyze",
-  "AI cost of one branch: what Cursor billed, Cursor's own figure and a list-price estimate (shown apart, never added), plus tokens, time and commits. Add --oneline (-1) for a single line. Imports new data first unless --no-sync.",
+  "AI cost of one branch across every tool: billed cost, each tool's own figure and an estimate at the model maker's public price (shown apart, never added), plus tokens, models, time and commits. Add --oneline (-1) for a single line. Imports new data first unless --no-sync.",
   analyzeHandler,
   analyzeView
 ).pipe(
@@ -867,7 +884,7 @@ const oneTimeDashboard = (flags: DashboardCommandFlags) =>
 const liveDashboard = (flags: DashboardCommandFlags) =>
   Effect.gen(function* live() {
     const paths = dftPaths(flags);
-    const costOptions = yield* costOptionsFor(paths.dftHome, paths.home);
+    const costOptions = yield* costOptionsFor(paths.dftHome);
 
     return yield* runLiveDashboard({
       costOptions,
@@ -996,7 +1013,7 @@ const chatsCommand = Command.make("chats", chatsFlags, (flags) =>
 
 const syncCommand = reportCommand(
   "sync",
-  "Import new data for this repo from Cursor hooks, git and Cursor chats. Safe to run again. Other commands do this first, so you rarely need it.",
+  "Import new data for this repo from git and every AI coding tool on this machine (session files, hooks and extensions). Safe to run again. Other commands do this first, so you rarely need it.",
   (flags, session) =>
     Effect.gen(function* sync() {
       const store = yield* EventStore;
@@ -1126,7 +1143,7 @@ const snapshotCommand = Command.make(
     ...reportFlags,
     maxCost: Flag.Finite("max-cost").pipe(
       Flag.withDescription(
-        "Exit 1 when any one cost figure (billed, Cursor's, estimate) is over this many dollars"
+        "Exit 1 when any one cost figure (billed, the tool's own, estimate) is over this many dollars"
       ),
       Flag.optional,
       Flag.map(Option.getOrUndefined)
@@ -1478,7 +1495,10 @@ const hookCommand = Command.make(
 
 const staticSession = () => {
   const paths = dftPaths({ db: undefined, repo: undefined });
-  const costOptions = providerCostOptions(cachedPriceProvider(homedir()));
+
+  const costOptions = providerCostOptions(
+    cachedPriceProvider(resolveDftHome(process.env, homedir()))
+  );
 
   return {
     capabilities: makeDxCapabilities({
@@ -1536,7 +1556,7 @@ const mcpCommand = Command.make("mcp", {}, () =>
 export const dftCommand = Command.make("dft").pipe(
   Command.withDescription(
     [
-      "See what AI coding costs per branch: billed cost, tokens and time, from Cursor and git on this machine.",
+      "See what AI coding costs per branch: an estimate at the model maker's price, billed cost, tokens and time, from every AI coding tool and git on this machine.",
       "",
       "  Quick start:",
       "    dft install                  set up this repo (safe to run again)",

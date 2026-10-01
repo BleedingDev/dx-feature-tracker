@@ -204,7 +204,7 @@ const withDashboard = <A, E>(
       yield* engine.addRepo(repo);
       yield* engine.ready;
 
-      const costOptions = yield* costOptionsFor(dftHome, scratch);
+      const costOptions = yield* costOptionsFor(dftHome);
 
       const server = yield* serveDashboard({
         costOptions,

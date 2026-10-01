@@ -124,6 +124,11 @@ const contextCovers = (located: Located): boolean => {
   return worktreePath !== null && isContained(worktreePath, located.cwd);
 };
 
+const placedByToolCalls = (located: Located): boolean =>
+  located.ai.branchSource === "tool-calls" &&
+  located.event.context.repoCommonDir !== null &&
+  (located.ai.touchedPaths ?? []).length === 0;
+
 const placeKey = (place: RepoPlace): string =>
   `${place.repoCommonDir}\u0000${place.worktreePath ?? ""}`;
 
@@ -372,7 +377,11 @@ export const attributeRepos = (
             worktreePath: at.location.worktreePath,
           },
         });
-      } else if (at.kind === "missing" || contextCovers(located)) {
+      } else if (
+        at.kind === "missing" ||
+        contextCovers(located) ||
+        placedByToolCalls(located)
+      ) {
         kept.add(located.event.eventId);
       } else {
         open.push(located);

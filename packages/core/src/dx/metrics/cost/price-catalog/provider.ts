@@ -49,6 +49,9 @@ export interface PriceProvider {
 export const catalogCacheDir = (home: string): string =>
   path.join(home, ".dft", "price-catalog");
 
+export const dftCatalogDir = (dftHome: string): string =>
+  path.join(dftHome, "price-catalog");
+
 const cacheFile = (dir: string, catalog: Catalog): string =>
   path.join(dir, `${catalog.source}-${catalog.fetchedAt.slice(0, 10)}.json`);
 
@@ -222,21 +225,21 @@ export const fetchJson: CatalogFetch = async (url) => {
 };
 
 export const defaultPriceProvider = (
-  home: string = process.env.HOME ?? "",
+  dftHome: string,
   catalog = true
 ): Effect.Effect<PriceProvider> =>
   DateTime.now.pipe(
     Effect.flatMap((now) =>
       loadPriceProvider({
-        cacheDir: catalogCacheDir(home),
+        cacheDir: dftCatalogDir(dftHome),
         fetchJson: catalog ? fetchJson : null,
         nowMs: DateTime.toEpochMillis(now),
       })
     )
   );
 
-export const cachedPriceProvider = (home: string): PriceProvider => {
-  const cached = readCached(catalogCacheDir(home));
+export const cachedPriceProvider = (dftHome: string): PriceProvider => {
+  const cached = readCached(dftCatalogDir(dftHome));
   const [newest] = cached;
   const sheet = sheetFromCatalogs(cached);
   const bundled = bundledSheet();

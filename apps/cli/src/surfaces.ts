@@ -18,6 +18,7 @@ import {
   dxStoreLayer,
   makeDxCapabilities,
   metricsWithCost,
+  resolveDftHome,
   resolveDftStore,
   resolveDxStore,
 } from "@rat-stack/core/dx";
@@ -46,7 +47,9 @@ export const dxStore = legacyStore
     })
   : resolveDftStore({ db: null, env: dxEnv, home: homedir() });
 
-const dxCostOptions = providerCostOptions(cachedPriceProvider(homedir()));
+const dxCostOptions = providerCostOptions(
+  cachedPriceProvider(resolveDftHome(dxEnv, homedir()))
+);
 
 export const dxRegistry = buildRegistry(
   allCollectors,

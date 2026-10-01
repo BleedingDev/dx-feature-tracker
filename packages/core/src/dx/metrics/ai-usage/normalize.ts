@@ -174,7 +174,7 @@ const scopeOf = (
   flags: UsageFlags,
   sourceKind: string
 ): UsageScope => {
-  if (flags.scope === "provider-bucket") {
+  if (flags.scope === "provider-bucket" || event.kind === "ai.session") {
     return "aggregate";
   }
 

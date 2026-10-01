@@ -2,6 +2,7 @@ import { DateTime, Effect, Option } from "effect";
 
 import { EventStore } from "../contracts/event-store.js";
 import type { EventStoreService, StoreFailure } from "../contracts/services.js";
+import { attributeReposIfPossible } from "../correlation/attribution/ambient.js";
 import {
   joinAccountRows,
   reattributeIfPossible,
@@ -31,10 +32,8 @@ export const deriveFromStore = (
 ): Effect.Effect<DerivedUsage, StoreFailure> =>
   Effect.gen(function* deriveStored() {
     const snapshot = yield* store.snapshot(EVERYTHING);
-
-    const retro = yield* reattributeIfPossible(
-      joinAccountRows(snapshot.events)
-    );
+    const placed = yield* attributeReposIfPossible(snapshot.events);
+    const retro = yield* reattributeIfPossible(joinAccountRows(placed));
 
     return deriveUsageFacts(retro.events);
   });
