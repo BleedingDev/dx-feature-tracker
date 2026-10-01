@@ -1011,6 +1011,8 @@ const historyRowCells = (
   show(measureValue(row.commits), formatCount),
 ];
 
+const UNLINKED_LABEL = "Not linked to a branch";
+
 const accountLine = (row: FlightHistoryRow, now: number): string => {
   const billed = rowBilled(row);
   const estimate = rowEstimate(row);
@@ -1025,7 +1027,7 @@ const accountLine = (row: FlightHistoryRow, now: number): string => {
     `last active ${formatAgo(row.lastActivityAt, now)}`,
   ]);
 
-  return `Cursor account, not linked to a branch: ${parts}`;
+  return `${UNLINKED_LABEL}: ${parts}`;
 };
 
 const unassignedHint = (
@@ -1058,7 +1060,7 @@ const unlinkedFootnote = (
     ? []
     : [
         "",
-        `${formatCount(requests)} Cursor requests (${formatUsd(billed)} billed) could not be matched to a branch.`,
+        `${plural(requests, "request")} (${formatUsd(billed)} billed) could not be matched to a branch.`,
       ];
 };
 
@@ -1211,7 +1213,7 @@ const rowName = (
   labels: ReadonlyMap<string, string>
 ): string =>
   row.repoCommonDir === null
-    ? "Cursor account"
+    ? UNLINKED_LABEL
     : `${showRepo ? `${labelOfRepo(labels, row.repoCommonDir)}:` : ""}${row.branch ?? UNASSIGNED_LABEL}`;
 
 export const branchOneline = (

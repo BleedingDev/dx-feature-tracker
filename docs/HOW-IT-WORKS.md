@@ -516,7 +516,7 @@ fix/login-loop    $0.48 billed · $0.71 est · 610k tokens · 22m agent · 2 cha
 main              no AI usage yet · 2 commits
 ```
 
-One row per branch, newest first. `-` means no number. Add `--all-repos` to see every repo (rows read `repo:branch`), where Cursor usage that fits no branch shows as a separate "Cursor account, not tied to a branch" line. `--oneline` gives the same short line that `dft line` prints, once per branch.
+One row per branch, newest first. `-` means no number. Add `--all-repos` to see every repo (rows read `repo:branch`), where usage from any tool that fits no branch shows as a separate "Not linked to a branch" line. `--oneline` gives the same short line that `dft line` prints, once per branch.
 
 ### Where do the other commands fit?
 

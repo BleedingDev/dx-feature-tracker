@@ -114,7 +114,10 @@ describe("dft one-line output", () => {
           lastActivityAt: "2026-09-30T12:00:00.000Z",
           tokens: 5000,
         }),
-        row({ billed: 3, branch: "account", repoCommonDir: null }),
+        {
+          ...row({ billed: 3, branch: "account", repoCommonDir: null }),
+          requests: measure(1),
+        },
       ],
       { allRepos: false }
     ).split("\n");
@@ -196,7 +199,10 @@ describe("dft history unassigned and account rows", () => {
       branch: null,
     },
     row({ billed: 1, branch: "main" }),
-    row({ billed: 3, branch: "account", repoCommonDir: null }),
+    {
+      ...row({ billed: 3, branch: "account", repoCommonDir: null }),
+      requests: measure(1),
+    },
   ];
 
   it("shows one unassigned row last with a hint and keeps account usage off the table", () => {
@@ -207,7 +213,11 @@ describe("dft history unassigned and account rows", () => {
     expect(lines[1]).toMatch(/^app:main\s/u);
     expect(lines[2]).toMatch(/^app:unassigned\s/u);
     expect(lines.filter((line) => line.includes("account:"))).toHaveLength(0);
-    expect(text).toContain("Cursor account, not linked to a branch:");
+    expect(text).toContain("Not linked to a branch: $3.00 billed");
+    expect(text).toContain(
+      "1 request ($3.00 billed) could not be matched to a branch."
+    );
+    expect(text).not.toContain("Cursor");
     expect(text).toContain(
       "unassigned: repo activity that could not be matched to a branch."
     );
@@ -220,6 +230,6 @@ describe("dft history unassigned and account rows", () => {
     expect(text).toContain(
       "Why: the events were recorded while HEAD was detached"
     );
-    expect(text).not.toContain("Cursor account");
+    expect(text).not.toContain("Not linked to a branch");
   });
 });

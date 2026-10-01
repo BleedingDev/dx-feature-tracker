@@ -164,7 +164,7 @@ These lines measure different things, so they are never added together. A total 
 
 git expires reflog entries after 90 days by default. Older events fall back to commit evidence or stay unassigned.
 
-Cursor usage rows that can't be matched to any local event appear in `dft history --all-repos` as a separate `account (unattributed)` row.
+Usage that can't be matched to any repo or branch (Cursor account rows, or Claude Code and Codex sessions outside a repo) appears in `dft history --all-repos` as a separate "Not linked to a branch" line.
 
 ## Models and Auto mode
 
