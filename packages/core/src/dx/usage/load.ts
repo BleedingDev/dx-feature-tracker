@@ -4,6 +4,10 @@ import { EventStore } from "../contracts/event-store.js";
 import type { StoreFailure } from "../contracts/services.js";
 import { attributeReposIfPossible } from "../correlation/attribution/ambient.js";
 import {
+  WorktreeTimelines,
+  sharedTimelines,
+} from "../correlation/branch-at-time/pipeline.js";
+import {
   joinAccountRows,
   reattributeIfPossible,
 } from "../correlation/branch-at-time/snapshot.js";
@@ -42,12 +46,19 @@ export const deriveRowsOf = (
     return deriveUsageRows(retro.events);
   });
 
-const sourceOf = (store: EventStore["Service"]): UsageSource => ({
-  derive: deriveRowsOf,
-  everything: Effect.map(store.snapshot(EVERYTHING), (snapshot) => [
-    ...snapshot.events,
-  ]),
-});
+const sourceOf = (store: EventStore["Service"]): UsageSource => {
+  const timelines = sharedTimelines();
+
+  return {
+    derive: (events) =>
+      deriveRowsOf(events).pipe(
+        Effect.provideService(WorktreeTimelines, timelines)
+      ),
+    everything: Effect.map(store.snapshot(EVERYTHING), (snapshot) => [
+      ...snapshot.events,
+    ]),
+  };
+};
 
 export const rebuildUsageFacts: Effect.Effect<void, StoreFailure, EventStore> =
   Effect.gen(function* rebuildUsage() {

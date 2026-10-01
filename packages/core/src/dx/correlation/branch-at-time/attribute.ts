@@ -128,6 +128,27 @@ const timelineFor = (
   );
 };
 
+export const timelineWorktreesOf = (
+  events: readonly DxEventEnvelope[],
+  candidates: readonly string[]
+): readonly string[] => {
+  const roots = candidates.map(normalizePath);
+
+  return [
+    ...new Set(
+      events.filter(isAiEvent).flatMap((event) => {
+        const stored = event.context.worktreePath;
+
+        return stored === null
+          ? payloadPaths(event).flatMap((path) =>
+              roots.filter((root) => within(path, root))
+            )
+          : [normalizePath(stored)];
+      })
+    ),
+  ];
+};
+
 const requestKeysOf = (event: DxEventEnvelope): readonly string[] => [
   ...(event.identity.requestId === null
     ? []

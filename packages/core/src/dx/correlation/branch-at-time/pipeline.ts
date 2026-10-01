@@ -1,11 +1,15 @@
-import { Effect } from "effect";
+import { Context, Effect } from "effect";
 
 import type { GitRunner } from "../../collectors/git-observation/git-runner.js";
 import { spawnerGitRunner } from "../../collectors/git-observation/git-runner.js";
 import type { DxEventEnvelope } from "../../model/event.js";
-import { attributeHistoricalBranches } from "./attribute.js";
+import {
+  attributeHistoricalBranches,
+  timelineWorktreesOf,
+} from "./attribute.js";
 import type { HistoricalAttributionResult } from "./attribute.js";
 import { loadWorktreeTimeline } from "./git.js";
+import type { LoadedTimeline } from "./git.js";
 import { joinAccountRows } from "./session-join.js";
 import { storedHeadHistory, withStoredHistory } from "./stored-moves.js";
 import { DEFAULT_BRANCH_AT_OPTIONS } from "./timeline.js";
@@ -16,6 +20,33 @@ import type { WorktreePlacement } from "./worktree.js";
 export interface ReattributionResult extends HistoricalAttributionResult {
   readonly placements: readonly WorktreePlacement[];
 }
+
+export type TimelineLoader = (
+  runGit: GitRunner,
+  worktree: string
+) => Effect.Effect<LoadedTimeline>;
+
+export const WorktreeTimelines = Context.Reference<TimelineLoader>(
+  "dx/correlation/branch-at-time/WorktreeTimelines",
+  { defaultValue: () => loadWorktreeTimeline }
+);
+
+export const sharedTimelines = (): TimelineLoader => {
+  const loaded = new Map<string, LoadedTimeline>();
+
+  return (runGit, worktree) =>
+    Effect.suspend(() => {
+      const known = loaded.get(worktree);
+
+      return known === undefined
+        ? Effect.tap(loadWorktreeTimeline(runGit, worktree), (timeline) =>
+            Effect.sync(() => loaded.set(worktree, timeline))
+          )
+        : Effect.succeed(known);
+    });
+};
+
+const OBSERVATION_KIND = "git.observation";
 
 export const worktreesOf = (
   events: readonly DxEventEnvelope[],
@@ -37,13 +68,23 @@ export const reattributeWithRunner = (
   options: BranchAtOptions = DEFAULT_BRANCH_AT_OPTIONS
 ): Effect.Effect<ReattributionResult> =>
   Effect.gen(function* reattribute() {
-    const maps = yield* loadRepoMaps(runGit, events);
+    const maps = yield* loadRepoMaps(
+      runGit,
+      events.filter((event) => event.kind !== OBSERVATION_KIND)
+    );
+
     const placed = placeEventsInWorktrees(maps, events);
     const joined = joinAccountRows(placed.events);
+    const load = yield* WorktreeTimelines;
+
+    const needed = new Set([
+      ...worktreesOf([], worktrees),
+      ...timelineWorktreesOf(joined, worktreesOf(joined, worktrees)),
+    ]);
 
     const loaded = yield* Effect.forEach(
-      [...new Set(worktreesOf(joined, worktrees))],
-      (worktree) => loadWorktreeTimeline(runGit, worktree),
+      needed,
+      (worktree) => load(runGit, worktree),
       { concurrency: 2 }
     );
 
