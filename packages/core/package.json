@@ -28,6 +28,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
+    "test:live": "vitest run test/dx/harness",
     "build": "tsc -p tsconfig.build.json",
     "check": "pnpm run typecheck",
     "pretest": "pnpm run --silent build"

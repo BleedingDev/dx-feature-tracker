@@ -118,3 +118,36 @@ export {
   refForPath,
   toCollector,
 } from "./collector.js";
+
+export {
+  HOOK_OBSERVATION_SCHEMA,
+  HookFieldsSchema,
+  HookGitSchema,
+  HookObservationSchema,
+  boundedField,
+  hookEventNameOf,
+  hookToolOf,
+  noHookFields,
+  standardHookDecoder,
+  standardHookFields,
+} from "./hook-observation.js";
+
+export type {
+  HookDecoder,
+  HookFields,
+  HookGit,
+  HookObservation,
+} from "./hook-observation.js";
+
+export {
+  HOOK_SPOOL_ROOT,
+  hookSpoolDir,
+  hookSpoolFile,
+  observeHook,
+  readHookObservations,
+  recordHook,
+} from "./hook-spool.js";
+
+export type { HookRun, HookRunOutcome, HookRunResult } from "./hook-spool.js";
+
+export { HOOK_DECODERS } from "./hook-decoders.js";

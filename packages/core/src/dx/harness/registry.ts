@@ -140,9 +140,9 @@ export const mockHarnessLayers = Layer.mergeAll(
   DeepseekHarness.mock
 );
 
-export const registryWith = <E, R>(
-  ...overrides: readonly Layer.Layer<never, E, R>[]
-) =>
+export const registryWith = <A = never, E = never, R = never>(
+  ...overrides: readonly Layer.Layer<A, E, R>[]
+): Layer.Layer<HarnessRegistry, E, R> =>
   HarnessRegistry.layer.pipe(
     Layer.provide(Layer.mergeAll(mockHarnessLayers, ...overrides))
   );

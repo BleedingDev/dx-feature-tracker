@@ -3,9 +3,9 @@ import { readFileSync } from "node:fs";
 
 import { toCommand } from "@rat-stack/capability";
 import { capabilities, formatFileStats, inspectFile } from "@rat-stack/core";
-import { runCursorHook } from "@rat-stack/core/dx";
-import { Console, DateTime, Effect, Layer } from "effect";
-import { Command, Flag } from "effect/unstable/cli";
+import { runToolHook } from "@rat-stack/core/dx";
+import { Console, DateTime, Effect, Layer, Option } from "effect";
+import { Argument, Command, Flag } from "effect/unstable/cli";
 
 import {
   SERVE_HOST,
@@ -140,16 +140,41 @@ const readStdin = (): string => {
   }
 };
 
-const dxHookCommand = Command.make("hook", {}, () =>
-  DateTime.now.pipe(
-    Effect.map((now) =>
-      runCursorHook(readStdin(), process.cwd(), DateTime.toDate(now))
+const dxHookCommand = Command.make(
+  "hook",
+  // oxlint-disable-next-line sort-keys -- positional arguments parse in key order, so tool must come before event
+  {
+    tool: Argument.String("tool").pipe(
+      Argument.withDescription(
+        "Tool that runs the hook (cursor, claude-code, codex, opencode, pi, omp, deepseek); cursor when left out"
+      ),
+      Argument.optional
     ),
-    Effect.flatMap((result) => Console.log(result.stdout))
-  )
+    event: Argument.String("event").pipe(
+      Argument.withDescription(
+        "Hook event name; read from the payload when left out"
+      ),
+      Argument.optional
+    ),
+  },
+  ({ event, tool }) =>
+    DateTime.now.pipe(
+      Effect.map((now) =>
+        runToolHook({
+          cwd: process.cwd(),
+          event: Option.getOrNull(event),
+          now: DateTime.toDate(now),
+          stdinText: readStdin(),
+          tool: Option.getOrNull(tool),
+        })
+      ),
+      Effect.flatMap((result) =>
+        result.stdout === "" ? Effect.void : Console.log(result.stdout)
+      )
+    )
 ).pipe(
   Command.withDescription(
-    "Cursor project hook entrypoint: read one hook JSON payload on stdin, spool sanitized metadata locally, print the hook response"
+    "Tool hook entrypoint (dx hook <tool> <event>): read one hook JSON payload on stdin, record sanitized metadata under ~/.dft, print only the response the tool needs"
   )
 );
 

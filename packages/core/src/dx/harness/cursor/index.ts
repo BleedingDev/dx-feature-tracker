@@ -15,3 +15,5 @@ export {
 } from "./sources.js";
 
 export type { CursorSource, CursorSourceScope } from "./sources.js";
+
+export { cursorHookDecoder } from "./hook.js";

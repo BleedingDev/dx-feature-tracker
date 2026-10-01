@@ -18,11 +18,11 @@ import {
   resolveDftHome,
   resolveDftStore,
   resolveSince,
-  runCursorHook,
+  runToolHook,
 } from "@rat-stack/core/dx";
 import type { FlightHistoryRow, SyncReport } from "@rat-stack/core/dx";
 import { Console, Data, DateTime, Effect, Layer, Option } from "effect";
-import { Command, Flag } from "effect/unstable/cli";
+import { Argument, Command, Flag } from "effect/unstable/cli";
 
 import { branchChats, dashboardText, writeDashboard } from "./dft-dashboard.js";
 import {
@@ -942,18 +942,43 @@ const readStdin = (): string => {
   }
 };
 
-const hookCommand = Command.make("hook", {}, () =>
-  DateTime.now.pipe(
-    Effect.map((now) =>
-      runCursorHook(readStdin(), process.cwd(), DateTime.toDate(now))
+const hookCommand = Command.make(
+  "hook",
+  // oxlint-disable-next-line sort-keys -- positional arguments parse in key order, so tool must come before event
+  {
+    tool: Argument.String("tool").pipe(
+      Argument.withDescription(
+        "Tool that runs the hook (cursor, claude-code, codex, opencode, pi, omp, deepseek); cursor when left out"
+      ),
+      Argument.optional
     ),
-    Effect.flatMap((result) => Console.log(result.stdout))
-  )
+    event: Argument.String("event").pipe(
+      Argument.withDescription(
+        "Hook event name; read from the payload when left out"
+      ),
+      Argument.optional
+    ),
+  },
+  ({ event, tool }) =>
+    DateTime.now.pipe(
+      Effect.map((now) =>
+        runToolHook({
+          cwd: process.cwd(),
+          event: Option.getOrNull(event),
+          now: DateTime.toDate(now),
+          stdinText: readStdin(),
+          tool: Option.getOrNull(tool),
+        })
+      ),
+      Effect.flatMap((result) =>
+        result.stdout === "" ? Effect.void : Console.log(result.stdout)
+      )
+    )
 ).pipe(
   Command.withDescription(
-    "Internal: called by Cursor hooks written by dft install. Reads one hook JSON payload on stdin, stores sanitized metadata and prints the hook response."
+    "Internal: called by tool hooks written by dft install, as dft hook <tool> <event>. Reads one hook JSON payload on stdin, stores a small sanitized observation under ~/.dft and prints only the response the tool needs."
   ),
-  Command.withShortDescription("Internal: Cursor hook entrypoint")
+  Command.withShortDescription("Internal: tool hook entrypoint")
 );
 
 const staticSession = () => {

@@ -56,10 +56,15 @@ export {
   legacyHookSpoolDirFor,
   resolveDxStore,
   runCursorHook,
+  runToolHook,
   selectorForContext,
 } from "./registry/runtime.js";
 
-export type { DxStoreOptions } from "./registry/runtime.js";
+export type {
+  DxStoreOptions,
+  ToolHookRequest,
+  ToolHookResult,
+} from "./registry/runtime.js";
 
 export { autoSources, commandLogPath } from "./composition.js";
 
@@ -209,3 +214,42 @@ export type {
   ResetResult,
   RestoreResult,
 } from "./live/store-admin.js";
+
+export {
+  AI_TOKEN_FIELDS,
+  AiAttributionSchema,
+  AiTokensSchema,
+  AiUsageSchema,
+  ToolFigureKindSchema,
+  ToolFigureSchema,
+  hasKnownTokens,
+  unknownTokens,
+} from "./model/attribution.js";
+
+export type {
+  AiAttribution,
+  AiTokens,
+  AiUsage,
+  ToolFigure,
+  ToolFigureKind,
+} from "./model/attribution.js";
+
+export {
+  ChannelSchema,
+  HARNESS_IDS,
+  HarnessIdSchema,
+  HarnessRegistry,
+  HarnessRegistryLive,
+  ModelProviderSchema,
+  readHookObservations,
+} from "./harness/index.js";
+
+export type {
+  Channel,
+  Discovery,
+  Harness,
+  HarnessId,
+  HookObservation,
+  ModelProvider,
+  SessionRef,
+} from "./harness/index.js";

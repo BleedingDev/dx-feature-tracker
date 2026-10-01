@@ -14,6 +14,7 @@ import {
 } from "../collectors/cursor-hooks/handler.js";
 import type {
   GitResolver,
+  HookOutcome,
   HookResult,
   HookWorktree,
 } from "../collectors/cursor-hooks/handler.js";
@@ -24,6 +25,11 @@ import {
 import type { EventStore } from "../contracts/event-store.js";
 import type { StoreFailure } from "../contracts/services.js";
 import { parseWorktreePorcelain } from "../correlation/repo/worktree-map.js";
+import { HOOK_DECODERS } from "../harness/hook-decoders.js";
+import { hookEventNameOf, hookToolOf } from "../harness/hook-observation.js";
+import type { HookGit } from "../harness/hook-observation.js";
+import { recordHook } from "../harness/hook-spool.js";
+import type { HookRunOutcome } from "../harness/hook-spool.js";
 import type { SelectorResolver } from "../mcp/handlers/deps.js";
 import type { FlightContext } from "../model/event.js";
 import { FlightIdSchema } from "../model/ids.js";
@@ -208,6 +214,14 @@ export const hookSpoolDirFor = (
 export const legacyHookSpoolDirFor = (worktreePath: string): string =>
   path.join(worktreePath, LEGACY_SPOOL_RELATIVE);
 
+export interface ToolHookRequest {
+  readonly cwd: string;
+  readonly event: string | null;
+  readonly now: Date;
+  readonly stdinText: string;
+  readonly tool: string | null;
+}
+
 export const runCursorHook = (
   stdinText: string,
   cwd: string,
@@ -221,3 +235,51 @@ export const runCursorHook = (
     resolveGit: resolveCanonicalGit,
     spoolDirFor: (worktreePath) => hookSpoolDirFor(worktreePath, dftHome),
   });
+
+export interface ToolHookResult {
+  readonly outcome: HookOutcome | HookRunOutcome;
+  readonly stdout: string;
+}
+
+const gitAtHook = (cwd: string): HookGit => {
+  const git = resolveCanonicalGit(cwd);
+
+  return {
+    branch: git.branch,
+    headSha: git.headSha,
+    repoCommonDir: git.repoCommonDir,
+    worktreePath: git.worktreePath,
+  };
+};
+
+export const runToolHook = (
+  request: ToolHookRequest,
+  dftHome: string = defaultDftHome()
+): ToolHookResult => {
+  const tool = request.tool === null ? "cursor" : hookToolOf(request.tool);
+
+  if (tool === null) {
+    return {
+      outcome: {
+        reason: `unknown tool ${request.tool ?? ""}`,
+        state: "skipped",
+      },
+      stdout: "",
+    };
+  }
+
+  if (tool === "cursor") {
+    return runCursorHook(request.stdinText, request.cwd, request.now, dftHome);
+  }
+
+  return recordHook({
+    cwd: request.cwd,
+    decoder: HOOK_DECODERS[tool],
+    dftHome,
+    event: request.event ?? hookEventNameOf(request.stdinText) ?? "unknown",
+    now: request.now,
+    resolveGit: gitAtHook,
+    stdinText: request.stdinText,
+    tool,
+  });
+};
