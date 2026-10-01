@@ -13,6 +13,7 @@ import type {
 import { Effect } from "effect";
 
 import {
+  chatList,
   escapeHtml,
   renderDashboard,
   writeDashboard,
@@ -349,6 +350,30 @@ describe("dft dashboard", () => {
     expect(html).toContain("grok-4.7 high ×2");
     expect(html).toContain('<span class="tag">subagent</span> Subagent job');
     expect(html).toContain("Chats for this branch could not be read.");
+  });
+
+  it("names each chat's tool the way the rest of the dashboard does", () => {
+    const html = chatList(
+      {
+        ...chatsReport,
+        chats: [
+          {
+            ...chat("root-0001-aaaa", "Root", ["child-0002-bbbb"]),
+            tool: "claude-code",
+          },
+          { ...chat("child-0002-bbbb", "Helper"), tool: "deepseek" },
+        ],
+      },
+      "feature/a",
+      true,
+      Date.parse("2026-09-30T14:00:00Z")
+    );
+
+    expect(html).toContain('<span class="tag">Claude Code</span> Root');
+    expect(html).toContain(
+      '<span class="tag">DeepSeek Harness</span> <span class="tag">subagent</span> Helper'
+    );
+    expect(html).not.toContain(">claude-code<");
   });
 
   it("leads with every tool's usage when the usage query is available", () => {

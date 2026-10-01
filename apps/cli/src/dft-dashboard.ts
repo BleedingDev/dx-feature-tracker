@@ -14,7 +14,7 @@ import { Data, DateTime, Effect, Option } from "effect";
 
 import { chatLabel, chatStatsParts } from "./dft-chats.js";
 import type { ChatLike } from "./dft-chats.js";
-import { USAGE_STYLE, usageSection } from "./dft-dashboard-usage.js";
+import { USAGE_STYLE, toolLabel, usageSection } from "./dft-dashboard-usage.js";
 import type { StaticUsage } from "./dft-dashboard-usage.js";
 import {
   collapseTurns,
@@ -303,7 +303,7 @@ export const chatList = (
 
     return [
       `<li${depth > 0 ? ' class="sub"' : ""}>`,
-      `<div class="chat-title">${tool === null ? "" : `<span class="tag">${escapeHtml(tool)}</span> `}${depth > 0 ? '<span class="tag">subagent</span> ' : ""}${escapeHtml(chatTitle(chat, depth, titles))}</div>`,
+      `<div class="chat-title">${tool === null ? "" : `<span class="tag">${escapeHtml(toolLabel(tool))}</span> `}${depth > 0 ? '<span class="tag">subagent</span> ' : ""}${escapeHtml(chatTitle(chat, depth, titles))}</div>`,
       `<div class="muted">${escapeHtml(chatStatsParts(chat, now).join(" · "))}</div>`,
       models === "" ? "" : `<div class="models">${escapeHtml(models)}</div>`,
       others.length === 0
