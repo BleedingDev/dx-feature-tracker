@@ -6,6 +6,7 @@ import type { DxCollector } from "../../contracts/services.js";
 import { withCollectorBlocks } from "../../harness/collector-blocks.js";
 import type { DxEventEnvelope } from "../../model/event.js";
 import { emptyFlightContext } from "../../model/event.js";
+import { resolveDftHome } from "../../registry/runtime.js";
 import {
   parseCursorDashboardResponse,
   rowKeysOf,
@@ -29,15 +30,17 @@ export const MIGRATION_LOOKBACK_MS = 90 * 24 * 60 * 60 * 1000;
 export const STATE_VERSION = 2;
 
 export interface CursorUsageApiDeps {
+  readonly dftHome: () => string;
   readonly env: Readonly<Record<string, string | undefined>>;
   readonly fetchImpl: FetchLike;
-  readonly home: string;
   readonly pageSize?: number;
   readonly readSession: () => Effect.Effect<CursorSession | null>;
 }
 
-export const statePath = (home: string): string =>
-  `${home.replace(/\/+$/u, "")}/.dft/cursor-usage-api/state.json`;
+export const CURSOR_USAGE_STATE_FOLDER = "cursor-usage-api" as const;
+
+export const statePath = (dftHome: string): string =>
+  `${dftHome.replace(/\/+$/u, "")}/${CURSOR_USAGE_STATE_FOLDER}/state.json`;
 
 const unavailable = (message: string) =>
   new SourceUnavailable({ adapterId: CURSOR_USAGE_API_ADAPTER_ID, message });
@@ -184,7 +187,7 @@ export const makeCursorUsageApiCollector = (
       }
 
       const fs = yield* FileSystem.FileSystem;
-      const file = statePath(deps.home);
+      const file = statePath(deps.dftHome());
       const now = yield* DateTime.now;
       const nowMs = DateTime.toEpochMillis(now);
 
@@ -299,9 +302,9 @@ export const makeCursorUsageApiCollector = (
 const homeDir = (): string => process.env.HOME ?? "";
 
 export const cursorUsageApiCollector = makeCursorUsageApiCollector({
+  dftHome: () => resolveDftHome(process.env, homeDir()),
   env: process.env,
   // @effect-diagnostics-next-line asyncFunction:off globalFetch:off -- The usage API seam is the platform fetch; the client wraps it in Effect.tryPromise and pins the host allowlist.
   fetchImpl: async (url, init) => await fetch(url, init),
-  home: homeDir(),
   readSession: () => readCursorSession(cursorStateDbPath(homeDir())),
 });

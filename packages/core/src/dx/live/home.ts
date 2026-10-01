@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { Data } from "effect";
 
+import { CURSOR_USAGE_STATE_FOLDER } from "../collectors/cursor-usage-api/collector.js";
 import { DFT_DB_FILE } from "../registry/runtime.js";
 
 export type LiveActionReason =
@@ -40,7 +41,7 @@ export const SPOOL_FOLDER = "spool" as const;
 
 export const COMMIT_SNAPSHOTS_FILE = "snapshots.jsonl" as const;
 
-export const USAGE_STATE_FOLDER = "cursor-usage-api" as const;
+export const USAGE_STATE_FOLDER = CURSOR_USAGE_STATE_FOLDER;
 
 export const configPath = (home: LiveHome): string =>
   path.join(home.dftHome, CONFIG_FILE);

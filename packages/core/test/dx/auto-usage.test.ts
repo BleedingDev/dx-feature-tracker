@@ -1,6 +1,7 @@
 // @effect-diagnostics nodeBuiltinImport:off -- This test reads the committed auto-usage fixture and uses a throwaway home dir in the OS temp dir.
 // @effect-diagnostics asyncFunction:off -- The fakes implement the promise-based fetch seams the collector and price provider wrap in Effect.tryPromise.
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -23,6 +24,7 @@ import {
 } from "../../src/dx/collectors/cursor-usage-api/collector.js";
 import { sessionFromToken } from "../../src/dx/collectors/cursor-usage-api/session.js";
 import type { CursorSession } from "../../src/dx/collectors/cursor-usage-api/session.js";
+import { liveHome, usageStateDir } from "../../src/dx/live/home.js";
 import {
   catalogPriceTable,
   expandForModels,
@@ -122,9 +124,9 @@ const collectWith = (
   } = {}
 ) =>
   makeCursorUsageApiCollector({
+    dftHome: () => home,
     env: options.env ?? {},
     fetchImpl: fakeFetch(recorded, options.status),
-    home,
     pageSize: 2,
     readSession: () =>
       Effect.succeed(options.session === undefined ? SESSION : options.session),
@@ -197,6 +199,29 @@ describe("cursor usage API collector (auto-usage)", () => {
         expect(redact(`x ${TOKEN} y`, SESSION)).toBe("x <redacted> y");
       })
     ).pipe(Effect.provide(NodeServices.layer))
+  );
+
+  it.effect(
+    "keeps its resume point in the store's own DFT_HOME, where backups find it",
+    () =>
+      withHome((root) =>
+        Effect.gen(function* ownHome() {
+          const dftHome = path.join(root, "custom-dft");
+          const batch = yield* collectWith(dftHome, newRecorded());
+
+          const expected = path.join(
+            usageStateDir(liveHome(dftHome)),
+            "state.json"
+          );
+
+          expect(statePath(dftHome)).toBe(expected);
+          expect(readFileSync(expected, "utf-8")).toContain(
+            batch.cursor?.value ?? "missing"
+          );
+          expect(existsSync(path.join(root, ".dft"))).toBe(false);
+          expect(existsSync(path.join(dftHome, ".dft"))).toBe(false);
+        })
+      ).pipe(Effect.provide(NodeServices.layer))
   );
 
   it.effect("reports not logged in and honours DFT_CURSOR_USAGE=off", () =>

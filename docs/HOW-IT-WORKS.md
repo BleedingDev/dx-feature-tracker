@@ -103,10 +103,11 @@ The Cursor local database holds chats from every project. `dft` never opens the 
 +├── spool/                    # hook notes, one folder per worktree
 +├── snapshots.jsonl           # dft snapshot results
 +├── price-catalog/            # list prices for the estimate
++├── cursor-usage-api/         # where the Cursor usage import last stopped
 +└── dashboard.html            # dft dashboard (0.1.5)
 ```
 
-Inside your repo, `dft` writes only under `.cursor/` (and your git hooks if you ask). It never writes to `~/.cursor`; it only reads chat transcripts and cursor-agent chats from there. `$DFT_HOME` moves everything above except `price-catalog/`, which always stays in `~/.dft`. `dft install --all-worktrees` **(0.1.5)** sets up every worktree of the repo in one go.
+Inside your repo, `dft` writes only under `.cursor/` (and your git hooks if you ask). It never writes to `~/.cursor`; it only reads chat transcripts and cursor-agent chats from there. `$DFT_HOME` moves everything under `~/.dft` above. Outside `~/.dft`, only `dft dashboard` runs the Cursor usage import. `dft install --all-worktrees` **(0.1.5)** sets up every worktree of the repo in one go.
 
 ### What leaves your machine?
 

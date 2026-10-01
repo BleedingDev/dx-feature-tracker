@@ -32,6 +32,17 @@ export interface AutoSource {
   readonly source: string;
 }
 
+export const CURSOR_ACCOUNT_SOURCE: AutoSource = {
+  input: "https://cursor.com/api/dashboard/get-filtered-usage-events",
+  source: "collector.cursor-usage-api",
+};
+
+export const CURSOR_ACCOUNT_OFF_REASON =
+  "off because the store is outside ~/.dft" as const;
+
+export const cursorAccountOffReason = (storePath: string): string | null =>
+  isGlobalStore(storePath) ? null : CURSOR_ACCOUNT_OFF_REASON;
+
 export const worktreeSources = (worktree: string): readonly AutoSource[] => [
   { input: worktree, source: "collector.git-history" },
 ];
@@ -51,11 +62,8 @@ export const autoSources = (
     sources.push({ input: commands, source: "collector/shell-command" });
   }
 
-  if (isGlobalStore(storePath)) {
-    sources.push({
-      input: "https://cursor.com/api/dashboard/get-filtered-usage-events",
-      source: "collector.cursor-usage-api",
-    });
+  if (cursorAccountOffReason(storePath) === null) {
+    sources.push(CURSOR_ACCOUNT_SOURCE);
   }
 
   return sources;

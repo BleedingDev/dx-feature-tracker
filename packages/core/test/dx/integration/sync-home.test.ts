@@ -8,6 +8,10 @@ import { NodeServices } from "@effect/platform-node";
 import { afterAll, describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 
+import {
+  CURSOR_ACCOUNT_OFF_REASON,
+  CURSOR_ACCOUNT_SOURCE,
+} from "../../../src/dx/composition.js";
 import { cursorProjectSlug } from "../../../src/dx/harness/cursor/sources.js";
 import { allCollectors } from "../../../src/dx/registry/registry.js";
 import { autoSync } from "../../../src/dx/registry/sync.js";
@@ -103,6 +107,21 @@ describe("sync reads tools from the home it is given", () => {
         );
 
         expect(outside).toStrictEqual([]);
+
+        expect(
+          report.steps.filter(
+            (step) => step.source === CURSOR_ACCOUNT_SOURCE.source
+          )
+        ).toStrictEqual([
+          {
+            duplicates: null,
+            input: CURSOR_ACCOUNT_SOURCE.input,
+            inserted: null,
+            reason: CURSOR_ACCOUNT_OFF_REASON,
+            source: CURSOR_ACCOUNT_SOURCE.source,
+            status: "unavailable",
+          },
+        ]);
       }).pipe(Effect.provide(NodeServices.layer))
   );
 });

@@ -179,13 +179,13 @@ When Cursor runs in Auto mode, the model shows as `Auto` (Cursor records it as `
 - **Dashboard**: `dft dashboard` also watches every tool's session folders and syncs a few seconds after a session writes, even when the tool's hooks are not loaded.
 - **Cursor local database**: every sync also reads Cursor's local database. `dft` reads a backup copy in a scratch folder, never the live file, removes the copy afterwards, and keeps only the chats that ran in a worktree of this repository.
 - **cursor-agent chats**: every sync also reads the chat stores `cursor-agent` keeps for this repository's worktrees. Each turn is recorded on the branch it ran on.
-- **Cursor usage import**: if you are logged in to Cursor on this machine, `dft` reads the Cursor login from Cursor's local state database and imports your usage from cursor.com. The token stays on your machine and is only sent to cursor.com. `dft` does not store it. Turn this off with `DFT_CURSOR_USAGE=off`.
+- **Cursor usage import**: if you are logged in to Cursor on this machine, `dft` reads the Cursor login from Cursor's local state database and imports your usage from cursor.com. The token stays on your machine and is only sent to cursor.com. `dft` does not store it. Turn this off with `DFT_CURSOR_USAGE=off`. `dft sync` and other commands import it only for the default store under `~/.dft`; with `DFT_HOME` set elsewhere, `dft status` shows "Cursor account: off because the store is outside ~/.dft" and only `dft dashboard` imports it. Where the import last stopped is kept in `cursor-usage-api/` next to the store.
 - **Price catalog**: prices for estimates come from models.dev, with LiteLLM as a fallback. They are cached in `~/.dft/price-catalog` (or `$DFT_HOME/price-catalog`) and refreshed after 24 hours. Offline, `dft` uses the last cache, then a bundled snapshot. `DFT_PRICE_CATALOG=off` never fetches. To use your own prices, put a table at `$DFT_HOME/prices.json`.
 
 ## Where data lives
 
 - Store: `~/.dft/dft.db` (SQLite).
-- Set `DFT_HOME` to move the whole directory, for example `DFT_HOME=/path/to/dir dft analyze`.
+- Set `DFT_HOME` to move the whole directory, for example `DFT_HOME=/path/to/dir dft analyze`. Commands other than `dft dashboard` then skip the Cursor usage import.
 - `--db <path>` points a single command at another database file.
 
 ## Using `dft` from an agent

@@ -7,7 +7,12 @@ import { Console, Effect, Option } from "effect";
 import { runCollect, runHarnessRead } from "../cli/commands/collect.js";
 import type { DxCommandEnv } from "../cli/commands/context.js";
 import { LEGACY_SPOOL_FOLDER } from "../collectors/cursor-hooks/spool.js";
-import { autoSources, worktreeSources } from "../composition.js";
+import {
+  autoSources,
+  CURSOR_ACCOUNT_SOURCE,
+  cursorAccountOffReason,
+  worktreeSources,
+} from "../composition.js";
 import type { AutoSource } from "../composition.js";
 import type { EventStoreService } from "../contracts/services.js";
 import type { Harness, HarnessScope, SessionRef } from "../harness/contract.js";
@@ -323,9 +328,19 @@ export const autoSync = (
     const context = contextForRepo(options.repo);
     const env = { store, storePath: options.storePath };
 
+    const accountOff = cursorAccountOffReason(options.storePath);
+
     const plan = [
       ...(yield* planSources(context, options, repoWorktrees(options.repo))),
       ...idleBranchSources(context, options.repo),
+      ...(accountOff === null
+        ? []
+        : [
+            {
+              ...withContext(context)(CURSOR_ACCOUNT_SOURCE),
+              unavailable: accountOff,
+            },
+          ]),
     ];
 
     // oxlint-disable-next-line unicorn/no-array-method-this-argument -- Effect.forEach takes an options object, not a thisArg.
