@@ -57,9 +57,12 @@ const SELECTOR_DATE = /@\{(?<date>[^}]+)\}$/u;
 
 const CHECKOUT = /^checkout: moving from (?<from>\S+) to (?<to>\S+)$/u;
 
-const RETURNING = /\(finish\): returning to refs\/heads\/(?<to>\S+)$/u;
+const RETURNING =
+  /(?:\((?:finish|abort)\)|finished): returning to refs\/heads\/(?<to>\S+)$/u;
 
 const REBASE_START = /\(start\): checkout (?<to>\S+)$/u;
+
+const REBASE_CHECKOUT = /^(?:pull --)?rebase(?: -i)?: checkout (?<to>\S+)$/u;
 
 const RENAMED =
   /^Branch: renamed refs\/heads\/(?<from>\S+) to refs\/heads\/(?<to>\S+)$/u;
@@ -93,6 +96,7 @@ export const parseReflogLines = (text: string): readonly RawReflogEntry[] =>
 
 interface Transition {
   readonly from: string | null;
+  readonly rebase?: boolean;
   readonly renamed?: boolean;
   readonly returning?: boolean;
   readonly to: string | null;
@@ -117,9 +121,15 @@ const transitionOf = (subject: string): Transition | null => {
     return { from: null, returning: true, to: returning };
   }
 
-  const started = REBASE_START.exec(subject)?.groups?.to;
+  if (REBASE_START.test(subject)) {
+    return { from: null, to: null };
+  }
 
-  return started === undefined ? null : { from: null, to: null };
+  const rebased = REBASE_CHECKOUT.exec(subject)?.groups?.to;
+
+  return rebased === undefined
+    ? null
+    : { from: null, rebase: true, to: rebased };
 };
 
 export const isHeadTransition = (subject: string): boolean =>
@@ -148,17 +158,24 @@ const stateOf = (
 const nameGitLeft = (transition: Transition): string | null =>
   transition.returning === true ? transition.to : transition.from;
 
+interface Leaving {
+  readonly interrupted: boolean;
+  readonly next: Transition | undefined;
+}
+
 const nextLeaving = (
   transitions: readonly (Transition | null)[]
-): readonly (Transition | undefined)[] => {
-  const leaving: (Transition | undefined)[] = [];
+): readonly Leaving[] => {
+  const leaving: Leaving[] = [];
   let next: Transition | undefined;
+  let interrupted = false;
 
   for (const [index, transition] of [...transitions.entries()].toReversed()) {
-    leaving[index] = next;
+    leaving[index] = { interrupted, next };
 
-    if (transition !== null && transition.to !== null) {
-      next = transition;
+    if (transition !== null) {
+      interrupted = transition.to === null;
+      next = transition.to === null ? next : transition;
     }
   }
 
@@ -167,10 +184,15 @@ const nextLeaving = (
 
 const leftByName = (
   name: string,
-  next: Transition | undefined,
-  currentBranch: string | null
+  { interrupted, next }: Leaving,
+  currentBranch: string | null,
+  local: boolean
 ): boolean | null => {
   if (next === undefined) {
+    if (interrupted) {
+      return null;
+    }
+
     return currentBranch === null ? false : currentBranch === name || null;
   }
 
@@ -180,14 +202,23 @@ const leftByName = (
     return true;
   }
 
-  return left !== null && DETACHED_NAME.test(left) ? false : null;
+  return (!interrupted || !local) && left !== null && DETACHED_NAME.test(left)
+    ? false
+    : null;
 };
+
+interface CheckoutRefs {
+  readonly branches: ReadonlySet<string>;
+  readonly detachedRefs: ReadonlySet<string>;
+}
+
+const NOT_LEFT: Leaving = { interrupted: false, next: undefined };
 
 const checkoutStateOf = (
   transition: Transition,
-  next: Transition | undefined,
-  branches: ReadonlySet<string>,
-  currentBranch: string | null
+  { branches, detachedRefs }: CheckoutRefs,
+  currentBranch: string | null,
+  leaving: Leaving = NOT_LEFT
 ): HeadState => {
   const name = transition.to;
 
@@ -195,20 +226,51 @@ const checkoutStateOf = (
     name === null ||
     transition.renamed === true ||
     transition.returning === true ||
-    branches.has(name)
+    (!branches.has(name) && !looksLikeBranch(name))
   ) {
     return stateOf(name, branches);
   }
 
-  const byName = leftByName(name, next, currentBranch);
+  const byName = leftByName(name, leaving, currentBranch, branches.has(name));
 
-  if (byName === false) {
+  if (byName !== null) {
+    return byName ? { branch: name, detached: false } : DETACHED;
+  }
+
+  if (transition.rebase === true && leaving.next?.returning === true) {
     return DETACHED;
   }
 
-  return byName === true
-    ? { branch: name, detached: false }
+  return detachedRefs.has(name) && !branches.has(name)
+    ? DETACHED
     : stateOf(name, branches);
+};
+
+const REF_PREFIXES = ["refs/", "refs/tags/", "refs/remotes/"] as const;
+
+export const detachedRefsOf = (
+  entries: readonly RawReflogEntry[],
+  refnames: readonly string[]
+): readonly string[] => {
+  const refs = new Set(refnames);
+
+  const names = new Set(
+    entries.flatMap((entry) => {
+      const to = transitionOf(entry.subject)?.to;
+
+      return to === undefined || to === null ? [] : [to];
+    })
+  );
+
+  return [...names]
+    .filter(
+      (name) =>
+        looksLikeBranch(name) &&
+        !refs.has(`refs/heads/${name}`) &&
+        (REF_PREFIXES.some((prefix) => refs.has(`${prefix}${name}`)) ||
+          refs.has(`refs/remotes/${name}/HEAD`))
+    )
+    .toSorted();
 };
 
 const renamedMove = (move: HeadMove, from: string, to: string): HeadMove => {
@@ -248,16 +310,10 @@ const moveAt = (
     ? { atMs, ...state, renamedFrom: transition.from }
     : { atMs, ...state };
 
-export const buildHeadMoves = (
-  entries: readonly RawReflogEntry[],
-  branches: ReadonlySet<string>,
+const initialNameOf = (
+  transitions: readonly { readonly transition: Transition | null }[],
   currentBranch: string | null
-): readonly HeadMove[] => {
-  const transitions = entries.map((entry) => ({
-    atMs: entry.atMs,
-    transition: transitionOf(entry.subject),
-  }));
-
+): string | null => {
   const firstKnown = transitions.find((t) => t.transition !== null);
 
   const returnedTo =
@@ -266,10 +322,23 @@ export const buildHeadMoves = (
           ?.transition?.to ?? null)
       : null;
 
-  const initialName =
-    firstKnown === undefined
-      ? currentBranch
-      : (firstKnown.transition?.from ?? returnedTo);
+  return firstKnown === undefined
+    ? currentBranch
+    : (firstKnown.transition?.from ?? returnedTo);
+};
+
+export const buildHeadMoves = (
+  entries: readonly RawReflogEntry[],
+  branches: ReadonlySet<string>,
+  currentBranch: string | null,
+  detachedRefs: ReadonlySet<string> = new Set()
+): readonly HeadMove[] => {
+  const transitions = entries.map((entry) => ({
+    atMs: entry.atMs,
+    transition: transitionOf(entry.subject),
+  }));
+
+  const initialName = initialNameOf(transitions, currentBranch);
 
   let state =
     initialName === null
@@ -284,9 +353,9 @@ export const buildHeadMoves = (
     if (transition !== null) {
       state = checkoutStateOf(
         transition,
-        leaving[index],
-        branches,
-        currentBranch
+        { branches, detachedRefs },
+        currentBranch,
+        leaving[index]
       );
     }
 

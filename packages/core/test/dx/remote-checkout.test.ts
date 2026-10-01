@@ -172,6 +172,134 @@ describe("checking out a remote-tracking ref or a tag detaches HEAD", () => {
       )
     ).toStrictEqual(["main", "origin/fix", "main", "upstream/wip"]);
   });
+
+  it("keeps origin/main detached when a rebase of another branch leaves it", () => {
+    const upToDate = reflog([
+      ["2026-09-01T08:00:00Z", "commit (initial): base"],
+      ["2026-09-01T09:00:00Z", "checkout: moving from main to feat/x"],
+      ["2026-09-01T10:00:00Z", "checkout: moving from feat/x to origin/main"],
+      ["2026-09-01T10:15:00Z", "rebase: checkout feat/x"],
+      ["2026-09-01T11:00:00Z", "checkout: moving from feat/x to main"],
+    ]);
+
+    const picked = reflog([
+      ["2026-09-01T08:00:00Z", "commit (initial): base"],
+      ["2026-09-01T09:00:00Z", "checkout: moving from main to feat/x"],
+      ["2026-09-01T10:00:00Z", "checkout: moving from feat/x to origin/main"],
+      ["2026-09-01T10:15:00Z", "rebase (pick): x"],
+      [
+        "2026-09-01T10:15:00Z",
+        "rebase (finish): returning to refs/heads/feat/x",
+      ],
+      ["2026-09-01T11:00:00Z", "checkout: moving from feat/x to main"],
+    ]);
+
+    const aborted = reflog([
+      ["2026-09-01T08:00:00Z", "commit (initial): base"],
+      ["2026-09-01T09:00:00Z", "checkout: moving from main to feat/x"],
+      ["2026-09-01T10:00:00Z", "checkout: moving from feat/x to origin/main"],
+      ["2026-09-01T10:10:00Z", "rebase (start): checkout main"],
+      [
+        "2026-09-01T10:15:00Z",
+        "rebase (abort): returning to refs/heads/feat/x",
+      ],
+      ["2026-09-01T11:00:00Z", "checkout: moving from feat/x to main"],
+    ]);
+
+    const remotes = new Set(["origin/main"]);
+
+    const rows = (entries: ReturnType<typeof reflog>) =>
+      checkoutRows(
+        buildHeadMoves(entries, new Set(["main", "feat/x"]), "main", remotes)
+      ).map((move) =>
+        move.detached ? `detached:${move.owner}` : `${move.branch}`
+      );
+
+    expect(rows(upToDate)).toStrictEqual([
+      "main",
+      "feat/x",
+      "detached:feat/x",
+      "feat/x",
+      "main",
+    ]);
+    expect(rows(picked)).toStrictEqual([
+      "main",
+      "feat/x",
+      "detached:feat/x",
+      "feat/x",
+      "main",
+    ]);
+    expect(rows(aborted)).toStrictEqual([
+      "main",
+      "feat/x",
+      "detached:feat/x",
+      "feat/x",
+      "main",
+    ]);
+  });
+
+  it("reads an older git rebase start that names its onto ref as detached", () => {
+    const entries = reflog([
+      ["2026-09-01T08:00:00Z", "commit (initial): base"],
+      ["2026-09-01T09:00:00Z", "checkout: moving from main to topic"],
+      ["2026-09-01T10:00:00Z", "rebase: checkout main"],
+      ["2026-09-01T10:00:00Z", "rebase: x"],
+      [
+        "2026-09-01T10:00:00Z",
+        "rebase finished: returning to refs/heads/topic",
+      ],
+    ]);
+
+    expect(
+      checkoutRows(
+        buildHeadMoves(entries, new Set(["main", "topic"]), "topic")
+      ).map((move) => (move.detached ? `detached:${move.owner}` : move.branch))
+    ).toStrictEqual(["main", "topic", "detached:topic", "topic"]);
+  });
+
+  it("treats a detached checkout of a local branch as detached", () => {
+    const entries = reflog([
+      ["2026-09-01T08:00:00Z", "commit (initial): base"],
+      ["2026-09-01T09:00:00Z", "checkout: moving from main to feat"],
+      ["2026-09-01T10:00:00Z", "checkout: moving from feat to main"],
+      ["2026-09-01T11:00:00Z", `checkout: moving from ${SHA} to feat`],
+      ["2026-09-01T12:00:00Z", "checkout: moving from feat to main"],
+    ]);
+
+    const read = (currentBranch: string | null) =>
+      checkoutRows(
+        buildHeadMoves(entries, new Set(["main", "feat"]), currentBranch)
+      ).map((move) => (move.detached ? `detached:${move.owner}` : move.branch));
+
+    expect(read(null)).toStrictEqual([
+      "main",
+      "feat",
+      "detached:feat",
+      "feat",
+      "detached:feat",
+    ]);
+    expect(read("main")).toStrictEqual([
+      "main",
+      "feat",
+      "detached:feat",
+      "feat",
+      "main",
+    ]);
+  });
+
+  it("does not read a rebase still in progress as a detached checkout", () => {
+    const entries = reflog([
+      ["2026-09-01T08:00:00Z", "commit (initial): base"],
+      ["2026-09-01T09:00:00Z", "checkout: moving from main to feat"],
+      ["2026-09-01T10:00:00Z", "rebase (start): checkout main"],
+    ]);
+
+    expect(
+      checkoutRows(
+        buildHeadMoves(entries, new Set(["main", "feat"]), null)
+      ).map((move) => (move.detached ? `detached:${move.owner}` : move.branch))
+    ).toStrictEqual(["main", "feat", "detached:feat"]);
+  });
 });
 
 const GIT_CONFIG = [
@@ -352,6 +480,157 @@ describe("a clone that checks out origin/main", () => {
               [move.branch, move.owner].includes("origin/main")
             )
           ).toStrictEqual([]);
+        })
+      ).pipe(Effect.provide(NodeServices.layer))
+  );
+
+  it.effect(
+    "keeps origin/main detached when a rebase of another branch or a detached checkout of main follows",
+    () =>
+      Effect.scoped(
+        Effect.gen(function* rebaseFromRemote() {
+          const fileSystem = yield* FileSystem.FileSystem;
+          const path = yield* Path.Path;
+          const gitAt = yield* datedRunner;
+
+          const root = yield* fileSystem.realPath(
+            yield* fileSystem.makeTempDirectoryScoped()
+          );
+
+          const upstream = path.join(root, "upstream");
+          const work = path.join(root, "work");
+
+          yield* fileSystem.makeDirectory(upstream);
+          yield* gitAt("2026-09-01T08:00:00Z")(upstream, [
+            "init",
+            "-q",
+            "-b",
+            "main",
+          ]);
+          yield* gitAt("2026-09-01T08:00:00Z")(upstream, [
+            "commit",
+            "-q",
+            "--allow-empty",
+            "-m",
+            "base",
+          ]);
+          yield* gitAt("2026-09-01T08:30:00Z")(root, [
+            "clone",
+            "-q",
+            upstream,
+            work,
+          ]);
+
+          const steps: readonly (readonly [
+            string,
+            string,
+            readonly string[],
+          ])[] = [
+            ["2026-09-01T09:00:00Z", work, ["switch", "-q", "-c", "feat/x"]],
+            [
+              "2026-09-01T09:30:00Z",
+              work,
+              ["commit", "-q", "--allow-empty", "-m", "x"],
+            ],
+            ["2026-09-01T10:00:00Z", work, ["checkout", "-q", "origin/main"]],
+            [
+              "2026-09-01T10:15:00Z",
+              work,
+              ["rebase", "-q", "origin/main", "feat/x"],
+            ],
+            ["2026-09-01T11:00:00Z", work, ["checkout", "-q", "main"]],
+            [
+              "2026-09-01T11:10:00Z",
+              upstream,
+              ["commit", "-q", "--allow-empty", "-m", "up2"],
+            ],
+            ["2026-09-01T11:20:00Z", work, ["fetch", "-q"]],
+            ["2026-09-01T12:00:00Z", work, ["checkout", "-q", "origin/main"]],
+            [
+              "2026-09-01T12:15:00Z",
+              work,
+              ["rebase", "-q", "origin/main", "feat/x"],
+            ],
+            ["2026-09-01T13:00:00Z", work, ["checkout", "-q", "main"]],
+            [
+              "2026-09-01T13:30:00Z",
+              work,
+              ["checkout", "-q", "--detach", "main"],
+            ],
+            ["2026-09-01T14:00:00Z", work, ["checkout", "-q", "feat/x"]],
+            [
+              "2026-09-01T14:30:00Z",
+              work,
+              ["switch", "-q", "--detach", "main"],
+            ],
+          ];
+
+          for (const [date, cwd, args] of steps) {
+            yield* gitAt(date)(cwd, args);
+          }
+
+          const runGit = gitAt("2026-09-01T15:00:00Z");
+
+          const { timeline } = yield* loadWorktreeTimeline(runGit, work);
+
+          const observed = yield* collectGitObservation(runGit, {
+            adapterId: "git-observation",
+            context: emptyFlightContext,
+            cursor: null,
+            origin: "fixture",
+            scratchDir: null,
+            selectedInput: work,
+          });
+
+          const replayed = withStoredHistory(
+            {
+              currentBranch: null,
+              currentSinceMs: null,
+              moves: [],
+              points: [],
+              reflogFromMs: null,
+              worktree: work,
+            },
+            storedHeadHistory(observed.events)
+          );
+
+          const read = (source: WorktreeTimeline) =>
+            [
+              "2026-09-01T10:05:00Z",
+              "2026-09-01T10:30:00Z",
+              "2026-09-01T11:30:00Z",
+              "2026-09-01T12:05:00Z",
+              "2026-09-01T12:30:00Z",
+              "2026-09-01T13:15:00Z",
+              "2026-09-01T13:45:00Z",
+              "2026-09-01T14:15:00Z",
+              "2026-09-01T14:45:00Z",
+            ].map((at) => {
+              const found = branchAt(source, ms(at));
+
+              return `${found.branch}${found.detached ? " (detached)" : ""}`;
+            });
+
+          const expected = [
+            "feat/x (detached)",
+            "feat/x",
+            "main",
+            "feat/x (detached)",
+            "feat/x",
+            "main",
+            "main (detached)",
+            "feat/x",
+            "feat/x (detached)",
+          ];
+
+          expect(read(timeline)).toStrictEqual(expected);
+          expect(read(replayed)).toStrictEqual(expected);
+          expect(
+            observed.events
+              .map((event) => event.payload)
+              .filter((payload) => payload.observationKind === "head-moves")
+              .map((payload) => payload.detachedRefs)
+          ).toStrictEqual([["origin/main"]]);
         })
       ).pipe(Effect.provide(NodeServices.layer))
   );

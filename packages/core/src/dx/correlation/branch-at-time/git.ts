@@ -5,9 +5,14 @@ import type { SourceUnavailable } from "../../contracts/error-source-unavailable
 import {
   branchActivityPoints,
   buildHeadMoves,
+  detachedRefsOf,
   parseReflogLines,
 } from "./timeline.js";
-import type { BranchEvidencePoint, WorktreeTimeline } from "./timeline.js";
+import type {
+  BranchEvidencePoint,
+  RawReflogEntry,
+  WorktreeTimeline,
+} from "./timeline.js";
 
 export const REFLOG_FORMAT = "--format=%gd%x1f%gs";
 
@@ -54,6 +59,38 @@ export const commitBranchMap = (
     return sha === "" ? [] : [[sha, branch] as const];
   });
 
+const HEADS = "refs/heads/";
+
+const loadRefnames = (
+  runGit: GitRunner,
+  worktree: string
+): Effect.Effect<readonly string[]> =>
+  Effect.map(
+    orEmpty(
+      runGit(worktree, [
+        "for-each-ref",
+        "--format=%(refname)",
+        "refs/heads",
+        "refs/remotes",
+        "refs/tags",
+      ])
+    ),
+    (output) =>
+      output
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line !== "")
+  );
+
+export const loadDetachedRefs = (
+  runGit: GitRunner,
+  worktree: string,
+  entries: readonly RawReflogEntry[]
+): Effect.Effect<readonly string[]> =>
+  Effect.map(loadRefnames(runGit, worktree), (refnames) =>
+    detachedRefsOf(entries, refnames)
+  );
+
 export interface LoadedTimeline {
   readonly commitBranches: ReadonlyMap<string, string>;
   readonly timeline: WorktreeTimeline;
@@ -68,16 +105,12 @@ export const loadWorktreeTimeline = (
       runGit(worktree, ["symbolic-ref", "-q", "--short", "HEAD"])
     )).trim();
 
-    const branches = (yield* orEmpty(
-      runGit(worktree, [
-        "for-each-ref",
-        "--format=%(refname:short)",
-        "refs/heads",
-      ])
-    ))
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line !== "")
+    const refnames = yield* loadRefnames(runGit, worktree);
+
+    const branches = refnames
+      .flatMap((refname) =>
+        refname.startsWith(HEADS) ? [refname.slice(HEADS.length)] : []
+      )
       .slice(0, MAX_BRANCHES);
 
     const headEntries = parseReflogLines(
@@ -85,7 +118,13 @@ export const loadWorktreeTimeline = (
     );
 
     const currentBranch = current === "" ? null : current;
-    const moves = buildHeadMoves(headEntries, new Set(branches), currentBranch);
+
+    const moves = buildHeadMoves(
+      headEntries,
+      new Set(branches),
+      currentBranch,
+      new Set(detachedRefsOf(headEntries, refnames))
+    );
 
     const perBranch = yield* Effect.forEach(
       branches,

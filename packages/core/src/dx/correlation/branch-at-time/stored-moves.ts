@@ -6,6 +6,7 @@ import type { HeadMove, RawReflogEntry, WorktreeTimeline } from "./timeline.js";
 
 const HeadMovesSchema = Schema.Struct({
   branch: Schema.NullOr(Schema.String),
+  detachedRefs: Schema.optional(Schema.Array(Schema.String)),
   observationKind: Schema.Literal("head-moves"),
   startedAt: Schema.String,
   transitions: Schema.Array(
@@ -17,6 +18,7 @@ const decodeHeadMoves = Schema.decodeUnknownOption(HeadMovesSchema);
 
 export interface Incarnation {
   branch: string | null;
+  readonly detachedRefs: Set<string>;
   latestMs: number;
   readonly startMs: number;
   readonly transitions: Map<string, RawReflogEntry>;
@@ -56,6 +58,7 @@ export const storedHeadHistory = (
 
       const incarnation: Incarnation = incarnations.get(startMs) ?? {
         branch: found.branch,
+        detachedRefs: new Set(),
         latestMs: seenMs,
         startMs,
         transitions: new Map(),
@@ -64,6 +67,10 @@ export const storedHeadHistory = (
       if (seenMs >= incarnation.latestMs) {
         incarnation.branch = found.branch;
         incarnation.latestMs = seenMs;
+      }
+
+      for (const name of found.detachedRefs ?? []) {
+        incarnation.detachedRefs.add(name);
       }
 
       for (const transition of found.transitions) {
@@ -99,7 +106,8 @@ const movesOf = (incarnation: Incarnation): readonly HeadMove[] =>
       ),
     ],
     new Set(),
-    incarnation.branch
+    incarnation.branch,
+    incarnation.detachedRefs
   );
 
 export const withStoredHistory = (

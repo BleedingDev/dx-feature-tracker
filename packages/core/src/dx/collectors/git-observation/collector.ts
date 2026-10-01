@@ -8,7 +8,10 @@ import { InvalidInput } from "../../contracts/error-invalid-input.js";
 import type { SourceUnavailable } from "../../contracts/error-source-unavailable.js";
 import type { CollectInput, DxCollector } from "../../contracts/services.js";
 import { CONTRACT_VERSION } from "../../contracts/version.js";
-import { reflogArgs } from "../../correlation/branch-at-time/git.js";
+import {
+  loadDetachedRefs,
+  reflogArgs,
+} from "../../correlation/branch-at-time/git.js";
 import {
   isHeadTransition,
   isoOf,
@@ -117,7 +120,10 @@ interface EventDraft {
   readonly identity: EventIdentity;
   readonly occurredAt: string | null;
   readonly payload: Readonly<
-    Record<string, string | number | null | readonly HeadTransition[]>
+    Record<
+      string,
+      string | number | null | readonly HeadTransition[] | readonly string[]
+    >
   >;
   readonly semantics: readonly FieldSemantics[];
   readonly upstreamKey: string;
@@ -224,7 +230,8 @@ export const headMovesDraft = (
   scopeKey: string,
   branch: string | null,
   entries: readonly RawReflogEntry[],
-  observedAt: string
+  observedAt: string,
+  detachedRefs: readonly string[] = []
 ): EventDraft | null => {
   const [first] = entries;
 
@@ -240,19 +247,19 @@ export const headMovesDraft = (
       : []
   );
 
-  const hash = sha256(JSON.stringify({ branch, startedAt, transitions })).slice(
-    0,
-    16
-  );
+  const moves =
+    detachedRefs.length === 0
+      ? { branch, startedAt, transitions }
+      : { branch, detachedRefs, startedAt, transitions };
+
+  const hash = sha256(JSON.stringify(moves)).slice(0, 16);
 
   return {
     identity: { ...emptyEventIdentity },
     occurredAt: observedAt,
     payload: {
-      branch,
+      ...moves,
       observationKind: "head-moves",
-      startedAt,
-      transitions,
     },
     semantics: [
       observed("transitions", null),
@@ -420,6 +427,8 @@ export const collectGitObservation = Effect.fn("GitObservation.collect")(
       )
     );
 
+    const detachedRefs = yield* loadDetachedRefs(runGit, worktree, headEntries);
+
     const observedAt = DateTime.formatIso(
       DateTime.makeUnsafe(yield* Clock.currentTimeMillis)
     );
@@ -447,7 +456,13 @@ export const collectGitObservation = Effect.fn("GitObservation.collect")(
         reflogDraft(scopeKey, state.branch ?? "detached", entry)
       ),
       ...[
-        headMovesDraft(scopeKey, state.branch, headEntries, observedAt),
+        headMovesDraft(
+          scopeKey,
+          state.branch,
+          headEntries,
+          observedAt,
+          detachedRefs
+        ),
       ].flatMap((draft) => (draft === null ? [] : [draft])),
     ].map((draft) => toEnvelope(frame, draft));
 

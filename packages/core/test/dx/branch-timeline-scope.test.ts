@@ -25,7 +25,7 @@ const UNRELATED = Array.from(
 
 const BRANCHES = Array.from(
   { length: 30 },
-  (_, index) => `feat/${String(index)}`
+  (_, index) => `refs/heads/feat/${String(index)}`
 ).join("\n");
 
 const AT = DateTime.formatIso(
