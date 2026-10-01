@@ -35,6 +35,7 @@ export interface DxCapabilityDeps {
   readonly collectors: readonly RegisteredCollector[];
   readonly costOptions?: CostOptions;
   readonly defaultRepo: string;
+  readonly persistSnapshots?: boolean;
   readonly selector?: DxSelectorOverrides;
   readonly storePath: string;
 }
@@ -94,6 +95,7 @@ export const makeDxCapabilities = (deps: DxCapabilityDeps) => {
   const query = DxQueryHandlers.makeDxQueryCapabilities({
     descriptors: deps.registry.descriptors,
     metrics: deps.registry.metrics,
+    persistSnapshots: deps.persistSnapshots ?? true,
     resolveSelector,
   });
 

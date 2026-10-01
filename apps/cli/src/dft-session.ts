@@ -53,6 +53,7 @@ export const costOptionsFor = (dftHome: string) =>
 
 export const capabilitiesFor = (input: {
   readonly costOptions: CostOptions;
+  readonly persistSnapshots?: boolean;
   readonly repo: string;
   readonly selector: CapabilitySelector;
   readonly storePath: string;
@@ -61,6 +62,7 @@ export const capabilitiesFor = (input: {
     collectors: allCollectors,
     costOptions: input.costOptions,
     defaultRepo: input.repo,
+    persistSnapshots: input.persistSnapshots ?? true,
     registry: buildRegistry(allCollectors, metricsWithCost(input.costOptions)),
     selector: input.selector,
     storePath: input.storePath,

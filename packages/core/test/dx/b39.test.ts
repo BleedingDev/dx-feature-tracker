@@ -308,6 +308,25 @@ describe("B39 MCP query handlers", () => {
       )
   );
 
+  it.effect("read-only analyze computes the report without storing it", () =>
+    withStore("read-only.sqlite", (store) =>
+      Effect.gen(function* b39ReadOnly() {
+        yield* store.append(batchOf(fixture.events.map(toEnvelope)));
+        const readOnly = { ...deps, persistSnapshots: false };
+        const report = yield* handleAnalyze(readOnly, flightInput);
+        yield* handleAnalyze(readOnly, flightInput);
+
+        expect(
+          report.metrics.find((m) => m.metricId === "b39.input-tokens")?.value
+        ).toBe(1200);
+        expect(
+          report.notes.some((n) => n.startsWith("Persisted snapshot metadata"))
+        ).toBe(false);
+        expect(yield* store.snapshotCount).toBe(0);
+      })
+    )
+  );
+
   it.effect(
     "unknown snapshot fails explicitly and never substitutes latest",
     () =>

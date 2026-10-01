@@ -18,4 +18,5 @@ export interface DxHandlerDeps {
   readonly descriptors: readonly ModuleDescriptor[];
   readonly metrics: readonly DxMetric[];
   readonly resolveSelector?: SelectorResolver;
+  readonly persistSnapshots?: boolean;
 }

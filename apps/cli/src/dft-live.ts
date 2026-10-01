@@ -428,6 +428,7 @@ export const serveDashboard = (options: LiveServerOptions) =>
         return capabilityAt(
           capabilitiesFor({
             costOptions: options.costOptions,
+            persistSnapshots: false,
             repo,
             selector: { allRepos: false, branch, from },
             storePath: paths.store.path,

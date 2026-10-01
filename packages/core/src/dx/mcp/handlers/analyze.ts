@@ -112,18 +112,20 @@ export const handleAnalyze = (
             },
           };
 
-    if (selected.mode !== "pinned") {
+    const persist =
+      selected.mode !== "pinned" && deps.persistSnapshots !== false;
+
+    if (persist) {
       yield* store.putSnapshotManifest(snapshot.manifest);
     }
 
     const computed = computeMetrics(deps.metrics, snapshot);
 
-    const persistence =
-      selected.mode === "pinned"
-        ? []
-        : [
-            `Persisted snapshot metadata ${snapshot.manifest.snapshotId}; reuse it with snapshotId for explain/evidence.`,
-          ];
+    const persistence = persist
+      ? [
+          `Persisted snapshot metadata ${snapshot.manifest.snapshotId}; reuse it with snapshotId for explain/evidence.`,
+        ]
+      : [];
 
     return composeAnalyzeReport(snapshot, computed.outputs, [
       ...selected.disclosures,

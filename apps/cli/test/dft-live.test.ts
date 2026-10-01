@@ -80,6 +80,25 @@ const ISO = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z/gu;
 const BRANCH_AGE =
   /(?<head>"reason":"start=[^"]*",(?:"unit":"ms",)?"value":)\d+/gu;
 
+const decodeReport = Schema.decodeUnknownSync(
+  Schema.fromJsonString(Schema.Record(Schema.String, Schema.Unknown))
+);
+
+const decodeNotes = Schema.decodeUnknownSync(
+  Schema.Struct({ notes: Schema.Array(Schema.String) })
+);
+
+const withoutPersistNote = (text: string): string => {
+  const report = decodeReport(text);
+
+  return JSON.stringify({
+    ...report,
+    notes: decodeNotes(report).notes.filter(
+      (note) => !note.startsWith("Persisted snapshot metadata")
+    ),
+  });
+};
+
 const normalized = (text: string): string =>
   JSON.stringify(decodeJson(text))
     .replaceAll(ISO, "<time>")
@@ -381,7 +400,7 @@ describe("dft dashboard live server", () => {
 
         expect(analyze.status).toBe(0);
         expect(normalized(JSON.stringify(decodeData(branch.body).data))).toBe(
-          normalized(analyze.stdout)
+          normalized(withoutPersistNote(analyze.stdout))
         );
       })
     )
@@ -771,6 +790,35 @@ describe("dft dashboard --one-time", () => {
     expect(html).not.toContain("dft-intro");
     expect(html).not.toContain("<video");
   });
+});
+
+const storedSnapshots = (): number => {
+  const db = new DatabaseSync(storePath, { readOnly: true });
+
+  try {
+    return db.prepare("SELECT snapshot_id FROM snapshots").all().length;
+  } finally {
+    db.close();
+  }
+};
+
+describe("dft dashboard branch view", () => {
+  it.live("stores no report when a branch page is viewed", () =>
+    withDashboard((server) =>
+      Effect.gen(function* readOnlyBranch() {
+        const before = storedSnapshots();
+        const target = `/api/branch?repo=${encodeURIComponent(path.join(repo, ".git"))}&branch=main&since=30d`;
+
+        for (const _ of [1, 2, 3]) {
+          const branch = yield* call(server, target);
+
+          expect(branch.status).toBe(200);
+        }
+
+        expect(storedSnapshots()).toBe(before);
+      })
+    )
+  );
 });
 
 const storedRequests = (requestKey: string): number => {
