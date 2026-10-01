@@ -361,6 +361,34 @@ const byPlacedWorktree: Resolver = (event) =>
       }
     : null;
 
+const holdsNoHistory = (timeline: WorktreeTimeline): boolean =>
+  timeline.currentBranch === null &&
+  timeline.reflogFromMs === null &&
+  timeline.moves.length === 0 &&
+  timeline.points.length === 0;
+
+const byCollectedWithoutHistory =
+  (timelines: readonly WorktreeTimeline[]): Resolver =>
+  (event) => {
+    const branch = namedBranch(event);
+    const timeline = timelineFor(event, timelines);
+
+    return timeOf(event) !== null &&
+      branch !== null &&
+      (timeline === null || holdsNoHistory(timeline))
+      ? {
+          ...base(event),
+          attribution: "provisional",
+          basis: "collected-context",
+          branch,
+          confidence: 0.5,
+          method: "collected",
+          reason:
+            "no checkout history covers this worktree (removed, or never read); kept the branch its collector recorded",
+        }
+      : null;
+  };
+
 const untimedCollected = (
   event: DxEventEnvelope
 ): HistoricalAttribution | null => {
@@ -426,8 +454,20 @@ const repoLabel = (
     : null;
 };
 
+const collectedLabel = (
+  event: DxEventEnvelope,
+  found: HistoricalAttribution
+): BranchSource | null =>
+  found.basis === "collected-context" &&
+  event.ai?.branchSource === "session-recorded"
+    ? "session-recorded"
+    : null;
+
 const attributedAi = (event: DxEventEnvelope, found: HistoricalAttribution) => {
-  const source = repoLabel(event, found) ?? BASIS_BRANCH_SOURCES[found.basis];
+  const source =
+    repoLabel(event, found) ??
+    collectedLabel(event, found) ??
+    BASIS_BRANCH_SOURCES[found.basis];
 
   return source === null || event.ai === null
     ? event.ai
@@ -474,6 +514,7 @@ export const attributeHistoricalBranches = (
     byScoredCommit(input.commitBranches),
     byWorktreeAtTime(input.timelines, options),
     byPlacedWorktree,
+    byCollectedWithoutHistory(input.timelines),
   ];
 
   const resolveDirect = (event: DxEventEnvelope) => {

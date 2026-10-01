@@ -87,10 +87,24 @@ const event = (spec: EventSpec): DxEventEnvelope => ({
   usage: null,
 });
 
-const attribute = (events: readonly DxEventEnvelope[]) => {
+const REMOVED_WORKTREE = "/work/removed";
+
+const removedTimeline: WorktreeTimeline = {
+  currentBranch: null,
+  currentSinceMs: null,
+  moves: [],
+  points: [],
+  reflogFromMs: null,
+  worktree: REMOVED_WORKTREE,
+};
+
+const attribute = (
+  events: readonly DxEventEnvelope[],
+  timelines: readonly WorktreeTimeline[] = [timeline]
+) => {
   const result = attributeHistoricalBranches(events, {
     commitBranches: new Map(),
-    timelines: [timeline],
+    timelines,
   });
 
   return new Map<string, { branch: string | null; source: string | null }>(
@@ -237,6 +251,29 @@ describe.each(HARNESS_IDS)("branch precedence (D28) for %s", (harness) => {
       source: "cwd-inferred",
     });
   });
+
+  it.each(["session-recorded", "cwd-inferred"] as const)(
+    "keeps the %s branch once its worktree is removed",
+    (source) => {
+      const result = attribute(
+        [
+          event({
+            ai: attribution(harness, source),
+            branch: "feature/removed",
+            id: "removed",
+            occurredAt: REQUEST_AT,
+            worktreePath: REMOVED_WORKTREE,
+          }),
+        ],
+        [timeline, removedTimeline]
+      );
+
+      expect(result.get("removed")).toStrictEqual({
+        branch: "feature/removed",
+        source,
+      });
+    }
+  );
 
   it("leaves the row unassigned when nothing knows the branch", () => {
     const result = attribute([
