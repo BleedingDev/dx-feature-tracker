@@ -4,8 +4,11 @@ import {
   chmodSync,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   realpathSync,
+  rmdirSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
 import path from "node:path";
@@ -423,6 +426,7 @@ export const cursorLogin = (home: string, platform: string): CursorLogin => {
 
 export interface InstallChecks {
   readonly cursorInstalled: boolean;
+  readonly otherTools?: readonly string[];
   readonly gitRepo: boolean;
   readonly login: CursorLogin;
   readonly nodeVersion: string;
@@ -450,7 +454,7 @@ export const installWarnings = (checks: InstallChecks): readonly string[] => [
     : [
         "This folder is not a git repo. dft tracks cost per branch, so run `git init` or cd into a repo.",
       ]),
-  ...(checks.cursorInstalled
+  ...(checks.cursorInstalled || (checks.otherTools ?? []).length > 0
     ? []
     : [
         "Cursor not found on this machine. Install it from https://cursor.com, then open this repo in it.",
@@ -669,7 +673,8 @@ export const installText = (
   result: InstallResult,
   checks: InstallChecks,
   home = "",
-  color = false
+  color = false,
+  extra: readonly string[] = []
 ): string => {
   const warnings = installWarnings(checks);
   const done: string[] = [];
@@ -718,7 +723,7 @@ export const installText = (
     );
   }
 
-  blocks.push(...worktreeBlocks(result));
+  blocks.push(...extra, ...worktreeBlocks(result));
 
   if (skipped.length > 0) {
     blocks.push(
@@ -761,4 +766,164 @@ export const installText = (
   );
 
   return blocks.join("\n\n");
+};
+
+export interface RemovalStep {
+  readonly action: "removed" | "updated";
+  readonly detail: string;
+  readonly path: string;
+}
+
+const isEmptyDir = (dir: string): boolean => {
+  try {
+    return readdirSync(dir).length === 0;
+  } catch {
+    return false;
+  }
+};
+
+const removeEmptyDir = (dir: string): void => {
+  if (isEmptyDir(dir)) {
+    rmdirSync(dir);
+  }
+};
+
+export const uninstallCursorHooks = (
+  worktree: string
+): readonly RemovalStep[] => {
+  const file = path.join(worktree, ".cursor", "hooks.json");
+
+  if (!existsSync(file)) {
+    return [];
+  }
+
+  const parsed = parseHooksFile(readFileSync(file, "utf-8"));
+
+  if (parsed === null) {
+    return [];
+  }
+
+  const removed: string[] = [];
+  const kept: Record<string, readonly HookEntry[]> = {};
+
+  for (const [event, entries] of Object.entries(parsed.hooks ?? {})) {
+    const rest = entries.filter((entry) => !isDftHookCommand(entry.command));
+
+    if (rest.length !== entries.length) {
+      removed.push(event);
+    }
+
+    if (rest.length > 0) {
+      kept[event] = rest;
+    }
+  }
+
+  if (removed.length === 0) {
+    return [];
+  }
+
+  const others = Object.keys(parsed).filter(
+    (key) => key !== "hooks" && key !== "version"
+  );
+
+  if (Object.keys(kept).length === 0 && others.length === 0) {
+    rmSync(file);
+
+    return [
+      { action: "removed", detail: "only dft hooks were in it", path: file },
+    ];
+  }
+
+  writeFileSync(
+    file,
+    `${JSON.stringify({ ...parsed, hooks: kept }, null, 2)}\n`
+  );
+
+  return [
+    {
+      action: "updated",
+      detail: `removed dft hook from ${removed.join(", ")}; kept everything else`,
+      path: file,
+    },
+  ];
+};
+
+export const uninstallSkills = (
+  worktree: string,
+  source: string = skillsSourceDir()
+): readonly RemovalStep[] => {
+  if (path.resolve(source) === path.resolve(worktree, ".cursor", "skills")) {
+    return [];
+  }
+
+  const steps = loadSkills(source).flatMap((skill): readonly RemovalStep[] => {
+    const file = path.join(
+      worktree,
+      ".cursor",
+      "skills",
+      skill.name,
+      "SKILL.md"
+    );
+
+    if (!existsSync(file) || readFileSync(file, "utf-8") !== skill.body) {
+      return [];
+    }
+
+    rmSync(file);
+    removeEmptyDir(path.dirname(file));
+
+    return [{ action: "removed", detail: skill.name, path: file }];
+  });
+
+  removeEmptyDir(path.join(worktree, ".cursor", "skills"));
+  removeEmptyDir(path.join(worktree, ".cursor"));
+
+  return steps;
+};
+
+const isSnapshotLine = (line: string): boolean =>
+  line.includes("dft") && line.trimEnd().endsWith(" snapshot || true");
+
+export const uninstallGitHooks = (worktree: string): readonly RemovalStep[] => {
+  if (!isGitRepo(worktree) || lefthookConfig(worktree) !== null) {
+    return [];
+  }
+
+  const dir = gitHooksDir(worktree);
+
+  return GIT_HOOKS.flatMap((hook): readonly RemovalStep[] => {
+    const file = path.join(dir, hook);
+
+    if (!existsSync(file)) {
+      return [];
+    }
+
+    const lines = readFileSync(file, "utf-8").split("\n");
+    const rest = lines.filter((line) => !isSnapshotLine(line));
+
+    if (rest.length === lines.length) {
+      return [];
+    }
+
+    const body = rest.filter((line) => line.trim() !== "");
+
+    if (
+      body.length === 0 ||
+      (body.length === 1 && body[0]?.startsWith("#!") === true)
+    ) {
+      rmSync(file);
+
+      return [{ action: "removed", detail: hook, path: file }];
+    }
+
+    writeFileSync(file, rest.join("\n"));
+
+    return [
+      {
+        action: "updated",
+        detail: `${hook}: removed the dft line`,
+        path: file,
+      },
+    ];
+  });
 };

@@ -55,6 +55,7 @@ import {
   parseRange,
 } from "./dft-intro.js";
 import { liveDashboardPage } from "./dft-live-page.js";
+import { OTLP_PATHS, receiveOtlp } from "./dft-otlp-receiver.js";
 import {
   analyzeText,
   explainText,
@@ -816,6 +817,10 @@ export const serveDashboard = (options: LiveServerOptions) =>
         );
 
         const method = request.method ?? "GET";
+
+        if (method === "POST" && OTLP_PATHS.has(url.pathname)) {
+          return yield* receiveOtlp(request, response, paths.store);
+        }
 
         if (method === "POST") {
           if (url.pathname !== "/api/action") {

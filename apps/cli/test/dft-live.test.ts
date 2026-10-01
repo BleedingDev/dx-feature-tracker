@@ -4,6 +4,7 @@ import * as fs from "node:fs";
 import { request } from "node:http";
 import os from "node:os";
 import path from "node:path";
+import { DatabaseSync } from "node:sqlite";
 
 import { NodeServices } from "@effect/platform-node";
 import { afterAll, describe, expect, it } from "@effect/vitest";
@@ -13,6 +14,7 @@ import { DateTime, Effect, Schema } from "effect";
 import { serveDashboard } from "../src/dft-live.js";
 import type { LiveServer } from "../src/dft-live.js";
 import { costOptionsFor } from "../src/dft-session.js";
+import { claudeLogsJson } from "./otlp-payloads.js";
 
 const scratch = fs.realpathSync(
   fs.mkdtempSync(path.join(os.tmpdir(), "dft-live-cli-"))
@@ -572,4 +574,63 @@ describe("dft dashboard --one-time", () => {
     expect(html).not.toContain("dft-intro");
     expect(html).not.toContain("<video");
   });
+});
+
+const storedRequests = (requestKey: string): number => {
+  const db = new DatabaseSync(storePath, { readOnly: true });
+
+  try {
+    return db
+      .prepare(
+        "SELECT event_id FROM events WHERE json_extract(body, '$.usage.requestKey') = ?"
+      )
+      .all(requestKey).length;
+  } finally {
+    db.close();
+  }
+};
+
+describe("dft dashboard OpenTelemetry receiver", () => {
+  it.live(
+    "stores each OTLP request once and refuses browser posts and junk",
+    () =>
+      withDashboard((server) =>
+        Effect.gen(function* receiver() {
+          const body = claudeLogsJson("req_dashboard_1");
+          const headers = { "content-type": "application/json" };
+          const post = { body, headers, method: "POST" };
+          const first = yield* call(server, "/v1/logs", post);
+
+          expect(first.status).toBe(200);
+
+          const again = yield* call(server, "/v1/logs", post);
+
+          expect(again.status).toBe(200);
+          expect(storedRequests("req_dashboard_1")).toBe(1);
+
+          const metrics = yield* call(server, "/v1/metrics", {
+            ...post,
+            body: "{}",
+          });
+
+          expect(metrics.status).toBe(200);
+
+          const browser = yield* call(server, "/v1/logs", {
+            body: claudeLogsJson("req_dashboard_2"),
+            headers: { ...headers, origin: "http://evil.example" },
+            method: "POST",
+          });
+
+          expect(browser.status).toBe(403);
+          expect(storedRequests("req_dashboard_2")).toBe(0);
+
+          const junk = yield* call(server, "/v1/logs", {
+            ...post,
+            body: "not otlp",
+          });
+
+          expect(junk.status).toBe(400);
+        })
+      )
+  );
 });

@@ -30,6 +30,14 @@ import type {
 import { Console, Data, DateTime, Effect, Layer, Option } from "effect";
 import { Argument, Command, Flag } from "effect/unstable/cli";
 
+import {
+  CAPTURE_TOOLS,
+  dftCommandFor,
+  installCapture,
+  isCaptureTool,
+  uninstallCapture,
+} from "./dft-capture.js";
+import type { CaptureTool } from "./dft-capture.js";
 import { branchChats, dashboardText, writeDashboard } from "./dft-dashboard.js";
 import {
   dftInvocation,
@@ -41,6 +49,9 @@ import {
   installText,
   installWorktree,
   otherWorktrees,
+  uninstallCursorHooks,
+  uninstallGitHooks,
+  uninstallSkills,
 } from "./dft-install.js";
 import { DEFAULT_DASHBOARD_PORT, runLiveDashboard } from "./dft-live.js";
 import {
@@ -67,6 +78,23 @@ import {
   capabilityAt as capabilitiesOf,
   costOptionsFor,
 } from "./dft-session.js";
+import {
+  installTelemetry,
+  telemetryState,
+  uninstallTelemetry,
+  userToolDirs,
+} from "./dft-telemetry.js";
+import type { TelemetryOptions } from "./dft-telemetry.js";
+import {
+  captureText,
+  codexTrusted,
+  detectTools,
+  lastEventTimes,
+  telemetryText,
+  toolStatuses,
+  toolsText,
+  uninstallText,
+} from "./dft-tools.js";
 import { USAGE_BY_CHOICES, usageInputOf, usageText } from "./dft-usage.js";
 import type { UsageFlagValues } from "./dft-usage.js";
 import { mcpServer } from "./surfaces.js";
@@ -286,15 +314,36 @@ const capabilityAt = (session: Session) => capabilitiesOf(session.capabilities);
 
 const statusCommand = reportCommand(
   "status",
-  "Check that dft is set up: where data is stored and which sources (git, Cursor) were found. Imports new data first.",
-  (_flags, session) => capabilityAt(session).status.handler({}),
+  "Check that dft is set up: where data is stored, which sources (git, Cursor) were found, and for each other tool whether it is installed, how many sessions it has, whether project capture and user telemetry are set up and when its last event arrived. Imports new data first.",
+  (_flags, session) =>
+    Effect.gen(function* status() {
+      const base = yield* capabilityAt(session).status.handler({});
+      const detected = yield* detectTools(session.paths.home);
+      const context = contextForRepo(session.paths.repo);
+      const dirs = userToolDirs(session.paths.home, process.env);
+
+      const tools = yield* Effect.sync(() =>
+        toolStatuses(
+          detected,
+          context.worktreePath ?? session.paths.repo,
+          telemetryState(dirs.claudeDir, dirs.codexDir),
+          lastEventTimes(session.paths.store.path)
+        )
+      );
+
+      return { base, tools };
+    }),
   {
+    json: (output) => ({ ...output.base, tools: output.tools }),
     render: (output, context) =>
-      statusText(output, context.sync, {
-        home: context.home,
-        now: context.now,
-        verbose: context.verbose,
-      }),
+      [
+        statusText(output.base, context.sync, {
+          home: context.home,
+          now: context.now,
+          verbose: context.verbose,
+        }),
+        toolsText(output.tools),
+      ].join("\n\n"),
   }
 ).pipe(
   Command.withShortDescription("Check setup and which sources were found"),
@@ -1056,9 +1105,52 @@ const snapshotCommand = Command.make(
   ])
 );
 
+const telemetryOptions = (
+  paths: ReturnType<typeof dftPaths>,
+  dryRun: boolean,
+  port: number,
+  now: Date
+): TelemetryOptions => ({
+  ...userToolDirs(paths.home, process.env),
+  backupRoot: path.join(paths.dftHome, "backups", "telemetry"),
+  dryRun,
+  now,
+  port,
+  shell: process.env,
+  stateFile: path.join(paths.dftHome, "telemetry.json"),
+});
+
+const toolList = (value: string | undefined): readonly CaptureTool[] =>
+  (value ?? "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(isCaptureTool);
+
+const captureFlags = {
+  dryRun: booleanFlag(
+    "dry-run",
+    "With --telemetry: show the exact change without writing anything"
+  ),
+  json: reportFlags.json,
+  port: Flag.Int("port").pipe(
+    Flag.withDefault(DEFAULT_DASHBOARD_PORT),
+    Flag.withDescription(
+      `With --telemetry: the dft dashboard port that receives OpenTelemetry (default ${String(DEFAULT_DASHBOARD_PORT)})`
+    )
+  ),
+  repo: reportFlags.repo,
+  telemetry: booleanFlag(
+    "telemetry",
+    "Also send Claude Code and Codex OpenTelemetry to dft dashboard on 127.0.0.1 (changes ~/.claude/settings.json and ~/.codex/config.toml, keeps a backup, only adds)"
+  ),
+};
+
+const entryScript = (): string => process.argv[1] ?? "dft";
+
 const installCommand = Command.make(
   "install",
   {
+    ...captureFlags,
     allWorktrees: booleanFlag(
       "all-worktrees",
       "Also set up every other git worktree of this repo (needed for worktrees you open in Cursor on their own)"
@@ -1067,15 +1159,28 @@ const installCommand = Command.make(
       "git-hooks",
       "Also record cost on every commit and push (adds to your git hooks, keeps what is there)"
     ),
-    json: reportFlags.json,
-    repo: reportFlags.repo,
+    tool: optionalString(
+      "tool",
+      "Also set up these tools even when dft did not find them, comma-separated: claude-code, codex, opencode, pi, omp, deepseek"
+    ),
   },
   (flags) =>
     Effect.gen(function* install() {
       const paths = dftPaths({ db: undefined, repo: flags.repo });
       const context = contextForRepo(paths.repo);
       const worktree = context.worktreePath ?? paths.repo;
-      const command = dftInvocation(process.execPath, process.argv[1] ?? "dft");
+      const command = dftInvocation(process.execPath, entryScript());
+      const capture = dftCommandFor(process.execPath, entryScript());
+      const detected = yield* detectTools(paths.home);
+      const forced = toolList(flags.tool);
+
+      const tools = CAPTURE_TOOLS.filter(
+        (tool) =>
+          forced.includes(tool) ||
+          detected.some((item) => item.tool === tool && item.installed)
+      );
+
+      const now = DateTime.toDate(yield* DateTime.now);
 
       const result = yield* Effect.sync(() => {
         const hooks = installCursorHooks(worktree, `${command} hook`);
@@ -1103,6 +1208,18 @@ const installCommand = Command.make(
             };
       });
 
+      const tooling = yield* Effect.sync(() =>
+        installCapture(tools, worktree, capture)
+      );
+
+      const telemetry = flags.telemetry
+        ? yield* Effect.sync(() =>
+            installTelemetry(
+              telemetryOptions(paths, flags.dryRun, flags.port, now)
+            )
+          )
+        : null;
+
       const steps = [result.hooks, ...result.skills, ...(result.git ?? [])];
 
       if (flags.json) {
@@ -1117,25 +1234,75 @@ const installCommand = Command.make(
               };
 
         yield* Console.log(
-          JSON.stringify({ command, steps, worktree, ...worktrees }, null, 2)
+          JSON.stringify(
+            {
+              capture: tooling,
+              command,
+              detected,
+              steps,
+              telemetry,
+              worktree,
+              ...worktrees,
+            },
+            null,
+            2
+          )
         );
 
         return;
       }
 
-      const checks = yield* Effect.sync(() =>
-        installChecks(worktree, homedir(), process.platform, process.version)
+      const checks = yield* Effect.sync(() => ({
+        ...installChecks(
+          worktree,
+          homedir(),
+          process.platform,
+          process.version
+        ),
+        otherTools: tools,
+      }));
+
+      const trusted = yield* Effect.sync(() =>
+        codexTrusted(userToolDirs(paths.home, process.env).codexDir, [
+          worktree,
+          context.repoCommonDir === null
+            ? worktree
+            : path.dirname(context.repoCommonDir),
+        ])
       );
 
-      yield* Console.log(installText(result, checks, homedir(), stdoutColor()));
+      const extra = [
+        captureText(worktree, detected, tooling, { codexTrusted: trusted }),
+        ...(telemetry === null
+          ? []
+          : [
+              telemetryText(
+                telemetry,
+                `Keep dft dashboard --port ${String(flags.port)} running to receive it. Undo with dft uninstall --telemetry.`
+              ),
+            ]),
+      ];
+
+      yield* Console.log(
+        installText(result, checks, homedir(), stdoutColor(), extra)
+      );
     })
 ).pipe(
   Command.withDescription(
-    "Set up dft in this repo: add Cursor hooks to .cursor/hooks.json and the Cursor skills (/dx-line, /dx-analyze, /dx-history, /dx-chats, /dx-explain, /dx-dashboard). Agents and subagents started from this folder are covered, even when they work in other worktrees. Add --all-worktrees to also set up every other worktree of the repo, for worktrees you open in Cursor on their own. Changes only this repo, never ~/.cursor. Safe to run again."
+    "Set up dft in this repo: add Cursor hooks to .cursor/hooks.json and the Cursor skills (/dx-line, /dx-analyze, /dx-history, /dx-chats, /dx-explain, /dx-dashboard), plus local capture for every other tool found on this machine: Claude Code hooks in .claude/settings.local.json, Codex hooks in .codex/hooks.json, the Pi and OMP extensions in .pi/extensions and .omp/extensions, the OpenCode plugin in .opencode/plugins and the DeepSeek Harness hook bridge in .dsh. These files stay out of git (listed in this clone's .git/info/exclude), so teammates are never affected. Existing entries are kept and running it again changes nothing. Add --telemetry to also send Claude Code and Codex OpenTelemetry to dft dashboard (user settings, with a backup). Add --all-worktrees to also set up every other worktree of the repo for Cursor."
   ),
-  Command.withShortDescription("Set up Cursor hooks and skills in this repo"),
+  Command.withShortDescription(
+    "Set up hooks and capture for every tool in this repo"
+  ),
   Command.withExamples([
-    { command: "dft install", description: "Set up Cursor hooks and skills" },
+    {
+      command: "dft install",
+      description: "Set up Cursor and every other tool found",
+    },
+    {
+      command: "dft install --telemetry --dry-run",
+      description: "Show the user-level OpenTelemetry change without writing",
+    },
     {
       command: "dft install --git-hooks",
       description: "Also record cost on every commit and push",
@@ -1143,6 +1310,68 @@ const installCommand = Command.make(
     {
       command: "dft install --all-worktrees",
       description: "Also set up every other worktree of this repo",
+    },
+  ])
+);
+
+const uninstallCommand = Command.make("uninstall", captureFlags, (flags) =>
+  Effect.gen(function* uninstall() {
+    const paths = dftPaths({ db: undefined, repo: flags.repo });
+    const context = contextForRepo(paths.repo);
+    const worktree = context.worktreePath ?? paths.repo;
+    const now = DateTime.toDate(yield* DateTime.now);
+
+    if (flags.telemetry) {
+      const changes = yield* Effect.sync(() =>
+        uninstallTelemetry(
+          telemetryOptions(paths, flags.dryRun, flags.port, now)
+        )
+      );
+
+      yield* Console.log(
+        flags.json
+          ? JSON.stringify({ telemetry: changes }, null, 2)
+          : telemetryText(
+              changes,
+              "Only what dft added was removed. The backups stay under ~/.dft/backups/telemetry."
+            )
+      );
+
+      return;
+    }
+
+    const steps = yield* Effect.sync(() => {
+      const cursor = [
+        ...uninstallCursorHooks(worktree),
+        ...uninstallSkills(worktree),
+        ...uninstallGitHooks(worktree),
+      ].map((item) => ({ ...item, tool: "cursor" as const }));
+
+      return [
+        ...cursor,
+        ...uninstallCapture(
+          worktree,
+          dftCommandFor(process.execPath, entryScript())
+        ),
+      ];
+    });
+
+    yield* Console.log(
+      flags.json
+        ? JSON.stringify({ steps, worktree }, null, 2)
+        : uninstallText(worktree, steps)
+    );
+  })
+).pipe(
+  Command.withDescription(
+    "Remove only what dft install added to this repo: dft entries in tool hook files (other entries stay), the dft extension and plugin files, the Cursor skills it copied, the dft line in git hooks and its lines in .git/info/exclude. Add --telemetry to instead remove the user-level OpenTelemetry settings that dft install --telemetry added."
+  ),
+  Command.withShortDescription("Remove what dft install added"),
+  Command.withExamples([
+    { command: "dft uninstall", description: "Remove dft from this repo" },
+    {
+      command: "dft uninstall --telemetry",
+      description: "Remove the user-level OpenTelemetry settings dft added",
     },
   ])
 );
@@ -1269,6 +1498,7 @@ export const dftCommand = Command.make("dft").pipe(
   ),
   Command.withSubcommands([
     installCommand,
+    uninstallCommand,
     statusCommand,
     analyzeCommand,
     analyseCommand,

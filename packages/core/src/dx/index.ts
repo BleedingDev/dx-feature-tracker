@@ -287,3 +287,38 @@ export type {
   ModelProvider,
   SessionRef,
 } from "./harness/index.js";
+
+export {
+  HarnessHome,
+  harnessAdapterId,
+  harnessRegistryFor,
+  normalizeModel,
+  providerFor,
+  viaFor,
+} from "./harness/index.js";
+
+export {
+  OMP_EXTENSION_FILE,
+  OMP_EXTENSION_MARKER,
+  ompExtensionSource,
+} from "./harness/omp/index.js";
+
+export {
+  OPENCODE_PLUGIN_FILE,
+  opencodePluginSource,
+} from "./harness/opencode/index.js";
+
+export {
+  PI_EXTENSION_FILE_NAME,
+  PI_EXTENSION_MARKER,
+  piExtensionSource,
+} from "./harness/pi/index.js";
+
+export {
+  DxEventEnvelopeSchema,
+  EVENT_SCHEMA_VERSION,
+  emptyEventIdentity,
+  emptyFlightContext,
+} from "./model/event.js";
+
+export type { EventBatch } from "./model/event.js";
