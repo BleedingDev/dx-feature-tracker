@@ -82,6 +82,27 @@ const keyLabel = (dimension: UsageDimension | null, key: string): string => {
   return dimension === "worktree" ? baseName(key) : key;
 };
 
+const pathTail = (key: string): string =>
+  key
+    .replace(/[/\\]\.git$/u, "")
+    .split(/[/\\]/u)
+    .filter((part) => part !== "")
+    .slice(-2)
+    .join("/");
+
+const groupLabels = (
+  dimension: UsageDimension | null,
+  keys: readonly string[]
+): readonly string[] => {
+  const short = keys.map((key) => keyLabel(dimension, key));
+
+  return short.map((label, index) =>
+    short.indexOf(label) === short.lastIndexOf(label) || keys[index] === NO_REPO
+      ? label
+      : pathTail(keys[index] ?? label)
+  );
+};
+
 interface RowLike {
   readonly facts: number;
   readonly key: string;
@@ -141,9 +162,14 @@ export const usageText = (
     ].join("\n");
   }
 
+  const labels = groupLabels(
+    groupBy,
+    output.groups.map((group) => group.key)
+  );
+
   const rows = [
-    ...output.groups.map((group) =>
-      rowCells(keyLabel(groupBy, group.key), group, metrics)
+    ...output.groups.map((group, index) =>
+      rowCells(labels[index] ?? group.key, group, metrics)
     ),
     ...(output.other === null
       ? []

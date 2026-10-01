@@ -10,6 +10,8 @@ import { EventIdSchema, openSqliteEventStore } from "@rat-stack/core/dx";
 import type { DxEventEnvelope, HarnessId } from "@rat-stack/core/dx";
 import { Effect, Schema } from "effect";
 
+import { usageText } from "../src/dft-usage.js";
+
 const scratch = realpathSync(mkdtempSync(path.join(tmpdir(), "dft-usage-")));
 
 afterAll(() => {
@@ -258,5 +260,64 @@ describe("dft usage", () => {
     expect(
       decodeUsage(history.stdout).groups.map((group) => group.key)
     ).toEqual(["claude-sonnet-5", "claude-opus-5", "gpt-5.5"]);
+  });
+});
+
+const row = (key: string, tokens: number | null, billed: number | null) => ({
+  facts: 1,
+  key,
+  values: { billed, estimate: 0.5, tokens },
+});
+
+describe("dft usage text", () => {
+  it("names same-named repos by their folder and keeps Other, unattributed and Total apart", () => {
+    const text = usageText(
+      {
+        asOf: "2026-10-01T12:00:00.000Z",
+        bucket: "day",
+        contractVersion: "dx.usage.v1",
+        coverage: {
+          accountBuckets: { facts: 0, key: "account-bucket", values: {} },
+          derivationVersion: 2,
+          derivedAt: "2026-10-01T12:00:00.000Z",
+          disagreements: [{ count: 2, field: "tokens.output", tool: "codex" }],
+          facts: 5,
+          matched: 5,
+          tools: ["codex"],
+          unpriced: 0,
+          unresolved: 0,
+          withoutTime: 0,
+        },
+        groupBy: "repo",
+        groups: [
+          row("/home/user/a/repo/.git", 3000, null),
+          row("/home/user/b/repo/.git", 2000, 1.25),
+        ],
+        limit: 2,
+        metrics: ["tokens", "estimate", "billed"],
+        notes: ["Estimate note.", "Second note."],
+        other: { ...row("(other)", 100, null), groups: 2 },
+        series: [],
+        sortBy: "tokens",
+        stackBy: "tool",
+        total: row("total", 5200, 1.25),
+        unattributed: row("(unattributed)", 100, null),
+        window: {
+          since: "2026-09-01T00:00:00.000Z",
+          tz: "UTC",
+          until: null,
+        },
+      },
+      { verbose: true }
+    );
+
+    expect(text).toContain("AI usage, 2026-09-01 to now (UTC), by repo");
+    expect(text).toMatch(/^a\/repo\s+3k\s+\$0\.50\s+-$/mu);
+    expect(text).toMatch(/^b\/repo\s+2k\s+\$0\.50\s+\$1\.25$/mu);
+    expect(text).toMatch(/^Other \(2\)\s+100/mu);
+    expect(text).toMatch(/^\(unattributed\)\s+100/mu);
+    expect(text).toMatch(/^Total\s+5\.2k/mu);
+    expect(text).toContain("Sources disagreed on codex 2 field(s)");
+    expect(text).not.toMatch(/[\u2013\u2014]/u);
   });
 });
