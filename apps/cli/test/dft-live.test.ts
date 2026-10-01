@@ -15,8 +15,9 @@ import { dashboardStateKit } from "../src/dft-dashboard-state.js";
 import type { UsageViewState } from "../src/dft-dashboard-state.js";
 import { branchUsageQuery, serveDashboard } from "../src/dft-live.js";
 import type { LiveServer } from "../src/dft-live.js";
+import { MAX_OTLP_BODY } from "../src/dft-otlp.js";
 import { costOptionsFor } from "../src/dft-session.js";
-import { claudeLogsJson } from "./otlp-payloads.js";
+import { claudeLogsJson, gzip } from "./otlp-payloads.js";
 
 const scratch = fs.realpathSync(
   fs.mkdtempSync(path.join(os.tmpdir(), "dft-live-cli-"))
@@ -95,7 +96,7 @@ const call = (
   server: LiveServer,
   target: string,
   options: {
-    readonly body?: string;
+    readonly body?: string | Uint8Array;
     readonly headers?: Readonly<Record<string, string>>;
     readonly method?: string;
   } = {}
@@ -826,6 +827,38 @@ describe("dft dashboard OpenTelemetry receiver", () => {
           });
 
           expect(junk.status).toBe(400);
+        })
+      )
+  );
+
+  it.live(
+    "refuses a small gzip body that inflates past the size limit and keeps serving",
+    () =>
+      withDashboard((server) =>
+        Effect.gen(function* inflated() {
+          const bomb = gzip(new Uint8Array(MAX_OTLP_BODY * 2));
+
+          expect(bomb.byteLength).toBeLessThan(MAX_OTLP_BODY / 100);
+
+          const refused = yield* call(server, "/v1/logs", {
+            body: bomb,
+            headers: {
+              "content-encoding": "gzip",
+              "content-type": "application/x-protobuf",
+            },
+            method: "POST",
+          });
+
+          expect(refused.status).toBe(413);
+
+          const after = yield* call(server, "/v1/logs", {
+            body: claudeLogsJson("req_dashboard_after_bomb"),
+            headers: { "content-type": "application/json" },
+            method: "POST",
+          });
+
+          expect(after.status).toBe(200);
+          expect(storedRequests("req_dashboard_after_bomb")).toBe(1);
         })
       )
   );

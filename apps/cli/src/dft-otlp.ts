@@ -353,24 +353,40 @@ export interface OtlpBody {
   readonly contentType: string | null;
 }
 
+export const MAX_OTLP_BODY = 8 * 1024 * 1024;
+
+export type InflatedOtlp = OtlpBody | "too-large" | "invalid";
+
+export const inflateOtlp = (body: OtlpBody): InflatedOtlp => {
+  if (!(body.contentEncoding ?? "").toLowerCase().includes("gzip")) {
+    return body;
+  }
+
+  try {
+    return {
+      ...body,
+      bytes: gunzipSync(body.bytes, { maxOutputLength: MAX_OTLP_BODY }),
+      contentEncoding: null,
+    };
+  } catch (error) {
+    return error instanceof RangeError ? "too-large" : "invalid";
+  }
+};
+
 export const decodeOtlpLogs = (
   body: OtlpBody
 ): readonly OtlpRecord[] | null => {
-  let { bytes } = body;
+  const inflated = inflateOtlp(body);
 
-  if ((body.contentEncoding ?? "").toLowerCase().includes("gzip")) {
-    try {
-      bytes = gunzipSync(bytes);
-    } catch {
-      return null;
-    }
+  if (inflated === "too-large" || inflated === "invalid") {
+    return null;
   }
 
-  const type = (body.contentType ?? "").toLowerCase();
+  const type = (inflated.contentType ?? "").toLowerCase();
 
   return type.includes("json")
-    ? decodeOtlpJson(utf8.decode(bytes))
-    : decodeOtlpProtobuf(bytes);
+    ? decodeOtlpJson(utf8.decode(inflated.bytes))
+    : decodeOtlpProtobuf(inflated.bytes);
 };
 
 const text = (value: OtlpValue | undefined): string | null => {

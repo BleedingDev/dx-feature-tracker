@@ -5,7 +5,12 @@ import { EventStore, dxStoreLayer } from "@rat-stack/core/dx";
 import type { DxEventEnvelope, EventBatch } from "@rat-stack/core/dx";
 import { Data, DateTime, Effect } from "effect";
 
-import { decodeOtlpLogs, otelEvents } from "./dft-otlp.js";
+import {
+  MAX_OTLP_BODY,
+  decodeOtlpLogs,
+  inflateOtlp,
+  otelEvents,
+} from "./dft-otlp.js";
 
 export const OTLP_LOGS_PATH = "/v1/logs";
 
@@ -14,8 +19,6 @@ export const OTLP_PATHS: ReadonlySet<string> = new Set([
   "/v1/metrics",
   "/v1/traces",
 ]);
-
-export const MAX_OTLP_BODY = 8 * 1024 * 1024;
 
 export class OtlpReceiverError extends Data.TaggedError("OtlpReceiverError")<{
   readonly message: string;
@@ -122,11 +125,17 @@ export const receiveOtlp = (
       return yield* respond(response, 200, json, null);
     }
 
-    const records = decodeOtlpLogs({
+    const body = inflateOtlp({
       bytes,
       contentEncoding: header(request, "content-encoding"),
       contentType: header(request, "content-type"),
     });
+
+    if (body === "too-large") {
+      return yield* rejected(413, "OTLP request too large once inflated.");
+    }
+
+    const records = body === "invalid" ? null : decodeOtlpLogs(body);
 
     if (records === null) {
       return yield* rejected(400, "Not an OTLP logs request.");
