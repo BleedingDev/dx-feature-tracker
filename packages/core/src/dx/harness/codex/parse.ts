@@ -65,6 +65,9 @@ export const ScanStateSchema = Schema.Struct({
   replaying: Schema.Boolean,
   sawRecord: Schema.Boolean,
   settings: TurnFactsSchema,
+  settled: Schema.Array(Schema.String).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed([]))
+  ),
   toolCalls: Schema.Int,
   webSearches: Schema.Int,
 });
@@ -104,6 +107,7 @@ export interface ScanCounts {
   readonly malformedLines: number;
   readonly repeatedEmissions: number;
   readonly replayedEmissions: number;
+  readonly unfinishedTurns: number;
 }
 
 export interface ScanResult {
@@ -135,6 +139,7 @@ export const initialScanState: ScanState = {
   replaying: false,
   sawRecord: false,
   settings: noFacts,
+  settled: [],
   toolCalls: 0,
   webSearches: 0,
 };
@@ -171,6 +176,7 @@ interface Scan {
   readonly seenEmissions: Set<string>;
   readonly seenResponses: Set<string>;
   settings: TurnFacts;
+  readonly settled: readonly string[];
   toolCalls: number;
   webSearches: number;
 }
@@ -804,7 +810,7 @@ const startScan = (state: ScanState): Scan => ({
   duplicateRecords: 0,
   emptyRecords: 0,
   ended: [],
-  endedIds: new Set(),
+  endedIds: new Set(state.settled),
   facts: state.facts,
   firstTimestamp: null,
   foreignRecords: 0,
@@ -824,6 +830,7 @@ const startScan = (state: ScanState): Scan => ({
   seenEmissions: new Set(),
   seenResponses: new Set(),
   settings: state.settings,
+  settled: state.settled,
   toolCalls: state.toolCalls,
   webSearches: state.webSearches,
 });
@@ -855,6 +862,7 @@ const finish = (scan: Scan, consumed: number): ScanResult => ({
     malformedLines: scan.malformedLines,
     repeatedEmissions: scan.repeatedEmissions,
     replayedEmissions: scan.replayedEmissions,
+    unfinishedTurns: 0,
   },
   endedTurns: scan.ended,
   firstTimestamp: scan.firstTimestamp,
@@ -871,6 +879,7 @@ const finish = (scan: Scan, consumed: number): ScanResult => ({
     replaying: scan.replaying,
     sawRecord: scan.sawRecord,
     settings: scan.settings,
+    settled: scan.settled,
     toolCalls: scan.toolCalls,
     webSearches: scan.webSearches,
   },
@@ -907,4 +916,42 @@ export const scanSession = (
   }
 
   return finish(scan, start);
+};
+
+const MAX_SETTLED = 32;
+
+export const holdsRequests = (state: ScanState): boolean =>
+  state.openTurns.some((turn) => turn.requests > 0);
+
+export const settleOpenTurns = (result: ScanResult): ScanResult => {
+  const { openTurns } = result.state;
+
+  if (openTurns.length === 0) {
+    return result;
+  }
+
+  const closed = openTurns
+    .filter((turn) => turn.requests > 0)
+    .map((turn): EndedTurn => ({
+      ...turn,
+      abortReason: null,
+      completedAt: null,
+      durationMs: null,
+      errorKind: null,
+      status: "unfinished",
+    }));
+
+  return {
+    ...result,
+    counts: { ...result.counts, unfinishedTurns: closed.length },
+    endedTurns: [...result.endedTurns, ...closed],
+    state: {
+      ...result.state,
+      openTurns: [],
+      settled: [
+        ...result.state.settled,
+        ...openTurns.map((turn) => turn.turnId),
+      ].slice(-MAX_SETTLED),
+    },
+  };
 };

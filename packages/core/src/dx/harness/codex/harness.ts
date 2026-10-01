@@ -30,12 +30,20 @@ import type { EventInput } from "./events.js";
 import type { CodexHead } from "./head.js";
 import { codexHookDecoder } from "./hook.js";
 import { CODEX_CHANNELS } from "./meta.js";
-import { ScanStateSchema, initialScanState, scanSession } from "./parse.js";
+import {
+  ScanStateSchema,
+  holdsRequests,
+  initialScanState,
+  scanSession,
+  settleOpenTurns,
+} from "./parse.js";
 import type { ScanResult, ScanState } from "./parse.js";
 import { within } from "./place.js";
 import { canonicalCopies, codexHeads, titlesOf } from "./sessions.js";
 import type { LocatedSession } from "./sessions.js";
 import { CodexStore } from "./store.js";
+
+export const TURN_IDLE_MS = 30 * 60_000;
 
 export const CodexCursorSchema = Schema.Struct({
   ...FileCursorSchema.fields,
@@ -88,6 +96,13 @@ const coverageGaps = (result: ScanResult): SourceGap[] => {
     });
   }
 
+  if (result.counts.unfinishedTurns > 0) {
+    gaps.push({
+      code: "turn-unfinished",
+      message: `${String(result.counts.unfinishedTurns)} turn(s) had requests but no task_complete; they were closed as unfinished after 30 minutes without new rows.`,
+    });
+  }
+
   if (result.state.head === null) {
     gaps.push({
       code: "missing-session-meta",
@@ -113,7 +128,8 @@ const coverageState = (result: ScanResult, events: number): CoverageState => {
 const batchOf = (
   result: ScanResult,
   events: readonly DxEventEnvelope[],
-  cursor: CodexCursor
+  cursor: CodexCursor,
+  unsettled: boolean
 ): EventBatch => ({
   coverage: {
     adapterId: CODEX_ADAPTER_ID,
@@ -127,6 +143,7 @@ const batchOf = (
   },
   cursor: { adapterId: CODEX_ADAPTER_ID, value: encodeCursor(cursor) },
   events,
+  unsettled,
 });
 
 const unchangedBatch = (input: ReadInput): EventBatch => ({
@@ -143,6 +160,34 @@ const unchangedBatch = (input: ReadInput): EventBatch => ({
   cursor: input.cursor,
   events: [],
 });
+
+const isIdle = (ref: SessionRef, nowMs: number): boolean =>
+  ref.mtimeMs === null || nowMs - ref.mtimeMs >= TURN_IDLE_MS;
+
+const skipUnchanged = (
+  input: ReadInput,
+  ref: SessionRef,
+  prior: CodexCursor | null,
+  idle: boolean
+): EventBatch | null => {
+  if (prior === null || !unchangedSince(prior, ref)) {
+    return null;
+  }
+
+  if (!holdsRequests(prior.state)) {
+    return unchangedBatch(input);
+  }
+
+  return idle ? null : { ...unchangedBatch(input), unsettled: true };
+};
+
+const resumable = (
+  prior: CodexCursor | null,
+  ref: SessionRef
+): CodexCursor | null =>
+  prior !== null && (ref.size === null || prior.offset <= ref.size)
+    ? prior
+    : null;
 
 const refOf = (
   located: LocatedSession,
@@ -316,16 +361,15 @@ const makeCodexHarness = Effect.gen(function* makeCodexHarness() {
   const readSession = (ref: SessionRef, input: ReadInput) =>
     Effect.gen(function* readCodexSession() {
       const prior = cursorFor(input, ref);
+      const nowMs = yield* Clock.currentTimeMillis;
+      const idle = isIdle(ref, nowMs);
+      const skipped = skipUnchanged(input, ref, prior, idle);
 
-      if (prior !== null && unchangedSince(prior, ref)) {
-        return unchangedBatch(input);
+      if (skipped !== null) {
+        return skipped;
       }
 
-      const resume =
-        prior !== null && (ref.size === null || prior.offset <= ref.size)
-          ? prior
-          : null;
-
+      const resume = resumable(prior, ref);
       const state: ScanState = resume?.state ?? initialScanState;
       const offset = resume?.offset ?? 0;
 
@@ -334,8 +378,10 @@ const makeCodexHarness = Effect.gen(function* makeCodexHarness() {
           ? yield* store.readBytes(ref.path)
           : yield* store.readFrom(ref.path, offset);
 
-      const result = scanSession(bytes, state);
+      const scanned = scanSession(bytes, state);
+      const result = idle ? settleOpenTurns(scanned) : scanned;
       const { head } = result.state;
+      const unsettled = !idle && holdsRequests(result.state);
 
       const cursor: CodexCursor = {
         mtimeMs: ref.mtimeMs,
@@ -346,14 +392,12 @@ const makeCodexHarness = Effect.gen(function* makeCodexHarness() {
       };
 
       if (head === null) {
-        return batchOf(result, [], cursor);
+        return batchOf(result, [], cursor, unsettled);
       }
 
       const titles = titlesOf(yield* store.sessionIndex);
 
-      const now = DateTime.formatIso(
-        DateTime.makeUnsafe(yield* Clock.currentTimeMillis)
-      );
+      const now = DateTime.formatIso(DateTime.makeUnsafe(nowMs));
 
       const eventInput: EventInput = {
         evidenceName: basename(ref.path),
@@ -380,7 +424,7 @@ const makeCodexHarness = Effect.gen(function* makeCodexHarness() {
         ...result.requests.map((request) => usageEvent(eventInput, request)),
       ];
 
-      return batchOf(result, events, cursor);
+      return batchOf(result, events, cursor, unsettled);
     });
 
   const read = (ref: SessionRef, input: ReadInput) =>
