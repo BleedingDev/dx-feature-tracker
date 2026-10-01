@@ -588,6 +588,8 @@ const explainCommand = reportCommand(
   ])
 );
 
+const USAGE_BY_LIST = `${USAGE_BY_CHOICES.slice(0, -1).join(", ")} or ${USAGE_BY_CHOICES.at(-1) ?? ""}`;
+
 const usageByFlag = (name: string, description: string) =>
   Flag.Literals(name, USAGE_BY_CHOICES).pipe(
     Flag.withDescription(description),
@@ -663,7 +665,7 @@ const historyCommand = Command.make(
     ...onelineFlags,
     groupBy: usageByFlag(
       "group-by",
-      "Group AI usage by one dimension instead of listing branches; same as dft usage --by"
+      `Group AI usage by ${USAGE_BY_LIST} instead of listing branches; same as dft usage --by`
     ),
   },
   (flags) => runReport("history", flags, historyRun, historyView)
@@ -701,10 +703,7 @@ const usageFlags = {
     "branch",
     "Only these branches (repeat or separate with commas)"
   ),
-  by: usageByFlag(
-    "by",
-    "Group by tool, provider, via, model, effort, repo, branch, worktree, session, day, week or month (default tool)"
-  ),
+  by: usageByFlag("by", `Group by ${USAGE_BY_LIST} (default tool)`),
   db: reportFlags.db,
   json: reportFlags.json,
   limit: Flag.Int("limit").pipe(

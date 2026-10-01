@@ -93,15 +93,9 @@ const protocols = [
   McpProtocol.v2024_11_05,
 ] as const;
 
-const stdio = McpServer.layerStdio({
-  name: "rat-stack",
-  protocols,
-  version: VERSION,
-});
-
-const withStdio = <A, E, R>(server: Layer.Layer<A, E, R>) =>
+const withStdio = <A, E, R>(server: Layer.Layer<A, E, R>, name = "rat-stack") =>
   server.pipe(
-    Layer.provide(stdio),
+    Layer.provide(McpServer.layerStdio({ name, protocols, version: VERSION })),
     Layer.provide(Layer.succeed(Logger.LogToStderr, true))
   );
 
@@ -152,6 +146,11 @@ export const devtoolsWebServer = (port: number) =>
     Layer.provide(serverLayer(port))
   );
 
+const dxToolsServer = McpServer.toolkit(dxTools.toolkit).pipe(
+  Layer.provideMerge(dxTools.layer),
+  Layer.provide(dxStoreLive)
+);
+
 export const mcpServer = {
   codeMode: withStdio(
     McpServer.toolkit(codeMode.toolkit).pipe(
@@ -172,10 +171,5 @@ export const mcpServer = {
       );
     })
   ).pipe(Layer.provide(devtoolsLayer())),
-  tools: withStdio(
-    McpServer.toolkit(dxTools.toolkit).pipe(
-      Layer.provideMerge(dxTools.layer),
-      Layer.provide(dxStoreLive)
-    )
-  ),
+  tools: withStdio(dxToolsServer, "dft"),
 } as const;
