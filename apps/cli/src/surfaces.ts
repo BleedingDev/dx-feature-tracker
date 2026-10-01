@@ -14,7 +14,7 @@ import { capabilities } from "@rat-stack/core";
 import {
   allCollectors,
   buildRegistry,
-  defaultCostOptions,
+  cachedPriceProvider,
   dxStoreLayer,
   makeDxCapabilities,
   metricsWithCost,
@@ -27,6 +27,7 @@ import { McpProtocol, McpServer } from "effect/unstable/ai";
 import { HttpRouter } from "effect/unstable/http";
 import { HttpApiBuilder, HttpApiScalar } from "effect/unstable/httpapi";
 
+import { providerCostOptions } from "./dft-session.js";
 import { VERSION } from "./version.js";
 
 export const http = toHttpApi("RatStack", capabilities);
@@ -45,7 +46,7 @@ export const dxStore = legacyStore
     })
   : resolveDftStore({ db: null, env: dxEnv, home: homedir() });
 
-const dxCostOptions = defaultCostOptions();
+const dxCostOptions = providerCostOptions(cachedPriceProvider(homedir()));
 
 export const dxRegistry = buildRegistry(
   allCollectors,

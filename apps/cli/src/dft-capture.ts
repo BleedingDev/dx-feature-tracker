@@ -1,8 +1,6 @@
 // @effect-diagnostics nodeBuiltinImport:off -- dft install writes project-local capture files (tool hooks, extensions, plugins) at the process boundary with synchronous node:fs and git calls.
 import { execFileSync } from "node:child_process";
 import {
-  accessSync,
-  constants,
   existsSync,
   mkdirSync,
   readdirSync,
@@ -67,21 +65,10 @@ export interface CaptureStep {
 export interface DftCommand {
   readonly argv: readonly string[];
   readonly line: string;
-  readonly single: string;
 }
 
 const quote = (value: string): string =>
   /^[\w./@:-]+$/u.test(value) ? value : `'${value.replaceAll("'", "'\\''")}'`;
-
-const runnable = (file: string): boolean => {
-  try {
-    accessSync(file, constants.X_OK);
-
-    return readFileSync(file, "utf-8").startsWith("#!");
-  } catch {
-    return false;
-  }
-};
 
 export const dftCommandFor = (nodePath: string, entry: string): DftCommand => {
   const script = path.resolve(entry);
@@ -89,7 +76,6 @@ export const dftCommandFor = (nodePath: string, entry: string): DftCommand => {
   return {
     argv: [nodePath, script],
     line: `${quote(nodePath)} ${quote(script)}`,
-    single: runnable(script) ? script : "dft",
   };
 };
 
@@ -456,7 +442,7 @@ export const OPENCODE_PLUGIN_PATH = path.join(
 
 export const DSH_PATCH_MARKER = "# dft-managed dsh patch";
 
-const OPENCODE_MARKER = '["hook", "opencode"';
+const OPENCODE_MARKER = '"hook", "opencode", event.type';
 
 export const dshPatchSource = (hooksFile: string): string =>
   [
@@ -532,7 +518,7 @@ const targetsFor = (
     case "opencode": {
       return [
         {
-          content: opencodePluginSource(command.single),
+          content: opencodePluginSource(command.argv),
           kind: "file",
           marker: OPENCODE_MARKER,
           rel: OPENCODE_PLUGIN_PATH,
@@ -558,9 +544,7 @@ const targetsFor = (
 };
 
 export const captureFiles = (tool: CaptureTool): readonly string[] =>
-  targetsFor(tool, "", { argv: [], line: "", single: "" }).map(
-    (target) => target.rel
-  );
+  targetsFor(tool, "", { argv: [], line: "" }).map((target) => target.rel);
 
 const step = (
   tool: CaptureTool,
@@ -803,27 +787,25 @@ export const uninstallCapture = (
 };
 
 export const hasCapture = (tool: CaptureTool, worktree: string): boolean =>
-  targetsFor(tool, worktree, { argv: [], line: "", single: "" }).every(
-    (target) => {
-      const file = path.join(worktree, target.rel);
+  targetsFor(tool, worktree, { argv: [], line: "" }).every((target) => {
+    const file = path.join(worktree, target.rel);
 
-      if (!existsSync(file)) {
-        return false;
-      }
-
-      const text = readFileSync(file, "utf-8");
-
-      if (target.kind === "file") {
-        return text.includes(target.marker);
-      }
-
-      const parsed = parseHookConfig(text);
-
-      return (
-        parsed !== null &&
-        target.specs.every((spec) =>
-          (parsed.hooks?.[spec.event] ?? []).some(groupHasDft)
-        )
-      );
+    if (!existsSync(file)) {
+      return false;
     }
-  );
+
+    const text = readFileSync(file, "utf-8");
+
+    if (target.kind === "file") {
+      return text.includes(target.marker);
+    }
+
+    const parsed = parseHookConfig(text);
+
+    return (
+      parsed !== null &&
+      target.specs.every((spec) =>
+        (parsed.hooks?.[spec.event] ?? []).some(groupHasDft)
+      )
+    );
+  });

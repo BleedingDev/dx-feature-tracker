@@ -5,7 +5,12 @@ import path from "node:path";
 import { DateTime, Effect, Option, Schema } from "effect";
 
 import type { PriceBookApi } from "../price-book/book.js";
-import { bookFromTimeline } from "../price-book/book.js";
+import {
+  bookFromTimeline,
+  bundledSheet,
+  priceBookOf,
+} from "../price-book/book.js";
+import { sheetFromCatalogs } from "../price-book/sheet.js";
 import type { PriceTable } from "../price-table.js";
 import { cursorPriceTable202609 } from "../price-tables/cursor-2026-09.js";
 import {
@@ -24,9 +29,15 @@ export type CatalogFetch = (url: string) => Promise<string>;
 
 export interface PriceProviderDeps {
   readonly cacheDir: string;
-  readonly fetchJson: CatalogFetch;
+  readonly fetchJson: CatalogFetch | null;
   readonly nowMs: number;
 }
+
+export const PRICE_CATALOG_ENV = "DFT_PRICE_CATALOG" as const;
+
+export const priceCatalogEnabled = (
+  env: Readonly<Record<string, string | undefined>>
+): boolean => (env[PRICE_CATALOG_ENV] ?? "").trim().toLowerCase() !== "off";
 
 export interface PriceProvider {
   readonly book: PriceBookApi;
@@ -80,7 +91,7 @@ const writeCache = (dir: string, catalog: Catalog): string | null => {
 };
 
 const fetchCatalog = (
-  deps: PriceProviderDeps
+  deps: PriceProviderDeps & { readonly fetchJson: CatalogFetch }
 ): Effect.Effect<{
   readonly catalog: Catalog | null;
   readonly errors: readonly string[];
@@ -132,7 +143,15 @@ export const loadCatalogTimeline = (
       return { catalogs: cached, origin: "cache" as const, warnings: [] };
     }
 
-    const fetched = yield* fetchCatalog(deps);
+    if (deps.fetchJson === null) {
+      return {
+        catalogs: cached,
+        origin: newest === undefined ? ("none" as const) : ("cache" as const),
+        warnings: [],
+      };
+    }
+
+    const fetched = yield* fetchCatalog({ ...deps, fetchJson: deps.fetchJson });
 
     if (fetched.catalog !== null) {
       const warning = writeCache(deps.cacheDir, fetched.catalog);
@@ -203,14 +222,36 @@ export const fetchJson: CatalogFetch = async (url) => {
 };
 
 export const defaultPriceProvider = (
-  home: string = process.env.HOME ?? ""
+  home: string = process.env.HOME ?? "",
+  catalog = true
 ): Effect.Effect<PriceProvider> =>
   DateTime.now.pipe(
     Effect.flatMap((now) =>
       loadPriceProvider({
         cacheDir: catalogCacheDir(home),
-        fetchJson,
+        fetchJson: catalog ? fetchJson : null,
         nowMs: DateTime.toEpochMillis(now),
       })
     )
   );
+
+export const cachedPriceProvider = (home: string): PriceProvider => {
+  const cached = readCached(catalogCacheDir(home));
+  const [newest] = cached;
+  const sheet = sheetFromCatalogs(cached);
+  const bundled = bundledSheet();
+
+  return newest === undefined || sheet === null
+    ? {
+        book: priceBookOf([bundled], "bundled"),
+        origin: "bundled",
+        table: cursorPriceTable202609,
+        warnings: [],
+      }
+    : {
+        book: priceBookOf([sheet, bundled], "cache"),
+        origin: "cache",
+        table: catalogPriceTable(newest, cursorPriceTable202609),
+        warnings: [],
+      };
+};

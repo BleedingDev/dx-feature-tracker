@@ -513,6 +513,72 @@ describe("usage facts", () => {
     });
   });
 
+  it("leaves out an OpenTelemetry row without a request id when the session file has the session", () => {
+    const fromFile = usageEvent(
+      "codex-file",
+      "codex",
+      "session-file",
+      50,
+      "gpt-5.6-luna",
+      "main",
+      "resp_1"
+    );
+
+    const base = usageEvent(
+      "codex-otel",
+      "codex",
+      "otel",
+      50,
+      "gpt-5.6-luna",
+      "main"
+    );
+
+    const fromOtel: DxEventEnvelope = {
+      ...base,
+      identity: { ...base.identity, requestId: null },
+      usage: base.usage === null ? null : { ...base.usage, requestKey: null },
+    };
+
+    const derived = deriveUsageFacts([fromFile, fromOtel]);
+
+    expect(derived.facts.map((item) => item.requestKey)).toStrictEqual([
+      "resp_1",
+    ]);
+    expect(derived.unresolved).toBe(1);
+  });
+
+  it("counts a request once when a later reading replaces its usage", () => {
+    const first = usageEvent(
+      "first-reading",
+      "deepseek",
+      "session-file",
+      40,
+      "gpt-5.6-luna",
+      "main",
+      "req-a"
+    );
+
+    const replacement = {
+      ...usageEvent(
+        "second-reading",
+        "deepseek",
+        "session-file",
+        70,
+        "gpt-5.6-luna",
+        "main",
+        "req-a2"
+      ),
+      payload: { replacesRequestKey: "req-a" },
+    };
+
+    const derived = deriveUsageFacts([first, replacement]);
+
+    expect(derived.facts.map((item) => item.requestKey)).toStrictEqual([
+      "req-a2",
+    ]);
+    expect(derived.facts[0]?.tokens.output).toBe(70);
+  });
+
   it.effect("serves dx_usage from stored events and caches the facts", () =>
     Effect.gen(function* usageQuery() {
       const store = yield* EventStore;

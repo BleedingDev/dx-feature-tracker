@@ -82,8 +82,23 @@ export const recordedEffort = (
       };
 };
 
+const decodeCount = Schema.decodeUnknownOption(Schema.Int);
+
+export const sessionFileRole = (
+  event: DxEventEnvelope
+): ChatChannelRole | null =>
+  event.kind === "ai.usage" &&
+  event.ai?.channel === "session-file" &&
+  Option.isSome(decodeCount(event.payload.toolCalls))
+    ? {
+        idKind: "sessionId",
+        labels: { toolCalls: `${event.ai.harness} session file tool calls` },
+        role: "transcript",
+      }
+    : null;
+
 export const DEFAULT_RULES: HarnessRules = {
-  chatRole: () => null,
+  chatRole: sessionFileRole,
   claims: () => false,
   effort: recordedEffort,
   listPrice: null,

@@ -260,6 +260,16 @@ export const usageEvent = (
   const effort = effortOf(pick);
   const via = viaOfRequest(row.model, row.messageId, row.requestId);
   const serverTools = row.usage.server_tool_use ?? null;
+  const searches = count(serverTools?.web_search_requests);
+
+  const usage: AiUsage = {
+    premiumRequests: null,
+    requestKey,
+    serviceTier: row.usage.service_tier ?? null,
+    speed: row.usage.speed ?? null,
+    tokens,
+    toolFigure: null,
+  };
 
   return envelope(input, {
     ai: withTouchedPaths(
@@ -296,19 +306,15 @@ export const usageEvent = (
       tokens: legacyTokens(tokens),
       toolCalls: pick.calls.length,
       webFetchRequests: count(serverTools?.web_fetch_requests),
-      webSearchRequests: count(serverTools?.web_search_requests),
+      webSearchRequests: searches,
     },
     placement,
     semantics: TOKEN_SEMANTICS,
     upstreamKey: requestKey,
-    usage: {
-      premiumRequests: null,
-      requestKey,
-      serviceTier: row.usage.service_tier ?? null,
-      speed: row.usage.speed ?? null,
-      tokens,
-      toolFigure: null,
-    },
+    usage:
+      searches === null || searches === 0
+        ? usage
+        : { ...usage, webSearchRequests: searches },
     version: row.version,
   });
 };

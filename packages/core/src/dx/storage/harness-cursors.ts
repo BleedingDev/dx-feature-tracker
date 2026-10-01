@@ -27,7 +27,7 @@ export interface HarnessCursorsApi {
   ) => Effect.Effect<void, StoreFailure>;
 }
 
-export const CURSOR_GENERATION = 1;
+export const CURSOR_GENERATION = 2;
 
 export const cursorKey = (ref: SessionRef): string =>
   `g${String(CURSOR_GENERATION)}|${ref.harness}|${ref.channel}|${ref.id}`;

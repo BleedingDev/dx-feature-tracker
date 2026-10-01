@@ -10,8 +10,8 @@ import {
   allCollectors,
   autoSync,
   buildRegistry,
+  cachedPriceProvider,
   contextForRepo,
-  defaultCostOptions,
   dxStoreLayer,
   makeDxCapabilities,
   metricsWithCost,
@@ -82,6 +82,7 @@ import {
   capabilitiesFor,
   capabilityAt as capabilitiesOf,
   costOptionsFor,
+  providerCostOptions,
 } from "./dft-session.js";
 import {
   installTelemetry,
@@ -1477,7 +1478,7 @@ const hookCommand = Command.make(
 
 const staticSession = () => {
   const paths = dftPaths({ db: undefined, repo: undefined });
-  const costOptions = defaultCostOptions();
+  const costOptions = providerCostOptions(cachedPriceProvider(homedir()));
 
   return {
     capabilities: makeDxCapabilities({

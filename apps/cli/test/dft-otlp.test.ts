@@ -112,8 +112,9 @@ describe("OTLP logs receiver decoding", () => {
       total: 18_847,
     });
     expect(event?.usage?.toolFigure).toBeNull();
-    expect(event?.usage?.requestKey).toBe(
-      `codex:${CONVERSATION}:2026-10-01T13:18:03.381Z`
+    expect(event?.usage?.requestKey).toBeNull();
+    expect(event?.upstreamKey).toBe(
+      `otel:codex:${CONVERSATION}:2026-10-01T13:18:03.381Z`
     );
   });
 

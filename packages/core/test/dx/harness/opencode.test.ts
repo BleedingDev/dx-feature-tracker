@@ -331,6 +331,25 @@ describe("OpenCode harness over redacted real sessions", () => {
     }).pipe(Effect.provide(fixtureLayer))
   );
 
+  it.effect("keeps a session outside any repo when read from its folder", () =>
+    Effect.gen(function* outsideRepo() {
+      const harness = yield* OpencodeHarness;
+
+      const refs = yield* harness.locate({
+        ...everywhere,
+        worktrees: [`${REALDATA}/nonrepo`],
+      });
+
+      const events = yield* readAll(harness, refs);
+      const sessions = new Set(events.map((event) => event.ai?.sessionId));
+
+      expect([...sessions]).toStrictEqual(["ses_f08e4cf12ffeDLvx10XiwR5nKk"]);
+      expect(events.every((event) => event.context.worktreePath === null)).toBe(
+        true
+      );
+    }).pipe(Effect.provide(fixtureLayer))
+  );
+
   it.effect("reports a failed request without inventing tokens", () =>
     Effect.gen(function* failed() {
       const events = yield* readEverything;
@@ -1087,10 +1106,12 @@ describe("OpenCode plugin observations", () => {
   });
 
   it("writes a plugin that calls dft hook opencode", () => {
-    const source = opencodePluginSource("/usr/local/bin/dft");
+    const source = opencodePluginSource(["/usr/bin/node", "/opt/dft/main.js"]);
 
-    expect(source).toContain('const DFT = "/usr/local/bin/dft";');
-    expect(source).toContain('["hook", "opencode", event.type]');
+    expect(source).toContain(
+      'const [DFT, ...DFT_ARGS] = ["/usr/bin/node","/opt/dft/main.js"];'
+    );
+    expect(source).toContain('[...DFT_ARGS, "hook", "opencode", event.type]');
     expect(source).toContain("export default DftUsage;");
   });
 });

@@ -1,7 +1,7 @@
 // @effect-diagnostics-next-line nodeBuiltinImport:off -- Fact ids are sha256 digests of their member event ids.
 import { createHash } from "node:crypto";
 
-import { DateTime } from "effect";
+import { DateTime, Option, Schema } from "effect";
 
 import type { BranchSource } from "../harness/ids.js";
 import {
@@ -470,13 +470,26 @@ const sessionFigureFacts = (
   }));
 };
 
+const decodeKey = Schema.decodeUnknownOption(Schema.NonEmptyString);
+
+const replacedKeys = (events: readonly DxEventEnvelope[]): Set<string> =>
+  new Set(
+    events.flatMap((event) =>
+      Option.toArray(decodeKey(event.payload.replacesRequestKey))
+    )
+  );
+
 export const deriveUsageFacts = (
   events: readonly DxEventEnvelope[]
 ): DerivedUsage => {
+  const replaced = replacedKeys(events);
+
   const unique = [
     ...new Map(
       events.flatMap((event) =>
-        usageBearing(event) ? [[event.eventId, event] as const] : []
+        usageBearing(event) && !replaced.has(event.usage?.requestKey ?? "")
+          ? [[event.eventId, event] as const]
+          : []
       )
     ).values(),
   ];

@@ -44,10 +44,44 @@ const within = (child: string, parent: string): boolean => {
   return child === base || child.startsWith(`${base}/`);
 };
 
-const inWorktree = (event: DxEventEnvelope, worktree: string | null) =>
-  worktree === null ||
-  (event.context.worktreePath !== null &&
-    within(event.context.worktreePath, worktree));
+const inWorktree = (event: DxEventEnvelope, worktree: string) =>
+  event.context.worktreePath !== null &&
+  within(event.context.worktreePath, worktree);
+
+const pointsInto = (event: DxEventEnvelope, worktree: string): boolean =>
+  event.context.worktreePath === null &&
+  [event.ai?.cwd ?? null, ...(event.ai?.touchedPaths ?? [])].some(
+    (path) => path !== null && within(path, worktree)
+  );
+
+const linkedSessionsOf = (events: readonly DxEventEnvelope[]) =>
+  new Set(
+    events.flatMap((event) =>
+      [event.ai?.sessionId, event.ai?.parentSessionId].filter(
+        (id): id is string => id !== null && id !== undefined
+      )
+    )
+  );
+
+export const eventsForWorktree = (
+  events: readonly DxEventEnvelope[],
+  worktree: string | null
+): readonly DxEventEnvelope[] => {
+  if (worktree === null) {
+    return events;
+  }
+
+  const inside = events.filter((event) => inWorktree(event, worktree));
+  const linked = linkedSessionsOf(inside);
+
+  return events.filter(
+    (event) =>
+      inWorktree(event, worktree) ||
+      pointsInto(event, worktree) ||
+      (event.context.worktreePath === null &&
+        linked.has(event.ai?.sessionId ?? ""))
+  );
+};
 
 const latestUpdate = (rows: OcRows): number | null => {
   const times = [
@@ -287,7 +321,7 @@ export class OpencodeHarness extends Context.Service<
           });
         });
 
-        const kept = events.filter((event) => inWorktree(event, ref.worktree));
+        const kept = eventsForWorktree(events, ref.worktree);
         const watermark = latestUpdate(rows);
 
         const times = kept

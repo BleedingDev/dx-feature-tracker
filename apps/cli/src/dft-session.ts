@@ -6,8 +6,10 @@ import {
   loadUserPriceTable,
   makeDxCapabilities,
   metricsWithCost,
+  priceCatalogEnabled,
   selectPriceTable,
 } from "@rat-stack/core/dx";
+import type { PriceProvider } from "@rat-stack/core/dx";
 import { Console, Effect } from "effect";
 
 export type CostOptions = NonNullable<
@@ -19,6 +21,12 @@ export interface CapabilitySelector {
   readonly branch: string | null;
   readonly from: string | null;
 }
+
+export const providerCostOptions = (provider: PriceProvider): CostOptions => ({
+  priceBook: provider.book,
+  priceTable: provider.table,
+  subscription: null,
+});
 
 export const costOptionsFor = (dftHome: string, home: string) =>
   Effect.gen(function* costOptions() {
@@ -33,17 +41,14 @@ export const costOptionsFor = (dftHome: string, home: string) =>
       return defaultCostOptions(userTable) satisfies CostOptions;
     }
 
-    const provider = yield* defaultPriceProvider(home);
+    const catalog = priceCatalogEnabled(process.env);
+    const provider = yield* defaultPriceProvider(home, catalog);
 
-    if (provider.warnings.length > 0) {
+    if (catalog && provider.warnings.length > 0) {
       yield* Console.error(provider.warnings.join("\n"));
     }
 
-    return {
-      priceBook: provider.book,
-      priceTable: provider.table,
-      subscription: null,
-    } satisfies CostOptions;
+    return providerCostOptions(provider);
   });
 
 export const capabilitiesFor = (input: {

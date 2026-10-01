@@ -5,6 +5,8 @@ import {
   catalogCacheDir,
   fetchJson,
   loadCatalogTimeline,
+  PRICE_CATALOG_ENV,
+  priceCatalogEnabled,
 } from "../price-catalog/provider.js";
 import type { PriceTable } from "../price-table.js";
 import type { PriceBookApi } from "./book.js";
@@ -22,11 +24,19 @@ export class PriceBook extends Context.Service<PriceBook, PriceBookApi>()(
   {
     make: Effect.gen(function* makePriceBook() {
       const home = yield* Config.String("HOME").pipe(Effect.orDie);
+
+      const catalog = yield* Config.String(PRICE_CATALOG_ENV).pipe(
+        Config.withDefault(""),
+        Effect.orDie
+      );
+
       const now = yield* DateTime.now;
 
       return yield* loadPriceBook({
         cacheDir: catalogCacheDir(home),
-        fetchJson,
+        fetchJson: priceCatalogEnabled({ [PRICE_CATALOG_ENV]: catalog })
+          ? fetchJson
+          : null,
         nowMs: DateTime.toEpochMillis(now),
       });
     }),

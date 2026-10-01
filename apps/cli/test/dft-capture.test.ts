@@ -69,7 +69,6 @@ afterEach(() => {
 const command: DftCommand = {
   argv: ["/usr/bin/node", "/opt/dft/dist/dft-main.js"],
   line: "/usr/bin/node /opt/dft/dist/dft-main.js",
-  single: "/opt/dft/bin/dft",
 };
 
 const write = (dir: string, rel: string, text: string): void => {
@@ -225,7 +224,7 @@ describe("dft install project capture (D39)", () => {
       JSON.stringify(command.argv)
     );
     expect(read(repo, OPENCODE_PLUGIN_PATH)).toContain(
-      JSON.stringify(command.single)
+      JSON.stringify(command.argv)
     );
     expect(read(repo, DSH_PATCH_FILE)).toContain(
       `configPath: ${JSON.stringify(path.join(repo, DSH_HOOKS_FILE))}`

@@ -13,14 +13,16 @@ export const OPENCODE_PLUGIN_EVENTS = [
   "session.execution.started",
 ] as const;
 
-export const opencodePluginSource = (dftCommand = "dft"): string =>
+export const opencodePluginSource = (
+  dftCommand: readonly string[] = ["dft"]
+): string =>
   [
     `import { spawn } from "node:child_process";`,
-    `const DFT = ${JSON.stringify(dftCommand)};`,
+    `const [DFT, ...DFT_ARGS] = ${JSON.stringify(dftCommand.length === 0 ? ["dft"] : dftCommand)};`,
     `const EVENTS = new Set(${JSON.stringify(OPENCODE_PLUGIN_EVENTS)});`,
     `const send = (event) => {`,
     `  try {`,
-    `    const child = spawn(DFT, ["hook", "opencode", event.type], { stdio: ["pipe", "ignore", "ignore"], detached: true });`,
+    `    const child = spawn(DFT, [...DFT_ARGS, "hook", "opencode", event.type], { stdio: ["pipe", "ignore", "ignore"], detached: true });`,
     `    child.on("error", () => {});`,
     `    child.stdin.end(JSON.stringify({ type: event.type, properties: event.properties ?? event.data ?? {} }));`,
     `    child.unref();`,

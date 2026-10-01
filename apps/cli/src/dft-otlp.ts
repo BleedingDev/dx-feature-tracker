@@ -605,7 +605,7 @@ export const otelEvent = (
     upstreamKey,
     usage: {
       premiumRequests: null,
-      requestKey: usage.requestKey,
+      requestKey: usage.requestId,
       serviceTier: usage.serviceTier,
       speed: usage.speed,
       tokens: usage.tokens,
