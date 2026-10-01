@@ -14,6 +14,8 @@ import type { HarnessStore, StoredSession } from "../contract.js";
 import { liveFileStore, memoryFileStore } from "../file-store.js";
 import type { MemoryStoreInput } from "../file-store.js";
 import { HarnessHome } from "../home.js";
+import { installedVersion } from "../installed-version.js";
+import type { InstalledPackage } from "../installed-version.js";
 import { harnessAdapterId } from "../pending.js";
 import { ownsSharedSession, sharesPiAgentDir } from "../pi-family.js";
 
@@ -52,6 +54,16 @@ export const sessionDirSetting = (
 
 export const isPiSessionFile = (relativePath: string): boolean =>
   relativePath.endsWith(".jsonl");
+
+export const PI_PACKAGE: InstalledPackage = {
+  bin: "pi",
+  packages: [
+    "@earendil-works/pi-coding-agent",
+    "@mariozechner/pi-coding-agent",
+  ],
+};
+
+const VERSION_TTL = "10 minutes";
 
 const HEAD_BYTES = 65_536;
 
@@ -141,12 +153,17 @@ export class PiStore extends Context.Service<PiStore, PiSessionStore>()(
         ];
       });
 
+      const version = yield* Effect.cachedWithTTL(
+        installedVersion(home, PI_PACKAGE).pipe(Effect.provide(services)),
+        VERSION_TTL
+      );
+
       const storeFor = (rootsOf: Effect.Effect<readonly string[]>) =>
         liveFileStore({
           harness: "pi",
           isSession: isPiSessionFile,
           roots: rootsOf,
-          version: Effect.succeed(null),
+          version,
         }).pipe(Effect.provide(services));
 
       const base = yield* storeFor(roots);

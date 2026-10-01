@@ -4,8 +4,17 @@ import type { HarnessStore } from "../contract.js";
 import { liveFileStore, memoryFileStore } from "../file-store.js";
 import type { MemoryStoreInput } from "../file-store.js";
 import { HarnessHome } from "../home.js";
+import { installedVersion } from "../installed-version.js";
+import type { InstalledPackage } from "../installed-version.js";
 import { isGenerationFile } from "./format.js";
 import { persistenceRootsIn } from "./roots.js";
+
+export const DEEPSEEK_PACKAGE: InstalledPackage = {
+  bin: "dsh",
+  packages: ["@deepseek-ai/dsh"],
+};
+
+const VERSION_TTL = "10 minutes";
 
 const PROFILE_FILES = ["cordis.yml", "cordis.patch.yml"] as const;
 
@@ -49,11 +58,18 @@ export class DeepseekStore extends Context.Service<
       ])
     );
 
+    const services = yield* Effect.context<FileSystem.FileSystem | Path.Path>();
+
+    const version = yield* Effect.cachedWithTTL(
+      installedVersion(home, DEEPSEEK_PACKAGE).pipe(Effect.provide(services)),
+      VERSION_TTL
+    );
+
     return yield* liveFileStore({
       harness: "deepseek",
       isSession: isGenerationFile,
       roots,
-      version: Effect.succeed(null),
+      version,
     });
   }),
 }) {
