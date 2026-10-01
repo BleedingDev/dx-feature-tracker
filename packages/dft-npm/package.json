@@ -1,13 +1,19 @@
 {
   "name": "dx-feature-tracker",
   "version": "0.1.15",
-  "description": "dft: local AI engineering cost tracker for Cursor and git. Records hooks, transcripts and Cursor usage into a local SQLite store and reports cost per branch.",
+  "description": "dft: local AI engineering cost tracker for git. Records Cursor, Claude Code, Codex, OpenCode, Pi, OMP and DeepSeek Harness sessions into a local SQLite store and reports cost per branch.",
   "keywords": [
     "ai",
+    "claude-code",
     "cli",
+    "codex",
     "cost",
     "cursor",
-    "developer-experience"
+    "deepseek",
+    "developer-experience",
+    "omp",
+    "opencode",
+    "pi"
   ],
   "homepage": "https://github.com/BleedingDev/dx-feature-tracker#readme",
   "bugs": "https://github.com/BleedingDev/dx-feature-tracker/issues",
