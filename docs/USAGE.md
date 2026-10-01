@@ -49,7 +49,7 @@ Work in Cursor as usual. Then:
 ```sh
 dft analyze               # cost report for the current branch
 dft line                  # the same, on one line
-dft chats                 # chat tree for the branch, model and reasoning level per turn
+dft chats                 # every tool's chats on the branch: tool, models per turn, subagents, cost
 dft history --since 30d   # every branch you worked on, with time, tokens and each money line
 dft history --all-repos   # every branch in every repository
 dft dashboard             # every branch as a web page, opened in your browser
