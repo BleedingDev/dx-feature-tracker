@@ -11,6 +11,8 @@ import { EventIdSchema } from "../../model/ids.js";
 import { isContained } from "../repo/path.js";
 import { branchNameOrNull } from "./branch-name.js";
 import type { RepoLocator } from "./locator.js";
+import { nearest, timeIndexOf, timedWithin } from "./time-index.js";
+import type { TimeIndex } from "./time-index.js";
 
 export const NO_REPO_PROJECT = "(no repo)";
 
@@ -140,7 +142,13 @@ const groupBy = <T>(
 
   for (const item of items) {
     const k = key(item);
-    groups.set(k, [...(groups.get(k) ?? []), item]);
+    const group = groups.get(k);
+
+    if (group === undefined) {
+      groups.set(k, [item]);
+    } else {
+      group.push(item);
+    }
   }
 
   return groups;
@@ -181,28 +189,6 @@ const tokenWeight = (usage: AiUsage | null): number => {
     cacheWrite +
     (tokens.output ?? 0)
   );
-};
-
-const nearest = <T extends { readonly at: number | null }>(
-  candidates: readonly T[],
-  at: number | null
-): T | undefined => {
-  let best: T | undefined;
-  let bestGap = Number.POSITIVE_INFINITY;
-
-  for (const candidate of candidates) {
-    const gap =
-      at === null || candidate.at === null
-        ? Number.POSITIVE_INFINITY
-        : Math.abs(candidate.at - at);
-
-    if (best === undefined || gap < bestGap) {
-      best = candidate;
-      bestGap = gap;
-    }
-  }
-
-  return best;
 };
 
 const scale = (value: number | null, weight: number): number | null =>
@@ -350,6 +336,172 @@ const locatedOf = (event: DxEventEnvelope): Located[] =>
 
 const MAX_PARENT_DEPTH = 8;
 
+const timeIndexBy = (
+  located: readonly Located[],
+  key: (located: Located) => string | null
+): ReadonlyMap<string, TimeIndex<Located>> =>
+  new Map(
+    [
+      ...groupBy(
+        located.filter((l) => key(l) !== null),
+        (l) => key(l) ?? ""
+      ),
+    ].map(([k, members]) => [
+      k,
+      timeIndexOf(members, (member) => instantOf(member.event)),
+    ])
+  );
+
+const placeByParents = (
+  candidates: readonly Located[],
+  open: readonly Located[],
+  placements: Map<string, Placement>
+): void => {
+  for (let depth = 0; depth < MAX_PARENT_DEPTH; depth += 1) {
+    const bySelf = timeIndexBy(
+      candidates.filter((located) => placements.has(located.event.eventId)),
+      selfKeyOf
+    );
+
+    const placed = open.flatMap((located) => {
+      const parent = parentKeyOf(located);
+      const siblings = parent === null ? undefined : bySelf.get(parent);
+
+      if (siblings === undefined || placements.has(located.event.eventId)) {
+        return [];
+      }
+
+      const near = nearest(siblings, instantOf(located.event));
+
+      const found =
+        near === undefined ? undefined : placements.get(near.event.eventId);
+
+      return found === undefined ? [] : [{ found, located }];
+    });
+
+    for (const { found, located } of placed) {
+      placements.set(located.event.eventId, {
+        method: "parent",
+        place: found.place,
+      });
+    }
+
+    if (placed.length === 0) {
+      return;
+    }
+  }
+};
+
+const memoize = <V>(compute: (key: string) => V): ((key: string) => V) => {
+  const known = new Map<string, V>();
+
+  return (key) => {
+    const found = known.get(key);
+
+    if (found !== undefined) {
+      return found;
+    }
+
+    const value = compute(key);
+    known.set(key, value);
+
+    return value;
+  };
+};
+
+const spanOf = (
+  times: readonly number[]
+): { readonly from: number; readonly to: number } | null => {
+  const [head] = times;
+
+  if (head === undefined) {
+    return null;
+  }
+
+  let from = head;
+  let to = head;
+
+  for (const at of times) {
+    from = Math.min(from, at);
+    to = Math.max(to, at);
+  }
+
+  return { from, to };
+};
+
+const subagentShares = (
+  candidates: readonly Located[],
+  turns: ReadonlyMap<string, readonly Located[]>,
+  placements: ReadonlyMap<string, Placement>
+): ((located: Located) => readonly Share[]) => {
+  const children = timeIndexBy(
+    candidates.filter((located) => placements.has(located.event.eventId)),
+    parentKeyOf
+  );
+
+  const sharesOf = (chosen: readonly Located[]): readonly Share[] => {
+    const weighed = chosen.flatMap((kid) => {
+      const found = placements.get(kid.event.eventId);
+
+      return found === undefined
+        ? []
+        : [{ place: found.place, tokens: tokenWeight(kid.event.usage) }];
+    });
+
+    const byPlace = [...groupBy(weighed, (w) => placeKey(w.place)).values()];
+    const total = weighed.reduce((sum, w) => sum + w.tokens, 0);
+
+    return byPlace
+      .flatMap((group) => {
+        const [first] = group;
+
+        return first === undefined
+          ? []
+          : [
+              {
+                place: first.place,
+                weight:
+                  total > 0
+                    ? group.reduce((sum, w) => sum + w.tokens, 0) / total
+                    : group.length / weighed.length,
+              },
+            ];
+      })
+      .filter((share) => share.weight > 0)
+      .toSorted((a, b) => placeKey(a.place).localeCompare(placeKey(b.place)));
+  };
+
+  const allKidShares = memoize((parent) =>
+    sharesOf(children.get(parent)?.all ?? [])
+  );
+
+  const byTurn = memoize((turnKey) => {
+    const turn = turns.get(turnKey) ?? [];
+    const [head] = turn;
+    const parent = head === undefined ? null : selfKeyOf(head);
+    const kids = parent === null ? undefined : children.get(parent);
+
+    if (parent === null || kids === undefined) {
+      return [];
+    }
+
+    const span = spanOf(turn.flatMap((m) => instantOf(m.event) ?? []));
+
+    const inTurn =
+      span === null ? [] : timedWithin(kids.timed, span.from, span.to);
+
+    return inTurn.length > 0
+      ? sharesOf(
+          inTurn
+            .toSorted((a, b) => a.order - b.order)
+            .map((entry) => entry.item)
+        )
+      : allKidShares(parent);
+  });
+
+  return (located) => byTurn(turnKeyOf(located));
+};
+
 export const attributeRepos = (
   locator: RepoLocator,
   events: readonly DxEventEnvelope[]
@@ -389,151 +541,48 @@ export const attributeRepos = (
     }
 
     const turns = groupBy(candidates, turnKeyOf);
+    const openByTurn = groupBy(open, turnKeyOf);
 
-    for (const [key, members] of turns) {
-      const pending = open.filter((located) => turnKeyOf(located) === key);
+    for (const [key, pending] of openByTurn) {
+      const members = turns.get(key) ?? pending;
 
-      if (pending.length > 0) {
-        const touched = [
-          ...new Set(members.flatMap((m) => m.ai.touchedPaths ?? [])),
-        ];
+      const touched = [
+        ...new Set(members.flatMap((m) => m.ai.touchedPaths ?? [])),
+      ];
 
-        const places: RepoPlace[] = members.flatMap((m) => {
-          const found = placements.get(m.event.eventId);
+      const places: RepoPlace[] = members.flatMap((m) => {
+        const found = placements.get(m.event.eventId);
 
-          return found?.method === "cwd" ? [found.place] : [];
-        });
+        return found?.method === "cwd" ? [found.place] : [];
+      });
 
-        for (const path of touched) {
-          const at = yield* locator.locate(path);
+      for (const path of touched) {
+        const at = yield* locator.locate(path);
 
-          if (at.kind === "repo") {
-            places.push({
-              branch: at.location.branch,
-              repoCommonDir: at.location.repoCommonDir,
-              worktreePath: at.location.worktreePath,
-            });
-          }
+        if (at.kind === "repo") {
+          places.push({
+            branch: at.location.branch,
+            repoCommonDir: at.location.repoCommonDir,
+            worktreePath: at.location.worktreePath,
+          });
         }
+      }
 
-        const place = singlePlace(places);
+      const place = singlePlace(places);
 
-        if (place !== null) {
-          for (const located of pending) {
-            placements.set(located.event.eventId, {
-              method: "tool-calls",
-              place,
-            });
-          }
+      if (place !== null) {
+        for (const located of pending) {
+          placements.set(located.event.eventId, {
+            method: "tool-calls",
+            place,
+          });
         }
       }
     }
 
-    const placedBySelf = () =>
-      groupBy(
-        candidates.flatMap((located) => {
-          const found = placements.get(located.event.eventId);
+    placeByParents(candidates, open, placements);
 
-          return found === undefined
-            ? []
-            : [
-                {
-                  at: instantOf(located.event),
-                  found,
-                  key: selfKeyOf(located),
-                },
-              ];
-        }),
-        (entry) => entry.key
-      );
-
-    for (let depth = 0; depth < MAX_PARENT_DEPTH; depth += 1) {
-      const bySelf = placedBySelf();
-      let changed = false;
-
-      for (const located of open) {
-        const parent = parentKeyOf(located);
-
-        if (parent !== null && !placements.has(located.event.eventId)) {
-          const near = nearest(
-            bySelf.get(parent) ?? [],
-            instantOf(located.event)
-          );
-
-          if (near !== undefined) {
-            placements.set(located.event.eventId, {
-              method: "parent",
-              place: near.found.place,
-            });
-            changed = true;
-          }
-        }
-      }
-
-      if (!changed) {
-        break;
-      }
-    }
-
-    const children = groupBy(
-      candidates.filter(
-        (located) =>
-          parentKeyOf(located) !== null && placements.has(located.event.eventId)
-      ),
-      (located) => parentKeyOf(located) ?? ""
-    );
-
-    const sharesFor = (located: Located): readonly Share[] => {
-      const kids = children.get(selfKeyOf(located)) ?? [];
-      const turn = turns.get(turnKeyOf(located)) ?? [located];
-
-      const times = turn.flatMap((m) => {
-        const at = instantOf(m.event);
-
-        return at === null ? [] : [at];
-      });
-
-      const from = Math.min(...times);
-      const to = Math.max(...times);
-
-      const inTurn = kids.filter((kid) => {
-        const at = instantOf(kid.event);
-
-        return at !== null && at >= from && at <= to;
-      });
-
-      const chosen = inTurn.length > 0 ? inTurn : kids;
-
-      const weighed = chosen.flatMap((kid) => {
-        const found = placements.get(kid.event.eventId);
-
-        return found === undefined
-          ? []
-          : [{ place: found.place, tokens: tokenWeight(kid.event.usage) }];
-      });
-
-      const byPlace = [...groupBy(weighed, (w) => placeKey(w.place)).values()];
-      const total = weighed.reduce((sum, w) => sum + w.tokens, 0);
-
-      return byPlace
-        .flatMap((group) => {
-          const [first] = group;
-
-          return first === undefined
-            ? []
-            : [
-                {
-                  place: first.place,
-                  weight:
-                    total > 0
-                      ? group.reduce((sum, w) => sum + w.tokens, 0) / total
-                      : group.length / weighed.length,
-                },
-              ];
-        })
-        .filter((share) => share.weight > 0)
-        .toSorted((a, b) => placeKey(a.place).localeCompare(placeKey(b.place)));
-    };
+    const sharesFor = subagentShares(candidates, turns, placements);
 
     const openIds = new Set(open.map((located) => located.event.eventId));
     const byId = new Map(candidates.map((l) => [l.event.eventId, l] as const));

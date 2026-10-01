@@ -207,7 +207,13 @@ const groupRequests = (events: readonly DxEventEnvelope[]): Grouping => {
 
   for (const event of keyed) {
     const root = sets.find(`event:${event.eventId}`);
-    groups.set(root, [...(groups.get(root) ?? []), event]);
+    const group = groups.get(root);
+
+    if (group === undefined) {
+      groups.set(root, [event]);
+    } else {
+      group.push(event);
+    }
   }
 
   return { groups: [...groups.values()], unkeyed };

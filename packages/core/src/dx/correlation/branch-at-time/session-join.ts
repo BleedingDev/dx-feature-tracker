@@ -68,7 +68,13 @@ export const joinAccountRows = (
     const { sessionId } = e.identity;
 
     if (sessionId !== null && sessionId !== "" && !isAccountRow(e)) {
-      local.set(sessionId, [...(local.get(sessionId) ?? []), e]);
+      const members = local.get(sessionId);
+
+      if (members === undefined) {
+        local.set(sessionId, [e]);
+      } else {
+        members.push(e);
+      }
     }
   }
 

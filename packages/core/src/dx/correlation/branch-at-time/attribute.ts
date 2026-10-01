@@ -15,6 +15,7 @@ import type { DxEventEnvelope } from "../../model/event.js";
 import { DescriptorIdSchema, EvidenceIdSchema } from "../../model/ids.js";
 import { branchNameOrNull } from "../attribution/branch-name.js";
 import { repoMethodOf } from "../attribution/repos.js";
+import { nearest, timeIndexOf } from "../attribution/time-index.js";
 import { DEFAULT_BRANCH_AT_OPTIONS, branchAt } from "./timeline.js";
 import type {
   BranchAtMethod,
@@ -163,29 +164,6 @@ interface TimedAttribution {
   readonly found: HistoricalAttribution;
 }
 
-const nearestSessionMatch = (
-  candidates: readonly TimedAttribution[],
-  event: DxEventEnvelope
-): HistoricalAttribution | undefined => {
-  const at = instantOf(event);
-  let best: TimedAttribution | undefined;
-  let bestGap = Number.POSITIVE_INFINITY;
-
-  for (const candidate of candidates) {
-    const gap =
-      at === null || candidate.at === null
-        ? Number.POSITIVE_INFINITY
-        : Math.abs(candidate.at - at);
-
-    if (best === undefined || gap < bestGap) {
-      best = candidate;
-      bestGap = gap;
-    }
-  }
-
-  return best?.found;
-};
-
 type Resolver = (event: DxEventEnvelope) => HistoricalAttribution | null;
 
 const base = (event: DxEventEnvelope) => ({
@@ -272,7 +250,13 @@ const liveTurnsBySession = (
     const sessionKey = sessionKeyOf(event);
 
     if (sessionKey !== null && byLiveCapture(event) !== null) {
-      turns.set(sessionKey, [...(turns.get(sessionKey) ?? []), event]);
+      const turn = turns.get(sessionKey);
+
+      if (turn === undefined) {
+        turns.set(sessionKey, [event]);
+      } else {
+        turn.push(event);
+      }
     }
   }
 
@@ -547,7 +531,7 @@ export const attributeHistoricalBranches = (
   );
 
   const linked = new Map<string, HistoricalAttribution>();
-  const sessions = new Map<string, TimedAttribution[]>();
+  const sessionMembers = new Map<string, TimedAttribution[]>();
 
   for (const event of events) {
     const found = first.get(event.eventId);
@@ -564,13 +548,24 @@ export const attributeHistoricalBranches = (
       const sessionKey = sessionKeyOf(event);
 
       if (sessionKey !== null) {
-        sessions.set(sessionKey, [
-          ...(sessions.get(sessionKey) ?? []),
-          { at: instantOf(event), found },
-        ]);
+        const members = sessionMembers.get(sessionKey);
+        const timed = { at: instantOf(event), found };
+
+        if (members === undefined) {
+          sessionMembers.set(sessionKey, [timed]);
+        } else {
+          members.push(timed);
+        }
       }
     }
   }
+
+  const sessions = new Map(
+    [...sessionMembers].map(([key, members]) => [
+      key,
+      timeIndexOf(members, (member) => member.at),
+    ])
+  );
 
   const linkFor = (event: DxEventEnvelope) => {
     const byRequest = requestKeysOf(event)
@@ -583,10 +578,10 @@ export const attributeHistoricalBranches = (
 
     const sessionKey = sessionKeyOf(event);
 
+    const index = sessionKey === null ? undefined : sessions.get(sessionKey);
+
     const bySession =
-      sessionKey === null
-        ? undefined
-        : nearestSessionMatch(sessions.get(sessionKey) ?? [], event);
+      index === undefined ? undefined : nearest(index, instantOf(event))?.found;
 
     return bySession === undefined
       ? undefined
