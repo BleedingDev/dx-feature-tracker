@@ -6,14 +6,12 @@ import path from "node:path";
 import { afterAll, describe, expect, it } from "@effect/vitest";
 import { Effect, Layer } from "effect";
 
+import { PriceOverrides } from "../../src/dx/metrics/cost/price-book/book.js";
 import type {
   PricedRequest,
   RequestEstimate,
 } from "../../src/dx/metrics/cost/price-book/estimate.js";
-import {
-  PriceBook,
-  PriceOverrides,
-} from "../../src/dx/metrics/cost/price-book/service.js";
+import { PriceBook } from "../../src/dx/metrics/cost/price-book/service.js";
 import type { Catalog } from "../../src/dx/metrics/cost/price-catalog/catalog.js";
 import { parseModelsDev } from "../../src/dx/metrics/cost/price-catalog/catalog.js";
 import type { CatalogFetch } from "../../src/dx/metrics/cost/price-catalog/provider.js";

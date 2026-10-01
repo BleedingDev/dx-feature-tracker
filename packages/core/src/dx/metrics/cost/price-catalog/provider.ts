@@ -4,6 +4,8 @@ import path from "node:path";
 
 import { DateTime, Effect, Option, Schema } from "effect";
 
+import type { PriceBookApi } from "../price-book/book.js";
+import { bookFromTimeline } from "../price-book/book.js";
 import type { PriceTable } from "../price-table.js";
 import { cursorPriceTable202609 } from "../price-tables/cursor-2026-09.js";
 import {
@@ -27,6 +29,7 @@ export interface PriceProviderDeps {
 }
 
 export interface PriceProvider {
+  readonly book: PriceBookApi;
   readonly origin: "bundled" | "cache" | "fresh";
   readonly table: PriceTable;
   readonly warnings: readonly string[];
@@ -109,56 +112,6 @@ const fetchCatalog = (
     return { catalog: null, errors };
   });
 
-export const loadPriceProvider = (
-  deps: PriceProviderDeps,
-  bundled: PriceTable = cursorPriceTable202609
-): Effect.Effect<PriceProvider> =>
-  Effect.gen(function* loadProvider() {
-    const cached = readCached(deps.cacheDir);
-    const [newest] = cached;
-
-    if (
-      newest !== undefined &&
-      deps.nowMs - Date.parse(newest.fetchedAt) < REFRESH_MS
-    ) {
-      return {
-        origin: "cache" as const,
-        table: catalogPriceTable(newest, bundled),
-        warnings: [],
-      };
-    }
-
-    const fetched = yield* fetchCatalog(deps);
-
-    if (fetched.catalog !== null) {
-      const warning = writeCache(deps.cacheDir, fetched.catalog);
-
-      return {
-        origin: "fresh" as const,
-        table: catalogPriceTable(fetched.catalog, bundled),
-        warnings: warning === null ? [] : [warning],
-      };
-    }
-
-    if (newest !== undefined) {
-      return {
-        origin: "cache" as const,
-        table: catalogPriceTable(newest, bundled),
-        warnings: [
-          `price catalog offline (${fetched.errors.join(", ")}); using cached ${newest.source} from ${newest.fetchedAt}`,
-        ],
-      };
-    }
-
-    return {
-      origin: "bundled" as const,
-      table: bundled,
-      warnings: [
-        `price catalog offline and no cache; using bundled ${bundled.id}@${bundled.version}`,
-      ],
-    };
-  });
-
 export interface CatalogTimeline {
   readonly catalogs: readonly Catalog[];
   readonly origin: "cache" | "fresh" | "none";
@@ -206,6 +159,35 @@ export const loadCatalogTimeline = (
             `${offline}; using cached ${newest.source} from ${newest.fetchedAt}`,
           ],
         };
+  });
+
+export const loadPriceProvider = (
+  deps: PriceProviderDeps,
+  bundled: PriceTable = cursorPriceTable202609
+): Effect.Effect<PriceProvider> =>
+  Effect.gen(function* loadProvider() {
+    const timeline = yield* loadCatalogTimeline(deps);
+    const book = yield* bookFromTimeline(timeline);
+    const [newest] = timeline.catalogs;
+
+    if (newest === undefined) {
+      return {
+        book,
+        origin: "bundled" as const,
+        table: bundled,
+        warnings: [
+          ...timeline.warnings,
+          `using bundled ${bundled.id}@${bundled.version}`,
+        ],
+      };
+    }
+
+    return {
+      book,
+      origin: timeline.origin === "fresh" ? "fresh" : "cache",
+      table: catalogPriceTable(newest, bundled),
+      warnings: timeline.warnings,
+    };
   });
 
 // @effect-diagnostics-next-line asyncFunction:off -- The public price catalog seam is the platform fetch; loadPriceProvider wraps it in Effect.tryPromise.

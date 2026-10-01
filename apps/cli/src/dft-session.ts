@@ -40,6 +40,7 @@ export const costOptionsFor = (dftHome: string, home: string) =>
     }
 
     return {
+      priceBook: provider.book,
       priceTable: provider.table,
       subscription: null,
     } satisfies CostOptions;

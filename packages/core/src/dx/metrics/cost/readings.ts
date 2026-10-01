@@ -1,13 +1,19 @@
 import { Option, Schema } from "effect";
 
-import { LIST_PRICE_FIELDS, SOURCE_KIND_ALIASES } from "../../harness/rules.js";
+import {
+  LIST_PRICE_FIELDS,
+  SOURCE_KIND_ALIASES,
+  rulesForEvent,
+} from "../../harness/rules.js";
 import {
   UNKNOWN_SOURCE_RANK,
   aiSourceRank,
 } from "../../harness/source-kinds.js";
 import { AiSourceKindSchema, TokenCategorySchema } from "../../model/ai.js";
 import type { TokenCategory } from "../../model/ai.js";
+import type { AiUsage } from "../../model/attribution.js";
 import type { DxEventEnvelope } from "../../model/event.js";
+import type { PricedRequest } from "./price-book/estimate.js";
 
 export const MoneyLedgerSchema = Schema.Literals([
   "charge",
@@ -37,6 +43,7 @@ export type TokenCounts = Partial<Record<TokenCategory, number>>;
 
 export interface TokenReading extends ReadingBase {
   readonly model: string | null;
+  readonly request?: PricedRequest | null;
   readonly requests: number | null;
   readonly tokens: TokenCounts;
 }
@@ -311,7 +318,8 @@ const baseOf = (event: DxEventEnvelope): ReadingBase => {
   return {
     adapterId: event.adapterId,
     branch: event.context.branch,
-    dedupeKey: payloadKey ?? `event:${event.eventId}`,
+    dedupeKey:
+      payloadKey ?? event.usage?.requestKey ?? `event:${event.eventId}`,
     eventId: event.eventId,
     occurredAt: event.occurredAt,
     sourceKind: orNull(decodeText(event.payload.sourceKind)),
@@ -333,6 +341,42 @@ const listPriceOf = (event: DxEventEnvelope): number | null => {
   return orNull(decodeNumber(payload.costUsd));
 };
 
+const writesOf = (usage: AiUsage): number | null => {
+  const { cacheWrite, cacheWrite1h, cacheWrite5m } = usage.tokens;
+
+  return cacheWrite1h === null && cacheWrite5m === null
+    ? cacheWrite
+    : Math.max(cacheWrite ?? 0, (cacheWrite5m ?? 0) + (cacheWrite1h ?? 0));
+};
+
+const usageTokens = (usage: AiUsage): TokenCounts => {
+  const { tokens } = usage;
+
+  const entries: readonly (readonly [TokenCategory, number | null])[] = [
+    ["input", tokens.inputFresh],
+    ["cached-input", tokens.cacheRead],
+    ["cache-write", writesOf(usage)],
+    ["output", tokens.output],
+    ["reasoning", tokens.reasoning],
+    ["total", tokens.total],
+  ];
+
+  return Object.fromEntries(
+    entries.flatMap(([category, value]) =>
+      value === null ? [] : [[category, value]]
+    )
+  );
+};
+
+const rawUsageGated = (event: DxEventEnvelope): boolean =>
+  rulesForEvent(event).rawUsage?.sourceKind ===
+  orNull(decodeText(event.payload.sourceKind));
+
+const requestOf = (event: DxEventEnvelope): PricedRequest | null =>
+  event.usage === null || rawUsageGated(event)
+    ? null
+    : { ai: event.ai, occurredAt: event.occurredAt, usage: event.usage };
+
 const extractEvent = (event: DxEventEnvelope) => {
   const base = baseOf(event);
   const out: Collector = { money: [], rejections: [], tokens: {} };
@@ -346,6 +390,14 @@ const extractEvent = (event: DxEventEnvelope) => {
   fromListPrice(event, base, out);
   fromTokenRecord(event, out);
 
+  if (
+    Object.keys(out.tokens).length === 0 &&
+    event.usage !== null &&
+    !rawUsageGated(event)
+  ) {
+    Object.assign(out.tokens, usageTokens(event.usage));
+  }
+
   const requests =
     orNull(decodeNumber(event.payload.requests)) ??
     orNull(decodeNumber(event.payload.requestUnits));
@@ -356,7 +408,9 @@ const extractEvent = (event: DxEventEnvelope) => {
     hasTokens || requests !== null
       ? {
           ...base,
-          model: orNull(decodeText(event.payload.model)),
+          model:
+            orNull(decodeText(event.payload.model)) ?? event.ai?.model ?? null,
+          request: requestOf(event),
           requests,
           tokens: out.tokens,
         }

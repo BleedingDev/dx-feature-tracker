@@ -18,6 +18,8 @@ import {
 } from "../../model/ids.js";
 import type { MetricDefinitionRef, MetricResult } from "../../model/metric.js";
 import { assignedBranches } from "../ai-usage/ledger.js";
+import type { PriceBookApi } from "./price-book/book.js";
+import type { NoPriceReason } from "./price-book/estimate.js";
 import type {
   PriceOutcome,
   PriceTable,
@@ -95,6 +97,7 @@ export interface SubscriptionPlan {
 }
 
 export interface CostOptions {
+  readonly priceBook?: PriceBookApi | null;
   readonly priceTable: PriceTable | null;
   readonly subscription: SubscriptionPlan | null;
 }
@@ -322,7 +325,7 @@ const priceMeasurement = (
 export const CURSOR_LIST_PRICE_METHOD = "cursor-list-price";
 
 interface RequestEstimate {
-  readonly kind: "cursor-list-price" | "price-table";
+  readonly kind: "cursor-list-price" | "price-table" | "price-book";
   readonly usd: number;
 }
 
@@ -330,18 +333,60 @@ type EstimateOutcome =
   | RequestEstimate
   | { readonly kind: "unpriced"; readonly reason: UnpricedReason };
 
+const BOOK_UNPRICED: Readonly<Record<NoPriceReason, UnpricedReason>> = {
+  "missing-rate": "missing-rate",
+  "model-unpriced": "model-not-in-table",
+  "no-tokens": "no-tokens",
+  "no-usage": "no-tokens",
+  "total-only": "total-only",
+};
+
+const bookOutcome = (
+  reading: TokenReading,
+  book: PriceBookApi | null
+): EstimateOutcome | null => {
+  const request = reading.request ?? null;
+
+  if (book === null || request === null) {
+    return null;
+  }
+
+  const estimate = book.estimate(request);
+
+  if (estimate.kind === "no-price") {
+    return { kind: "unpriced", reason: BOOK_UNPRICED[estimate.reason] };
+  }
+
+  return {
+    kind:
+      estimate.method === "cursor-list-price"
+        ? "cursor-list-price"
+        : "price-book",
+    usd: estimate.usd,
+  };
+};
+
+const priceOutcome = (outcome: PriceOutcome): EstimateOutcome =>
+  outcome.kind === "priced"
+    ? { kind: "price-table", usd: outcome.usd }
+    : outcome;
+
 const estimateRequest = (
   reading: TokenReading,
   table: PriceTable | null,
-  listPrices: ReadonlyMap<string, number>
+  listPrices: ReadonlyMap<string, number>,
+  book: PriceBookApi | null
 ): EstimateOutcome => {
-  const outcome: PriceOutcome =
-    table === null
-      ? { kind: "unpriced", reason: "model-not-in-table" }
-      : priceReading(reading, table);
+  const fromBook = bookOutcome(reading, book);
 
-  if (outcome.kind === "priced") {
-    return { kind: "price-table", usd: outcome.usd };
+  const outcome: EstimateOutcome =
+    fromBook ??
+    (table === null
+      ? { kind: "unpriced", reason: "model-not-in-table" }
+      : priceOutcome(priceReading(reading, table)));
+
+  if (outcome.kind !== "unpriced") {
+    return outcome;
   }
 
   const listPrice = listPrices.get(reading.dedupeKey);
@@ -351,10 +396,25 @@ const estimateRequest = (
     : { kind: "cursor-list-price", usd: listPrice };
 };
 
-const methodLabel = (table: PriceTable | null, fromCursor: number) => {
+interface MethodCounts {
+  readonly fromBook: number;
+  readonly fromCursor: number;
+  readonly fromTable: number;
+}
+
+const NO_METHODS: MethodCounts = { fromBook: 0, fromCursor: 0, fromTable: 0 };
+
+const methodLabel = (
+  table: PriceTable | null,
+  book: PriceBookApi | null,
+  counts: MethodCounts
+) => {
+  const showTable = table !== null && (book === null || counts.fromTable > 0);
+
   const parts = [
-    ...(table === null ? [] : [priceMethodLabel(table)]),
-    ...(fromCursor > 0 ? [CURSOR_LIST_PRICE_METHOD] : []),
+    ...(book === null ? [] : [`price-book:${book.label}`]),
+    ...(showTable ? [priceMethodLabel(table)] : []),
+    ...(counts.fromCursor > 0 ? [CURSOR_LIST_PRICE_METHOD] : []),
   ];
 
   return `method=${parts.join("+")}`;
@@ -363,9 +423,12 @@ const methodLabel = (table: PriceTable | null, fromCursor: number) => {
 const priceTableResult = (
   ctx: GroupContext,
   tokens: readonly TokenReading[],
-  table: PriceTable | null,
+  options: CostOptions,
   listPrices: ReadonlyMap<string, number>
 ): MetricResult => {
+  const table = options.priceTable;
+  const book = options.priceBook ?? null;
+
   const selection = selectPreferredSource(
     tokens.filter((item) => Object.keys(item.tokens).length > 0)
   );
@@ -381,7 +444,7 @@ const priceTableResult = (
     listPrices.has(item.dedupeKey)
   );
 
-  if (table === null && !hasListPrice) {
+  if (table === null && book === null && !hasListPrice) {
     return result(ctx, {
       ...base,
       attribution: "not-applicable",
@@ -390,7 +453,7 @@ const priceTableResult = (
       evidence: [],
       measurement: "unavailable",
       numerator: null,
-      reason: "No versioned price table selected; dft ships no default prices.",
+      reason: "No versioned price table or PriceBook selected.",
       value: null,
     });
   }
@@ -404,7 +467,7 @@ const priceTableResult = (
       evidence: [],
       measurement: "unavailable",
       numerator: 0,
-      reason: `${methodLabel(table, 0)}; no source-reported token readings in the selected sources.`,
+      reason: `${methodLabel(table, book, NO_METHODS)}; no source-reported token readings in the selected sources.`,
       value: null,
     });
   }
@@ -412,7 +475,7 @@ const priceTableResult = (
   const priced: TokenReading[] = [];
   const unpriced: UnpricedReason[] = [];
   const counted = new Set<string>();
-  let fromCursor = 0;
+  const counts = { fromBook: 0, fromCursor: 0, fromTable: 0 };
   let usd = 0;
 
   for (const reading of withTokens) {
@@ -422,7 +485,7 @@ const priceTableResult = (
 
     counted.add(reading.dedupeKey);
 
-    const outcome = estimateRequest(reading, table, listPrices);
+    const outcome = estimateRequest(reading, table, listPrices, book);
 
     if (outcome.kind === "unpriced") {
       unpriced.push(outcome.reason);
@@ -431,8 +494,12 @@ const priceTableResult = (
 
     priced.push(reading);
     usd += outcome.usd;
-    fromCursor += outcome.kind === "cursor-list-price" ? 1 : 0;
+    counts.fromBook += outcome.kind === "price-book" ? 1 : 0;
+    counts.fromCursor += outcome.kind === "cursor-list-price" ? 1 : 0;
+    counts.fromTable += outcome.kind === "price-table" ? 1 : 0;
   }
+
+  const { fromCursor } = counts;
 
   const unpricedNote =
     unpriced.length > 0 ? `; unpriced readings: ${tally(unpriced)}` : "";
@@ -452,7 +519,7 @@ const priceTableResult = (
     evidence: priced,
     measurement: priceMeasurement(priced.length, unpriced.length),
     numerator: priced.length,
-    reason: `${methodLabel(table, fromCursor)}; estimate from source-reported tokens, not a charge${cursorNote}${unpricedNote}.${altNote === null ? "" : ` ${altNote}`}`,
+    reason: `${methodLabel(table, book, counts)}; estimate from source-reported tokens, not a charge${cursorNote}${unpricedNote}.${altNote === null ? "" : ` ${altNote}`}`,
     value: priced.length === 0 ? null : usd,
   });
 };
@@ -581,12 +648,7 @@ const computeGroup = (
     ledgerResult(ctx, readings.money, "charge", rejected, superseded),
     ledgerResult(ctx, readings.money, "metered", rejected, superseded),
     ledgerResult(ctx, readings.money, "list-price-estimate", 0, superseded),
-    priceTableResult(
-      ctx,
-      readings.tokens,
-      options.priceTable,
-      readings.listPrices
-    ),
+    priceTableResult(ctx, readings.tokens, options, readings.listPrices),
     subscriptionResult(
       ctx,
       readings.tokens,
@@ -746,9 +808,9 @@ export const costDescriptor: ModuleDescriptor = {
   ],
   gaps: [
     {
-      code: "no-default-price-table",
+      code: "estimate-needs-prices",
       message:
-        "dft ships no built-in prices; price-table estimates need an explicitly selected versioned table and are otherwise unavailable.",
+        "The estimate prices tokens with the PriceBook (each model maker's public price, date-versioned) or a selected versioned price table; with neither it is unavailable.",
     },
     {
       code: "charge-needs-billing-export",
