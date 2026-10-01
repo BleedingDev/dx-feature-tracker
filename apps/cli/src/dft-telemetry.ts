@@ -37,6 +37,7 @@ export const codexTelemetryBlock = (port: number): string =>
 
 export type TelemetryAction =
   | "added"
+  | "updated"
   | "unchanged"
   | "refused"
   | "removed"
@@ -215,6 +216,9 @@ const writeJson = (file: string, value: Settings): void => {
   writeFileSync(file, `${JSON.stringify(value, null, 2)}\n`);
 };
 
+const notSetUp = (name: string, dir: string): string =>
+  `${name} is not set up on this machine (no ${dir}), so dft left it alone. Start ${name} once, then run dft install --telemetry again.`;
+
 export const installClaudeTelemetry = (
   options: TelemetryOptions
 ): TelemetryChange => {
@@ -229,6 +233,15 @@ export const installClaudeTelemetry = (
     tool: "claude-code" as const,
   };
 
+  if (!existsSync(options.claudeDir)) {
+    return {
+      ...base,
+      action: "skipped",
+      lines: [],
+      message: notSetUp("Claude Code", options.claudeDir),
+    };
+  }
+
   if (settings === null) {
     return {
       ...base,
@@ -240,20 +253,37 @@ export const installClaudeTelemetry = (
   }
 
   const env = settings.env ?? {};
-  const conflict = exportConflict(env, options.shell, ours);
+  const record = readRecord(options.stateFile);
+
+  const owned = new Set(
+    record.claudeKeys.filter((key) => {
+      const value = record.claudeValues[key];
+
+      return value !== undefined && stringValue(env[key]) === value;
+    })
+  );
+
+  const planned = {
+    ...env,
+    ...Object.fromEntries(
+      Object.entries(ours).filter(([key]) => owned.has(key))
+    ),
+  };
+
+  const conflict = exportConflict(planned, options.shell, ours);
 
   if (conflict !== null) {
     return { ...base, action: "refused", lines: [], message: conflict };
   }
 
   const clashes = Object.entries(ours).filter(([key, value]) => {
-    const current = stringValue(env[key]);
+    const current = stringValue(planned[key]);
 
     const enabled =
       key === "CLAUDE_CODE_ENABLE_TELEMETRY" &&
       ["1", "true"].includes((current ?? "").toLowerCase());
 
-    return env[key] !== undefined && current !== value && !enabled;
+    return planned[key] !== undefined && current !== value && !enabled;
   });
 
   if (clashes.length > 0) {
@@ -265,11 +295,13 @@ export const installClaudeTelemetry = (
     };
   }
 
-  const missing = Object.entries(ours).filter(
-    ([key]) => env[key] === undefined
+  const changes = Object.entries(ours).filter(
+    ([key, value]) =>
+      env[key] === undefined ||
+      (owned.has(key) && stringValue(env[key]) !== value)
   );
 
-  if (missing.length === 0) {
+  if (changes.length === 0) {
     return {
       ...base,
       action: "unchanged",
@@ -278,36 +310,41 @@ export const installClaudeTelemetry = (
     };
   }
 
-  const lines = missing.map(
-    ([key, value]) => `+ env.${key} = ${JSON.stringify(value)}`
+  const updating = changes.some(([key]) => env[key] !== undefined);
+
+  const lines = changes.map(
+    ([key, value]) =>
+      `${env[key] === undefined ? "+" : "~"} env.${key} = ${JSON.stringify(value)}`
   );
 
   if (options.dryRun) {
-    return { ...base, action: "added", lines, message: "would add (dry run)" };
+    return {
+      ...base,
+      action: updating ? "updated" : "added",
+      lines,
+      message: updating ? "would update (dry run)" : "would add (dry run)",
+    };
   }
 
   const backup = backupFile(file, backupDirOf(options), "claude-settings.json");
+  const written = Object.fromEntries(changes);
 
-  writeJson(file, {
-    ...settings,
-    env: { ...env, ...Object.fromEntries(missing) },
-  });
-
-  const record = readRecord(options.stateFile);
-  const added = Object.fromEntries(missing);
+  writeJson(file, { ...settings, env: { ...env, ...written } });
 
   writeRecord(options.stateFile, {
-    claudeKeys: [...new Set([...record.claudeKeys, ...Object.keys(added)])],
-    claudeValues: { ...record.claudeValues, ...added },
+    claudeKeys: [...new Set([...record.claudeKeys, ...Object.keys(written)])],
+    claudeValues: { ...record.claudeValues, ...written },
     created: exists ? record.created : withCreated(record, file, true),
   });
 
   return {
     ...base,
-    action: "added",
+    action: updating ? "updated" : "added",
     backup,
     lines,
-    message: "added to the env block",
+    message: updating
+      ? "pointed the settings dft added at this port"
+      : "added to the env block",
   };
 };
 
@@ -447,6 +484,62 @@ export const userToolDirs = (home: string, env: ShellEnv) => ({
   codexDir: env.CODEX_HOME ?? path.join(home, ".codex"),
 });
 
+const refreshCodexBlock = (
+  options: TelemetryOptions,
+  text: string,
+  parts: CodexParts,
+  base: Pick<TelemetryChange, "backup" | "path" | "tool">
+): TelemetryChange => {
+  const current = text.slice(
+    parts.before.length,
+    text.length - parts.after.length
+  );
+
+  const block = codexTelemetryBlock(options.port);
+
+  if (current.replace(/\n$/u, "") === block) {
+    return {
+      ...base,
+      action: "unchanged",
+      lines: [],
+      message: "Codex already sends telemetry to dft",
+    };
+  }
+
+  const lines = [
+    ...current
+      .replace(/\n$/u, "")
+      .split("\n")
+      .map((line) => `- ${line}`),
+    ...block.split("\n").map((line) => `+ ${line}`),
+  ];
+
+  if (options.dryRun) {
+    return {
+      ...base,
+      action: "updated",
+      lines,
+      message: "would replace the dft block (dry run)",
+    };
+  }
+
+  const backup = backupFile(
+    base.path,
+    backupDirOf(options),
+    "codex-config.toml"
+  );
+
+  writeFileSync(base.path, `${parts.before}${block}\n${parts.after}`);
+
+  return {
+    ...base,
+    action: "updated",
+    backup,
+    lines,
+    message: "pointed the dft block at this port",
+  };
+};
+
 export const installCodexTelemetry = (
   options: TelemetryOptions
 ): TelemetryChange => {
@@ -460,15 +553,19 @@ export const installCodexTelemetry = (
     tool: "codex" as const,
   };
 
+  if (!existsSync(options.codexDir)) {
+    return {
+      ...base,
+      action: "skipped",
+      lines: [],
+      message: notSetUp("Codex", options.codexDir),
+    };
+  }
+
   const parts = codexParts(text);
 
   if (parts.found) {
-    return {
-      ...base,
-      action: "unchanged",
-      lines: [],
-      message: "Codex already sends telemetry to dft",
-    };
+    return refreshCodexBlock(options, text, parts, base);
   }
 
   if (OTEL_TABLE.test(text) || OTEL_DOTTED.test(text)) {

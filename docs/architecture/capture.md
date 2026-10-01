@@ -37,7 +37,7 @@ Opt-in and user level. `--dry-run` prints the change without writing. Before wri
 | Claude Code | adds `CLAUDE_CODE_ENABLE_TELEMETRY`, `OTEL_LOGS_EXPORTER=otlp`, `OTEL_EXPORTER_OTLP_LOGS_PROTOCOL=http/json`, `OTEL_EXPORTER_OTLP_LOGS_ENDPOINT=http://127.0.0.1:<port>/v1/logs` to the `env` block of `~/.claude/settings.json` (or `$CLAUDE_CONFIG_DIR`) |
 | Codex | appends a marked `[otel]` block with `log_user_prompt = false` and an `otlp-http` JSON exporter to `~/.codex/config.toml` (or `$CODEX_HOME`) |
 
-dft only adds. When Claude Code already exports logs (settings or shell `OTEL_LOGS_EXPORTER` with another endpoint) or Codex already has `[otel]`, it refuses and suggests an OpenTelemetry Collector that forwards to both. `~/.dft/telemetry.json` records which keys and files dft added, so `dft uninstall --telemetry` removes exactly those and deletes a file only when dft created it.
+dft only adds. When Claude Code already exports logs (settings or shell `OTEL_LOGS_EXPORTER` with another endpoint) or Codex already has `[otel]`, it refuses and suggests an OpenTelemetry Collector that forwards to both. `~/.dft/telemetry.json` records which keys and files dft added, so `dft uninstall --telemetry` removes exactly those and deletes a file only when dft created it. A tool whose folder does not exist is skipped, so dft never creates `~/.codex` or `~/.claude` and never makes a missing tool look installed. Running it again with another `--port` moves only dft's own keys and its marked Codex block to that port.
 
 ## OTLP receiver
 

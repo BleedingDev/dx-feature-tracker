@@ -532,7 +532,8 @@ describe("dft install --telemetry (D38)", () => {
   });
 
   it("refuses when the shell already exports Claude Code logs elsewhere", () => {
-    const { options } = telemetryHome();
+    const { home, options } = telemetryHome();
+    mkdirSync(path.join(home, ".claude"));
 
     const [claude] = installTelemetry(
       options({
@@ -549,11 +550,59 @@ describe("dft install --telemetry (D38)", () => {
 
   it("writes nothing on a dry run", () => {
     const { home, options } = telemetryHome();
+    mkdirSync(path.join(home, ".claude"));
+    mkdirSync(path.join(home, ".codex"));
+
     const changes = installTelemetry(options({ dryRun: true }));
 
     expect(changes.map((change) => change.action)).toEqual(["added", "added"]);
-    expect(existsSync(path.join(home, ".claude"))).toBe(false);
-    expect(existsSync(path.join(home, ".codex"))).toBe(false);
+    expect(readdirSync(path.join(home, ".claude"))).toEqual([]);
+    expect(readdirSync(path.join(home, ".codex"))).toEqual([]);
     expect(existsSync(path.join(home, ".dft"))).toBe(false);
+  });
+
+  it("leaves a tool that is not set up alone instead of creating its folder", () => {
+    const { home, options } = telemetryHome();
+    mkdirSync(path.join(home, ".claude"));
+
+    const changes = installTelemetry(options());
+
+    expect(changes.map((change) => change.action)).toEqual([
+      "added",
+      "skipped",
+    ]);
+    expect(changes[1]?.message).toContain("Codex is not set up");
+    expect(existsSync(path.join(home, ".codex"))).toBe(false);
+  });
+
+  it("moves its own settings to a new --port and still undoes them exactly", () => {
+    const { home, options } = telemetryHome();
+    const claudeSettings = '{\n  "model": "opus"\n}\n';
+    const codexConfig = 'model = "gpt-5"\n';
+    write(home, ".claude/settings.json", claudeSettings);
+    write(home, ".codex/config.toml", codexConfig);
+
+    installTelemetry(options());
+
+    const moved = installTelemetry(options({ port: 7500 }));
+
+    expect(moved.map((change) => change.action)).toEqual([
+      "updated",
+      "updated",
+    ]);
+    expect(moved[0]?.lines).toEqual([
+      '~ env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT = "http://127.0.0.1:7500/v1/logs"',
+    ]);
+    expect(read(home, ".claude/settings.json")).toContain(":7500/v1/logs");
+    expect(read(home, ".codex/config.toml")).toContain(":7500/v1/logs");
+    expect(read(home, ".codex/config.toml")).not.toContain(":7420/");
+    expect(
+      installTelemetry(options({ port: 7500 })).map((change) => change.action)
+    ).toEqual(["unchanged", "unchanged"]);
+
+    uninstallTelemetry(options({ port: 7500 }));
+
+    expect(read(home, ".claude/settings.json")).toBe(claudeSettings);
+    expect(read(home, ".codex/config.toml")).toBe(codexConfig);
   });
 });
