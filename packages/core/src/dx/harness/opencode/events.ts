@@ -334,12 +334,13 @@ const requestEvents = (
     }
 
     const cost = request.cost === null ? null : request.cost * part.share;
+    const pieceId = `${message.id}:split:${index}`;
 
     return [
       envelope(ctx, {
         ai: attribution(part),
         at: message.created,
-        identity: { ...identity, requestId: `${message.id}:split:${index}` },
+        identity: { ...identity, generationId: pieceId, requestId: pieceId },
         kind: "ai.usage",
         observedAt: message.updated,
         payload: {

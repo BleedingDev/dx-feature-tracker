@@ -26,6 +26,7 @@ import {
 } from "../../../src/dx/harness/registry.js";
 import type { DxEventEnvelope } from "../../../src/dx/model/event.js";
 import { emptyFlightContext } from "../../../src/dx/model/event.js";
+import { deriveUsageFacts } from "../../../src/dx/usage/derive.js";
 import { harnessConformance } from "./conformance.js";
 import {
   FIXTURE_REPOS,
@@ -912,6 +913,22 @@ describe("OpenCode dedupe rules", () => {
         expect(
           new Set(pieces.map((event) => event.usage?.requestKey)).size
         ).toBe(2);
+
+        const orchestrator = deriveUsageFacts(events).facts.filter(
+          (fact) => fact.session === S
+        );
+
+        expect(
+          orchestrator
+            .map(
+              (fact) =>
+                `${fact.worktree ?? "-"} ${String(fact.tokens.inputFresh)}/${String(fact.tokens.output)}`
+            )
+            .toSorted((a, b) => a.localeCompare(b))
+        ).toStrictEqual([
+          "/home/user/projects/p1 25/2",
+          `${REALDATA}/repo 76/8`,
+        ]);
       })
   );
 
