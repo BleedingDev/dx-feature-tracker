@@ -82,15 +82,49 @@ const ENV_ASSIGNMENT = /^[A-Za-z_]\w*=/u;
 
 const BINARY_NAME = /^[\w.+-]+$/u;
 
-const COMMAND_WRAPPERS = new Set([
-  "command",
-  "doas",
-  "env",
-  "exec",
-  "nice",
-  "nohup",
-  "sudo",
-  "time",
+interface WrapperSpec {
+  readonly shortValues: string;
+  readonly longValues: ReadonlySet<string>;
+  readonly operands: number;
+}
+
+const wrapper = (
+  shortValues: string,
+  longValues: readonly string[] = [],
+  operands = 0
+): WrapperSpec => ({
+  longValues: new Set(longValues),
+  operands,
+  shortValues,
+});
+
+const NO_OPTIONS = wrapper("");
+
+const COMMAND_WRAPPERS: ReadonlyMap<string, WrapperSpec> = new Map([
+  ["command", NO_OPTIONS],
+  ["doas", wrapper("aCu")],
+  ["env", wrapper("CPSu", ["chdir", "split-string", "unset"])],
+  ["exec", wrapper("a")],
+  ["nice", wrapper("n", ["adjustment"])],
+  ["nohup", NO_OPTIONS],
+  [
+    "sudo",
+    wrapper("CDghpRrTtUu", [
+      "chdir",
+      "chroot",
+      "close-from",
+      "command-timeout",
+      "group",
+      "host",
+      "other-user",
+      "prompt",
+      "role",
+      "type",
+      "user",
+    ]),
+  ],
+  ["time", wrapper("fo", ["format", "output"])],
+  ["timeout", wrapper("ks", ["kill-after", "signal"], 1)],
 ]);
 
 const shellWords = (command: string): readonly string[] => {
@@ -119,16 +153,79 @@ const shellWords = (command: string): readonly string[] => {
   return word === "" ? words : [...words, word];
 };
 
-const commandBinary = (command: string): string | null => {
-  for (const word of shellWords(command)) {
-    const name = word.split("/").at(-1) ?? "";
+const optionTakesValue = (spec: WrapperSpec, word: string): boolean => {
+  if (word.startsWith("--")) {
+    return !word.includes("=") && spec.longValues.has(word.slice(2));
+  }
 
-    if (
-      !ENV_ASSIGNMENT.test(word) &&
-      !word.startsWith("-") &&
-      !COMMAND_WRAPPERS.has(name)
-    ) {
-      return BINARY_NAME.test(name) ? name : null;
+  for (let index = 1; index < word.length; index += 1) {
+    if (spec.shortValues.includes(word.charAt(index))) {
+      return index === word.length - 1;
+    }
+  }
+
+  return false;
+};
+
+interface WrapperState {
+  spec: WrapperSpec;
+  operands: number;
+  optionsDone: boolean;
+  pendingValue: boolean;
+}
+
+const skipsWord = (state: WrapperState, word: string): boolean => {
+  if (state.pendingValue) {
+    state.pendingValue = false;
+
+    return true;
+  }
+
+  if (!state.optionsDone && word === "--") {
+    state.optionsDone = true;
+
+    return true;
+  }
+
+  if (!state.optionsDone && word.length > 1 && word.startsWith("-")) {
+    state.pendingValue = optionTakesValue(state.spec, word);
+
+    return true;
+  }
+
+  if (ENV_ASSIGNMENT.test(word)) {
+    return true;
+  }
+
+  if (state.operands > 0) {
+    state.operands -= 1;
+
+    return true;
+  }
+
+  return false;
+};
+
+const commandBinary = (command: string): string | null => {
+  const state: WrapperState = {
+    operands: 0,
+    optionsDone: false,
+    pendingValue: false,
+    spec: NO_OPTIONS,
+  };
+
+  for (const word of shellWords(command)) {
+    if (!skipsWord(state, word)) {
+      const name = word.split("/").at(-1) ?? "";
+      const spec = COMMAND_WRAPPERS.get(name);
+
+      if (spec === undefined) {
+        return BINARY_NAME.test(name) ? name : null;
+      }
+
+      state.spec = spec;
+      state.operands = spec.operands;
+      state.optionsDone = false;
     }
   }
 

@@ -137,6 +137,102 @@ describe("b37 redaction", () => {
     expect(redactText("plain metadata").redacted).toBe(false);
   });
 
+  it("scrubs values behind compound secret labels", () => {
+    const secret = ["fixture", "Secret", "Value", "9"].join("");
+
+    const labels = [
+      "AWS_SECRET_ACCESS_KEY",
+      "GITHUB_TOKEN",
+      "NPM_AUTH_TOKEN",
+      "OPENAI_API_KEY",
+      "ANTHROPIC_API_KEY",
+      "DB_PASSWORD",
+      "PGPASSWORD",
+      "MYSQL_PWD",
+      "STRIPE_SECRET_KEY",
+      "SLACK_BOT_TOKEN",
+      "JWT_SECRET",
+      "CLIENT_SECRET",
+      "PRIVATE_KEY",
+      "aws_secret_access_key",
+      "_authToken",
+      "db.password",
+      "x-api-key",
+    ];
+
+    for (const label of labels) {
+      for (const pair of [
+        `${label}=${secret}`,
+        `${label}: ${secret}`,
+        `export ${label}="${secret}"`,
+        `"${label}": "${secret}"`,
+        `--${label.toLowerCase()}=${secret}`,
+      ]) {
+        const result = redactText(`run ${pair} now`);
+
+        expect(result.text, pair).not.toContain(secret);
+        expect(result.redacted, pair).toBe(true);
+      }
+    }
+
+    expect(redactText(`AWS_SECRET_ACCESS_KEY=${secret}`).text).toBe(
+      "AWS_SECRET_ACCESS_KEY=[redacted]"
+    );
+  });
+
+  it("keeps token counts and other labels that are not secrets", () => {
+    for (const plain of [
+      "max_tokens=4096",
+      "input_tokens: 120",
+      "cache_read_input_tokens=5",
+      "tokenizer=cl100k",
+      "AWS_ACCESS_KEY_ID_COUNT is unrelated",
+      "branch: feat/token-refresh",
+      "model=claude-sonnet-5",
+    ]) {
+      expect(redactText(plain), plain).toEqual({
+        redacted: false,
+        text: plain,
+      });
+    }
+  });
+
+  it("scrubs credentials inside urls in free text", () => {
+    const result = redactText(
+      "remote https://fixture-user:hunter2@git.example.test/repo.git"
+    );
+
+    expect(result.text).toBe(
+      "remote https://[redacted]@git.example.test/repo.git"
+    );
+    expect(result.redacted).toBe(true);
+  });
+
+  it("scrubs bare high-entropy secrets but keeps hashes and ids", () => {
+    const bare = ["wJalrXUtnFEMI", "/K7MDENG/", "bPxRfiCY", "FIXTURE9KEY"].join(
+      ""
+    );
+
+    const result = redactText(`aws ${bare} end`);
+
+    expect(result.text).toBe("aws [redacted:secret] end");
+    expect(result.redacted).toBe(true);
+
+    for (const plain of [
+      "3b3db99f500c603a39b2f776461e0123456789ab",
+      "2aaac43f-a7ae-4a43-a8dd-134d29e456cb",
+      "msg_01XFDUDYJgAACzvnptvVoYEL",
+      "packages/core/src/dx/Collectors2/Harness",
+      "src/Components/Button2/Variants/Primary3",
+      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    ]) {
+      expect(redactText(plain), plain).toEqual({
+        redacted: false,
+        text: plain,
+      });
+    }
+  });
+
   it("bounds refs: strips url credentials/query, collapses home, truncates", () => {
     const url = boundRef(
       `https://user:hunter2@example.test/path?token=${fakeGithubToken}#frag`

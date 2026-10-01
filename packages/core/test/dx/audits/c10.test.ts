@@ -362,7 +362,7 @@ describe("c10 evidence export path (B37)", () => {
     );
   });
 
-  it.fails("KNOWN FINDING B37: compound secret labels such as AWS_SECRET_ACCESS_KEY= or GITHUB_TOKEN= pass redaction", () => {
+  it("compound secret labels such as AWS_SECRET_ACCESS_KEY= or GITHUB_TOKEN= are redacted", () => {
     const text = JSON.stringify(
       excerptPayload({
         note: `AWS_SECRET_ACCESS_KEY=${SECRETS.AWS_SECRET} GITHUB_TOKEN=${SECRETS.JWT}`,
@@ -372,7 +372,7 @@ describe("c10 evidence export path (B37)", () => {
     assertClean("excerptPayload compound label", text);
   });
 
-  it.fails("KNOWN FINDING B37: bare unlabelled AWS secret in a metadata string passes redaction", () => {
+  it("a bare unlabelled AWS secret in a metadata string is redacted", () => {
     assertClean(
       "excerptPayload bare aws",
       JSON.stringify(excerptPayload({ note: SECRETS.AWS_SECRET }))

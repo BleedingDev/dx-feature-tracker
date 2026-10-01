@@ -17,6 +17,13 @@ export interface RedactedText {
   readonly redacted: boolean;
 }
 
+const SECRET_WORD = String.raw`(?:secret|passw(?:or)?d|pwd|api[_-]?key|access[_-]?key|private[_-]?key|credentials?|token(?![a-z]))`;
+
+const SECRET_LABEL = new RegExp(
+  String.raw`(?<![\w.-])(?<prefix>[\w.-]{0,64}?${SECRET_WORD}[\w.-]{0,64}["']?\s*[=:]\s*)(?:"[^"\n]*"|'[^'\n]*'|["']?[^\s"'&;,]+)`,
+  "giu"
+);
+
 const SECRET_PATTERNS: readonly (readonly [RegExp, string])[] = [
   [
     /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)/gu,
@@ -29,14 +36,45 @@ const SECRET_PATTERNS: readonly (readonly [RegExp, string])[] = [
   [/\bxox[abprs]-[\w-]{10,}/gu, "[redacted:token]"],
   [/\bAKIA[0-9A-Z]{16}\b/gu, "[redacted:aws-key]"],
   [/\b(?:Bearer|Basic|token)\s+[\w.~+/=-]{8,}/giu, "[redacted:credential]"],
-  [
-    /\b(?<prefix>(?:api[_-]?key|access[_-]?token|auth[_-]?token|secret|password|passwd|pwd|client[_-]?secret)\s*[=:]\s*)["']?[^\s"'&;,]+/giu,
-    "$<prefix>[redacted]",
-  ],
+  [SECRET_LABEL, "$<prefix>[redacted]"],
+  [/\b(?<scheme>[a-z][\d+.a-z-]*:\/\/)[^\s/@]+@/giu, "$<scheme>[redacted]@"],
   [/\b[\w.%+-]+@[\w-]+(?:\.[\w-]+)+\b/gu, "[redacted:email]"],
   [/(?:\/Users|\/home)\/[^/\s"']+/gu, "~"],
   [/[A-Za-z]:\\Users\\[^\\\s"']+/gu, "~"],
 ];
+
+const KEY_LIKE_RUN = /[\d+/A-Za-z]{40,}={0,2}/gu;
+
+const MIN_KEY_ENTROPY = 4.3;
+
+const MAX_KEY_SLASHES = 2;
+
+const countOf = (text: string, pattern: RegExp): number =>
+  text.match(pattern)?.length ?? 0;
+
+const entropyBits = (text: string): number => {
+  const counts = new Map<string, number>();
+
+  for (const char of text) {
+    counts.set(char, (counts.get(char) ?? 0) + 1);
+  }
+
+  let bits = 0;
+
+  for (const count of counts.values()) {
+    const share = count / text.length;
+    bits -= share * Math.log2(share);
+  }
+
+  return bits;
+};
+
+const looksLikeKey = (run: string): boolean =>
+  countOf(run, /\//gu) <= MAX_KEY_SLASHES &&
+  countOf(run, /\d/gu) >= 2 &&
+  countOf(run, /[A-Z]/gu) >= 2 &&
+  countOf(run, /[a-z]/gu) >= 2 &&
+  entropyBits(run) >= MIN_KEY_ENTROPY;
 
 export const redactText = (input: string): RedactedText => {
   let text = input;
@@ -44,6 +82,10 @@ export const redactText = (input: string): RedactedText => {
   for (const [pattern, replacement] of SECRET_PATTERNS) {
     text = text.replace(pattern, replacement);
   }
+
+  text = text.replace(KEY_LIKE_RUN, (run) =>
+    looksLikeKey(run) ? "[redacted:secret]" : run
+  );
 
   return { redacted: text !== input, text };
 };

@@ -25,9 +25,14 @@ Audit test: `packages/core/test/dx/audits/c10.test.ts`. Fixtures: `packages/core
    - The credential-pair regex begins with `\b(?:...|secret|...)`. In `AWS_SECRET_ACCESS_KEY=` the `_` before `SECRET` is a word character, so the word boundary never matches. `GITHUB_TOKEN=`-style labels are also not in the list.
    - Fix: allow a `[A-Za-z0-9_]*` prefix, or match `(?:^|[^A-Za-z0-9])` plus `\w*(?:secret|token|key|password)\w*\s*[=:]`.
    - Severity: medium. It only affects non-content metadata strings, because content keys are already withheld.
+   - Fixed in 0.2.1: a label that contains `secret`, `password`, `passwd`, `pwd`, `api_key`, `access_key`, `private_key`, `credential` or a whole-word `token` (so `GITHUB_TOKEN=`, `_authToken=`, `"DB_PASSWORD": "..."`) has its value replaced, quoted values included. Token counts such as `max_tokens=` stay. Userinfo in any `scheme://user:pass@host` text is redacted too. The test is now a plain `it`.
 3. **Evidence redaction (B37 owner): a bare, unlabelled 40-character AWS secret access key passes.**
    - This was already disclosed as a B37 gap and is expected for pattern-based redaction.
    - Severity: low.
+   - Fixed in 0.2.1: a run of 40 or more base64 characters with at most two slashes, at least two digits, two upper-case and two lower-case letters and an entropy of at least 4.3 bits per character becomes `[redacted:secret]`. Git hashes, UUIDs, message ids and paths stay. On the 0.2.1 real sessions it matched only encrypted reasoning blobs. The test is now a plain `it`.
+4. **Cursor hooks (B05 owner), `sanitize.ts`: wrapper options with values were taken as the binary.**
+   - `sudo -u root gh` stored `root`, and `env -u NAME gh` stored the variable name.
+   - Fixed in 0.2.1: `sudo`, `doas`, `env`, `nice`, `time`, `exec`, `command`, `nohup` and `timeout` skip their options, option values (`-u root`, `-uroot`, `--user root`, `--user=root`), `--` and the `timeout` duration, also when nested (`sudo -u root env -u X nice -n 10 gh` gives `gh`).
 
 ## Not covered (gaps)
 

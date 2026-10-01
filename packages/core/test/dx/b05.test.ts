@@ -207,6 +207,50 @@ describe("B05 cursor hooks collector", () => {
     expect(binOf(`$(${secret})`)).toBeNull();
   });
 
+  it("skips wrapper options and their values to reach the executable", () => {
+    const secret = ["fixture", "Secret", "Value"].join("");
+
+    const cases: readonly (readonly [string, string | null])[] = [
+      ["sudo -u root gh pr list", "gh"],
+      ["sudo -uroot gh", "gh"],
+      ["sudo -Eu root gh", "gh"],
+      ["sudo -E -H -u deploy -g staff make build", "make"],
+      ["sudo --user=root gh", "gh"],
+      ["sudo --user root gh", "gh"],
+      ["sudo -D /srv -C 4 -T 30 -h host-a ls", "ls"],
+      [`sudo -p ${secret} ls`, "ls"],
+      ["sudo -- gh", "gh"],
+      ["/usr/bin/sudo -n -u root /usr/bin/gh", "gh"],
+      ["doas -u root gh", "gh"],
+      ["doas -n -u root -- pnpm test", "pnpm"],
+      [`env -u ${secret} gh`, "gh"],
+      [`env --unset=${secret} gh`, "gh"],
+      [`env --unset ${secret} gh`, "gh"],
+      ["env -C /srv/app pnpm install", "pnpm"],
+      ["env --chdir /srv/app pnpm install", "pnpm"],
+      [`env -i -u HOME API_KEY=${secret} node app.js`, "node"],
+      ["env -- gh", "gh"],
+      [`sudo -u root env -u ${secret} nice -n 10 gh`, "gh"],
+      ["nice -n 5 make", "make"],
+      ["nice -5 make", "make"],
+      ["nice --adjustment=5 make", "make"],
+      ["time -p make", "make"],
+      ["exec -a renamed node server.js", "node"],
+      ["command -p ls", "ls"],
+      ["nohup node server.js", "node"],
+      ["timeout 30 gh pr list", "gh"],
+      ["timeout -s KILL -k 5 30s pnpm test", "pnpm"],
+      ["timeout --signal=TERM 1m pnpm test", "pnpm"],
+      ["sudo -u root", null],
+      ["sudo -l", null],
+      ["env", null],
+    ];
+
+    for (const [command, expected] of cases) {
+      expect(binOf(command), command).toBe(expected);
+    }
+  });
+
   it.effect("collapses duplicate stop emissions for one turn", () =>
     Effect.gen(function* duplicateStop() {
       const spoolDir = freshSpool("dup");
