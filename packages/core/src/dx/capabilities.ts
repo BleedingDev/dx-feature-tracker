@@ -22,6 +22,7 @@ import {
   gitSelectorResolver,
   hookSpoolDirFor,
 } from "./registry/runtime.js";
+import * as DxUsage from "./usage/capability.js";
 
 export interface DxSelectorOverrides {
   readonly allRepos?: boolean;
@@ -103,6 +104,10 @@ export const makeDxCapabilities = (deps: DxCapabilityDeps) => {
   );
 
   const chats = DxChats.makeDxChatsCapability({ resolveSelector });
+
+  const usage = DxUsage.makeDxUsageCapability(
+    deps.costOptions === undefined ? {} : { costOptions: deps.costOptions }
+  );
 
   const collect = implement(dxCollectContract, (input) =>
     isolateStdout(
@@ -188,5 +193,5 @@ export const makeDxCapabilities = (deps: DxCapabilityDeps) => {
     )
   );
 
-  return [...query, collect, mark, history, chats] as const;
+  return [...query, collect, mark, history, chats, usage] as const;
 };

@@ -34,6 +34,36 @@ export type { FlightHistoryRow, HistoryMeasure } from "./history/contract.js";
 
 export { makeDxChatsCapability, resolveSince } from "./chats/capability.js";
 
+export { makeDxUsageCapability, runUsageQuery } from "./usage/capability.js";
+
+export type { DxUsageDeps } from "./usage/capability.js";
+
+export {
+  DxUsageInput,
+  DxUsageOutput,
+  dxUsageContract,
+} from "./usage/contract.js";
+
+export type { DxUsageInputType, DxUsageOutputType } from "./usage/contract.js";
+
+export { NO_REPO } from "./usage/fact.js";
+
+export { rebuildUsageFacts, usageFacts } from "./usage/load.js";
+
+export {
+  FILTER_DIMENSIONS,
+  USAGE_DIMENSIONS,
+  USAGE_METRICS,
+} from "./usage/query.js";
+
+export type {
+  FilterDimension,
+  UsageDimension,
+  UsageMetric,
+} from "./usage/query.js";
+
+export { UsageFactStore } from "./usage/store.js";
+
 export { dxChatsContract } from "./chats/contract.js";
 
 export {

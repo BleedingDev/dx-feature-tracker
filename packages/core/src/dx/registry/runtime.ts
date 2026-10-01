@@ -4,8 +4,7 @@ import { realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
 
-import { Effect } from "effect";
-import type { Layer } from "effect";
+import { Effect, Layer } from "effect";
 
 import { resolveGitContext } from "../collectors/cursor-hooks/handler.js";
 import type {
@@ -29,9 +28,11 @@ import type { SelectorResolver } from "../mcp/handlers/deps.js";
 import type { FlightContext } from "../model/event.js";
 import { FlightIdSchema } from "../model/ids.js";
 import type { SnapshotSelector } from "../model/snapshot.js";
+import { HarnessCursors } from "../storage/harness-cursors.js";
 import { SqliteEventStoreLayer } from "../storage/sqlite-event-store.js";
 import { resolveStorePath } from "../storage/store-path.js";
 import type { ResolvedStorePath } from "../storage/store-path.js";
+import { UsageFactStore } from "../usage/store.js";
 
 export interface DxStoreOptions {
   readonly store: string | null;
@@ -45,8 +46,15 @@ export const resolveDxStore = (options: DxStoreOptions): ResolvedStorePath =>
 
 export const dxStoreLayer = (
   resolved: ResolvedStorePath
-): Layer.Layer<EventStore, StoreFailure> =>
-  SqliteEventStoreLayer({ kind: resolved.kind, path: resolved.path });
+): Layer.Layer<EventStore | UsageFactStore | HarnessCursors, StoreFailure> =>
+  Layer.mergeAll(
+    UsageFactStore.sqlite(resolved.path),
+    HarnessCursors.sqlite(resolved.path)
+  ).pipe(
+    Layer.provideMerge(
+      SqliteEventStoreLayer({ kind: resolved.kind, path: resolved.path })
+    )
+  );
 
 export const DFT_HOME_ENV_VAR = "DFT_HOME" as const;
 

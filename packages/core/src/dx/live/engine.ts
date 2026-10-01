@@ -34,6 +34,10 @@ import {
   unavailableSteps,
 } from "../registry/sync.js";
 import type { SyncStep } from "../registry/sync.js";
+import {
+  HarnessCursors,
+  openHarnessCursors,
+} from "../storage/harness-cursors.js";
 import { openSqliteEventStore } from "../storage/sqlite-event-store.js";
 import { ACCOUNT_POLLS, LIVE_CAPTURES } from "./capture.js";
 import type { SpoolWatch } from "./capture.js";
@@ -446,6 +450,16 @@ export const startLiveEngine = (
       )
     ).pipe(Effect.map((opened) => opened.service));
 
+    const cursors = yield* inScope(openHarnessCursors(home.storePath)).pipe(
+      Effect.mapError(
+        (error) =>
+          new LiveActionError({
+            message: `Could not open the store: ${error.message}`,
+            reason: "store",
+          })
+      )
+    );
+
     const reader = yield* inScope(
       Effect.acquireRelease(
         Effect.sync(() => new DatabaseSync(home.storePath, { timeout: 5000 })),
@@ -608,7 +622,10 @@ export const startLiveEngine = (
           }
 
           return done;
-        }).pipe(Effect.provide(harnessRegistryFor(options.home)));
+        }).pipe(
+          Effect.provide(harnessRegistryFor(options.home)),
+          Effect.provideService(HarnessCursors, cursors)
+        );
 
         const rows = branchesSince(before, state.repo.commonDir);
         const inserted = rows.reduce((sum, row) => sum + row.n, 0);

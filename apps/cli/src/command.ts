@@ -124,6 +124,7 @@ const dxCommandNames = {
   dx_history: "history",
   dx_mark: "mark",
   dx_status: "status",
+  dx_usage: "usage",
 } as const;
 
 const dxCapabilityCommands = dxCapabilities.map((capability) =>

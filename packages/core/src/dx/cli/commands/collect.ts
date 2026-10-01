@@ -10,7 +10,7 @@ import type {
 } from "../../contracts/services.js";
 import type { Harness, ReadError, SessionRef } from "../../harness/contract.js";
 import type { Origin } from "../../model/common.js";
-import type { SourceCoverage } from "../../model/coverage.js";
+import type { CollectCursor, SourceCoverage } from "../../model/coverage.js";
 import type { EventBatch, FlightContext } from "../../model/event.js";
 import { drainSpool, writeSpoolBatch } from "../../storage/spool.js";
 import type { SpoolDrainResult } from "../../storage/spool.js";
@@ -136,21 +136,35 @@ export const runCollect = <R>(
 
 export interface HarnessReadRequest {
   readonly context: FlightContext;
+  readonly cursor?: CollectCursor | null;
   readonly harness: Harness;
   readonly ref: SessionRef;
+}
+
+export interface HarnessReadResult extends CollectResult {
+  readonly cursor: CollectCursor | null;
+  readonly lastEventId: string | null;
 }
 
 export const runHarnessRead = (
   env: DxCommandEnv,
   request: HarnessReadRequest
-): Effect.Effect<CollectResult, ReadError | StoreFailure | StoreError> =>
+): Effect.Effect<HarnessReadResult, ReadError | StoreFailure | StoreError> =>
   Effect.flatMap(
     request.harness.read(request.ref, {
       context: request.context,
-      cursor: null,
+      cursor: request.cursor ?? null,
       origin: "imported",
     }),
-    (batch) => appendCollected(env, batch, "imported")
+    (batch) =>
+      Effect.map(
+        appendCollected(env, batch, "imported"),
+        (result): HarnessReadResult => ({
+          ...result,
+          cursor: batch.cursor,
+          lastEventId: batch.events.at(-1)?.eventId ?? null,
+        })
+      )
   );
 
 export interface ImportSpoolResult extends SpoolDrainResult {

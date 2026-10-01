@@ -2,7 +2,7 @@
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 
-import { Console, Effect } from "effect";
+import { Console, Effect, Option } from "effect";
 
 import { runCollect, runHarnessRead } from "../cli/commands/collect.js";
 import type { DxCommandEnv } from "../cli/commands/context.js";
@@ -10,7 +10,7 @@ import { LEGACY_SPOOL_FOLDER } from "../collectors/cursor-hooks/spool.js";
 import { autoSources, worktreeSources } from "../composition.js";
 import type { AutoSource } from "../composition.js";
 import type { EventStoreService } from "../contracts/services.js";
-import type { HarnessScope, SessionRef } from "../harness/contract.js";
+import type { Harness, HarnessScope, SessionRef } from "../harness/contract.js";
 import {
   CURSOR_TRANSCRIPT_SOURCE,
   missingTranscriptFolder,
@@ -19,6 +19,7 @@ import type { HarnessId } from "../harness/ids.js";
 import { harnessAdapterId } from "../harness/pending.js";
 import { HarnessRegistry, harnessRegistryFor } from "../harness/registry.js";
 import type { FlightContext } from "../model/event.js";
+import { HarnessCursors, unchangedRef } from "../storage/harness-cursors.js";
 import type { DxCollectorServices, RegisteredCollector } from "./registry.js";
 import {
   contextForRepo,
@@ -239,6 +240,49 @@ export const idleBranchSources = (
     }));
 };
 
+interface StepCounts {
+  readonly duplicates: number;
+  readonly inserted: number;
+}
+
+const readHarnessRef = (
+  env: DxCommandEnv,
+  harness: Harness,
+  context: FlightContext,
+  ref: SessionRef
+) =>
+  Effect.gen(function* readRef() {
+    const cursors = yield* Effect.serviceOption(HarnessCursors);
+
+    const stored = Option.isSome(cursors)
+      ? yield* cursors.value.get(ref).pipe(Effect.orElseSucceed(() => null))
+      : null;
+
+    if (unchangedRef(stored, ref)) {
+      return { duplicates: 0, inserted: 0 } satisfies StepCounts;
+    }
+
+    const result = yield* runHarnessRead(env, {
+      context,
+      cursor: stored?.cursor ?? null,
+      harness,
+      ref,
+    });
+
+    if (Option.isSome(cursors) && result.spooledTo === null) {
+      yield* cursors.value
+        .put(ref, {
+          cursor: result.cursor,
+          lastEventId: result.lastEventId ?? stored?.lastEventId ?? null,
+          mtimeMs: ref.mtimeMs,
+          size: ref.size,
+        })
+        .pipe(Effect.ignore);
+    }
+
+    return { duplicates: result.duplicates, inserted: result.inserted };
+  });
+
 export const runPlannedStep = (
   env: DxCommandEnv,
   collectors: readonly RegisteredCollector[],
@@ -259,18 +303,18 @@ export const runPlannedStep = (
     const registry = yield* HarnessRegistry;
     const harness = step.harness === null ? null : registry.get(step.harness);
 
-    const collected =
+    const collected: Effect.Effect<
+      StepCounts,
+      { readonly message: string },
+      DxCollectorServices
+    > =
       harness === null || step.ref === null
         ? runCollect(env, collectors, {
             context: step.context,
             input: step.input,
             source: step.source,
           })
-        : runHarnessRead(env, {
-            context: step.context,
-            harness,
-            ref: step.ref,
-          });
+        : readHarnessRef(env, harness, step.context, step.ref);
 
     return yield* collected.pipe(
       Effect.map((result): SyncStep => ({
