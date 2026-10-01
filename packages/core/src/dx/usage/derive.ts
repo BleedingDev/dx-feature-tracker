@@ -752,38 +752,60 @@ const sessionGroupKey = (group: readonly DxEventEnvelope[]): string | null => {
 const accountPairings = (
   groups: readonly (readonly DxEventEnvelope[])[]
 ): AccountPairing[] => {
-  const turns = groups.flatMap((group, index) => {
-    const key = sessionGroupKey(group);
-    const window = turnWindowOf(group);
-
-    return key !== null && window !== null && group.every(pairsWithAccountRow)
-      ? [{ index, key, window }]
-      : [];
-  });
-
-  return groups.flatMap((group, account) => {
-    const key = sessionGroupKey(group);
-    const at = first(group, instantMs);
-
-    if (key === null || at === null || !group.every(isUnkeyedAccountRow)) {
+  const accounts = groups.flatMap((group, index) => {
+    if (!group.every(isUnkeyedAccountRow)) {
       return [];
     }
 
-    return turns.flatMap((turn) => {
-      const gap = gapToWindow(at, turn.window);
+    const key = sessionGroupKey(group);
+    const at = first(group, instantMs);
 
-      return turn.key === key && gap <= ACCOUNT_PAIRING_WINDOW_MS
+    return key !== null && at !== null ? [{ at, index, key }] : [];
+  });
+
+  if (accounts.length === 0) {
+    return [];
+  }
+
+  const turnsBySession = new Map<
+    string,
+    { readonly index: number; readonly window: TurnWindow }[]
+  >();
+
+  const sessions = new Set(accounts.map((account) => account.key));
+
+  for (const [index, group] of groups.entries()) {
+    const key = sessionGroupKey(group);
+
+    const window =
+      key !== null && sessions.has(key) && group.every(pairsWithAccountRow)
+        ? turnWindowOf(group)
+        : null;
+
+    if (key !== null && window !== null) {
+      turnsBySession.set(key, [
+        ...(turnsBySession.get(key) ?? []),
+        { index, window },
+      ]);
+    }
+  }
+
+  return accounts.flatMap((account) =>
+    (turnsBySession.get(account.key) ?? []).flatMap((turn) => {
+      const gap = gapToWindow(account.at, turn.window);
+
+      return gap <= ACCOUNT_PAIRING_WINDOW_MS
         ? [
             {
-              account,
-              distance: Math.abs(at - turn.window.end),
+              account: account.index,
+              distance: Math.abs(account.at - turn.window.end),
               gap,
               turn: turn.index,
             },
           ]
         : [];
-    });
-  });
+    })
+  );
 };
 
 interface PairedGroups {
