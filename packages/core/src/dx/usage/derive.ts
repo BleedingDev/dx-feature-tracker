@@ -766,22 +766,24 @@ const sourceIdOf = (event: DxEventEnvelope): string =>
 const ownKeyOf = (event: DxEventEnvelope): string | null =>
   event.usage?.requestKey?.replace(SHARE_SUFFIX, "") ?? null;
 
-const latestReplacers = (
+const rereadOf = (event: DxEventEnvelope): Option.Option<string> =>
+  Option.isSome(decodeSplitReading(event.payload))
+    ? Option.none()
+    : decodeKey(event.payload.replacesRequestKey);
+
+const latestRereads = (
   events: readonly DxEventEnvelope[]
 ): ReadonlyMap<string, string> => {
   const latest = new Map<string, { at: number; source: string }>();
 
   for (const event of events) {
-    const key = ownKeyOf(event);
-    const best = key === null ? undefined : latest.get(key);
-    const at = instantOf(event.observedAt);
+    for (const replaced of Option.toArray(rereadOf(event))) {
+      const best = latest.get(replaced);
+      const at = instantOf(event.observedAt);
 
-    if (
-      key !== null &&
-      Option.isSome(replacedKeyOf(event)) &&
-      (best === undefined || at >= best.at)
-    ) {
-      latest.set(key, { at, source: sourceIdOf(event) });
+      if (best === undefined || at >= best.at) {
+        latest.set(replaced, { at, source: sourceIdOf(event) });
+      }
     }
   }
 
@@ -795,24 +797,23 @@ interface Replacements {
 }
 
 const replacementsOf = (events: readonly DxEventEnvelope[]): Replacements => ({
-  latest: latestReplacers(events),
+  latest: latestRereads(events),
   newest: newestSplits(events),
   replaced: replacedKeys(events),
 });
 
-const isStaleReplacer = (
+const isStaleReread = (
   event: DxEventEnvelope,
-  key: string,
   latest: ReadonlyMap<string, string>
-): boolean => {
-  const winner = latest.get(key);
+): boolean =>
+  Option.match(rereadOf(event), {
+    onNone: () => false,
+    onSome: (replaced) => {
+      const winner = latest.get(replaced);
 
-  return (
-    winner !== undefined &&
-    winner !== sourceIdOf(event) &&
-    Option.isSome(replacedKeyOf(event))
-  );
-};
+      return winner !== undefined && winner !== sourceIdOf(event);
+    },
+  });
 
 const isOlderSplit = (
   event: DxEventEnvelope,
@@ -835,8 +836,9 @@ const isSuperseded = (
 
   return (
     (key !== null &&
-      ((replaced.has(key) && !Option.contains(replacedKeyOf(event), key)) ||
-        isStaleReplacer(event, key, latest))) ||
+      replaced.has(key) &&
+      !Option.contains(replacedKeyOf(event), key)) ||
+    isStaleReread(event, latest) ||
     isOlderSplit(event, newest)
   );
 };

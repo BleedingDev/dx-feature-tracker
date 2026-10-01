@@ -151,6 +151,8 @@ const T0 = 1_790_000_000_000;
 
 const SESSION = { cwd: "/home/user/work/repo", id: "session-a" };
 
+const SLOT = "deepseek:session-a:turn:1:step:1:attempt:0";
+
 type Json = string | number | boolean | null | readonly Json[] | JsonObject;
 
 interface JsonObject {
@@ -188,6 +190,50 @@ const failedAttempt = (seq: number, input: number, cached: number) =>
     ],
     turn: 1,
   });
+
+const answeredMessage = (seq: number, responseId: string) => {
+  const answer = {
+    cacheReadTokens: 300,
+    inputTokens: 30,
+    outputTokens: 5,
+    totalTokens: 335,
+  };
+
+  const response = {
+    model: "deepseek-flash",
+    provider: "deepseek-official",
+    responseId,
+    responseModel: "deepseek-v4-flash",
+  };
+
+  return row(seq, "assistant/message", {
+    message: {
+      id: `msg-${String(seq)}`,
+      role: "assistant",
+      source: {
+        kind: "model",
+        model: "deepseek-flash",
+        provider: "deepseek-official",
+        replayState: { response },
+      },
+    },
+    step: 1,
+    stream: [
+      {
+        chunk: { type: "usage", usage: answer },
+        time: T0 + seq * 1000,
+        type: "chunk",
+      },
+      {
+        chunk: { reason: { kind: "stop" }, type: "finish" },
+        time: T0 + seq * 1000,
+        type: "chunk",
+      },
+    ],
+    turn: 1,
+    usage: answer,
+  });
+};
 
 const replacedRows = [
   row(1, "turn/start", { turn: 1 }),
@@ -323,6 +369,60 @@ describe("legacy ledger reads the same usage as dft usage", () => {
         expectAgreement(events);
         expect(readingTotals(events.toReversed()).total).toBe(335);
         expectAgreement(events.toReversed());
+      })
+  );
+
+  it.effect(
+    "keeps only the answer when a third read of a DeepSeek request gains a responseId",
+    () =>
+      Effect.gen(function* answered() {
+        const rows = [
+          ...replacedRows.slice(0, 4),
+          answeredMessage(5, "resp-final"),
+        ];
+
+        const frames = [
+          [header],
+          rows.slice(0, 3),
+          rows.slice(3, 4),
+          rows.slice(4),
+        ];
+
+        const first = yield* readSplit(zstdLog(frames.slice(0, 2)), null, 1);
+
+        const second = yield* readSplit(
+          zstdLog(frames.slice(0, 3)),
+          first.cursor,
+          2
+        );
+
+        const third = yield* readSplit(zstdLog(frames), second.cursor, 3);
+        const events = [...first.events, ...second.events, ...third.events];
+        const whole = yield* readSplit(zstdLog(frames), null, 3);
+
+        const usageEvents = events.filter((event) => event.usage !== null);
+
+        expect(
+          usageEvents.map((event) => [
+            event.usage?.tokens.total,
+            event.usage?.requestKey,
+            event.payload.replacesRequestKey,
+          ])
+        ).toStrictEqual([
+          [115, SLOT, null],
+          [225, SLOT, SLOT],
+          [335, "deepseek:response:resp-final", SLOT],
+        ]);
+        expect(usageTotals(whole.events).total).toBe(335);
+
+        for (const order of [events, events.toReversed()]) {
+          expect(usageTotals(order).total).toBe(335);
+          expect(usageRequests(order)).toBe(1);
+          expect(readingTotals(order).total).toBe(335);
+          expect(ledgerTotals(order).total).toBe(335);
+          expect(accountAiUsage(order).requestCount).toBe(1);
+          expectAgreement(order);
+        }
       })
   );
 
