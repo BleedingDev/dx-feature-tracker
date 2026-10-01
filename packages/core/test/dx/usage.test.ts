@@ -222,6 +222,20 @@ describe("usage query", () => {
     ]);
   });
 
+  it("starts a date at the end of the gap when the zone skips its midnight", () => {
+    const starts = [
+      ["America/Santiago", "2026-09-06"],
+      ["America/Havana", "2026-03-08"],
+      ["America/New_York", "2026-03-08"],
+    ].map(([tz = "UTC", date = ""]) => zoneClock(tz).localMidnight(date));
+
+    expect(starts).toStrictEqual([
+      Date.parse("2026-09-06T04:00:00.000Z"),
+      Date.parse("2026-03-08T05:00:00.000Z"),
+      Date.parse("2026-03-08T05:00:00.000Z"),
+    ]);
+  });
+
   it("keeps every money ledger apart and never adds them", () => {
     const facts = [
       fact("billed", {

@@ -6,6 +6,8 @@ const QUARTER_MS = 900_000;
 
 const DAY_MS = 86_400_000;
 
+const GAP_QUARTERS = 100;
+
 const MONDAY_OFFSET = 3;
 
 const WEEK_DAYS = 7;
@@ -159,7 +161,22 @@ export const zoneClock = (tz: string): ZoneClock => {
       Number(match.groups?.day)
     );
 
-    return guess - offsetAt(guess - offsetAt(guess));
+    const candidate = guess - offsetAt(guess - offsetAt(guess));
+    const day = guess / DAY_MS;
+
+    if (dayOf(candidate) >= day) {
+      return candidate;
+    }
+
+    const first = Math.floor(candidate / QUARTER_MS) + 1;
+
+    for (let quarter = first; quarter <= first + GAP_QUARTERS; quarter += 1) {
+      if (dayOf(quarter * QUARTER_MS) >= day) {
+        return quarter * QUARTER_MS;
+      }
+    }
+
+    return candidate;
   };
 
   return { bucketOf, dayOf, localMidnight, offsetAt, tz };
