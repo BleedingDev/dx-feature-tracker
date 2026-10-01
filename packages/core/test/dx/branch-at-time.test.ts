@@ -16,6 +16,7 @@ import {
   parseReflogLines,
 } from "../../src/dx/correlation/branch-at-time/timeline.js";
 import type { WorktreeTimeline } from "../../src/dx/correlation/branch-at-time/timeline.js";
+import { collectorBlocks } from "../../src/dx/harness/collector-blocks.js";
 import type { DxEventEnvelope } from "../../src/dx/model/event.js";
 import {
   emptyEventIdentity,
@@ -476,6 +477,11 @@ describe("merged and deleted branches", () => {
 
     const row = (id: string, at: string) =>
       aiEvent(id, at, {
+        ai: collectorBlocks(
+          aiEvent(id, at, {
+            context: { ...emptyFlightContext, branch: "main" },
+          })
+        ).ai,
         context: {
           ...emptyFlightContext,
           branch: "main",
@@ -525,5 +531,15 @@ describe("merged and deleted branches", () => {
       basis: "worktree-at-time",
       branch: "main",
     });
+
+    const sources = new Map(
+      result.events.map((event) => [
+        String(event.eventId),
+        event.ai?.branchSource,
+      ])
+    );
+
+    expect(sources.get("u1")).toBe("hook");
+    expect(sources.get("u3")).toBe("git-at-time");
   });
 });

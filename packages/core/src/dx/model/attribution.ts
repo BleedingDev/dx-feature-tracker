@@ -1,5 +1,6 @@
 import { Schema } from "effect";
 
+import type { BranchSource } from "../harness/ids.js";
 import {
   BranchSourceSchema,
   ChannelSchema,
@@ -95,6 +96,15 @@ export const AiUsageSchema = Schema.Struct({
 });
 
 export type AiUsage = typeof AiUsageSchema.Type;
+
+export const withBranchSource = (
+  ai: AiAttribution | null,
+  branch: string | null,
+  source: BranchSource
+): AiAttribution | null =>
+  ai === null
+    ? null
+    : { ...ai, branchSource: branch === null ? "unassigned" : source };
 
 export const hasKnownTokens = (tokens: AiTokens): boolean =>
   AI_TOKEN_FIELDS.some((field) => tokens[field] !== null);

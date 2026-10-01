@@ -1,6 +1,7 @@
 import { Effect, Option, Schema } from "effect";
 
 import type { GitRunner } from "../../collectors/git-observation/git-runner.js";
+import { withBranchSource } from "../../model/attribution.js";
 import type { DxEventEnvelope } from "../../model/event.js";
 import { normalizePath } from "../repo/path.js";
 import {
@@ -141,6 +142,11 @@ const place = (
   method: PlacementMethod
 ): DxEventEnvelope => ({
   ...event,
+  ai: withBranchSource(
+    event.ai,
+    worktree.detached ? null : worktree.branch,
+    "tool-calls"
+  ),
   context: {
     ...event.context,
     branch: worktree.detached ? null : worktree.branch,

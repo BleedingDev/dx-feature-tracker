@@ -6,6 +6,8 @@ import type {
   DxCorrelator,
 } from "../../contracts/services.js";
 import { CONTRACT_VERSION } from "../../contracts/version.js";
+import type { BranchSource } from "../../harness/ids.js";
+import { withBranchSource } from "../../model/attribution.js";
 import type { AttributionState } from "../../model/common.js";
 import type { ModuleDescriptor } from "../../model/descriptor.js";
 import type { DxEventEnvelope } from "../../model/event.js";
@@ -355,11 +357,32 @@ const unassigned = (
   reason,
 });
 
+const BASIS_BRANCH_SOURCES: Readonly<
+  Record<HistoricalBasis, BranchSource | null>
+> = {
+  "collected-context": "cwd-inferred",
+  "hook-turn": "hook",
+  "linked-request": null,
+  "live-capture": null,
+  "scored-commit": "git-at-time",
+  unassigned: "unassigned",
+  "worktree-at-time": "git-at-time",
+};
+
+const attributedAi = (event: DxEventEnvelope, found: HistoricalAttribution) => {
+  const source = BASIS_BRANCH_SOURCES[found.basis];
+
+  return source === null || event.ai === null
+    ? event.ai
+    : withBranchSource(event.ai, found.branch, source);
+};
+
 const withBranch = (
   event: DxEventEnvelope,
   found: HistoricalAttribution
 ): DxEventEnvelope => ({
   ...event,
+  ai: attributedAi(event, found),
   context: { ...event.context, branch: found.branch },
   payload: {
     ...event.payload,

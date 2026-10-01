@@ -1,5 +1,6 @@
 import { Option, Schema } from "effect";
 
+import { withBranchSource } from "../../model/attribution.js";
 import type { DxEventEnvelope } from "../../model/event.js";
 
 const decodeText = Schema.decodeUnknownOption(Schema.NonEmptyString);
@@ -98,6 +99,7 @@ export const joinAccountRows = (
 
     return {
       ...e,
+      ai: withBranchSource(e.ai, nearest.context.branch, "subagent-split"),
       context: {
         ...e.context,
         branch: nearest.context.branch,
