@@ -27,3 +27,22 @@ Settled with the product owner on 2026-09-30. Phase 1 is local tracking of Curso
 | D21 | API | No public JSON API for now. A later paid enterprise tier may add one with SSO. |
 | D22 | Wording | Plain, unslopped text everywhere. No em dashes. |
 | D23 | Dashboard navigation | Later: clearer navigation (back, breadcrumbs, direct links to a branch). |
+
+## Phase 2: multiple tools (settled 2026-10-01)
+
+Research: [multi-harness-research.md](multi-harness-research.md).
+
+| # | Topic | Decision |
+| --- | --- | --- |
+| D24 | Dimensions | Two separate dimensions: Tool (harness: Cursor, Claude Code, Codex, OpenCode, Pi, OMP, DeepSeek Harness) and Model provider (who made the model). Both can be filtered and grouped. |
+| D25 | Order | Claude Code, Codex, OpenCode, Pi, OMP, DeepSeek Harness. One tool per release. |
+| D26 | Money | One consistent approach for every tool so totals compare: the headline is our estimate (tokens x the model maker's public price). A tool's own cost figure (Pi, OMP, Cursor) is shown separately as "tool's figure". Only real bills are called billed. |
+| D27 | Precision | Maximum precision: combine session-file watching with each tool's hooks or extensions, compare the sources and correct from the most precise one. |
+| D28 | Branch precedence | Branch recorded by the tool on that row, then a hook's branch for the turn, then checkout history at that time, then the folder alone, then unassigned. Every event is labelled with the method used. |
+| D29 | Subagents | A subagent's tokens go to its own folder and branch, else its parent's. In chats it stays under the parent. Refine later. |
+| D30 | Gateways | Model provider is the model's maker. The gateway (cliproxy, OpenRouter, Copilot) is a separate "via" dimension that can be filtered, grouped and combined with provider. Priced at the maker's public price. |
+| D31 | Storage for group-by | A derived `usage_facts` table, one row per deduplicated request, rebuilt after sync and used by CLI, dashboard and MCP. Time filters clip totals to the window. |
+| D32 | Dashboard | Filter chips, one group-by select, metric toggle, chart over time stacked by tool, table with drilldown, all state in the URL. CLI: `dft usage --by <dim> --tool <t> --since 30d`. |
+| D33 | Tests | Each tool is an Effect Store service (live and in-memory layers) plus a Harness service. One conformance suite runs mock and fixture tiers always, and a read-only live tier only when opted in with `DFT_LIVE_HARNESSES`. |
+| D34 | Event model | No backwards compatibility: go straight to a typed `dx.event.v2` envelope with an `ai` attribution block. |
+| D35 | DeepSeek Harness | Install it on the maintainer's machine for a live test tier. |
