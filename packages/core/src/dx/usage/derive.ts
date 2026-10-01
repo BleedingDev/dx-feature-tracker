@@ -21,12 +21,15 @@ import {
 } from "../model/attribution.js";
 import type { DxEventEnvelope } from "../model/event.js";
 import type {
+  DerivedRow,
+  DerivedRows,
   DerivedUsage,
   UsageDisagreement,
   UsageFact,
   UsageScope,
 } from "./fact.js";
 import { NO_REPO, USAGE_DERIVATION_VERSION } from "./fact.js";
+import { UnionFind } from "./union-find.js";
 
 const BRANCH_SOURCE_ORDER: readonly BranchSource[] = [
   "harness-recorded",
@@ -150,38 +153,6 @@ const sessionlessIds = (event: DxEventEnvelope): string[] =>
   sessionOf(event) === null && present(event.identity.requestId)
     ? [event.identity.requestId]
     : [];
-
-class UnionFind {
-  private readonly parent = new Map<string, string>();
-
-  add(key: string): void {
-    if (!this.parent.has(key)) {
-      this.parent.set(key, key);
-    }
-  }
-
-  find(key: string): string {
-    let root = key;
-
-    while (this.parent.get(root) !== root) {
-      root = this.parent.get(root) ?? root;
-    }
-
-    let node = key;
-
-    while (node !== root) {
-      const next = this.parent.get(node) ?? root;
-      this.parent.set(node, root);
-      node = next;
-    }
-
-    return root;
-  }
-
-  union(a: string, b: string): void {
-    this.parent.set(this.find(a), this.find(b));
-  }
-}
 
 const sessionKeyIndex = (events: readonly DxEventEnvelope[]) => {
   const byId = new Map<string, Set<string>>();
@@ -561,7 +532,7 @@ const byModel = (whole: UsageFact, event: DxEventEnvelope): UsageFact[] => {
 
 const sessionFigureFacts = (
   events: readonly DxEventEnvelope[]
-): UsageFact[] => {
+): DerivedRow[] => {
   const latest = new Map<string, DxEventEnvelope>();
 
   for (const event of events) {
@@ -590,7 +561,10 @@ const sessionFigureFacts = (
       tokens: unknownTokens,
     };
 
-    return byModel(whole, event);
+    return byModel(whole, event).map((fact) => ({
+      fact,
+      sources: [event.eventId],
+    }));
   });
 };
 
@@ -615,9 +589,9 @@ const isSuperseded = (
   );
 };
 
-export const deriveUsageFacts = (
+export const deriveUsageRows = (
   events: readonly DxEventEnvelope[]
-): DerivedUsage => {
+): DerivedRows => {
   const replaced = replacedKeys(events);
 
   const bearing = [
@@ -653,17 +627,17 @@ export const deriveUsageFacts = (
     }
   }
 
-  const facts: UsageFact[] = [];
+  const rows: DerivedRow[] = [];
   const disagreements: UsageDisagreement[] = [];
-  let unresolved = 0;
+  const unresolved: string[] = [];
 
   for (const group of groups) {
     const fact = factOf(group);
-    facts.push(fact);
+    rows.push({ fact, sources: group.map((member) => member.eventId) });
     disagreements.push(...disagreementsOf(fact, group));
   }
 
-  facts.push(...sessionFigureFacts(events));
+  rows.push(...sessionFigureFacts(events));
 
   for (const event of unkeyed) {
     const key = harnessSessionKey(event);
@@ -675,19 +649,27 @@ export const deriveUsageFacts = (
       [...channels].some((channel) => channel !== event.ai?.channel);
 
     if (overlaps) {
-      unresolved += 1;
+      unresolved.push(event.eventId);
     } else {
-      facts.push(factOf([event]));
+      rows.push({ fact: factOf([event]), sources: [event.eventId] });
     }
   }
 
-  return {
-    disagreements,
-    facts: facts.toSorted(
+  return { disagreements, rows, unresolved };
+};
+
+export const usageOfRows = (derived: DerivedRows): DerivedUsage => ({
+  disagreements: derived.disagreements,
+  facts: derived.rows
+    .map((row) => row.fact)
+    .toSorted(
       (a, b) =>
         (a.occurredMs ?? 0) - (b.occurredMs ?? 0) ||
         a.factId.localeCompare(b.factId)
     ),
-    unresolved,
-  };
-};
+  unresolved: derived.unresolved.length,
+});
+
+export const deriveUsageFacts = (
+  events: readonly DxEventEnvelope[]
+): DerivedUsage => usageOfRows(deriveUsageRows(events));

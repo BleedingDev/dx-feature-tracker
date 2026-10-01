@@ -4,7 +4,11 @@ Decisions D31, D32 and D37. Code in `packages/core/src/dx/usage/`.
 
 ## usage_facts
 
-A derived table (store migration 3) with one row per deduplicated AI request across every tool. It is rebuilt from the event store whenever the store changes (`usage:v<derivation version>:events:<count>:<max seq>`), and `dft sync` rebuilds it right away. Nothing in it is a source of truth: deleting it only costs a rebuild.
+A derived table (store migrations 3 and 4) with one row per deduplicated AI request across every tool. `dft sync` refreshes it right away and every query refreshes it first. Nothing in it is a source of truth: deleting it only costs a rebuild.
+
+It is refreshed by family, not rebuilt. Every stored event joins a family through the ids that let one event change another's fact: its session and parent session, request and generation id, request key, the request key it replaces, and tool call ids. When new events arrive (the event count or newest sequence moved), only the families they touch are derived again, through the same repo, worktree and branch attribution as before, in batches of about 20,000 events. A family that grows into another merges with it. Deleted events re-derive their family, new checkout history (`git.observation`) re-derives the families with requests in that worktree, and a new derivation version rebuilds everything. Memory follows the largest family, not the whole store.
+
+A query reads only what its answer needs: facts inside the window that match its tool, repo, branch and scope filters, facts without a time, and every request of a session whose tool session figure overlaps the window (the figure's placement needs the whole session).
 
 | Part | Content |
 | --- | --- |

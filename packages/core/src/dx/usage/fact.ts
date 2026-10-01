@@ -74,3 +74,14 @@ export interface DerivedUsage {
   readonly facts: readonly UsageFact[];
   readonly unresolved: number;
 }
+
+export interface DerivedRow {
+  readonly fact: UsageFact;
+  readonly sources: readonly string[];
+}
+
+export interface DerivedRows {
+  readonly disagreements: readonly UsageDisagreement[];
+  readonly rows: readonly DerivedRow[];
+  readonly unresolved: readonly string[];
+}

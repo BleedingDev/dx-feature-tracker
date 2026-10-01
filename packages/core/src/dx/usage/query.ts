@@ -509,7 +509,7 @@ export const isSessionFigure = (fact: UsageFact): boolean =>
 const isRequestFact = (fact: UsageFact): boolean =>
   fact.requests > 0 || fact.splitOf !== null;
 
-const sessionKeyOf = (fact: UsageFact): string | null =>
+export const sessionKeyOf = (fact: UsageFact): string | null =>
   fact.session === null ? null : `${fact.harness ?? ""}|${fact.session}`;
 
 const ownsDimension = (fact: UsageFact, dimension: UsageDimension): boolean =>

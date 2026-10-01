@@ -143,15 +143,6 @@ const notesOf = (
     : []),
 ];
 
-const toolsOf = (view: UsageFactsView): string[] =>
-  [
-    ...new Set(
-      view.facts.flatMap((fact) =>
-        fact.harness === null ? [] : [fact.harness]
-      )
-    ),
-  ].toSorted();
-
 export const runUsageQuery = (
   input: DxUsageInputType,
   deps: DxUsageDeps = {}
@@ -196,7 +187,14 @@ export const runUsageQuery = (
     };
 
     const view = yield* usageFacts;
-    const prepared = prepareFacts(view.facts, factEstimator(costOptions));
+
+    const facts = yield* view.select({
+      filters: query.filters,
+      sinceMs,
+      untilMs,
+    });
+
+    const prepared = prepareFacts(facts, factEstimator(costOptions));
     const result = queryUsage(prepared, query, clock);
 
     return {
@@ -208,9 +206,9 @@ export const runUsageQuery = (
         derivationVersion: USAGE_DERIVATION_VERSION,
         derivedAt: view.builtAt,
         disagreements: view.disagreements,
-        facts: view.facts.length,
+        facts: view.facts,
         matched: result.matched,
-        tools: toolsOf(view),
+        tools: view.tools,
         unpriced: result.unpricedInWindow,
         unresolved: view.unresolved,
         withoutTime: result.withoutTime,
