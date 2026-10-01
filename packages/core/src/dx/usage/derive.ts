@@ -530,10 +530,19 @@ const byModel = (whole: UsageFact, event: DxEventEnvelope): UsageFact[] => {
   }));
 };
 
+const readingOf = (event: DxEventEnvelope): string =>
+  Option.match(decodeSplitShare(event.payload.repoAttribution), {
+    onNone: () => event.eventId,
+    onSome: (share) => share.splitOf,
+  });
+
+const readingAmount = (shares: readonly DxEventEnvelope[]): number =>
+  shares.reduce((total, share) => total + figureAmount(share), 0);
+
 const sessionFigureFacts = (
   events: readonly DxEventEnvelope[]
 ): DerivedRow[] => {
-  const latest = new Map<string, DxEventEnvelope>();
+  const readings = new Map<string, Map<string, DxEventEnvelope[]>>();
 
   for (const event of events) {
     const key = harnessSessionKey(event);
@@ -547,14 +556,23 @@ const sessionFigureFacts = (
       continue;
     }
 
-    const kept = latest.get(key);
+    const bySession = readings.get(key) ?? new Map<string, DxEventEnvelope[]>();
 
-    if (kept === undefined || figureAmount(event) > figureAmount(kept)) {
-      latest.set(key, event);
-    }
+    const reading = readingOf(event);
+
+    bySession.set(reading, [...(bySession.get(reading) ?? []), event]);
+    readings.set(key, bySession);
   }
 
-  return [...latest.values()].flatMap((event) => {
+  const largest = [...readings.values()].flatMap((bySession) => {
+    const ranked = [...bySession.values()].toSorted(
+      (a, b) => readingAmount(b) - readingAmount(a)
+    );
+
+    return ranked[0] ?? [];
+  });
+
+  return largest.flatMap((event) => {
     const whole: UsageFact = {
       ...factOf([event]),
       requests: 0,

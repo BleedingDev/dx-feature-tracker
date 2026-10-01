@@ -403,6 +403,98 @@ describe("worktree resolution from cwd", () => {
       })
   );
 
+  it.effect(
+    "does not book a request in another worktree to the branch Claude Code recorded for its launch folder",
+    () =>
+      Effect.gen(function* scenario() {
+        const placed = yield* attribute([
+          event({
+            branch: "main",
+            branchSource: "harness-recorded",
+            context: { repoCommonDir: APP_GIT, worktreePath: APP },
+            cwd: APP,
+            id: "launch",
+          }),
+          event({
+            at: "2026-10-01T10:01:00.000Z",
+            branch: "main",
+            branchSource: "harness-recorded",
+            cwd: `${APP_TWO}/src`,
+            id: "moved",
+          }),
+          event({
+            at: "2026-10-01T10:02:00.000Z",
+            branch: "main",
+            branchSource: "harness-recorded",
+            context: { repoCommonDir: APP_GIT, worktreePath: APP_TWO },
+            cwd: APP_TWO,
+            id: "scoped",
+          }),
+        ]);
+
+        const result = attributeHistoricalBranches(placed.events, {
+          commitBranches: new Map(),
+          timelines: [timeline(APP, "main"), timeline(APP_TWO, "feature/two")],
+        });
+
+        const events = byId(result.events);
+
+        expect(
+          ["launch", "moved", "scoped"].map((id) => ({
+            branch: events.get(id)?.context.branch,
+            branchSource: events.get(id)?.ai?.branchSource,
+            worktree: events.get(id)?.context.worktreePath,
+          }))
+        ).toStrictEqual([
+          { branch: "main", branchSource: "harness-recorded", worktree: APP },
+          {
+            branch: "feature/two",
+            branchSource: "git-at-time",
+            worktree: APP_TWO,
+          },
+          {
+            branch: "feature/two",
+            branchSource: "git-at-time",
+            worktree: APP_TWO,
+          },
+        ]);
+      }).pipe(Effect.provide(memory))
+  );
+
+  it.effect(
+    "keeps the branch Claude Code recorded when the session was launched in that worktree",
+    () =>
+      Effect.gen(function* scenario() {
+        const placed = yield* attribute([
+          event({
+            branch: "feature/two",
+            branchSource: "harness-recorded",
+            cwd: APP_TWO,
+            id: "launch",
+          }),
+          event({
+            at: "2026-10-01T10:01:00.000Z",
+            branch: "feature/two",
+            branchSource: "harness-recorded",
+            cwd: `${APP_TWO}/src`,
+            id: "later",
+          }),
+        ]);
+
+        const result = attributeHistoricalBranches(placed.events, {
+          commitBranches: new Map(),
+          timelines: [timeline(APP_TWO, "main")],
+        });
+
+        expect(
+          result.events.map((e) => [e.context.branch, e.ai?.branchSource])
+        ).toStrictEqual([
+          ["feature/two", "harness-recorded"],
+          ["feature/two", "harness-recorded"],
+        ]);
+      }).pipe(Effect.provide(memory))
+  );
+
   it.effect("files a session outside every repo under (no repo)", () =>
     Effect.gen(function* scenario() {
       const result = yield* attribute([
@@ -666,6 +758,62 @@ describe("orchestrator outside a repo (D36)", () => {
   );
 
   it.effect(
+    "keeps the whole tool's figure of a session split across two repos",
+    () =>
+      Effect.gen(function* scenario() {
+        const reading = event({ cwd: ORCHESTRATOR, id: "cost-state" });
+
+        const placed = yield* attribute([
+          {
+            ...reading,
+            kind: "ai.session",
+            usage:
+              reading.usage === null
+                ? null
+                : {
+                    ...reading.usage,
+                    requestKey: null,
+                    toolFigure: {
+                      amount: 0.4,
+                      currency: "USD",
+                      kind: "api-equivalent",
+                    },
+                  },
+          },
+          event({
+            agentId: "agent-app",
+            at: "2026-10-01T10:00:01.000Z",
+            cwd: APP,
+            id: "app-work",
+            tokens: 300,
+          }),
+          event({
+            agentId: "agent-lib",
+            at: "2026-10-01T10:00:02.000Z",
+            cwd: LIB,
+            id: "lib-work",
+            tokens: 100,
+          }),
+        ]);
+
+        const { facts } = deriveUsageFacts(placed.events);
+
+        expect(
+          facts
+            .filter((fact) => fact.toolFigure !== null)
+            .map((fact) => [
+              fact.repo,
+              Math.round((fact.toolFigure?.amount ?? 0) * 1000) / 1000,
+            ])
+            .toSorted(([a], [b]) => String(a).localeCompare(String(b)))
+        ).toStrictEqual([
+          [APP_GIT, 0.3],
+          [LIB_GIT, 0.1],
+        ]);
+      }).pipe(Effect.provide(memory))
+  );
+
+  it.effect(
     "splits web searches across the shares so they add up to the original once",
     () =>
       Effect.gen(function* scenario() {
@@ -736,6 +884,36 @@ describe("orchestrator outside a repo (D36)", () => {
           0.1,
           10
         );
+      }).pipe(Effect.provide(memory))
+  );
+
+  it.effect(
+    "places it by its tool calls when it was synced from its own folder outside a repo",
+    () =>
+      Effect.gen(function* scenario() {
+        const outside = { repoCommonDir: null, worktreePath: ORCHESTRATOR };
+
+        const result = yield* attribute([
+          event({
+            context: outside,
+            cwd: ORCHESTRATOR,
+            id: "plan",
+            turnId: "turn-1",
+          }),
+          event({
+            at: "2026-10-01T10:00:05.000Z",
+            context: outside,
+            cwd: ORCHESTRATOR,
+            id: "commit",
+            touched: [APP],
+            turnId: "turn-1",
+          }),
+        ]);
+
+        expect(result.events.map(placeOf)).toStrictEqual([
+          { branchSource: "tool-calls", repo: APP_GIT, worktree: APP },
+          { branchSource: "tool-calls", repo: APP_GIT, worktree: APP },
+        ]);
       }).pipe(Effect.provide(memory))
   );
 

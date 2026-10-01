@@ -121,9 +121,13 @@ const sameDir = (a: string | null, b: string | null): boolean =>
   a !== null && b !== null && a.replace(/\/+$/u, "") === b.replace(/\/+$/u, "");
 
 const contextCovers = (located: Located): boolean => {
-  const { worktreePath } = located.event.context;
+  const { repoCommonDir, worktreePath } = located.event.context;
 
-  return worktreePath !== null && isContained(worktreePath, located.cwd);
+  return (
+    repoCommonDir !== null &&
+    worktreePath !== null &&
+    isContained(worktreePath, located.cwd)
+  );
 };
 
 const leavesStoredWorktree = (
@@ -243,6 +247,7 @@ const scaledUsage = (
 interface Relocation {
   readonly method: RepoMethod;
   readonly place: RepoPlace | null;
+  readonly recordedHolds: boolean;
   readonly splitOf: string | null;
   readonly weight: number;
 }
@@ -255,6 +260,9 @@ const METHOD_LABELS: Readonly<Record<RepoMethod, BranchSource | null>> = {
   "tool-calls": "tool-calls",
 };
 
+const isRecorded = (event: DxEventEnvelope): boolean =>
+  event.ai?.branchSource === "harness-recorded";
+
 const relocate = (
   event: DxEventEnvelope,
   move: Relocation
@@ -264,8 +272,7 @@ const relocate = (
   const worktreePath = move.place?.worktreePath ?? null;
   const sameRepo = sameDir(context.repoCommonDir, repoCommonDir);
   const sameWorktree = sameRepo && sameDir(context.worktreePath, worktreePath);
-  const recorded = event.ai?.branchSource === "harness-recorded";
-  const keepsBranch = sameWorktree || (move.method === "cwd" && recorded);
+  const keepsBranch = isRecorded(event) ? move.recordedHolds : sameWorktree;
 
   const branch = keepsBranch
     ? branchNameOrNull(context.branch)
@@ -311,7 +318,8 @@ interface SplitPart {
 
 const splitInto = (
   event: DxEventEnvelope,
-  shares: readonly Share[]
+  shares: readonly Share[],
+  recordedHolds: (place: RepoPlace) => boolean
 ): readonly SplitPart[] =>
   shares.map((share, index) => {
     const suffix = `#split:${String(index + 1)}/${String(shares.length)}`;
@@ -319,6 +327,7 @@ const splitInto = (
     const moved = relocate(event, {
       method: "subagent-split",
       place: share.place,
+      recordedHolds: recordedHolds(share.place),
       splitOf: event.eventId,
       weight: share.weight,
     });
@@ -518,6 +527,59 @@ const subagentShares = (
   return (located) => byTurn(turnKeyOf(located));
 };
 
+const launchKeyOf = (located: Located): string =>
+  sessionOf(located) ?? `event:${located.event.eventId}`;
+
+const storedPlaceKey = (located: Located): string | null => {
+  const { repoCommonDir, worktreePath } = located.event.context;
+
+  return repoCommonDir === null
+    ? null
+    : placeKey({ branch: null, repoCommonDir, worktreePath });
+};
+
+const launchPlaces = (
+  candidates: readonly Located[],
+  placements: ReadonlyMap<string, Placement>
+): ReadonlyMap<string, string | null> => {
+  const recorded = new Set(
+    candidates.flatMap((located) =>
+      isRecorded(located.event) ? [launchKeyOf(located)] : []
+    )
+  );
+
+  const earliest = new Map<
+    string,
+    { readonly at: number; readonly located: Located }
+  >();
+
+  for (const located of candidates) {
+    const key = launchKeyOf(located);
+
+    if (recorded.has(key)) {
+      const at = instantOf(located.event) ?? Number.POSITIVE_INFINITY;
+      const known = earliest.get(key);
+
+      if (known === undefined || at < known.at) {
+        earliest.set(key, { at, located });
+      }
+    }
+  }
+
+  return new Map(
+    [...earliest].map(([key, { located }]) => {
+      const found = placements.get(located.event.eventId);
+
+      return [
+        key,
+        found?.method === "cwd"
+          ? placeKey(found.place)
+          : storedPlaceKey(located),
+      ] as const;
+    })
+  );
+};
+
 export const attributeRepos = (
   locator: RepoLocator,
   events: readonly DxEventEnvelope[]
@@ -558,6 +620,13 @@ export const attributeRepos = (
         open.push(located);
       }
     }
+
+    const launches = launchPlaces(candidates, placements);
+
+    const recordedHolds =
+      (located: Located) =>
+      (place: RepoPlace): boolean =>
+        launches.get(launchKeyOf(located)) === placeKey(place);
 
     const turns = groupBy(candidates, turnKeyOf);
     const openByTurn = groupBy(open, turnKeyOf);
@@ -626,8 +695,11 @@ export const attributeRepos = (
           worktreePath: found.place.worktreePath,
         });
 
+        const holds = isRecorded(event) && recordedHolds(located)(found.place);
+
         const unchanged =
           found.method === "cwd" &&
+          (holds || !isRecorded(event)) &&
           sameDir(event.context.repoCommonDir, found.place.repoCommonDir) &&
           sameDir(event.context.worktreePath, found.place.worktreePath);
 
@@ -637,6 +709,7 @@ export const attributeRepos = (
               relocate(event, {
                 method: found.method,
                 place: found.place,
+                recordedHolds: holds,
                 splitOf: null,
                 weight: 1,
               }),
@@ -646,7 +719,7 @@ export const attributeRepos = (
       const shares = openIds.has(event.eventId) ? sharesFor(located) : [];
 
       if (shares.length > 0) {
-        const split = splitInto(event, shares);
+        const split = splitInto(event, shares, recordedHolds(located));
 
         for (const part of split) {
           attributions.push({
@@ -675,6 +748,7 @@ export const attributeRepos = (
         relocate(event, {
           method: "no-repo",
           place: null,
+          recordedHolds: false,
           splitOf: null,
           weight: 1,
         }),
