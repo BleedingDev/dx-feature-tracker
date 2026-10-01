@@ -6,11 +6,11 @@ import {
   resolveSince,
 } from "../../src/dx/chats/capability.js";
 import { ChatsReportSchema } from "../../src/dx/chats/contract.js";
-import { parseModelEffort } from "../../src/dx/chats/effort.js";
 import { buildChatTree } from "../../src/dx/chats/tree.js";
 import { mapStateDb } from "../../src/dx/collectors/cursor-local-db/map-state.js";
 import { EventStore } from "../../src/dx/contracts/event-store.js";
 import { makeFakeEventStore } from "../../src/dx/contracts/fakes.js";
+import { cursorModelEffort } from "../../src/dx/harness/cursor/rules.js";
 import type { DxEventEnvelope } from "../../src/dx/model/event.js";
 import { EventIdSchema } from "../../src/dx/model/ids.js";
 
@@ -223,26 +223,26 @@ const scope = { branch: BRANCH, repoCommonDir: "/fixture/.git", since: null };
 
 describe("dx_chats", () => {
   it("parses reasoning level from model names and source fields", () => {
-    expect(parseModelEffort("gpt-5-high")).toMatchObject({
+    expect(cursorModelEffort("gpt-5-high")).toMatchObject({
       effort: "high",
       effortSource: "model-name-suffix",
       model: "gpt-5",
     });
-    expect(parseModelEffort("claude-4.5-opus-high-thinking")).toMatchObject({
+    expect(cursorModelEffort("claude-4.5-opus-high-thinking")).toMatchObject({
       effort: "high+thinking",
       model: "claude-4.5-opus",
     });
-    expect(parseModelEffort("grok-4.7-high-fast")).toMatchObject({
+    expect(cursorModelEffort("grok-4.7-high-fast")).toMatchObject({
       effort: "high+fast",
       model: "grok-4.7",
     });
-    expect(parseModelEffort("gpt-5.1-codex-max")).toMatchObject({
+    expect(cursorModelEffort("gpt-5.1-codex-max")).toMatchObject({
       effort: null,
       effortSource: "unavailable",
       model: "gpt-5.1-codex-max",
     });
-    expect(parseModelEffort("auto").effortReason).toContain("auto");
-    expect(parseModelEffort("o3-high", "low")).toMatchObject({
+    expect(cursorModelEffort("auto").effortReason).toContain("auto");
+    expect(cursorModelEffort("o3-high", "low")).toMatchObject({
       effort: "low",
       effortSource: "source-field",
       model: "o3",

@@ -1,7 +1,5 @@
 import { Option, Schema } from "effect";
 
-import { parseModelEffort } from "../chats/effort.js";
-import { stopTokenUsage } from "../collectors/cursor-hooks/stop-usage.js";
 import type {
   AiAttribution,
   AiTokens,
@@ -13,6 +11,7 @@ import { hasKnownTokens, unknownTokens } from "../model/attribution.js";
 import type { DxEventEnvelope } from "../model/event.js";
 import type { BranchSource, Channel, HarnessId } from "./ids.js";
 import { normalizeModel, providerFor, viaFor } from "./provider.js";
+import { rawUsageRuleFor, rulesFor } from "./rules.js";
 
 export interface CollectorOrigin {
   readonly channel: Channel;
@@ -165,7 +164,9 @@ const hookTokens = (
     return tokenMapField(payload, "normalizedCategories");
   }
 
-  if (textField(payload, "sourceKind") !== "hooks-stop") {
+  const rule = rawUsageRuleFor(textField(payload, "sourceKind"));
+
+  if (rule === null) {
     return null;
   }
 
@@ -177,7 +178,7 @@ const hookTokens = (
     )
   );
 
-  return stopTokenUsage(numeric)?.categories ?? null;
+  return rule.read(numeric)?.categories ?? null;
 };
 
 const tokensOf = (event: EventWithoutBlocks, origin: CollectorOrigin) => {
@@ -289,7 +290,11 @@ const EFFORT_SOURCES = {
   unavailable: null,
 } as const;
 
-const modelEffortOf = (payload: Payload, modelRaw: string | null) => {
+const modelEffortOf = (
+  payload: Payload,
+  modelRaw: string | null,
+  harness: HarnessId
+) => {
   const recorded =
     textField(payload, "effort") ?? textField(payload, "reasoningEffort");
 
@@ -301,7 +306,7 @@ const modelEffortOf = (payload: Payload, modelRaw: string | null) => {
     };
   }
 
-  const parsed = parseModelEffort(modelRaw, recorded);
+  const parsed = rulesFor(harness).effort(modelRaw, recorded);
 
   return {
     base: parsed.model,
@@ -323,7 +328,12 @@ const attributionOf = (
     textField(payload, "modelID");
 
   const providerHint = textField(payload, "providerId");
-  const { base, effort, effortSource } = modelEffortOf(payload, modelRaw);
+
+  const { base, effort, effortSource } = modelEffortOf(
+    payload,
+    modelRaw,
+    harness
+  );
 
   return {
     agentId: textField(payload, "subagentId") ?? textField(payload, "agentId"),

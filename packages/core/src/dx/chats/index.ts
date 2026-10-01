@@ -12,7 +12,7 @@ export {
 
 export type { ChatNode, ChatsReport, ModelTurn } from "./contract.js";
 
-export { parseModelEffort } from "./effort.js";
+export { modelEffortOf } from "./effort.js";
 
 export type { EffortSource, ModelEffort } from "./effort.js";
 

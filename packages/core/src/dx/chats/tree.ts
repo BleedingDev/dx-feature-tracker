@@ -1,3 +1,5 @@
+import { rulesForEvent } from "../harness/rules.js";
+import type { ChatChannelRole, ChatEvidenceRole } from "../harness/rules.js";
 import { accountAiUsage } from "../metrics/ai-usage/ledger.js";
 import type { LedgerTotal } from "../metrics/ai-usage/ledger.js";
 import type { DxEventEnvelope } from "../model/event.js";
@@ -9,7 +11,7 @@ import type {
   ChatsReport,
   ModelTurn,
 } from "./contract.js";
-import { parseModelEffort } from "./effort.js";
+import { modelEffortOf } from "./effort.js";
 import {
   booleanField,
   effortField,
@@ -27,16 +29,38 @@ export interface ChatTreeScope {
 const sourceKindOf = (event: DxEventEnvelope): string | null =>
   textField(event.payload, "sourceKind");
 
-const isHooks = (event: DxEventEnvelope) =>
-  event.adapterId.includes("cursor-hooks");
+const roleOf = (event: DxEventEnvelope): ChatChannelRole | null =>
+  rulesForEvent(event).chatRole(event);
 
-const isLocalDb = (event: DxEventEnvelope) =>
-  event.adapterId.includes("cursor-local-db");
+const hasRole =
+  (role: ChatEvidenceRole) =>
+  (event: DxEventEnvelope): boolean =>
+    roleOf(event)?.role === role;
 
-const isCli = (event: DxEventEnvelope) => sourceKindOf(event) === "cursor-cli";
+const isHooks = hasRole("prompt-hooks");
 
-const isTranscript = (event: DxEventEnvelope) =>
-  sourceKindOf(event) === "transcript-estimate";
+const isLocalDb = hasRole("chat-store");
+
+const isCli = hasRole("agent-stream");
+
+const isTranscript = hasRole("transcript");
+
+type RoleLabel = keyof ChatChannelRole["labels"];
+
+const labelOf = (
+  events: readonly DxEventEnvelope[],
+  label: RoleLabel
+): string => {
+  for (const event of events) {
+    const found = roleOf(event)?.labels[label];
+
+    if (found !== undefined) {
+      return found;
+    }
+  }
+
+  return label;
+};
 
 const unavailable = (reason: string): ChatValue => ({
   method: null,
@@ -51,13 +75,8 @@ const available = (
   method: string
 ): ChatValue => ({ method, reason: null, source, value });
 
-const sourceIdKind = (event: DxEventEnvelope): ChatSourceId["kind"] => {
-  if (isLocalDb(event)) {
-    return "composerId";
-  }
-
-  return isHooks(event) ? "conversationId" : "sessionId";
-};
+const sourceIdKind = (event: DxEventEnvelope): ChatSourceId["kind"] =>
+  roleOf(event)?.idKind ?? "sessionId";
 
 const inScope = (event: DxEventEnvelope, scope: ChatTreeScope) => {
   const { branch } = event.context;
@@ -91,25 +110,25 @@ const sumOf = (
 };
 
 const agentTimeOf = (events: readonly DxEventEnvelope[]): ChatValue => {
-  const cli = sumOf(events.filter(isCli), (e) =>
-    numberField(e.payload, "durationMs")
-  );
+  const streams = events.filter(isCli);
+  const cli = sumOf(streams, (e) => numberField(e.payload, "durationMs"));
 
   if (cli !== null) {
-    return available(cli, "cursor-cli result duration_ms", "source-reported");
+    return available(cli, labelOf(streams, "duration"), "source-reported");
   }
 
-  const hooks = sumOf(
-    events.filter((e) => isHooks(e) && e.payload.hookEvent === "stop"),
-    (e) => numberField(e.payload, "durationMs")
+  const stops = events.filter(
+    (e) => isHooks(e) && e.payload.hookEvent === "stop"
   );
 
+  const hooks = sumOf(stops, (e) => numberField(e.payload, "durationMs"));
+
   if (hooks !== null) {
-    return available(hooks, "cursor-hooks stop duration", "source-reported");
+    return available(hooks, labelOf(stops, "duration"), "source-reported");
   }
 
   return unavailable(
-    "no source reported agent duration for this chat (needs cursor-cli stream or a stop hook with duration)"
+    "no source reported agent duration for this chat (needs an agent stream or a stop hook with duration)"
   );
 };
 
@@ -127,7 +146,7 @@ const requestsOf = (
   if (submits.length > 0) {
     return available(
       distinctCount(submits, (e) => e.identity.generationId ?? e.eventId),
-      "cursor-hooks beforeSubmitPrompt",
+      labelOf(submits, "requests"),
       "observed"
     );
   }
@@ -147,7 +166,7 @@ const requestsOf = (
   if (userTurns.length > 0) {
     return available(
       userTurns.length,
-      "cursor-local-db user bubbles",
+      labelOf(userTurns, "requests"),
       "observed"
     );
   }
@@ -159,23 +178,24 @@ const toolCallsOf = (events: readonly DxEventEnvelope[]): ChatValue => {
   const hooks = events.filter((e) => isHooks(e) && e.payload.toolCall === true);
 
   if (hooks.length > 0) {
-    return available(hooks.length, "cursor-hooks postToolUse", "observed");
+    return available(hooks.length, labelOf(hooks, "toolCalls"), "observed");
   }
 
-  const cli = sumOf(events.filter(isCli), (e) =>
-    numberField(e.payload, "toolCalls")
-  );
+  const streams = events.filter(isCli);
+  const cli = sumOf(streams, (e) => numberField(e.payload, "toolCalls"));
 
   if (cli !== null) {
-    return available(cli, "cursor-cli stream tool calls", "source-reported");
+    return available(cli, labelOf(streams, "toolCalls"), "source-reported");
   }
 
-  const transcript = sumOf(events.filter(isTranscript), (e) =>
+  const transcripts = events.filter(isTranscript);
+
+  const transcript = sumOf(transcripts, (e) =>
     numberField(e.payload, "toolCalls")
   );
 
   if (transcript !== null) {
-    return available(transcript, "cursor-transcripts tool calls", "observed");
+    return available(transcript, labelOf(transcripts, "toolCalls"), "observed");
   }
 
   const bubbles = events.filter(
@@ -186,11 +206,7 @@ const toolCallsOf = (events: readonly DxEventEnvelope[]): ChatValue => {
   );
 
   if (bubbles.length > 0) {
-    return available(
-      bubbles.length,
-      "cursor-local-db tool bubbles",
-      "observed"
-    );
+    return available(bubbles.length, labelOf(bubbles, "toolCalls"), "observed");
   }
 
   return unavailable("no source reported tool calls for this chat");
@@ -227,7 +243,7 @@ const modelTurnOf = (event: DxEventEnvelope): ModelTurn | null => {
     return null;
   }
 
-  const parsed = parseModelEffort(rawModel, effortField(event.payload));
+  const parsed = modelEffortOf(event, rawModel, effortField(event.payload));
 
   return {
     adapterId: event.adapterId,
@@ -422,7 +438,7 @@ const buildNode = (
     title,
     titleUnavailableReason:
       title === null
-        ? "no imported source carries a chat title; cursor-local-db deliberately drops composer names because they can echo prompt text"
+        ? "no imported source carries a chat title; titles that can echo prompt text are dropped on import"
         : null,
     tokens,
     tokensUnavailableReason:

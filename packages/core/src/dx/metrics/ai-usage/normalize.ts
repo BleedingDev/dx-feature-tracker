@@ -1,7 +1,6 @@
 import { Option, Schema } from "effect";
 
-import { CURSOR_HOOKS_ADAPTER_ID } from "../../collectors/cursor-hooks/decode.js";
-import { stopTokenUsage } from "../../collectors/cursor-hooks/stop-usage.js";
+import { rawUsageRuleFor } from "../../harness/rules.js";
 import { AI_SOURCES_BY_RANK } from "../../harness/source-kinds.js";
 import type {
   AiSourceKind,
@@ -316,12 +315,17 @@ const numericRawUsage = (
       ),
   });
 
-const legacyStopUsage = (event: DxEventEnvelope, flags: UsageFlags) =>
-  flags.semanticsVerified === true ||
-  event.adapterId !== CURSOR_HOOKS_ADAPTER_ID ||
-  flags.sourceKind !== "hooks-stop"
+const unverifiedUsage = (event: DxEventEnvelope, flags: UsageFlags) => {
+  if (flags.semanticsVerified === true) {
+    return null;
+  }
+
+  const rule = rawUsageRuleFor(flags.sourceKind ?? null);
+
+  return rule === null || event.adapterId !== rule.adapterId
     ? null
-    : stopTokenUsage(numericRawUsage(event));
+    : rule.read(numericRawUsage(event));
+};
 
 const hookCategories = (
   event: DxEventEnvelope,
@@ -331,7 +335,7 @@ const hookCategories = (
     return decodeTokens(event.payload.normalizedCategories);
   }
 
-  const legacy = legacyStopUsage(event, flags);
+  const legacy = unverifiedUsage(event, flags);
 
   return legacy === null ? Option.none() : Option.some(legacy.categories);
 };
@@ -344,7 +348,7 @@ const verifiedRawFieldsOf = (
     return flags.verifiedRawFields ?? null;
   }
 
-  return legacyStopUsage(event, flags)?.verifiedFields ?? [];
+  return unverifiedUsage(event, flags)?.verifiedFields ?? [];
 };
 
 const eventSeeds = (event: DxEventEnvelope, flags: UsageFlags): RowSeed[] => {
@@ -409,18 +413,23 @@ const hookUncovered = (
     onSome: (raw) => Object.keys(raw).filter((key) => !verified.includes(key)),
   });
 
-  return fields.length === 0
-    ? []
-    : [
-        {
-          adapterId: event.adapterId,
-          evidenceId,
-          fields,
-          reason:
-            "Cursor stop-hook usage fields have unverified semantics; not summed until a probe verifies them",
-          sourceKind: "hooks-stop",
-        },
-      ];
+  if (fields.length === 0) {
+    return [];
+  }
+
+  const rule = rawUsageRuleFor(flags.sourceKind ?? null);
+
+  return [
+    {
+      adapterId: event.adapterId,
+      evidenceId,
+      fields,
+      reason:
+        rule?.reason ??
+        "usage fields with unverified semantics; not summed until a probe verifies them",
+      sourceKind: rule?.sourceKind ?? flags.sourceKind ?? null,
+    },
+  ];
 };
 
 const carriesUsage = (event: DxEventEnvelope): boolean =>

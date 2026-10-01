@@ -7,12 +7,13 @@ import type {
 } from "../../model/event.js";
 import { EVENT_SCHEMA_VERSION } from "../../model/event.js";
 import { EventIdSchema } from "../../model/ids.js";
+import { CURSOR_HOOKS_ADAPTER_ID } from "./ids.js";
 import { sha256Hex } from "./sanitize.js";
 import type { SanitizedHook, SpoolRecord } from "./spool-record.js";
 import type { StopTokenUsage } from "./stop-usage.js";
 import { stopTokenUsage } from "./stop-usage.js";
 
-export const CURSOR_HOOKS_ADAPTER_ID = "cursor-hooks" as const;
+export { CURSOR_HOOKS_ADAPTER_ID } from "./ids.js";
 
 export const CURSOR_HOOKS_ADAPTER_VERSION = "0.1.0" as const;
 

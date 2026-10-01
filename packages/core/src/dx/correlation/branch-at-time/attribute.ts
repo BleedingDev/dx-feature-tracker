@@ -7,6 +7,7 @@ import type {
 } from "../../contracts/services.js";
 import { CONTRACT_VERSION } from "../../contracts/version.js";
 import type { BranchSource } from "../../harness/ids.js";
+import { rulesForEvent } from "../../harness/rules.js";
 import { withBranchSource } from "../../model/attribution.js";
 import type { AttributionState } from "../../model/common.js";
 import type { ModuleDescriptor } from "../../model/descriptor.js";
@@ -248,11 +249,8 @@ export const HOOK_TURN_WINDOW_MS = 5 * 60 * 1000;
 const isJoinedAccountRow = (event: DxEventEnvelope): boolean =>
   event.payload.sessionJoin !== undefined && event.payload.sessionJoin !== null;
 
-const isToolHarnessEvent = (event: DxEventEnvelope): boolean =>
-  event.ai !== null && event.ai.harness !== "cursor";
-
 const takesHookTurn = (event: DxEventEnvelope): boolean =>
-  isJoinedAccountRow(event) || isToolHarnessEvent(event);
+  isJoinedAccountRow(event) || rulesForEvent(event).takesHookTurn(event);
 
 const liveTurnsBySession = (
   events: readonly DxEventEnvelope[]

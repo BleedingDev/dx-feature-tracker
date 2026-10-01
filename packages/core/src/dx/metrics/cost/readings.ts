@@ -1,5 +1,6 @@
 import { Option, Schema } from "effect";
 
+import { LIST_PRICE_FIELDS, SOURCE_KIND_ALIASES } from "../../harness/rules.js";
 import {
   UNKNOWN_SOURCE_RANK,
   aiSourceRank,
@@ -317,13 +318,13 @@ const baseOf = (event: DxEventEnvelope): ReadingBase => {
   };
 };
 
-export const CURSOR_LIST_PRICE_FIELD = "tokenUsage.totalCents";
-
-const cursorListPriceOf = (event: DxEventEnvelope): number | null => {
+const listPriceOf = (event: DxEventEnvelope): number | null => {
   const { payload } = event;
+  const field = orNull(decodeText(payload.costRawField));
 
   if (
-    orNull(decodeText(payload.costRawField)) !== CURSOR_LIST_PRICE_FIELD ||
+    field === null ||
+    !LIST_PRICE_FIELDS.has(field) ||
     !isUsd(orNull(decodeText(payload.currency)))
   ) {
     return null;
@@ -364,17 +365,12 @@ const extractEvent = (event: DxEventEnvelope) => {
   return { money: out.money, rejections: out.rejections, token };
 };
 
-const SOURCE_ALIASES: ReadonlyMap<string, string> = new Map([
-  ["cursor-cli", "sdk"],
-  ["cursor-transcript", "transcript-estimate"],
-]);
-
 const rank = (sourceKind: string | null): number => {
   const kind = orNull(
     decodeSourceKind(
       sourceKind === null
         ? null
-        : (SOURCE_ALIASES.get(sourceKind) ?? sourceKind)
+        : (SOURCE_KIND_ALIASES.get(sourceKind) ?? sourceKind)
     )
   );
 
@@ -429,7 +425,7 @@ export const extractReadings = (
     seen.add(event.eventId);
 
     const extracted = extractEvent(event);
-    const listPrice = cursorListPriceOf(event);
+    const listPrice = listPriceOf(event);
     const key = baseOf(event).dedupeKey;
 
     if (listPrice !== null && !listPrices.has(key)) {
