@@ -308,6 +308,40 @@ describe("dft install project capture (D39)", () => {
     expect(existsSync(path.join(repo, ".dsh"))).toBe(false);
     expect(uninstallCapture(repo, command)).toEqual([]);
   });
+
+  it("dft uninstall in one worktree keeps the ignore lines another worktree still needs", () => {
+    const repo = scratchRepo();
+    git(
+      repo,
+      "-c",
+      "user.name=dft",
+      "-c",
+      "user.email=dft@example.com",
+      "commit",
+      "-q",
+      "--allow-empty",
+      "-m",
+      "init"
+    );
+
+    const other = path.join(scratch("dft-worktree-"), "second wt");
+    git(repo, "worktree", "add", "-q", "-b", "second", other);
+
+    const exclude = read(repo, ".git/info/exclude");
+    const tools = ["claude-code", "codex", "pi"] as const;
+
+    installCapture(tools, repo, command);
+    installCapture(tools, other, command);
+    uninstallCapture(repo, command);
+
+    expect(git(other, "status", "--porcelain", "--untracked-files=all")).toBe(
+      ""
+    );
+
+    uninstallCapture(other, command);
+
+    expect(read(repo, ".git/info/exclude")).toBe(exclude);
+  });
 });
 
 describe("tool detection and Codex trust", () => {

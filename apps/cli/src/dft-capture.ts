@@ -23,7 +23,7 @@ import {
 } from "@rat-stack/core/dx";
 import { Result, Schema, Struct } from "effect";
 
-import { isDftHookCommand } from "./dft-install.js";
+import { isDftHookCommand, otherWorktrees } from "./dft-install.js";
 
 export const CAPTURE_TOOLS = [
   "claude-code",
@@ -339,38 +339,6 @@ export const ignoreCaptureFiles = (
   ];
 };
 
-export const unignoreCaptureFiles = (
-  worktree: string
-): readonly CaptureStep[] => {
-  if (!insideGit(worktree)) {
-    return [];
-  }
-
-  const file = excludeFile(worktree);
-
-  if (file === null || !existsSync(file)) {
-    return [];
-  }
-
-  const text = readFileSync(file, "utf-8");
-  const parts = splitExclude(text);
-
-  if (parts.block.length === 0 && !text.includes(EXCLUDE_START)) {
-    return [];
-  }
-
-  writeFileSync(file, joinExclude({ ...parts, block: [] }));
-
-  return [
-    {
-      action: "removed",
-      detail: `dft lines: ${parts.block.join(", ")}`,
-      path: file,
-      tool: "git",
-    },
-  ];
-};
-
 interface HooksTarget {
   readonly kind: "hooks";
   readonly rel: string;
@@ -543,8 +511,10 @@ const targetsFor = (
   }
 };
 
+const NO_COMMAND: DftCommand = { argv: [], line: "" };
+
 export const captureFiles = (tool: CaptureTool): readonly string[] =>
-  targetsFor(tool, "", { argv: [], line: "" }).map((target) => target.rel);
+  targetsFor(tool, "", NO_COMMAND).map((target) => target.rel);
 
 const step = (
   tool: CaptureTool,
@@ -764,6 +734,90 @@ const removeOwned = (
   return step(tool, "removed", file, "written by dft");
 };
 
+const holdsDft = (target: CaptureTarget, text: string): boolean => {
+  if (target.kind === "file") {
+    return text.includes(target.marker);
+  }
+
+  const parsed = parseHookConfig(text);
+
+  return (
+    parsed !== null &&
+    target.specs.every((spec) =>
+      (parsed.hooks?.[spec.event] ?? []).some(groupHasDft)
+    )
+  );
+};
+
+const holdsDftFile = (worktree: string, rel: string): boolean => {
+  const file = path.join(worktree, rel);
+
+  if (!existsSync(file)) {
+    return false;
+  }
+
+  const target = CAPTURE_TOOLS.flatMap((tool) =>
+    targetsFor(tool, worktree, NO_COMMAND)
+  ).find((item) => item.rel === rel);
+
+  return target === undefined || holdsDft(target, readFileSync(file, "utf-8"));
+};
+
+export const hasCapture = (tool: CaptureTool, worktree: string): boolean =>
+  targetsFor(tool, worktree, NO_COMMAND).every((target) =>
+    holdsDftFile(worktree, target.rel)
+  );
+
+const ruleRel = (line: string): string =>
+  line.replace(/^\//u, "").split("/").join(path.sep);
+
+export const unignoreCaptureFiles = (
+  worktree: string
+): readonly CaptureStep[] => {
+  if (!insideGit(worktree)) {
+    return [];
+  }
+
+  const file = excludeFile(worktree);
+
+  if (file === null || !existsSync(file)) {
+    return [];
+  }
+
+  const text = readFileSync(file, "utf-8");
+  const parts = splitExclude(text);
+
+  if (parts.block.length === 0 && !text.includes(EXCLUDE_START)) {
+    return [];
+  }
+
+  const others = otherWorktrees(worktree);
+
+  const kept = parts.block.filter((line) =>
+    others.some((other) => holdsDftFile(other, ruleRel(line)))
+  );
+
+  const dropped = parts.block.filter((line) => !kept.includes(line));
+
+  if (dropped.length === 0 && parts.block.length > 0) {
+    return [];
+  }
+
+  writeFileSync(file, joinExclude({ ...parts, block: kept }));
+
+  return [
+    {
+      action: "removed",
+      detail:
+        kept.length === 0
+          ? `dft lines: ${dropped.join(", ")}`
+          : `dft lines: ${dropped.join(", ")}; kept ${kept.join(", ")} for another worktree that still uses them`,
+      path: file,
+      tool: "git",
+    },
+  ];
+};
+
 export const uninstallCapture = (
   worktree: string,
   command: DftCommand
@@ -785,27 +839,3 @@ export const uninstallCapture = (
 
   return [...steps, ...unignoreCaptureFiles(worktree)];
 };
-
-export const hasCapture = (tool: CaptureTool, worktree: string): boolean =>
-  targetsFor(tool, worktree, { argv: [], line: "" }).every((target) => {
-    const file = path.join(worktree, target.rel);
-
-    if (!existsSync(file)) {
-      return false;
-    }
-
-    const text = readFileSync(file, "utf-8");
-
-    if (target.kind === "file") {
-      return text.includes(target.marker);
-    }
-
-    const parsed = parseHookConfig(text);
-
-    return (
-      parsed !== null &&
-      target.specs.every((spec) =>
-        (parsed.hooks?.[spec.event] ?? []).some(groupHasDft)
-      )
-    );
-  });
