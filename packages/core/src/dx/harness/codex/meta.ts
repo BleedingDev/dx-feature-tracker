@@ -7,4 +7,4 @@ export const CODEX_CHANNELS = [
   "hooks",
 ] as const satisfies readonly Channel[];
 
-export const CODEX_READINESS: ModuleReadiness = "unsupported";
+export const CODEX_READINESS: ModuleReadiness = "ready";
