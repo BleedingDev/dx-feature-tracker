@@ -1003,7 +1003,7 @@ export const writeDashboard = <HE, HR, CE, CR, UE = never, UR = never>(
           : repoName(named[0].repoCommonDir),
       scope: options.scope,
       since: history.since,
-      titles: options.titles ?? true,
+      titles: options.titles ?? false,
       usage,
       version: options.version ?? VERSION,
     });

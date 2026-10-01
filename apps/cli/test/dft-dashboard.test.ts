@@ -493,6 +493,47 @@ describe("dft dashboard", () => {
       })
   );
 
+  it.effect("leaves chat titles out of a saved page unless asked", () =>
+    Effect.gen(function* savedTitles() {
+      const dir = mkdtempSync(path.join(tmpdir(), "dft-dashboard-"));
+      created.push(dir);
+
+      const sources = {
+        chats: () => Effect.succeed(chatsReport),
+        history: () =>
+          Effect.succeed({
+            rows: [...fixture.account, ...fixture.branches.map((b) => b.row)],
+            since: null,
+          }),
+      };
+
+      const base = {
+        dftHome: dir,
+        open: false,
+        repo: "/work/app",
+        scope: "repo" as const,
+      };
+
+      const plain = yield* writeDashboard(
+        { ...base, outPath: path.join(dir, "plain.html") },
+        sources
+      );
+
+      const titled = yield* writeDashboard(
+        { ...base, outPath: path.join(dir, "titled.html"), titles: true },
+        sources
+      );
+
+      const plainHtml = readFileSync(plain.path, "utf-8");
+
+      expect(plainHtml).not.toContain(escapeHtml(EVIL_TITLE));
+      expect(plainHtml).toContain("chat root-000");
+      expect(readFileSync(titled.path, "utf-8")).toContain(
+        escapeHtml(EVIL_TITLE)
+      );
+    })
+  );
+
   it.effect("writes the file from history and chats without opening it", () =>
     Effect.gen(function* dashboardFile() {
       const dir = mkdtempSync(path.join(tmpdir(), "dft-dashboard-"));

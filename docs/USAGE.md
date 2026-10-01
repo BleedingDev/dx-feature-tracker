@@ -112,7 +112,7 @@ dft dashboard --one-time --all-repos --since 30d  # one static file instead
 `--one-time` writes one HTML file instead and exits: the same ledgers, a chart by tool, tables by tool and by model, and one row per branch with its chats.
 
 - The file is saved to `~/.dft/dashboard.html` (or `$DFT_HOME/dashboard.html`). `--out <file>` saves it somewhere else, `--no-open` skips the browser and `--json` prints where it was saved.
-- Both pages load nothing from the internet and never contain your prompts. Chat titles are included, so treat a saved file like your chat history before you share it.
+- Both pages load nothing from the internet and never contain your prompts. The live page shows chat titles, but a saved page leaves them out: add `--titles`, or tick "Include chat titles" next to Export on the live page, to keep them. Titles can quote your prompts, so treat a file saved with them like your chat history before you share it.
 
 ## Many worktrees and subagents
 

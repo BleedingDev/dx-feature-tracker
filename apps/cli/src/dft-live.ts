@@ -342,6 +342,7 @@ const ActionSchema = Schema.Struct({
   enabled: Schema.optional(Schema.Boolean),
   id: Schema.optional(Schema.String),
   path: Schema.optional(Schema.String),
+  titles: Schema.optional(Schema.Boolean),
 });
 
 type Action = typeof ActionSchema.Type;
@@ -701,6 +702,7 @@ export const serveDashboard = (options: LiveServerOptions) =>
                     repo: paths.repo,
                     scope: "all",
                     since: options.since,
+                    titles: action.titles === true,
                   },
                   {
                     chats: liveChats,

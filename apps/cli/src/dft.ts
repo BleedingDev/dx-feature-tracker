@@ -859,6 +859,10 @@ const dashboardFlags = {
     "since",
     "Time range to start with: 7d or 30d (with --one-time, any range like 24h or 2026-09-01)"
   ),
+  titles: booleanFlag(
+    "titles",
+    "With --one-time: keep chat titles in the saved page; they are left out by default"
+  ),
   verbose: reportFlags.verbose,
 };
 
@@ -873,6 +877,7 @@ interface DashboardCommandFlags {
   readonly port: number;
   readonly repo: string | undefined;
   readonly since: string | undefined;
+  readonly titles: boolean;
   readonly verbose: boolean;
 }
 
@@ -889,6 +894,7 @@ const oneTimeDashboard = (flags: DashboardCommandFlags) =>
           repo: session.paths.repo,
           scope: input.allRepos ? "all" : "repo",
           since: input.since,
+          titles: input.titles,
         },
         {
           chats: branchChatsWith(session.costOptions),
@@ -923,7 +929,7 @@ const dashboardCommand = Command.make("dashboard", dashboardFlags, (flags) =>
   })
 ).pipe(
   Command.withDescription(
-    "Run a live dashboard on http://127.0.0.1:7420 that keeps syncing and updates as you work. It tracks this repo, opens your browser and runs until Ctrl+C. It only listens on this computer and loads nothing from the internet. Add --one-time to save a static page once and exit."
+    "Run a live dashboard on http://127.0.0.1:7420 that keeps syncing and updates as you work. It tracks this repo, opens your browser and runs until Ctrl+C. It only listens on this computer and loads nothing from the internet. Add --one-time to save a static page once and exit; it leaves chat titles out unless you add --titles."
   ),
   Command.withShortDescription("Live cost dashboard in your browser"),
   Command.withExamples([

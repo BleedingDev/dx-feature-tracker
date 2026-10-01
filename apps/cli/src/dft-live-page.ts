@@ -280,6 +280,7 @@ const body = (intro: boolean) => `
 </div>
 <div class="panel"><h2>Export</h2>
 <div class="row"><button type="button" class="btn" id="s-export">Save a static page</button><span class="muted">One HTML file you can keep or share. It loads nothing from the internet.</span></div>
+<label class="switch"><input type="checkbox" id="s-export-titles"><span>Include chat titles (they can quote your prompts)</span></label>
 </div>
 <div class="panel danger-zone"><h2>Danger zone</h2>
 <section><h3>Delete a repo's data</h3>
@@ -513,7 +514,7 @@ function act(body,button){if(button)button.disabled=true;return post(body).then(
 $("s-repos").addEventListener("click",(e)=>{const b=e.target.closest("button");if(!b)return;if(b.hasAttribute("data-hooks"))act({action:"hooks",path:b.getAttribute("data-hooks")},b);if(b.hasAttribute("data-untrack"))act({action:"untrack",path:b.getAttribute("data-untrack")},b);});
 $("s-add-btn").addEventListener("click",function(){const v=$("s-add").value.trim();if(!v)return;act({action:"track",path:v},this).then((ok)=>{if(ok)$("s-add").value="";});});
 $("s-usage").addEventListener("change",function(){act({action:"usage",enabled:this.checked},null);});
-$("s-export").addEventListener("click",function(){act({action:"export"},this);});
+$("s-export").addEventListener("click",function(){act({action:"export",titles:$("s-export-titles").checked},this);});
 $("d-go").addEventListener("click",function(){act({action:"delete",path:$("d-repo").value,confirm:$("d-confirm").value},this).then(()=>{$("d-repo").removeAttribute("data-list");loadDeletePlan();loadResetPlan();});});
 $("r-go").addEventListener("click",function(){act({action:"reset",confirm:$("r-confirm").value},this).then(()=>{loadResetPlan();loadDeletePlan();});});
 $("b-go").addEventListener("click",function(){act({action:"restore",id:$("b-pick").value},this).then(()=>{loadResetPlan();loadDeletePlan();});});

@@ -130,6 +130,7 @@ const branchReply = {
 type PageReply = typeof branchReply | ReturnType<typeof usageReply>;
 
 interface Pending {
+  readonly body: string | undefined;
   readonly resolve: (body: PageReply) => void;
   readonly url: string;
 }
@@ -168,10 +169,10 @@ const openPage = (hash: string) => {
     title: "",
   };
 
-  const fetch = async (url: string) => {
+  const fetch = async (url: string, init?: { readonly body?: string }) => {
     // oxlint-disable-next-line promise/avoid-new -- the fake fetch hands its resolver to the test, so a reply can arrive after a navigation
     const body = await new Promise<PageReply>((resolve) => {
-      pending.push({ resolve, url });
+      pending.push({ body: init?.body, resolve, url });
     });
 
     return { json: async () => await Promise.resolve(body), ok: true };
@@ -330,6 +331,28 @@ describe("dft live page", () => {
         expect(chartLabels(narrow).length).toBeLessThan(31);
         expect(chartLabels(narrow).at(-1)).toBe(labelOf(today));
       })
+  );
+
+  it.live("sends whether a saved page keeps chat titles", () =>
+    Effect.sync(() => {
+      const page = openPage(BRANCH_HASH);
+
+      const exportPage = () => {
+        for (const listener of page.byId("s-export").listeners.get("click") ??
+          []) {
+          listener({ type: "click" });
+        }
+      };
+
+      exportPage();
+      page.byId("s-export-titles").checked = true;
+      exportPage();
+
+      expect(page.takeAll("/api/action").map((item) => item.body)).toEqual([
+        JSON.stringify({ action: "export", titles: false }),
+        JSON.stringify({ action: "export", titles: true }),
+      ]);
+    })
   );
 
   it.live("ignores a branch reply that arrives after going back to Usage", () =>
