@@ -65,7 +65,7 @@ const assistant = (spec: RowSpec): string =>
       id: spec.messageId,
       model: spec.model ?? "claude-sonnet-5",
       role: "assistant",
-      stop_reason: spec.stop ?? "end_turn",
+      stop_reason: spec.stop === undefined ? "end_turn" : spec.stop,
       usage: {
         cache_creation: {
           ephemeral_1h_input_tokens: 0,
@@ -224,6 +224,106 @@ describe("Claude Code dedupe rules", () => {
                   messageId: "resp_1",
                   model: "gpt-5.6-sol",
                   output: 489,
+                  requestId: null,
+                  session: "s1",
+                  stop: "tool_use",
+                })
+              ),
+            },
+          ])
+        )
+      )
+  );
+
+  it.effect(
+    "keeps a gateway request with only stream-start rows as an unknown split",
+    () =>
+      Effect.gen(function* streamStart() {
+        const harness = yield* ClaudeCodeHarness;
+        const refs = yield* harness.locate(everywhere);
+
+        const batches = yield* Effect.forEach((ref: (typeof refs)[number]) =>
+          harness.read(ref, input)
+        )(refs);
+
+        const events = batches.flatMap((batch) => batch.events);
+        const usage = usageOf(events);
+
+        const byKey = new Map(
+          usage.map((event) => [event.usage?.requestKey, event])
+        );
+
+        const open = byKey.get("source:claude-jsonl:message:resp_open");
+        const done = byKey.get("source:claude-jsonl:message:resp_done");
+
+        expect(usage).toHaveLength(2);
+        expect(open?.usage?.tokens).toStrictEqual({
+          cacheRead: null,
+          cacheWrite: null,
+          cacheWrite1h: null,
+          cacheWrite5m: null,
+          inputFresh: null,
+          output: null,
+          reasoning: null,
+          total: 29_972,
+        });
+        expect(open?.payload.rowCount).toBe(2);
+        expect(done?.usage?.tokens).toMatchObject({
+          cacheRead: 37_632,
+          inputFresh: 5552,
+          output: 179,
+        });
+        expect(
+          batches.flatMap((batch) => batch.coverage.gaps.map((gap) => gap.code))
+        ).toStrictEqual(["request-usage-incomplete"]);
+      }).pipe(
+        Effect.provide(
+          storeWith([
+            {
+              path: `${project}/s1.jsonl`,
+              text: lines(
+                prompt("s1", "t1"),
+                assistant({
+                  cacheRead: null,
+                  input: 29_972,
+                  messageId: "resp_open",
+                  model: "gpt-5.6-sol",
+                  output: 0,
+                  requestId: null,
+                  session: "s1",
+                  stop: null,
+                }),
+                prompt("s1", "t2"),
+                assistant({
+                  at: "2026-10-01T10:00:01.000Z",
+                  cacheRead: null,
+                  input: 29_972,
+                  messageId: "resp_open",
+                  model: "gpt-5.6-sol",
+                  output: 0,
+                  requestId: null,
+                  session: "s1",
+                  stop: null,
+                }),
+                assistant({
+                  at: "2026-10-01T10:00:02.000Z",
+                  cacheRead: null,
+                  input: 43_908,
+                  messageId: "resp_done",
+                  model: "gpt-5.6-sol",
+                  output: 0,
+                  requestId: null,
+                  session: "s1",
+                  stop: null,
+                }),
+                assistant({
+                  at: "2026-10-01T10:00:03.000Z",
+                  cacheRead: 37_632,
+                  cacheWrite: 0,
+                  input: 5552,
+                  messageId: "resp_done",
+                  model: "gpt-5.6-sol",
+                  output: 179,
                   requestId: null,
                   session: "s1",
                   stop: "tool_use",

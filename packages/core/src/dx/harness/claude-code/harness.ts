@@ -23,6 +23,7 @@ import { readSessionCursor, isUnchanged, sessionCursorOf } from "./cursor.js";
 import {
   CLAUDE_CODE_ADAPTER_ID,
   costEvent,
+  isStreamStart,
   sessionEvent,
   turnEvent,
   turnKeyOf,
@@ -168,24 +169,32 @@ const GAP_MESSAGES: readonly (readonly [keyof ScanTally, string, string])[] = [
   ["noUsage", "usage-missing", "request(s) had no usage block"],
 ];
 
-const gapsOf = (tally: ScanTally, zeroUsage: number): SourceGap[] => [
+const countedGap = (
+  count: number,
+  code: string,
+  message: string
+): SourceGap[] =>
+  count > 0 ? [{ code, message: `${String(count)} ${message}` }] : [];
+
+const gapsOf = (tally: ScanTally, emitted: Emitted): SourceGap[] => [
   ...GAP_MESSAGES.flatMap(([field, code, message]) =>
-    tally[field] > 0
-      ? [{ code, message: `${String(tally[field])} ${message}` }]
-      : []
+    countedGap(tally[field], code, message)
   ),
-  ...(zeroUsage > 0
-    ? [
-        {
-          code: "zero-usage",
-          message: `${String(zeroUsage)} request(s) reported 0 for every token bucket and were skipped`,
-        },
-      ]
-    : []),
+  ...countedGap(
+    emitted.zeroUsage,
+    "zero-usage",
+    "request(s) reported 0 for every token bucket and were skipped"
+  ),
+  ...countedGap(
+    emitted.incompleteUsage,
+    "request-usage-incomplete",
+    "request(s) only had stream-start rows; their gross input is kept as a total, the cache split and output are unknown"
+  ),
 ];
 
 interface Emitted {
   readonly events: readonly DxEventEnvelope[];
+  readonly incompleteUsage: number;
   readonly zeroUsage: number;
 }
 
@@ -248,6 +257,7 @@ const emit = (
   const events: DxEventEnvelope[] = [];
   const turns = new Set<string>();
   let zeroUsage = 0;
+  let incompleteUsage = 0;
 
   for (const { pick, placement } of placed) {
     const usage = usageEvent(pick, placement, input);
@@ -256,6 +266,7 @@ const emit = (
       zeroUsage += 1;
     } else {
       events.push(usage);
+      incompleteUsage += isStreamStart(pick.row) ? 1 : 0;
     }
 
     const turnKey = turnKeyOf(pick);
@@ -314,7 +325,7 @@ const emit = (
     }
   }
 
-  return { events, zeroUsage };
+  return { events, incompleteUsage, zeroUsage };
 };
 
 const batchOf = (
@@ -335,7 +346,7 @@ const batchOf = (
     coverage: {
       adapterId: CLAUDE_CODE_ADAPTER_ID,
       expectedItems: null,
-      gaps: gapsOf(tally, emitted.zeroUsage),
+      gaps: gapsOf(tally, emitted),
       observedItems: usage.length,
       state: emitted.events.length === 0 ? "none" : filled,
       watermark: times.at(-1) ?? null,

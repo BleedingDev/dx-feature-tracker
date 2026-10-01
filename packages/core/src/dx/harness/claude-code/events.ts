@@ -22,7 +22,7 @@ import { EventIdSchema } from "../../model/ids.js";
 import type { BranchSource } from "../ids.js";
 import { harnessAdapterId } from "../pending.js";
 import { inferVia, normalizeModel, providerFor } from "../provider.js";
-import type { ClaudeUsage, CostRow } from "./rows.js";
+import type { AssistantRow, ClaudeUsage, CostRow } from "./rows.js";
 import type { ChatInfo, RequestPick } from "./scan.js";
 
 export const CLAUDE_CODE_ADAPTER_ID = harnessAdapterId("claude-code");
@@ -83,10 +83,28 @@ export const tokensOf = (usage: ClaudeUsage): AiTokens => {
   };
 };
 
+export const isStreamStart = (row: AssistantRow): boolean =>
+  row.stopReason === null &&
+  row.usage !== null &&
+  (count(row.usage.output_tokens) ?? 0) === 0 &&
+  count(row.usage.cache_read_input_tokens) === null;
+
+export const requestTokens = (
+  row: AssistantRow,
+  usage: ClaudeUsage
+): AiTokens =>
+  isStreamStart(row)
+    ? { ...unknownTokens, total: count(usage.input_tokens) }
+    : tokensOf(usage);
+
 export const reportsNothing = (tokens: AiTokens): boolean =>
-  [tokens.inputFresh, tokens.cacheRead, tokens.cacheWrite, tokens.output].every(
-    (value) => value === null || value === 0
-  );
+  [
+    tokens.inputFresh,
+    tokens.cacheRead,
+    tokens.cacheWrite,
+    tokens.output,
+    tokens.total,
+  ].every((value) => value === null || value === 0);
 
 const VIA_BY_ID_PREFIX: readonly (readonly [string, string])[] = [
   ["msg_bdrk_", "bedrock"],
@@ -190,6 +208,16 @@ const TOKEN_SEMANTICS: readonly FieldSemantics[] = [
   },
 ];
 
+const INCOMPLETE_SEMANTICS: readonly FieldSemantics[] = [
+  {
+    field: "usage.tokens.total",
+    method: "source-reported",
+    note: "only stream-start rows were written for this request: the gross prompt count is kept as the total, while its cache split and the output stay unknown",
+    rawName: "message.usage.input_tokens",
+    unit: "tokens",
+  },
+];
+
 interface EnvelopeParts {
   readonly ai: AiAttribution;
   readonly identity: Partial<EventIdentity>;
@@ -250,7 +278,8 @@ export const usageEvent = (
     return null;
   }
 
-  const tokens = tokensOf(row.usage);
+  const incomplete = isStreamStart(row);
+  const tokens = requestTokens(row, row.usage);
 
   if (reportsNothing(tokens)) {
     return null;
@@ -309,7 +338,7 @@ export const usageEvent = (
       webSearchRequests: searches,
     },
     placement,
-    semantics: TOKEN_SEMANTICS,
+    semantics: incomplete ? INCOMPLETE_SEMANTICS : TOKEN_SEMANTICS,
     upstreamKey: requestKey,
     usage:
       searches === null || searches === 0
