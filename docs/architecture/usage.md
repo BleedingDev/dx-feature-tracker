@@ -37,4 +37,4 @@ HTTP takes the same names as query parameters, lists repeated or comma separated
 
 ## Sync cursors
 
-`harness_cursors` keeps, per located session, the file's size and mtime, the harness's own `FileCursor` and the last event id read. Sync skips a session whose size and mtime have not changed and hands the stored cursor to the harness when the file grew. A cursor whose last event is no longer in the store (after a reset or a repo delete) is ignored, so the session is read again in full.
+`harness_cursors` keeps, per located session, the file's size and mtime, the harness's own `FileCursor` and the last event id read. Sync skips a session whose size and mtime have not changed and hands the stored cursor to the harness when the file grew. A cursor whose last event is no longer in the store (after a reset or a repo delete) is ignored, so the session is read again in full. Cursor keys carry `CURSOR_GENERATION` (`storage/harness-cursors.ts`): bump it when a harness reader starts emitting different events for files that did not change, so every session is read again once.
