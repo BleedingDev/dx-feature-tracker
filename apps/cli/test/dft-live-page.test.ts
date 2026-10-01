@@ -127,7 +127,10 @@ const branchReply = {
   },
 };
 
-type PageReply = typeof branchReply | ReturnType<typeof usageReply>;
+type PageReply =
+  | typeof branchReply
+  | ReturnType<typeof usageReply>
+  | ReturnType<typeof usageOut>;
 
 interface Pending {
   readonly body: string | undefined;
@@ -274,6 +277,47 @@ const usageReply = (since: DateTime.Utc, today: string) => ({
   window: { since: DateTime.formatIso(since), tz: ZONE, until: null },
 });
 
+interface Row {
+  readonly key: string;
+  readonly values: Record<string, number>;
+}
+
+const rowOf = (key: string): Row => ({
+  key,
+  values: { estimate: 1, requests: 1, tokens: 10 },
+});
+
+const usageOut = (
+  fields: Partial<{
+    groupBy: string | null;
+    groups: readonly Row[];
+    series: readonly { bucket: string; stacks: readonly Row[] }[];
+    stackBy: string | null;
+  }>
+) => ({
+  bucket: "week",
+  coverage: { unpriced: 0 },
+  groupBy: null,
+  groups: [],
+  notes: [],
+  other: null,
+  series: [],
+  stackBy: null,
+  total: { facts: 1, values: { estimate: 1, requests: 1, tokens: 10 } },
+  unattributed: null,
+  window: { since: null, tz: ZONE, until: null },
+  ...fields,
+});
+
+const answerUsage = (
+  page: ReturnType<typeof openPage>,
+  reply: (url: string) => PageReply
+): void => {
+  for (const pending of page.takeAll("/api/usage?")) {
+    pending.resolve(reply(pending.url));
+  }
+};
+
 const AXIS_LABEL = /text-anchor="middle">(?<label>[^<]+)<\/text>/gu;
 
 const chartLabels = (html: string): string[] =>
@@ -372,4 +416,118 @@ describe("dft live page", () => {
       expect(page.byId("b-report").textContent).toBe("");
     })
   );
+
+  it.live(
+    "labels DeepSeek sessions in chips and breadcrumbs by their id, not by the session- prefix",
+    () =>
+      Effect.gen(function* deepseek() {
+        const first = "session-b4ed1751-db57-4ba0-833c-2ce90c50e141";
+        const second = "session-c4146155-0f3e-4a2b-9d4f-6a8c0e2a4b6d";
+        const one = openPage(`#/?session=${first}&by=model&since=all`);
+
+        const two = openPage(
+          `#/?session=${first}&session=${second}&by=model&since=all`
+        );
+
+        expect(one.byId("u-crumbs").innerHTML).toContain(
+          "Session</span> session-b4ed1751"
+        );
+        expect(one.byId("u-chips").innerHTML).toContain(
+          "<b>Session:</b> session-b4ed1751<"
+        );
+        expect(two.byId("u-chips").innerHTML).toContain(
+          "<b>Session:</b> session-b4ed1751, session-c4146155<"
+        );
+
+        yield* settle;
+      })
+  );
+
+  it.live(
+    "gives a session the same label in the chart legend and the table",
+    () =>
+      Effect.gen(function* sameLabel() {
+        const top = "6f1c2a9e-4b7d-4e21-9c3a-8d5e7f1a2b3c";
+        const near = "6f1c2a9e-1111-4e21-9c3a-8d5e7f1a2b3c";
+        const page = openPage("#/?by=session&since=all");
+
+        answerUsage(page, (url) => {
+          if (url.includes("stackBy=session")) {
+            return usageOut({
+              series: [
+                {
+                  bucket: "2026-09-28",
+                  stacks: [rowOf(top), rowOf("(other)")],
+                },
+              ],
+              stackBy: "session",
+            });
+          }
+
+          return url.includes("groupBy=session")
+            ? usageOut({
+                groupBy: "session",
+                groups: [rowOf(top), rowOf(near)],
+              })
+            : usageOut({ groupBy: "tool" });
+        });
+        yield* settle;
+
+        const legend = page.byId("u-legend").innerHTML;
+        const table = page.byId("u-table").part("tbody").innerHTML;
+
+        expect(legend).toContain("</i>6f1c2a9e-4b7d</span>");
+        expect(table).toContain("</i>6f1c2a9e-4b7d</td>");
+        expect(table).toContain("</i>6f1c2a9e-1111</td>");
+      })
+  );
+
+  it.live(
+    "tells repos with the same folder name apart in chips and breadcrumbs",
+    () =>
+      Effect.gen(function* repos() {
+        const claude = "/w/claude-code/repo/.git";
+        const codex = "/w/codex/repo/.git";
+
+        const known = (url: string): PageReply =>
+          url.includes("groupBy=repo")
+            ? usageOut({
+                groupBy: "repo",
+                groups: [rowOf(claude), rowOf(codex)],
+              })
+            : usageOut({ groupBy: "tool" });
+
+        const usage = openPage(
+          `#/?repo=${encodeURIComponent(claude)}&by=branch&since=all`
+        );
+
+        answerUsage(usage, known);
+        yield* settle;
+
+        expect(usage.byId("u-crumbs").innerHTML).toContain(
+          "Project</span> claude-code/repo"
+        );
+        expect(usage.byId("u-chips").innerHTML).toContain(
+          "<b>Project:</b> claude-code/repo<"
+        );
+
+        const branch = openPage(
+          `#/branch?repo=${encodeURIComponent(codex)}&branch=main`
+        );
+
+        answerUsage(branch, known);
+        yield* settle;
+
+        expect(branch.byId("b-crumbs").innerHTML).toContain(
+          "Project</span> codex/repo"
+        );
+      })
+  );
+
+  it("says that Setup's session count covers every repo on the machine", () => {
+    const page = liveDashboardPage("token");
+
+    expect(page).toContain('class="num">Sessions found</th>');
+    expect(page).toContain("across all repos");
+  });
 });

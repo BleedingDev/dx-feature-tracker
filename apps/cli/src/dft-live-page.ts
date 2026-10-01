@@ -267,8 +267,8 @@ const body = (intro: boolean) => `
 </section>
 <section id="v-setup" hidden>
 <div class="stack">
-<div class="panel"><h2>Tools</h2><div class="scroll"><table id="s-tools"><thead><tr><th scope="col">Tool</th><th scope="col" class="opt">Installed</th><th scope="col" class="num">Sessions</th><th scope="col">Capture</th><th scope="col" class="opt">Telemetry</th><th scope="col">Last event</th></tr></thead><tbody></tbody></table></div>
-<p class="quiet">Capture is the project hooks or extension that <code>dft install</code> writes into a tracked repo. Telemetry is the opt-in OpenTelemetry export from <code>dft install --telemetry</code>.</p></div>
+<div class="panel"><h2>Tools</h2><div class="scroll"><table id="s-tools"><thead><tr><th scope="col">Tool</th><th scope="col" class="opt">Installed</th><th scope="col" class="num">Sessions found</th><th scope="col">Capture</th><th scope="col" class="opt">Telemetry</th><th scope="col">Last event</th></tr></thead><tbody></tbody></table></div>
+<p class="quiet">Sessions found counts every session the tool keeps on this machine, across all repos. The Sessions column on Usage counts only sessions with requests in tracked repos. Capture is the project hooks or extension that <code>dft install</code> writes into a tracked repo. Telemetry is the opt-in OpenTelemetry export from <code>dft install --telemetry</code>.</p></div>
 <div class="panel"><h2>Sources</h2><div class="facts" id="s-facts"></div><div class="scroll"><table id="s-sources"><thead><tr><th scope="col">Tool</th><th scope="col" class="num opt">Requests</th><th scope="col" class="num">Disagreements</th><th scope="col">Fields</th></tr></thead><tbody></tbody></table></div>
 <p class="quiet">When a tool's session file, hooks and telemetry disagree on a request, dft keeps the most precise source and counts the disagreement here.</p></div>
 <div class="panel"><h2>Tracked repos</h2><div id="s-repos"></div>
@@ -343,7 +343,7 @@ const token=document.querySelector('meta[name="dft-token"]').getAttribute("conte
 const $=(id)=>document.getElementById(id);
 const TZ=(()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||"UTC";}catch(e){return "UTC";}})();
 const MONEY=new Set(["estimate","toolFigure","billed"]);
-const view={updated:0,online:false,usageSeq:0,branchSeq:0,lastHash:null,lastName:null,facet:null,facetRows:[],facetPicked:new Set(),branchRoot:null,branchKey:""};
+const view={updated:0,online:false,usageSeq:0,branchSeq:0,lastHash:null,lastName:null,facet:null,facetRows:[],facetPicked:new Set(),repos:new Set(),branchRoot:null,branchKey:""};
 const esc=(s)=>String(s).replace(/[&<>"']/g,(c)=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]);
 const getJson=(url)=>fetch(url,{headers:{accept:"application/json"}}).then((r)=>r.json().then((j)=>{if(!r.ok)throw new Error(j.error||r.statusText);return j;}));
 const post=(body)=>fetch("/api/action",{method:"POST",headers:{"content-type":"application/json","x-dft-token":token},body:JSON.stringify(body)}).then((r)=>r.json().then((j)=>{if(!r.ok)throw new Error(j.error||r.statusText);return j;}));
@@ -360,8 +360,10 @@ function usd(v){if(v>0&&v<0.01)return "<$0.01";return v>=1000?"$"+Math.round(v).
 function fmt(metric,v){if(v===null||v===undefined)return "-";return MONEY.has(metric)?usd(v):count(v);}
 function axisFmt(metric,v){if(MONEY.has(metric)){if(Number.isInteger(v))return "$"+count(v);if(v<1)return "$"+v.toFixed(2);if(v<10)return "$"+v.toFixed(1);return "$"+count(v);}return count(v);}
 function tail(p,n){return p.replace(/[\\\\/]\\.git$/,"").split(/[\\\\/]/).filter(Boolean).slice(-n).join("/");}
-function keyLabel(dim,key){if(key==="(unattributed)")return "(unattributed)";if(key==="(other)")return "Other";if(dim==="tool")return TOOL_LABELS[key]||key;if(dim==="repo")return key==="(no repo)"?key:tail(key,1);if(dim==="worktree")return tail(key,1);if(dim==="session")return STATE.shortSession(key);if(dim==="day"||dim==="week")return dayLabel(key,dim==="week");return key;}
-function labelsFor(dim,keys){const short=keys.map((k)=>keyLabel(dim,k));if(dim==="session"){const long=STATE.sessionLabels(keys);return short.map((l,i)=>keys[i]==="(other)"||keys[i]==="(unattributed)"?l:long[i]);}if(dim!=="repo"&&dim!=="worktree")return short;return short.map((l,i)=>short.indexOf(l)===short.lastIndexOf(l)||keys[i]==="(no repo)"?l:tail(keys[i],2));}
+function keyLabel(dim,key){if(key==="(unattributed)")return "(unattributed)";if(key==="(other)")return "Other";if(dim==="tool")return TOOL_LABELS[key]||key;if(dim==="repo")return key==="(no repo)"?key:repoLabel(key);if(dim==="worktree")return tail(key,1);if(dim==="session")return STATE.shortSession(key);if(dim==="day"||dim==="week")return dayLabel(key,dim==="week");return key;}
+function knowRepos(keys){keys.forEach((k)=>{if(k!=="(no repo)"&&k!=="(other)"&&k!=="(unattributed)"&&k!=="(none)")view.repos.add(k);});}
+function repoLabel(key){const name=tail(key,1);for(const k of view.repos){if(k!==key&&tail(k,1)===name)return tail(key,2);}return name;}
+function labelsFor(dim,keys,extra){const all=keys.concat((extra||[]).filter((k)=>keys.indexOf(k)===-1));if(dim==="repo")knowRepos(all);const short=all.map((k)=>keyLabel(dim,k));if(dim==="session"){const long=STATE.sessionLabels(all);return short.slice(0,keys.length).map((l,i)=>keys[i]==="(other)"||keys[i]==="(unattributed)"?l:long[i]);}if(dim!=="repo"&&dim!=="worktree")return short.slice(0,keys.length);return short.slice(0,keys.length).map((l,i)=>short.indexOf(l)===short.lastIndexOf(l)||keys[i]==="(no repo)"?l:tail(keys[i],2));}
 const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 function dayLabel(key,week){const m=/^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(key);if(!m)return key;return (week?"week of ":"")+MONTHS[Number(m[2])-1]+" "+Number(m[3]);}
 function today(){try{return new Intl.DateTimeFormat("en-CA",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());}catch(e){return new Date().toISOString().slice(0,10);}}
@@ -385,9 +387,10 @@ function paintControls(s){Array.prototype.forEach.call(document.querySelectorAll
 const custom=STATE.segment(s)==="custom";$("u-custom").hidden=!custom;if(custom){$("u-from").value=/^\\d{4}-\\d{2}-\\d{2}$/.test(s.since)?s.since:"";$("u-to").value=/^\\d{4}-\\d{2}-\\d{2}$/.test(s.until)?STATE.addDays(s.until,-1):"";}
 byEl.value=s.by;
 Array.prototype.forEach.call(document.querySelectorAll("[data-metric]"),(b)=>b.setAttribute("aria-pressed",String(b.getAttribute("data-metric")===s.metric)));
-const dims=[];s.filters.forEach(([d])=>{if(dims.indexOf(d)===-1)dims.push(d);});
-$("u-chips").innerHTML=dims.map((d)=>{const vals=s.filters.filter(([n])=>n===d).map(([,v])=>keyLabel(d,v));const text=vals.length>2?vals.slice(0,2).join(", ")+" +"+(vals.length-2):vals.join(", ");return '<span class="chip"><button type="button" data-edit="'+d+'" title="Change"><b>'+esc(DIM_LABELS[d]||d)+":</b> "+esc(text)+'</button><button type="button" class="x" data-drop="'+d+'" aria-label="Remove '+esc(DIM_LABELS[d]||d)+' filter">\\u2715</button></span>';}).join("");
 $("u-menu").innerHTML=STATE.FILTER_DIMENSIONS.map((d)=>'<button type="button" role="menuitem" data-dim="'+d+'">'+esc(DIM_LABELS[d]||d)+"</button>").join("");
+paintLabels(s);}
+function paintLabels(s){const dims=[];s.filters.forEach(([d])=>{if(dims.indexOf(d)===-1)dims.push(d);});
+$("u-chips").innerHTML=dims.map((d)=>{const vals=labelsFor(d,s.filters.filter(([n])=>n===d).map(([,v])=>v));const text=vals.length>2?vals.slice(0,2).join(", ")+" +"+(vals.length-2):vals.join(", ");return '<span class="chip"><button type="button" data-edit="'+d+'" title="Change"><b>'+esc(DIM_LABELS[d]||d)+":</b> "+esc(text)+'</button><button type="button" class="x" data-drop="'+d+'" aria-label="Remove '+esc(DIM_LABELS[d]||d)+' filter">\\u2715</button></span>';}).join("");
 paintCrumbs($("u-crumbs"),STATE.crumbs(s));}
 
 $("u-chips").addEventListener("click",(e)=>{const drop=e.target.closest("[data-drop]");if(drop){edit(STATE.withFilter(route().state,drop.getAttribute("data-drop"),[]));return;}const ed=e.target.closest("[data-edit]");if(ed)openFacet(ed.getAttribute("data-edit"));});
@@ -422,10 +425,10 @@ function bucketsFor(out){const have=out.series.map((p)=>p.bucket);if(out.bucket!
 if(!w.since)return have;const start=dayIn(Date.parse(w.since),w.tz);const end=w.until?dayIn(Date.parse(w.until)-1,w.tz):today();const days=[];let d=start;let guard=0;while(d<=end&&guard<400){days.push(d);d=STATE.addDays(d,1);guard+=1;}have.forEach((b)=>{if(days.indexOf(b)===-1)days.push(b);});return days.sort();}
 function niceStep(v){if(v<=0)return 1;const p=Math.pow(10,Math.floor(Math.log10(v)));const n=v/p;return (n<=1?1:n<=2?2:n<=5?5:10)*p;}
 let chartData=null;
-function paintChart(s,out){const svg=$("u-chart");const metric=s.metric;const stackDim=out.stackBy;const bucket=out.bucket;
+function paintChart(s,out,tableOut){const svg=$("u-chart");const metric=s.metric;const stackDim=out.stackBy;const bucket=out.bucket;
 const totals=new Map();out.series.forEach((p)=>p.stacks.forEach((k)=>{if(k.key==="(other)"||k.key==="(unattributed)")return;totals.set(k.key,(totals.get(k.key)||0)+(k.values[metric]||0));}));
 const order=Array.from(totals.keys()).sort((a,b)=>totals.get(b)-totals.get(a));const extra=["(other)","(unattributed)"].filter((k)=>out.series.some((p)=>p.stacks.some((x)=>x.key===k)));const keys=order.concat(extra);
-const colors=new Map(keys.map((k)=>[k,slotOf(stackDim,k,order.indexOf(k))]));const names=new Map();const nm=labelsFor(stackDim,keys);keys.forEach((k,i)=>names.set(k,k==="(other)"?"Other":nm[i]));
+const colors=new Map(keys.map((k)=>[k,slotOf(stackDim,k,order.indexOf(k))]));const names=new Map();const nm=labelsFor(stackDim,keys,tableOut&&tableOut.groupBy===stackDim?tableOut.groups.map((g)=>g.key):[]);keys.forEach((k,i)=>names.set(k,k==="(other)"?"Other":nm[i]));
 const buckets=bucketsFor(out);const byBucket=new Map(out.series.map((p)=>[p.bucket,p]));
 const W=Math.max(280,svg.clientWidth||600);const H=220;const L=48;const R=8;const T=10;const B=24;const pw=W-L-R;const ph=H-T-B;
 const sums=buckets.map((b)=>{const p=byBucket.get(b);return p?p.stacks.reduce((a,k)=>a+(k.values[metric]||0),0):0;});
@@ -454,7 +457,7 @@ const COLS=["tokens","requests","sessions","estimate","toolFigure","billed"];
 function branchHref(s,repo,branch){return STATE.encode({name:"branch",repo,branch,state:s});}
 function paintTable(s,out,chartOut){const metric=s.metric;const dim=out.groupBy;const head=$("u-table").tHead.rows[0];
 head.innerHTML='<th scope="col">'+esc(DIM_LABELS[dim]||dim)+'</th><th scope="col">Share of '+esc(METRIC_LABELS[metric].toLowerCase())+"</th>"+COLS.map((c)=>'<th scope="col" class="num'+(c===metric?" on":"")+(c!==metric?" opt":"")+'">'+esc(METRIC_LABELS[c])+"</th>").join("");
-const groups=out.groups;const keys=groups.map((g)=>g.key);const names=labelsFor(dim,keys);const total=out.total.values[metric]||0;
+const groups=out.groups;const keys=groups.map((g)=>g.key);const names=labelsFor(dim,keys,chartOut&&chartOut.stackBy===dim?chartOut.series.flatMap((p)=>p.stacks.map((k)=>k.key)):[]);const total=out.total.values[metric]||0;
 const chartKeys=chartOut&&chartOut.stackBy===dim?(()=>{const t=new Map();chartOut.series.forEach((p)=>p.stacks.forEach((k)=>{if(k.key!=="(other)"&&k.key!=="(unattributed)")t.set(k.key,(t.get(k.key)||0)+(k.values[metric]||0));}));return Array.from(t.keys()).sort((a,b)=>t.get(b)-t.get(a));})():null;
 const repos=s.filters.filter(([n])=>n==="repo").map(([,v])=>v);
 const row=(g,name,cls)=>{const v=g.values[metric];const pct=total>0&&v!==null&&v!==undefined?v/total:null;const drill=cls===""&&STATE.drill(s,g.key)!==null;
@@ -471,15 +474,17 @@ $("u-table").tBodies[0].addEventListener("keydown",(e)=>{if(e.key!=="Enter")retu
 
 function dayIn(ms,tz){try{return new Intl.DateTimeFormat("en-CA",{timeZone:tz,year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(ms));}catch(e){return new Date(ms).toISOString().slice(0,10);}}
 function windowText(out){const w=out.window;if(!w.since&&!w.until)return "All time, "+w.tz;const from=w.since?dayLabel(dayIn(Date.parse(w.since),w.tz),false):"start";const to=w.until?dayLabel(dayIn(Date.parse(w.until)-1,w.tz),false):"now";return from+" to "+to+", "+w.tz;}
+function loadRepos(){return getJson("/api/usage?"+STATE.reposQuery(TZ)).then((out)=>{knowRepos(out.groups.map((g)=>g.key));}).catch(()=>null);}
 function loadUsage(){const r=route();const s=r.state;const seq=++view.usageSeq;const stale=()=>seq!==view.usageSeq||route().name!=="usage";
-Promise.all([getJson("/api/usage?"+STATE.tableQuery(s,TZ)),getJson("/api/usage?"+STATE.chartQuery(s,TZ)),getJson("/api/usage?"+STATE.toolsQuery(s,TZ))]).then(([table,chart,tools])=>{if(stale())return;$("u-error").hidden=true;
-ledgerTiles($("u-tiles"),tools,s.metric,true);paintChart(s,chart);paintTable(s,table,chart);$("u-window").textContent=windowText(table);
+Promise.all([getJson("/api/usage?"+STATE.tableQuery(s,TZ)),getJson("/api/usage?"+STATE.chartQuery(s,TZ)),getJson("/api/usage?"+STATE.toolsQuery(s,TZ)),s.filters.some(([n])=>n==="repo")?loadRepos():null]).then(([table,chart,tools])=>{if(stale())return;$("u-error").hidden=true;
+ledgerTiles($("u-tiles"),tools,s.metric,true);paintChart(s,chart,table);paintTable(s,table,chart);paintLabels(s);$("u-window").textContent=windowText(table);
 const notes=table.notes.slice(0,1);$("u-notes").textContent=notes.join(" ");fresh();}).catch((e)=>{if(stale())return;$("u-error").textContent=e.message;$("u-error").hidden=false;});}
 window.addEventListener("resize",()=>{if(chartData&&route().name==="usage"){clearTimeout(view.rz);view.rz=setTimeout(loadUsage,150);}});
 
 function loadBranch(){const r=route();const seq=++view.branchSeq;const stale=()=>seq!==view.branchSeq||route().name!=="branch";const s=r.state;const q=new URLSearchParams(STATE.toolsQuery(s,TZ));q.delete("groupBy");q.delete("metrics");q.delete("sortBy");q.delete("limit");q.set("repo",r.repo);q.set("branch",r.branch);q.set("since",s.since);
 const key=r.repo+"\\n"+r.branch;if(key!==view.branchKey){$("b-tiles").innerHTML="";$("b-summary").innerHTML="";$("b-models").tBodies[0].innerHTML="";$("b-chats").innerHTML='<p class="muted">Loading</p>';$("b-chats").removeAttribute("data-html");$("b-name").textContent=r.branch;$("b-where").textContent="";view.branchKey=key;}
-paintCrumbs($("b-crumbs"),[{dimension:null,value:"All usage",hash:STATE.encode({name:"usage",state:{...s,by:"tool"}})},{dimension:"repo",value:r.repo,hash:STATE.encode({name:"usage",state:{...STATE.withFilter(s,"repo",[r.repo]),by:"branch"}})},{dimension:"branch",value:r.branch,hash:""}]);
+const crumbs=[{dimension:null,value:"All usage",hash:STATE.encode({name:"usage",state:{...s,by:"tool"}})},{dimension:"repo",value:r.repo,hash:STATE.encode({name:"usage",state:{...STATE.withFilter(s,"repo",[r.repo]),by:"branch"}})},{dimension:"branch",value:r.branch,hash:""}];
+paintCrumbs($("b-crumbs"),crumbs);loadRepos().then(()=>{if(!stale())paintCrumbs($("b-crumbs"),crumbs);});
 getJson("/api/branch?"+q.toString()).then((res)=>{if(stale())return;const v=res.view;view.branchRoot=v.repoRoot;setText($("b-name"),v.branch);$("b-where").textContent=v.worktrees.length?v.worktrees.join(", "):"";
 ledgerTiles($("b-tiles"),v.usage.tools,s.metric,false);
 const sum=$("b-summary");if(sum.children.length!==v.summary.length)sum.innerHTML=v.summary.map(()=>'<div class="tile"><dt></dt><dd></dd><small></small></div>').join("");v.summary.forEach((t,i)=>{const n=sum.children[i];setText(n.querySelector("dt"),t.label);setText(n.querySelector("dd"),t.text);});

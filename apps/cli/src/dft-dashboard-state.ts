@@ -57,6 +57,7 @@ export interface DashboardStateKit {
     tz: string,
     dimension: string
   ) => string;
+  readonly reposQuery: (tz: string) => string;
   readonly segment: (state: UsageViewState) => string;
   readonly sessionLabels: (keys: readonly string[]) => readonly string[];
   readonly shortSession: (key: string) => string;
@@ -341,6 +342,15 @@ export const dashboardStateKit = (): DashboardStateKit => {
     return params.toString();
   };
 
+  const reposQuery = (tz: string): string =>
+    new URLSearchParams({
+      groupBy: "repo",
+      limit: "200",
+      metrics: "requests",
+      sortBy: "requests",
+      tz,
+    }).toString();
+
   const withFilter = (
     state: UsageViewState,
     dimension: string,
@@ -425,20 +435,37 @@ export const dashboardStateKit = (): DashboardStateKit => {
   };
 
   const UUID_V7 = /^[\da-f]{8}-[\da-f]{4}-7[\da-f]{3}-/iu;
+  const SESSION_PREFIX = /^(?:session-|ses_)/u;
+  const AGENT_MARK = ":agent-";
 
-  const shortSession = (key: string): string => {
-    if (key.length <= 14) {
-      return key;
-    }
+  const firstCut = (id: string): number => (UUID_V7.test(id) ? 13 : 8);
 
-    return key.slice(0, UUID_V7.test(key) ? 13 : 8);
+  const idCuts: readonly ((id: string) => number)[] = [
+    firstCut,
+    () => 13,
+    (id) => id.length,
+  ];
+
+  const cutId = (id: string, size: (id: string) => number): string => {
+    const prefix = SESSION_PREFIX.exec(id)?.[0] ?? "";
+    const rest = id.slice(prefix.length);
+
+    return rest.length <= 14 ? id : prefix + rest.slice(0, size(rest));
   };
 
-  const sessionCuts: readonly ((key: string) => string)[] = [
-    shortSession,
-    (key) => (key.length <= 14 ? key : key.slice(0, 13)),
-    (key) => key,
-  ];
+  const cutSession = (key: string, size: (id: string) => number): string => {
+    const at = key.indexOf(AGENT_MARK);
+
+    return at === -1
+      ? cutId(key, size)
+      : `${cutId(key.slice(0, at), size)} \u203A ${cutId(key.slice(at + AGENT_MARK.length), size)}`;
+  };
+
+  const shortSession = (key: string): string => cutSession(key, firstCut);
+
+  const sessionCuts: readonly ((key: string) => string)[] = idCuts.map(
+    (size) => (key: string) => cutSession(key, size)
+  );
 
   const sessionLabels = (keys: readonly string[]): readonly string[] => {
     const levels = sessionCuts.map((cut) => keys.map((key) => cut(key)));
@@ -554,6 +581,7 @@ export const dashboardStateKit = (): DashboardStateKit => {
     drill,
     encode,
     facetQuery,
+    reposQuery,
     segment,
     sessionLabels,
     shortSession,

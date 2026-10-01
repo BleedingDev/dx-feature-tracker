@@ -403,6 +403,35 @@ describe("dashboard session labels", () => {
     ]);
     expect(new Set(kit.sessionLabels([parent, subagent, later])).size).toBe(3);
   });
+
+  it("keeps the part of an id after a tool prefix such as session- or ses_", () => {
+    const deepseek = "session-b4ed1751-db57-4ba0-833c-2ce90c50e141";
+    const other = "session-c4146155-0f3e-4a2b-9d4f-6a8c0e2a4b6d";
+
+    expect(kit.shortSession(deepseek)).toBe("session-b4ed1751");
+    expect(kit.shortSession("ses_3b5a2f1e8ffeKq9TzW4hVb2N")).toBe(
+      "ses_3b5a2f1e"
+    );
+    expect(kit.sessionLabels([deepseek, other])).toEqual([
+      "session-b4ed1751",
+      "session-c4146155",
+    ]);
+  });
+
+  it("names a subagent after its session and gives the session the same label with or without it", () => {
+    const first = "24ae293e-278a-483e-a09d-62c57aa4728e";
+    const second = "c3304500-46ce-4a18-9d9f-a084435b758e";
+    const child = `${first}:agent-a1b2c3d4e5f60718`;
+
+    expect(kit.shortSession(child)).toBe("24ae293e › a1b2c3d4");
+    expect(kit.sessionLabels([first, second])).toEqual(
+      kit.sessionLabels([first, second, child]).slice(0, 2)
+    );
+    expect(kit.sessionLabels([first, second])).toEqual([
+      "24ae293e",
+      "c3304500",
+    ]);
+  });
 });
 
 describe("dashboard state script", () => {
