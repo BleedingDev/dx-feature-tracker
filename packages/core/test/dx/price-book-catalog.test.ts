@@ -80,6 +80,40 @@ const request = (
 const usdOf = (estimate: RequestEstimate) =>
   estimate.kind === "priced" ? estimate.usd : null;
 
+interface TierSpec {
+  readonly at?: string;
+  readonly model: string;
+  readonly provider: "anthropic" | "deepseek" | "openai";
+  readonly serviceTier?: string;
+  readonly speed?: string;
+  readonly tokens?: Partial<AiTokens>;
+}
+
+const MILLION_EACH = { inputFresh: 1_000_000, output: 1_000_000 };
+
+const tiered = (spec: TierSpec): PricedRequest => {
+  const base = request(
+    "codex",
+    "openai",
+    spec.model,
+    spec.tokens ?? MILLION_EACH,
+    spec.at ?? "2026-10-01T12:00:00.000Z"
+  );
+
+  return {
+    ...base,
+    ai: base.ai === null ? null : { ...base.ai, provider: spec.provider },
+    usage:
+      base.usage === null
+        ? null
+        : {
+            ...base.usage,
+            serviceTier: spec.serviceTier ?? "standard",
+            speed: spec.speed ?? "standard",
+          },
+  };
+};
+
 it.layer(
   PriceBook.fromCatalog({
     cacheDir: folder("empty"),
@@ -94,7 +128,7 @@ it.layer(
         const book = yield* PriceBook;
 
         expect(book.origin).toBe("bundled");
-        expect(book.label).toBe("bundled@2026-10-01");
+        expect(book.label).toBe("maker@2026-10-01+bundled@2026-10-01");
         expect(book.warnings.join(" ")).toContain("bundled catalog snapshot");
         expect(fetches.length).toBeGreaterThan(0);
       })
@@ -150,6 +184,107 @@ it.layer(
       );
 
       expect(estimate).toMatchObject({ contextTier: 272_000, usd: 1.2 });
+    })
+  );
+
+  test.effect(
+    "prices models the catalog lacks or misprices at the maker's page",
+    () =>
+      Effect.gen(function* makerPrices() {
+        const book = yield* PriceBook;
+
+        const at = (model: string, provider: TierSpec["provider"]) =>
+          usdOf(book.estimate(tiered({ model, provider })));
+
+        expect({
+          codexMini: at("gpt-5-codex-mini", "openai"),
+          haiku35: at("claude-3-5-haiku-20241022", "anthropic"),
+          opus4: at("claude-opus-4-20250514", "anthropic"),
+          opus41: at("claude-opus-4-1-20250805", "anthropic"),
+          sonnet4: at("claude-sonnet-4-20250514", "anthropic"),
+          v4pro: at("deepseek-v4-pro", "deepseek"),
+        }).toEqual({
+          codexMini: 2.25,
+          haiku35: 4.8,
+          opus4: 90,
+          opus41: 90,
+          sonnet4: 18,
+          v4pro: 2.64,
+        });
+      })
+  );
+
+  test.effect("doubles DeepSeek prices in its weekday peak hours", () =>
+    Effect.gen(function* deepseekPeak() {
+      const book = yield* PriceBook;
+
+      const at = (model: string, when: string) =>
+        book.estimate(tiered({ at: when, model, provider: "deepseek" }));
+
+      const peak = at("deepseek-v4-pro", "2026-10-01T07:30:00.000Z");
+
+      expect(peak).toMatchObject({ serviceTier: "peak", usd: 5.28 });
+      expect(
+        [
+          "2026-10-01T02:00:00.000Z",
+          "2026-10-01T05:00:00.000Z",
+          "2026-10-01T09:59:00.000Z",
+          "2026-10-01T10:00:00.000Z",
+          "2026-10-03T07:30:00.000Z",
+        ].map((when) => usdOf(at("deepseek-flash", when)))
+      ).toEqual([1.5, 0.75, 1.5, 0.75, 0.75]);
+    })
+  );
+
+  test.effect("uses each model's published fast mode price", () =>
+    Effect.gen(function* fastMode() {
+      const book = yield* PriceBook;
+
+      const fast = (model: string) =>
+        book.estimate(tiered({ model, provider: "anthropic", speed: "fast" }));
+
+      expect(fast("claude-opus-4-8")).toMatchObject({
+        complete: true,
+        usd: 60,
+      });
+      expect(fast("claude-opus-4-6")).toMatchObject({
+        complete: true,
+        usd: 30,
+      });
+    })
+  );
+
+  test.effect("uses each OpenAI model's own Fast and Ultrafast price", () =>
+    Effect.gen(function* openaiTiers() {
+      const book = yield* PriceBook;
+
+      const tokens = { inputFresh: 100_000, output: 100_000 };
+
+      const at = (model: string, serviceTier: string) =>
+        usdOf(
+          book.estimate(
+            tiered({ model, provider: "openai", serviceTier, tokens })
+          )
+        );
+
+      expect([
+        at("gpt-5.5", "priority"),
+        at("gpt-5.5", "fast"),
+        at("gpt-5.6-sol", "priority"),
+        at("o4-mini", "fast"),
+        at("gpt-4o", "fast"),
+        at("gpt-6-astra", "ultrafast"),
+      ]).toEqual([8.75, 8.75, 4.8, 1, 2.125, 36]);
+      expect(
+        book.estimate(
+          tiered({
+            model: "gpt-5.5",
+            provider: "openai",
+            serviceTier: "ultrafast",
+            tokens,
+          })
+        )
+      ).toMatchObject({ complete: false, usd: 3.5 });
     })
   );
 });
@@ -239,7 +374,7 @@ it.layer(versionedBook.pipe(Layer.provide(userPrices)))(
         const book = yield* PriceBook;
 
         expect(book.label).toBe(
-          "user@2026-10-01+models.dev@2026-09-20+bundled@2026-10-01"
+          "user@2026-10-01+maker@2026-10-01+models.dev@2026-09-20+bundled@2026-10-01"
         );
         expect(
           usdOf(

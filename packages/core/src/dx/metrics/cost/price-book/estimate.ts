@@ -423,7 +423,14 @@ const priceTokens = (
   }
 
   const speed = usage.speed ?? hit.impliedSpeed;
-  const service = tierPricing(maker, hit.price.key, usage.serviceTier, speed);
+
+  const service = tierPricing({
+    at: request.occurredAt,
+    key: hit.price.key,
+    maker,
+    serviceTier: usage.serviceTier,
+    speed,
+  });
 
   if (service.unpricedTier !== null) {
     notes.push(

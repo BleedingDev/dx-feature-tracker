@@ -7,7 +7,7 @@ import { DateTime, Effect, Option, Schema } from "effect";
 import type { PriceBookApi } from "../price-book/book.js";
 import {
   bookFromTimeline,
-  bundledSheet,
+  publicSheets,
   priceBookOf,
 } from "../price-book/book.js";
 import { sheetFromCatalogs } from "../price-book/sheet.js";
@@ -242,17 +242,16 @@ export const cachedPriceProvider = (dftHome: string): PriceProvider => {
   const cached = readCached(dftCatalogDir(dftHome));
   const [newest] = cached;
   const sheet = sheetFromCatalogs(cached);
-  const bundled = bundledSheet();
 
   return newest === undefined || sheet === null
     ? {
-        book: priceBookOf([bundled], "bundled"),
+        book: priceBookOf(publicSheets(null), "bundled"),
         origin: "bundled",
         table: cursorPriceTable202609,
         warnings: [],
       }
     : {
-        book: priceBookOf([sheet, bundled], "cache"),
+        book: priceBookOf(publicSheets(sheet), "cache"),
         origin: "cache",
         table: catalogPriceTable(newest, cursorPriceTable202609),
         warnings: [],

@@ -26,6 +26,7 @@ export const MODEL_ALIASES: ReadonlyMap<string, ModelAlias> = new Map([
     ),
   ],
   ["gpt-5-codex", alias("gpt-5")],
+  ["gpt-5-codex-mini", alias("gpt-5-mini")],
   ["gpt-5.1-codex", alias("gpt-5.1")],
   ["gpt-5.1-codex-max", alias("gpt-5.1")],
   ["gpt-5.1-codex-mini", alias("gpt-5-mini")],

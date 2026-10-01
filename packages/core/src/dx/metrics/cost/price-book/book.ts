@@ -9,6 +9,7 @@ import type {
   SheetLookup,
 } from "./estimate.js";
 import { estimateRequest, lookupPrice, requestLedgers } from "./estimate.js";
+import { makerSheet } from "./maker-sheet.js";
 import { PRICING_RULES_SOURCE } from "./rules.js";
 import type { PriceSheet } from "./sheet.js";
 import { sheetFromCatalogs } from "./sheet.js";
@@ -61,6 +62,14 @@ export const bundledSheet = (): PriceSheet => {
   };
 };
 
+export const publicSheets = (
+  catalogSheet: PriceSheet | null
+): readonly PriceSheet[] => [
+  makerSheet(),
+  ...(catalogSheet === null ? [] : [catalogSheet]),
+  bundledSheet(),
+];
+
 export const bookFromTimeline = (
   timeline: CatalogTimeline
 ): Effect.Effect<PriceBookApi> =>
@@ -68,12 +77,7 @@ export const bookFromTimeline = (
     const overrides = yield* PriceOverrides;
     const catalogSheet = sheetFromCatalogs(timeline.catalogs);
     const bundled = bundledSheet();
-
-    const sheets = [
-      ...overrides,
-      ...(catalogSheet === null ? [] : [catalogSheet]),
-      bundled,
-    ];
+    const sheets = [...overrides, ...publicSheets(catalogSheet)];
 
     return catalogSheet === null
       ? priceBookOf(sheets, "bundled", [
