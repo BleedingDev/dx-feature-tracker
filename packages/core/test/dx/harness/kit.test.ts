@@ -28,8 +28,10 @@ import { LocalSqlite } from "../../../src/dx/harness/local-sqlite.js";
 import {
   inferProvider,
   inferVia,
+  isLocalRuntime,
   normalizeModel,
   providerFor,
+  viaFor,
 } from "../../../src/dx/harness/provider.js";
 import {
   emptyEventIdentity,
@@ -58,7 +60,8 @@ describe("model provider and gateway", () => {
     expect(inferProvider("openrouter/anthropic/claude-opus-4")).toBe(
       "anthropic"
     );
-    expect(inferProvider("ollama/llama3.1:8b")).toBe("local");
+    expect(inferProvider("ollama/llama3.1:8b")).toBe("meta");
+    expect(inferProvider("ollama/my-finetune")).toBe("local");
     expect(inferProvider("composer-1")).toBe("cursor");
     expect(inferProvider("auto")).toBe("cursor");
     expect(inferProvider("mystery-model")).toBe("unknown");
@@ -71,11 +74,21 @@ describe("model provider and gateway", () => {
     expect(inferVia("copilot/gpt-5")).toBe("github-copilot");
     expect(inferVia("anthropic/claude-opus-4")).toBeNull();
     expect(inferVia("claude-opus-4")).toBeNull();
+    expect(inferVia("lm-studio/qwen3-coder")).toBe("lmstudio");
   });
 
   it("prefers an explicit provider hint", () => {
     expect(providerFor("big-pickle", "zhipuai")).toBe("zhipu");
-    expect(providerFor("llama3", "ollama")).toBe("local");
+  });
+
+  it("keeps the maker for local models and puts the local runtime in via", () => {
+    expect(providerFor("llama3", "ollama")).toBe("meta");
+    expect(viaFor("llama3", "ollama")).toBe("ollama");
+    expect(providerFor("my-finetune", "ollama")).toBe("local");
+    expect(isLocalRuntime(viaFor("qwen3-coder", "lm-studio"))).toBe(true);
+    expect(isLocalRuntime(viaFor("openrouter/qwen/qwen3-coder", null))).toBe(
+      false
+    );
   });
 
   it("normalizes the model name without its gateway or date stamp", () => {

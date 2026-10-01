@@ -17,16 +17,28 @@ const GATEWAY_ALIASES: ReadonlyMap<string, string> = new Map([
   ["vercel-ai-gateway", "vercel"],
 ]);
 
-const LOCAL_RUNTIMES: ReadonlySet<string> = new Set([
+export const LOCAL_RUNTIMES: readonly string[] = [
   "ollama",
   "lmstudio",
-  "lm-studio",
   "llama.cpp",
-  "llamacpp",
   "vllm",
-  "local",
   "mlx",
+  "local",
+];
+
+const LOCAL_RUNTIME_ALIASES: ReadonlyMap<string, string> = new Map([
+  ["lm-studio", "lmstudio"],
+  ["llamacpp", "llama.cpp"],
 ]);
+
+const localRuntimeOf = (segment: string): string | null => {
+  const alias = LOCAL_RUNTIME_ALIASES.get(segment) ?? segment;
+
+  return LOCAL_RUNTIMES.includes(alias) ? alias : null;
+};
+
+export const isLocalRuntime = (via: string | null): boolean =>
+  via !== null && LOCAL_RUNTIMES.includes(via);
 
 const PROVIDER_PREFIXES: ReadonlyMap<string, ModelProvider> = new Map([
   ["anthropic", "anthropic"],
@@ -81,7 +93,7 @@ const segmentsOf = (raw: string): readonly string[] =>
 const gatewayOf = (segment: string): string | null => {
   const alias = GATEWAY_ALIASES.get(segment) ?? segment;
 
-  return KNOWN_GATEWAYS.includes(alias) ? alias : null;
+  return KNOWN_GATEWAYS.includes(alias) ? alias : localRuntimeOf(segment);
 };
 
 export const normalizeModel = (raw: string | null): string | null => {
@@ -114,10 +126,6 @@ export const inferVia = (raw: string | null): string | null => {
 
 const providerFromPrefix = (raw: string): ModelProvider | null => {
   for (const segment of segmentsOf(raw).slice(0, -1)) {
-    if (LOCAL_RUNTIMES.has(segment)) {
-      return "local";
-    }
-
     const provider = PROVIDER_PREFIXES.get(segment);
 
     if (provider !== undefined) {
@@ -128,11 +136,7 @@ const providerFromPrefix = (raw: string): ModelProvider | null => {
   return null;
 };
 
-export const inferProvider = (raw: string | null): ModelProvider => {
-  if (raw === null || raw.trim() === "") {
-    return "unknown";
-  }
-
+const makerOf = (raw: string): ModelProvider => {
   const fromPrefix = providerFromPrefix(raw);
 
   if (fromPrefix !== null) {
@@ -146,21 +150,37 @@ export const inferProvider = (raw: string | null): ModelProvider => {
   );
 };
 
+const runsLocally = (raw: string): boolean =>
+  segmentsOf(raw)
+    .slice(0, -1)
+    .some((segment) => localRuntimeOf(segment) !== null);
+
+export const inferProvider = (raw: string | null): ModelProvider => {
+  if (raw === null || raw.trim() === "") {
+    return "unknown";
+  }
+
+  const maker = makerOf(raw);
+
+  return maker === "unknown" && runsLocally(raw) ? "local" : maker;
+};
+
 export const providerFor = (
   raw: string | null,
   hint: string | null
 ): ModelProvider => {
   if (hint !== null) {
     const normalized = hint.trim().toLowerCase();
-
-    if (LOCAL_RUNTIMES.has(normalized)) {
-      return "local";
-    }
-
     const direct = PROVIDER_PREFIXES.get(normalized);
 
     if (direct !== undefined) {
       return direct;
+    }
+
+    if (localRuntimeOf(normalized) !== null) {
+      const maker = inferProvider(raw);
+
+      return maker === "unknown" ? "local" : maker;
     }
   }
 

@@ -38,7 +38,7 @@ flowchart LR
 
 | Block | Fields |
 | --- | --- |
-| `ai: AiAttribution \| null` | `harness`, `harnessVersion`, `channel`, `provider` (model maker), `via` (gateway or null), `model` (normalized), `modelRaw`, `effort`, `effortSource`, `sessionId`, `parentSessionId`, `agentId`, `agentType`, `cwd`, `branchSource` |
+| `ai: AiAttribution \| null` | `harness`, `harnessVersion`, `channel`, `provider` (model maker; `local` only when a local model's maker is unknown), `via` (gateway such as `openrouter`, local runtime such as `ollama` (`isLocalRuntime`), or null), `model` (normalized), `modelRaw`, `effort`, `effortSource`, `sessionId`, `parentSessionId`, `agentId`, `agentType`, `cwd`, `branchSource` |
 | `usage: AiUsage \| null` | `requestKey`, `tokens` (`inputFresh`, `cacheRead`, `cacheWrite5m`, `cacheWrite1h`, `cacheWrite`, `output`, `reasoning` inside output, `total`; `null` means unknown, never `0`), `toolFigure` (`amount`, `currency`, `kind`: `charge`, `list-price` or `api-equivalent`), `serviceTier`, `speed`, `premiumRequests` |
 
 Every `ai.*` event from a harness carries `ai`; non-AI events carry `null` in both. Store migration 2 (`storage/migrations.ts`, `storage/upgrade-v1.ts`) rewrites v1 rows and pending spool batches forward. Collectors that predate harness folders fill the blocks through `withCollectorBlocks` (`harness/collector-blocks.ts`); a new harness builds them directly.

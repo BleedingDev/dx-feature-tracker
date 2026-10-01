@@ -17,8 +17,10 @@ export type {
 
 export {
   KNOWN_GATEWAYS,
+  LOCAL_RUNTIMES,
   inferProvider,
   inferVia,
+  isLocalRuntime,
   normalizeModel,
   providerFor,
   viaFor,
