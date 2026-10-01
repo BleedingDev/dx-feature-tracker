@@ -14,6 +14,7 @@ import {
 import {
   branchAt,
   buildHeadMoves,
+  detachedRefsOf,
   parseReflogLines,
 } from "../../src/dx/correlation/branch-at-time/timeline.js";
 import type {
@@ -631,6 +632,205 @@ describe("a clone that checks out origin/main", () => {
               .filter((payload) => payload.observationKind === "head-moves")
               .map((payload) => payload.detachedRefs)
           ).toStrictEqual([["origin/main"]]);
+        })
+      ).pipe(Effect.provide(NodeServices.layer))
+  );
+});
+
+const liveAndReplayed = (runGit: GitRunner, work: string) =>
+  Effect.gen(function* loadBoth() {
+    const { timeline } = yield* loadWorktreeTimeline(runGit, work);
+
+    const observed = yield* collectGitObservation(runGit, {
+      adapterId: "git-observation",
+      context: emptyFlightContext,
+      cursor: null,
+      origin: "fixture",
+      scratchDir: null,
+      selectedInput: work,
+    });
+
+    const replayed = withStoredHistory(
+      {
+        currentBranch: null,
+        currentSinceMs: null,
+        moves: [],
+        points: [],
+        reflogFromMs: null,
+        worktree: work,
+      },
+      storedHeadHistory(observed.events)
+    );
+
+    return { observed, replayed, timeline };
+  });
+
+const readAt =
+  (instants: readonly string[]) =>
+  (source: WorktreeTimeline): readonly string[] =>
+    instants.map((at) => {
+      const found = branchAt(source, ms(at));
+
+      return `${found.branch}${found.detached ? " (detached)" : ""}`;
+    });
+
+describe("checkout history that outlives its refs", () => {
+  it("reads a checkout under a configured remote as detached once that remote branch is gone", () => {
+    expect(
+      detachedRefsOf(
+        reflog([
+          ["2026-09-01T09:00:00Z", "checkout: moving from main to origin/gone"],
+          ["2026-09-01T10:00:00Z", "checkout: moving from main to origin/fix"],
+          [
+            "2026-09-01T11:00:00Z",
+            "checkout: moving from main to upstream/wip",
+          ],
+          ["2026-09-01T12:00:00Z", "checkout: moving from main to fork/a/b"],
+        ]),
+        ["refs/heads/main", "refs/heads/origin/fix"],
+        ["origin", "fork/a"]
+      )
+    ).toStrictEqual(["fork/a/b", "origin/gone"]);
+  });
+
+  it.effect(
+    "keeps a checkout of a remote branch detached after fetch --prune deletes it",
+    () =>
+      Effect.scoped(
+        Effect.gen(function* prunedRemote() {
+          const fileSystem = yield* FileSystem.FileSystem;
+          const path = yield* Path.Path;
+          const gitAt = yield* datedRunner;
+
+          const root = yield* fileSystem.realPath(
+            yield* fileSystem.makeTempDirectoryScoped()
+          );
+
+          const upstream = path.join(root, "upstream");
+          const work = path.join(root, "work");
+
+          yield* fileSystem.makeDirectory(upstream);
+
+          const steps: readonly (readonly [
+            string,
+            string,
+            readonly string[],
+          ])[] = [
+            ["2026-09-01T08:00:00Z", upstream, ["init", "-q", "-b", "main"]],
+            [
+              "2026-09-01T08:00:00Z",
+              upstream,
+              ["commit", "-q", "--allow-empty", "-m", "base"],
+            ],
+            ["2026-09-01T08:05:00Z", upstream, ["branch", "feat-r"]],
+            ["2026-09-01T08:30:00Z", root, ["clone", "-q", upstream, work]],
+            ["2026-09-01T09:00:00Z", work, ["switch", "-q", "-c", "feat/x"]],
+            [
+              "2026-09-01T09:30:00Z",
+              work,
+              ["commit", "-q", "--allow-empty", "-m", "x"],
+            ],
+            ["2026-09-01T10:00:00Z", work, ["checkout", "-q", "origin/feat-r"]],
+            [
+              "2026-09-01T10:15:00Z",
+              work,
+              ["rebase", "-q", "origin/feat-r", "feat/x"],
+            ],
+            ["2026-09-01T11:00:00Z", work, ["checkout", "-q", "main"]],
+            ["2026-09-01T11:10:00Z", upstream, ["branch", "-D", "feat-r"]],
+            ["2026-09-01T11:20:00Z", work, ["fetch", "-q", "--prune"]],
+          ];
+
+          for (const [date, cwd, args] of steps) {
+            yield* gitAt(date)(cwd, args);
+          }
+
+          const { observed, replayed, timeline } = yield* liveAndReplayed(
+            gitAt("2026-09-01T12:00:00Z"),
+            work
+          );
+
+          const read = readAt([
+            "2026-09-01T10:05:00Z",
+            "2026-09-01T10:30:00Z",
+            "2026-09-01T11:30:00Z",
+          ]);
+
+          const expected = ["feat/x (detached)", "feat/x", "main"];
+
+          expect(read(timeline)).toStrictEqual(expected);
+          expect(read(replayed)).toStrictEqual(expected);
+          expect(
+            [...timeline.moves, ...replayed.moves].filter((move) =>
+              [move.branch, move.owner].includes("origin/feat-r")
+            )
+          ).toStrictEqual([]);
+          expect(
+            observed.events
+              .map((event) => event.payload)
+              .filter((payload) => payload.observationKind === "head-moves")
+              .map((payload) => payload.detachedRefs)
+          ).toStrictEqual([["origin/feat-r"]]);
+        })
+      ).pipe(Effect.provide(NodeServices.layer))
+  );
+
+  it.effect(
+    "gives the same branch live and replayed around a rebase that stopped and was quit",
+    () =>
+      Effect.scoped(
+        Effect.gen(function* quitRebase() {
+          const fileSystem = yield* FileSystem.FileSystem;
+          const gitAt = yield* datedRunner;
+
+          const work = yield* fileSystem.realPath(
+            yield* fileSystem.makeTempDirectoryScoped()
+          );
+
+          const steps: readonly (readonly [string, readonly string[]])[] = [
+            ["2026-09-01T08:00:00Z", ["init", "-q", "-b", "main"]],
+            [
+              "2026-09-01T08:00:00Z",
+              ["commit", "-q", "--allow-empty", "-m", "a"],
+            ],
+            [
+              "2026-09-01T08:10:00Z",
+              ["commit", "-q", "--allow-empty", "-m", "b"],
+            ],
+            ["2026-09-01T09:00:00Z", ["switch", "-q", "-c", "feat"]],
+            [
+              "2026-09-01T09:30:00Z",
+              ["commit", "-q", "--allow-empty", "-m", "f"],
+            ],
+            ["2026-09-01T10:00:00Z", ["checkout", "-q", "main"]],
+            ["2026-09-01T10:30:00Z", ["rebase", "-q", "-x", "false", "HEAD~1"]],
+            ["2026-09-01T10:40:00Z", ["rebase", "--quit"]],
+            ["2026-09-01T11:00:00Z", ["checkout", "-q", "feat"]],
+          ];
+
+          for (const [date, args] of steps) {
+            yield* gitAt(date)(work, args).pipe(Effect.orElseSucceed(() => ""));
+          }
+
+          const { replayed, timeline } = yield* liveAndReplayed(
+            gitAt("2026-09-01T12:00:00Z"),
+            work
+          );
+
+          const read = readAt([
+            "2026-09-01T09:45:00Z",
+            "2026-09-01T10:15:00Z",
+            "2026-09-01T10:45:00Z",
+            "2026-09-01T11:30:00Z",
+          ]);
+
+          expect(read(timeline)).toStrictEqual([
+            "feat",
+            "main",
+            "main (detached)",
+            "feat",
+          ]);
+          expect(read(replayed)).toStrictEqual(read(timeline));
         })
       ).pipe(Effect.provide(NodeServices.layer))
   );

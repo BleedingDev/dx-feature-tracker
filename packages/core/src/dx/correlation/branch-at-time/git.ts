@@ -6,6 +6,7 @@ import {
   branchActivityPoints,
   buildHeadMoves,
   detachedRefsOf,
+  localBranchesOf,
   parseReflogLines,
 } from "./timeline.js";
 import type {
@@ -61,6 +62,12 @@ export const commitBranchMap = (
 
 const HEADS = "refs/heads/";
 
+const linesOf = (output: string): readonly string[] =>
+  output
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line !== "");
+
 const loadRefnames = (
   runGit: GitRunner,
   worktree: string
@@ -75,20 +82,37 @@ const loadRefnames = (
         "refs/tags",
       ])
     ),
-    (output) =>
-      output
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line !== "")
+    linesOf
   );
 
-export const loadDetachedRefs = (
+const loadRemotes = (
+  runGit: GitRunner,
+  worktree: string
+): Effect.Effect<readonly string[]> =>
+  Effect.map(orEmpty(runGit(worktree, ["remote"])), linesOf);
+
+export interface CheckoutRefs {
+  readonly detachedRefs: readonly string[];
+  readonly localBranches: readonly string[];
+}
+
+const checkoutRefsOf = (
+  entries: readonly RawReflogEntry[],
+  refnames: readonly string[],
+  remotes: readonly string[]
+): CheckoutRefs => ({
+  detachedRefs: detachedRefsOf(entries, refnames, remotes),
+  localBranches: localBranchesOf(entries, refnames),
+});
+
+export const loadCheckoutRefs = (
   runGit: GitRunner,
   worktree: string,
   entries: readonly RawReflogEntry[]
-): Effect.Effect<readonly string[]> =>
-  Effect.map(loadRefnames(runGit, worktree), (refnames) =>
-    detachedRefsOf(entries, refnames)
+): Effect.Effect<CheckoutRefs> =>
+  Effect.map(
+    Effect.all([loadRefnames(runGit, worktree), loadRemotes(runGit, worktree)]),
+    ([refnames, remotes]) => checkoutRefsOf(entries, refnames, remotes)
   );
 
 export interface LoadedTimeline {
@@ -119,11 +143,17 @@ export const loadWorktreeTimeline = (
 
     const currentBranch = current === "" ? null : current;
 
+    const { detachedRefs, localBranches } = checkoutRefsOf(
+      headEntries,
+      refnames,
+      yield* loadRemotes(runGit, worktree)
+    );
+
     const moves = buildHeadMoves(
       headEntries,
-      new Set(branches),
+      new Set(localBranches),
       currentBranch,
-      new Set(detachedRefsOf(headEntries, refnames))
+      new Set(detachedRefs)
     );
 
     const perBranch = yield* Effect.forEach(

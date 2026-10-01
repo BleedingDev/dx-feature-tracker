@@ -248,28 +248,47 @@ const checkoutStateOf = (
 
 const REF_PREFIXES = ["refs/", "refs/tags/", "refs/remotes/"] as const;
 
-export const detachedRefsOf = (
+const namesOf = (
   entries: readonly RawReflogEntry[],
-  refnames: readonly string[]
-): readonly string[] => {
-  const refs = new Set(refnames);
-
-  const names = new Set(
+  sides: (transition: Transition) => readonly (string | null)[]
+): ReadonlySet<string> =>
+  new Set(
     entries.flatMap((entry) => {
-      const to = transitionOf(entry.subject)?.to;
+      const transition = transitionOf(entry.subject);
 
-      return to === undefined || to === null ? [] : [to];
+      return transition === null
+        ? []
+        : sides(transition).flatMap((name) => (name === null ? [] : [name]));
     })
   );
 
-  return [...names]
+export const detachedRefsOf = (
+  entries: readonly RawReflogEntry[],
+  refnames: readonly string[],
+  remotes: readonly string[] = []
+): readonly string[] => {
+  const refs = new Set(refnames);
+
+  return [...namesOf(entries, (transition) => [transition.to])]
     .filter(
       (name) =>
         looksLikeBranch(name) &&
         !refs.has(`refs/heads/${name}`) &&
         (REF_PREFIXES.some((prefix) => refs.has(`${prefix}${name}`)) ||
-          refs.has(`refs/remotes/${name}/HEAD`))
+          refs.has(`refs/remotes/${name}/HEAD`) ||
+          remotes.some((remote) => name.startsWith(`${remote}/`)))
     )
+    .toSorted();
+};
+
+export const localBranchesOf = (
+  entries: readonly RawReflogEntry[],
+  refnames: readonly string[]
+): readonly string[] => {
+  const refs = new Set(refnames);
+
+  return [...namesOf(entries, (transition) => [transition.from, transition.to])]
+    .filter((name) => refs.has(`refs/heads/${name}`))
     .toSorted();
 };
 

@@ -9,9 +9,10 @@ import type { SourceUnavailable } from "../../contracts/error-source-unavailable
 import type { CollectInput, DxCollector } from "../../contracts/services.js";
 import { CONTRACT_VERSION } from "../../contracts/version.js";
 import {
-  loadDetachedRefs,
+  loadCheckoutRefs,
   reflogArgs,
 } from "../../correlation/branch-at-time/git.js";
+import type { CheckoutRefs } from "../../correlation/branch-at-time/git.js";
 import {
   isHeadTransition,
   isoOf,
@@ -226,12 +227,17 @@ export const reflogDraft = (
   upstreamKey: `reflog:${scopeKey}:${branch}:${entry.newSha}:${entry.occurredAt ?? "unknown"}:${entry.action}`,
 });
 
+const NO_CHECKOUT_REFS: CheckoutRefs = {
+  detachedRefs: [],
+  localBranches: [],
+};
+
 export const headMovesDraft = (
   scopeKey: string,
   branch: string | null,
   entries: readonly RawReflogEntry[],
   observedAt: string,
-  detachedRefs: readonly string[] = []
+  { detachedRefs, localBranches }: CheckoutRefs = NO_CHECKOUT_REFS
 ): EventDraft | null => {
   const [first] = entries;
 
@@ -247,10 +253,13 @@ export const headMovesDraft = (
       : []
   );
 
-  const moves =
-    detachedRefs.length === 0
-      ? { branch, startedAt, transitions }
-      : { branch, detachedRefs, startedAt, transitions };
+  const refLists = Object.fromEntries(
+    Object.entries({ detachedRefs, localBranches }).filter(
+      ([, names]) => names.length > 0
+    )
+  );
+
+  const moves = { branch, ...refLists, startedAt, transitions };
 
   const hash = sha256(JSON.stringify(moves)).slice(0, 16);
 
@@ -427,7 +436,7 @@ export const collectGitObservation = Effect.fn("GitObservation.collect")(
       )
     );
 
-    const detachedRefs = yield* loadDetachedRefs(runGit, worktree, headEntries);
+    const checkoutRefs = yield* loadCheckoutRefs(runGit, worktree, headEntries);
 
     const observedAt = DateTime.formatIso(
       DateTime.makeUnsafe(yield* Clock.currentTimeMillis)
@@ -461,7 +470,7 @@ export const collectGitObservation = Effect.fn("GitObservation.collect")(
           state.branch,
           headEntries,
           observedAt,
-          detachedRefs
+          checkoutRefs
         ),
       ].flatMap((draft) => (draft === null ? [] : [draft])),
     ].map((draft) => toEnvelope(frame, draft));
