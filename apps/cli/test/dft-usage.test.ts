@@ -7,7 +7,11 @@ import path from "node:path";
 import { NodeServices } from "@effect/platform-node";
 import { afterAll, describe, expect, it } from "@effect/vitest";
 import { EventIdSchema, openSqliteEventStore } from "@rat-stack/core/dx";
-import type { DxEventEnvelope, HarnessId } from "@rat-stack/core/dx";
+import type {
+  DxEventEnvelope,
+  DxUsageOutputType,
+  HarnessId,
+} from "@rat-stack/core/dx";
 import { Effect, Schema } from "effect";
 
 import { usageText } from "../src/dft-usage.js";
@@ -269,47 +273,46 @@ const row = (key: string, tokens: number | null, billed: number | null) => ({
   values: { billed, estimate: 0.5, tokens },
 });
 
+const output: DxUsageOutputType = {
+  asOf: "2026-10-01T12:00:00.000Z",
+  bucket: "day",
+  contractVersion: "dx.usage.v1",
+  coverage: {
+    accountBuckets: { facts: 0, key: "account-bucket", values: {} },
+    derivationVersion: 2,
+    derivedAt: "2026-10-01T12:00:00.000Z",
+    disagreements: [{ count: 2, field: "tokens.output", tool: "codex" }],
+    facts: 5,
+    matched: 5,
+    tools: ["codex"],
+    unpriced: 0,
+    unresolved: 0,
+    withoutTime: 0,
+  },
+  groupBy: "repo",
+  groups: [
+    row("/home/user/a/repo/.git", 3000, null),
+    row("/home/user/b/repo/.git", 2000, 1.25),
+  ],
+  limit: 2,
+  metrics: ["tokens", "estimate", "billed"],
+  notes: ["Estimate note.", "Second note."],
+  other: { ...row("(other)", 100, null), groups: 2 },
+  series: [],
+  sortBy: "tokens",
+  stackBy: "tool",
+  total: row("total", 5200, 1.25),
+  unattributed: row("(unattributed)", 100, null),
+  window: {
+    since: "2026-09-01T00:00:00.000Z",
+    tz: "UTC",
+    until: null,
+  },
+};
+
 describe("dft usage text", () => {
   it("names same-named repos by their folder and keeps Other, unattributed and Total apart", () => {
-    const text = usageText(
-      {
-        asOf: "2026-10-01T12:00:00.000Z",
-        bucket: "day",
-        contractVersion: "dx.usage.v1",
-        coverage: {
-          accountBuckets: { facts: 0, key: "account-bucket", values: {} },
-          derivationVersion: 2,
-          derivedAt: "2026-10-01T12:00:00.000Z",
-          disagreements: [{ count: 2, field: "tokens.output", tool: "codex" }],
-          facts: 5,
-          matched: 5,
-          tools: ["codex"],
-          unpriced: 0,
-          unresolved: 0,
-          withoutTime: 0,
-        },
-        groupBy: "repo",
-        groups: [
-          row("/home/user/a/repo/.git", 3000, null),
-          row("/home/user/b/repo/.git", 2000, 1.25),
-        ],
-        limit: 2,
-        metrics: ["tokens", "estimate", "billed"],
-        notes: ["Estimate note.", "Second note."],
-        other: { ...row("(other)", 100, null), groups: 2 },
-        series: [],
-        sortBy: "tokens",
-        stackBy: "tool",
-        total: row("total", 5200, 1.25),
-        unattributed: row("(unattributed)", 100, null),
-        window: {
-          since: "2026-09-01T00:00:00.000Z",
-          tz: "UTC",
-          until: null,
-        },
-      },
-      { verbose: true }
-    );
+    const text = usageText(output, { verbose: true });
 
     expect(text).toContain("AI usage, 2026-09-01 to now (UTC), by repo");
     expect(text).toMatch(/^a\/repo\s+3k\s+\$0\.50\s+-$/mu);
@@ -319,5 +322,36 @@ describe("dft usage text", () => {
     expect(text).toMatch(/^Total\s+5\.2k/mu);
     expect(text).toContain("Sources disagreed on codex 2 field(s)");
     expect(text).not.toMatch(/[\u2013\u2014]/u);
+  });
+
+  it("dates the heading in the asked time zone and names the last day the window holds", () => {
+    const prague = usageText(
+      {
+        ...output,
+        window: {
+          since: "2026-09-29T22:00:00.000Z",
+          tz: "Europe/Prague",
+          until: "2026-09-30T22:00:00.000Z",
+        },
+      },
+      { verbose: false }
+    );
+
+    const week = usageText(
+      {
+        ...output,
+        window: {
+          since: "2026-09-24T22:00:00.000Z",
+          tz: "Europe/Prague",
+          until: "2026-10-01T10:30:00.000Z",
+        },
+      },
+      { verbose: false }
+    );
+
+    expect(prague).toContain("AI usage, 2026-09-30 (Europe/Prague), by repo");
+    expect(week).toContain(
+      "AI usage, 2026-09-25 to 2026-10-01 (Europe/Prague), by repo"
+    );
   });
 });

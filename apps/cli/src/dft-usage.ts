@@ -11,7 +11,7 @@ import type {
   UsageDimension,
   UsageMetric,
 } from "@rat-stack/core/dx";
-import { Schema } from "effect";
+import { DateTime, Option, Schema } from "effect";
 import type { Effect } from "effect";
 
 import { baseName, repoName } from "./dft-dashboard.js";
@@ -118,16 +118,32 @@ const rowCells = (
   ...metrics.map((metric) => cell(metric, row.values[metric])),
 ];
 
+const localDate = (
+  iso: string | null,
+  tz: string,
+  shiftMs: number
+): string | null =>
+  iso === null
+    ? null
+    : Option.getOrNull(
+        Option.map(
+          DateTime.makeZoned(Date.parse(iso) + shiftMs, { timeZone: tz }),
+          DateTime.formatIsoDate
+        )
+      );
+
 const windowLabel = (output: DxUsageOutputType): string => {
   const { since, tz, until } = output.window;
-  const from = since === null ? null : since.slice(0, 10);
-  const to = until === null ? null : until.slice(0, 10);
+  const from = localDate(since, tz, 0);
+  const to = localDate(until, tz, -1);
 
   if (from === null && to === null) {
     return `all time (${tz})`;
   }
 
-  return `${from ?? "start"} to ${to ?? "now"} (${tz})`;
+  return from !== null && from === to
+    ? `${from} (${tz})`
+    : `${from ?? "start"} to ${to ?? "now"} (${tz})`;
 };
 
 const disagreementLine = (output: DxUsageOutputType): string | null => {
