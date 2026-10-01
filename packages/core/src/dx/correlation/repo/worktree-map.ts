@@ -143,6 +143,25 @@ export const resolvePath = (
   };
 };
 
+export const pathResolver = (
+  maps: readonly RepoMap[]
+): ((rawPath: string) => PathResolution) => {
+  const known = new Map<string, PathResolution>();
+
+  return (rawPath) => {
+    const cached = known.get(rawPath);
+
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const resolution = resolvePath(maps, rawPath);
+    known.set(rawPath, resolution);
+
+    return resolution;
+  };
+};
+
 export type ContextAssignment =
   | "assigned"
   | "conflict"

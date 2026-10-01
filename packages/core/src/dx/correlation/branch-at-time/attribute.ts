@@ -706,7 +706,13 @@ export const summarizeAttribution = (
   const byBranch = new Map<string | null, HistoricalAttribution[]>();
 
   for (const a of attributions) {
-    byBranch.set(a.branch, [...(byBranch.get(a.branch) ?? []), a]);
+    const members = byBranch.get(a.branch);
+
+    if (members === undefined) {
+      byBranch.set(a.branch, [a]);
+    } else {
+      members.push(a);
+    }
   }
 
   return [...byBranch.entries()]

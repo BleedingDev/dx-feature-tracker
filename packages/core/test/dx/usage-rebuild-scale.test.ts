@@ -6,6 +6,8 @@ import { attributeRepos } from "../../src/dx/correlation/attribution/repos.js";
 import { attributeHistoricalBranches } from "../../src/dx/correlation/branch-at-time/attribute.js";
 import { joinAccountRows } from "../../src/dx/correlation/branch-at-time/session-join.js";
 import type { WorktreeTimeline } from "../../src/dx/correlation/branch-at-time/timeline.js";
+import { placeEventsInWorktrees } from "../../src/dx/correlation/branch-at-time/worktree.js";
+import type { RepoMap } from "../../src/dx/correlation/repo/worktree-map.js";
 import { GitRunner } from "../../src/dx/harness/git.js";
 import type { MemoryRepo } from "../../src/dx/harness/git.js";
 import { unknownTokens } from "../../src/dx/model/attribution.js";
@@ -172,4 +174,39 @@ describe("usage facts rebuild at scale", () => {
       }).pipe(Effect.provide(GitRunner.memory(REPOS))),
     { timeout: 20_000 }
   );
+
+  it("places 100k events among hundreds of worktrees in seconds", () => {
+    const worktrees = Array.from({ length: 300 }, (_, index) => ({
+      bare: false,
+      branch: `feature/${String(index)}`,
+      detached: false,
+      headSha: null,
+      path: `${ORCHESTRATOR}/wt-${String(index)}`,
+      prunable: false,
+    }));
+
+    const maps: readonly RepoMap[] = [{ repoCommonDir: APP_GIT, worktrees }];
+
+    const events = Array.from({ length: 100_000 }, (_, index) => {
+      const base = event({
+        at: START_MS + index * 1000,
+        cwd: APP,
+        id: `placed-${String(index)}`,
+        parentSessionId: null,
+        sessionId: `session-${String(index % 50)}`,
+        turnId: null,
+      });
+
+      return {
+        ...base,
+        context: { ...base.context, repoCommonDir: APP_GIT, worktreePath: APP },
+        payload: { cwd: `${ORCHESTRATOR}/wt-${String(index % 300)}/src` },
+      };
+    });
+
+    const placed = placeEventsInWorktrees(maps, events);
+
+    expect(placed.placements).toHaveLength(events.length);
+    expect(placed.events[7]?.context.branch).toBe("feature/7");
+  }, 20_000);
 });

@@ -7,9 +7,13 @@ import { normalizePath } from "../repo/path.js";
 import {
   buildRepoMap,
   parseWorktreePorcelain,
-  resolvePath,
+  pathResolver,
 } from "../repo/worktree-map.js";
-import type { RepoMap, WorktreeRecord } from "../repo/worktree-map.js";
+import type {
+  PathResolution,
+  RepoMap,
+  WorktreeRecord,
+} from "../repo/worktree-map.js";
 
 export type PlacementMethod =
   | "tool-cwd"
@@ -111,11 +115,11 @@ const capturedByOwnPath = (event: DxEventEnvelope): boolean => {
 };
 
 const worktreeFor = (
-  maps: readonly RepoMap[],
+  resolve: (rawPath: string) => PathResolution,
   event: DxEventEnvelope
 ): { readonly by: OwnPath["by"]; readonly worktree: WorktreeRecord } | null => {
   for (const own of ownPathsOf(event)) {
-    const resolved = resolvePath(maps, own.path);
+    const resolved = resolve(own.path);
 
     if (
       resolved.status === "matched" &&
@@ -215,19 +219,22 @@ export const linkSubagentToolCalls = (
 export const placeByOwnPaths = (
   maps: readonly RepoMap[],
   events: readonly DxEventEnvelope[]
-): readonly DxEventEnvelope[] =>
-  events.map((event) => {
+): readonly DxEventEnvelope[] => {
+  const resolve = pathResolver(maps);
+
+  return events.map((event) => {
     if (capturedByOwnPath(event) || event.context.repoCommonDir === null) {
       return event;
     }
 
-    const found = worktreeFor(maps, event);
+    const found = worktreeFor(resolve, event);
 
     return found === null ||
       sameDir(event.context.worktreePath, found.worktree.path)
       ? event
       : place(event, found.worktree, found.by);
   });
+};
 
 const worktreeRecordOf = (
   maps: readonly RepoMap[],
@@ -239,15 +246,16 @@ const worktreeRecordOf = (
     ?.worktrees.find((w) => sameDir(worktreePath, w.path)) ?? null;
 
 const hasOwnPlace = (
-  maps: readonly RepoMap[],
+  resolve: (rawPath: string) => PathResolution,
   event: DxEventEnvelope
-): boolean => capturedByOwnPath(event) || worktreeFor(maps, event) !== null;
+): boolean => capturedByOwnPath(event) || worktreeFor(resolve, event) !== null;
 
 export const placeBySameChat = (
   maps: readonly RepoMap[],
   events: readonly DxEventEnvelope[]
 ): readonly DxEventEnvelope[] => {
   const anchors = new Map<string, Set<string>>();
+  const resolve = pathResolver(maps);
 
   for (const event of events) {
     const { sessionId } = event.identity;
@@ -257,7 +265,7 @@ export const placeBySameChat = (
       sessionId !== null &&
       repoCommonDir !== null &&
       worktreePath !== null &&
-      hasOwnPlace(maps, event)
+      hasOwnPlace(resolve, event)
     ) {
       const key = `${repoCommonDir}\u0000${sessionId}`;
       anchors.set(key, (anchors.get(key) ?? new Set()).add(worktreePath));
@@ -271,7 +279,7 @@ export const placeBySameChat = (
     if (
       sessionId === null ||
       repoCommonDir === null ||
-      hasOwnPlace(maps, event) ||
+      hasOwnPlace(resolve, event) ||
       event.payload.sessionJoin !== undefined
     ) {
       return event;
