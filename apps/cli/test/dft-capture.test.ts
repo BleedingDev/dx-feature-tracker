@@ -430,37 +430,56 @@ describe("tool detection and Codex trust", () => {
   it("counts a tool as installed when its folder exists even without sessions", () => {
     const home = scratch("dft-home-");
     mkdirSync(path.join(home, ".codex"));
+    mkdirSync(path.join(home, ".local", "share"), { recursive: true });
+    mkdirSync(path.join(home, ".config"));
 
-    const detected = detectedFrom([
-      {
-        harness: "codex",
-        present: false,
-        reason: "no sessions",
-        roots: [path.join(home, ".codex", "sessions")],
-        sessions: 0,
-        version: null,
-      },
-      {
-        harness: "pi",
-        present: false,
-        reason: "no sessions",
-        roots: [path.join(home, ".pi", "agent", "sessions")],
-        sessions: 0,
-        version: null,
-      },
-      {
-        harness: "cursor",
-        present: true,
-        reason: null,
-        roots: [],
-        sessions: 3,
-        version: null,
-      },
-    ]);
+    const toolDirOf = (tool: string): string =>
+      tool === "opencode"
+        ? path.join(home, ".local", "share", "opencode")
+        : path.join(home, `.${tool}`);
+
+    const detected = detectedFrom(
+      [
+        {
+          harness: "codex",
+          present: false,
+          reason: "no sessions",
+          roots: [path.join(home, ".codex", "sessions")],
+          sessions: 0,
+          version: null,
+        },
+        {
+          harness: "pi",
+          present: false,
+          reason: "no sessions",
+          roots: [path.join(home, ".pi", "agent", "sessions")],
+          sessions: 0,
+          version: null,
+        },
+        {
+          harness: "opencode",
+          present: false,
+          reason: "no sessions",
+          roots: [path.join(home, ".local", "share", "opencode")],
+          sessions: 0,
+          version: null,
+        },
+        {
+          harness: "cursor",
+          present: true,
+          reason: null,
+          roots: [],
+          sessions: 3,
+          version: null,
+        },
+      ],
+      toolDirOf
+    );
 
     expect(detected.map((item) => [item.tool, item.installed])).toEqual([
       ["codex", true],
       ["pi", false],
+      ["opencode", false],
     ]);
   });
 

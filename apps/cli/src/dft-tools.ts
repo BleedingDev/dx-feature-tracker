@@ -3,9 +3,13 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
-import { HarnessRegistry, harnessRegistryFor } from "@rat-stack/core/dx";
+import {
+  HarnessHome,
+  HarnessRegistry,
+  harnessRegistryFor,
+} from "@rat-stack/core/dx";
 import type { Discovery } from "@rat-stack/core/dx";
-import { Effect, Option, Schema } from "effect";
+import { Effect, Layer, Option, Schema } from "effect";
 
 import {
   CAPTURE_TOOL_NAMES,
@@ -29,7 +33,8 @@ export interface DetectedTool {
 }
 
 export const detectedFrom = (
-  discoveries: readonly Discovery[]
+  discoveries: readonly Discovery[],
+  toolDirOf: (tool: CaptureTool) => string
 ): readonly DetectedTool[] =>
   discoveries.flatMap((discovery) => {
     const tool = discovery.harness;
@@ -42,9 +47,8 @@ export const detectedFrom = (
       {
         installed:
           discovery.present ||
-          discovery.roots.some(
-            (root) => existsSync(root) || existsSync(path.dirname(root))
-          ),
+          existsSync(toolDirOf(tool)) ||
+          discovery.roots.some((root) => existsSync(root)),
         name: CAPTURE_TOOL_NAMES[tool],
         reason: discovery.reason,
         sessions: discovery.sessions,
@@ -56,9 +60,14 @@ export const detectedFrom = (
 export const detectTools = (home: string) =>
   Effect.gen(function* detect() {
     const registry = yield* HarnessRegistry;
+    const locations = yield* HarnessHome;
 
-    return detectedFrom(yield* registry.discover);
-  }).pipe(Effect.provide(harnessRegistryFor(home)));
+    return detectedFrom(yield* registry.discover, locations.rootOf);
+  }).pipe(
+    Effect.provide(
+      Layer.merge(harnessRegistryFor(home), HarnessHome.forHome(home))
+    )
+  );
 
 const projectPath = (value: string): string => value.replaceAll('"', '\\"');
 
