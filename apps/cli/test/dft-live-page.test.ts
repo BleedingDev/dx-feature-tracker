@@ -2,7 +2,7 @@
 import { runInNewContext } from "node:vm";
 
 import { describe, expect, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { DateTime, Effect } from "effect";
 
 import { liveDashboardPage } from "../src/dft-live-page.js";
 
@@ -127,10 +127,10 @@ const branchReply = {
   },
 };
 
-type BranchReply = typeof branchReply;
+type PageReply = typeof branchReply | ReturnType<typeof usageReply>;
 
 interface Pending {
-  readonly resolve: (body: BranchReply) => void;
+  readonly resolve: (body: PageReply) => void;
   readonly url: string;
 }
 
@@ -170,7 +170,7 @@ const openPage = (hash: string) => {
 
   const fetch = async (url: string) => {
     // oxlint-disable-next-line promise/avoid-new -- the fake fetch hands its resolver to the test, so a reply can arrive after a navigation
-    const body = await new Promise<BranchReply>((resolve) => {
+    const body = await new Promise<PageReply>((resolve) => {
       pending.push({ resolve, url });
     });
 
@@ -221,8 +221,62 @@ const openPage = (hash: string) => {
     },
     take: (prefix: string): Pending | undefined =>
       pending.find((item) => item.url.startsWith(prefix)),
+    takeAll: (prefix: string): readonly Pending[] =>
+      pending.filter((item) => item.url.startsWith(prefix)),
   };
 };
+
+const ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+const dayOf = (ms: number): string =>
+  new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: ZONE,
+    year: "numeric",
+  }).format(ms);
+
+const labelOf = (day: string): string => {
+  const [, month = "1", date = "1"] = day.split("-");
+
+  return `${MONTHS[Number(month) - 1] ?? ""} ${String(Number(date))}`;
+};
+
+const usageReply = (since: DateTime.Utc, today: string) => ({
+  bucket: "day",
+  coverage: { unpriced: 0 },
+  groupBy: "tool",
+  groups: [],
+  notes: [],
+  other: null,
+  series: [
+    { bucket: today, stacks: [{ key: "codex", values: { estimate: 1 } }] },
+  ],
+  stackBy: "tool",
+  total: { facts: 0, values: {} },
+  unattributed: null,
+  window: { since: DateTime.formatIso(since), tz: ZONE, until: null },
+});
+
+const AXIS_LABEL = /text-anchor="middle">(?<label>[^<]+)<\/text>/gu;
+
+const chartLabels = (html: string): string[] =>
+  [...html.matchAll(AXIS_LABEL)].map((match) => match.groups?.label ?? "");
 
 const settle = Effect.sleep("5 millis");
 
@@ -239,6 +293,43 @@ describe("dft live page", () => {
       expect(page.byId("b-report").textContent).toBe("branch report");
       expect(page.document.title).toBe("dft, main");
     })
+  );
+
+  it.live(
+    "starts the day chart where the window starts and always labels today",
+    () =>
+      Effect.gen(function* chart() {
+        const current = yield* DateTime.now;
+        const since = DateTime.subtract(current, { days: 30 });
+        const today = dayOf(DateTime.toEpochMillis(current));
+        const reply = usageReply(since, today);
+
+        const paint = (width: number) =>
+          Effect.gen(function* painted() {
+            const page = openPage("#/?since=30d");
+
+            page.byId("u-chart").clientWidth = width;
+
+            for (const pending of page.takeAll("/api/usage?")) {
+              pending.resolve(reply);
+            }
+
+            yield* settle;
+
+            return page.byId("u-chart").innerHTML;
+          });
+
+        const wide = yield* paint(4000);
+        const narrow = yield* paint(600);
+
+        expect(wide.split('class="hit"')).toHaveLength(32);
+        expect(chartLabels(wide)[0]).toBe(
+          labelOf(dayOf(DateTime.toEpochMillis(since)))
+        );
+        expect(chartLabels(wide).at(-1)).toBe(labelOf(today));
+        expect(chartLabels(narrow).length).toBeLessThan(31);
+        expect(chartLabels(narrow).at(-1)).toBe(labelOf(today));
+      })
   );
 
   it.live("ignores a branch reply that arrives after going back to Usage", () =>

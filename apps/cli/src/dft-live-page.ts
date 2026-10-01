@@ -417,16 +417,15 @@ list.forEach((t,i)=>{const n=el.children[i];setText(n.querySelector("dt"),t.labe
 $("u-tiles").addEventListener("click",(e)=>{const t=e.target.closest("[data-metric-tile]");if(t)edit({...route().state,metric:t.getAttribute("data-metric-tile")});});
 $("u-tiles").addEventListener("keydown",(e)=>{if(e.key!=="Enter"&&e.key!==" ")return;const t=e.target.closest("[data-metric-tile]");if(t){e.preventDefault();edit({...route().state,metric:t.getAttribute("data-metric-tile")});}});
 
-function bucketsFor(s,series,bucket){const have=series.map((p)=>p.bucket);if(bucket!=="day"||!have.every((b)=>/^\\d{4}-\\d{2}-\\d{2}$/.test(b)))return have;let start=null;let end=null;const t=today();
-if(s.since==="7d"){start=STATE.addDays(t,-6);end=t;}else if(s.since==="30d"){start=STATE.addDays(t,-29);end=t;}else if(/^\\d{4}-\\d{2}-\\d{2}$/.test(s.since)){start=s.since;end=/^\\d{4}-\\d{2}-\\d{2}$/.test(s.until)?STATE.addDays(s.until,-1):t;}
-if(start===null)return have;const out=[];let d=start;let guard=0;while(d<=end&&guard<400){out.push(d);d=STATE.addDays(d,1);guard+=1;}have.forEach((b)=>{if(out.indexOf(b)===-1)out.push(b);});return out.sort();}
+function bucketsFor(out){const have=out.series.map((p)=>p.bucket);if(out.bucket!=="day"||!have.every((b)=>/^\\d{4}-\\d{2}-\\d{2}$/.test(b)))return have;const w=out.window||{};
+if(!w.since)return have;const start=dayIn(Date.parse(w.since),w.tz);const end=w.until?dayIn(Date.parse(w.until)-1,w.tz):today();const days=[];let d=start;let guard=0;while(d<=end&&guard<400){days.push(d);d=STATE.addDays(d,1);guard+=1;}have.forEach((b)=>{if(days.indexOf(b)===-1)days.push(b);});return days.sort();}
 function niceStep(v){if(v<=0)return 1;const p=Math.pow(10,Math.floor(Math.log10(v)));const n=v/p;return (n<=1?1:n<=2?2:n<=5?5:10)*p;}
 let chartData=null;
 function paintChart(s,out){const svg=$("u-chart");const metric=s.metric;const stackDim=out.stackBy;const bucket=out.bucket;
 const totals=new Map();out.series.forEach((p)=>p.stacks.forEach((k)=>{if(k.key==="(other)"||k.key==="(unattributed)")return;totals.set(k.key,(totals.get(k.key)||0)+(k.values[metric]||0));}));
 const order=Array.from(totals.keys()).sort((a,b)=>totals.get(b)-totals.get(a));const extra=["(other)","(unattributed)"].filter((k)=>out.series.some((p)=>p.stacks.some((x)=>x.key===k)));const keys=order.concat(extra);
 const colors=new Map(keys.map((k)=>[k,slotOf(stackDim,k,order.indexOf(k))]));const names=new Map();const nm=labelsFor(stackDim,keys);keys.forEach((k,i)=>names.set(k,k==="(other)"?"Other":nm[i]));
-const buckets=bucketsFor(s,out.series,bucket);const byBucket=new Map(out.series.map((p)=>[p.bucket,p]));
+const buckets=bucketsFor(out);const byBucket=new Map(out.series.map((p)=>[p.bucket,p]));
 const W=Math.max(280,svg.clientWidth||600);const H=220;const L=48;const R=8;const T=10;const B=24;const pw=W-L-R;const ph=H-T-B;
 const sums=buckets.map((b)=>{const p=byBucket.get(b);return p?p.stacks.reduce((a,k)=>a+(k.values[metric]||0),0):0;});
 const top=Math.max(0,...sums);const step=niceStep(top/4);const ticks=Math.max(1,Math.ceil(top/step));const max=step*ticks;const band=pw/Math.max(1,buckets.length);const bw=Math.max(2,Math.min(32,band*0.7));
@@ -434,7 +433,7 @@ const parts=[];for(let i=0;i<=ticks;i++){const v=step*i;const y=T+ph-ph*i/ticks;
 const every=Math.max(1,Math.ceil(buckets.length/Math.max(1,Math.floor(pw/64))));
 buckets.forEach((b,i)=>{parts.push('<rect class="band" data-band="'+i+'" x="'+(L+band*i).toFixed(1)+'" y="'+T+'" width="'+band.toFixed(1)+'" height="'+ph+'"/>');});
 buckets.forEach((b,i)=>{const p=byBucket.get(b);const x=L+band*i+(band-bw)/2;let y=T+ph;if(p){const ordered=keys.map((k)=>p.stacks.find((x2)=>x2.key===k)).filter(Boolean);ordered.forEach((k)=>{const v=k.values[metric]||0;if(v<=0)return;const h=ph*v/max;y-=h;parts.push('<rect class="seg" x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0.5,h).toFixed(1)+'" rx="2" style="fill:'+colors.get(k.key)+'"/>');});}
-if(i%every===0)parts.push('<text x="'+(L+band*i+band/2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle">'+esc(keyLabel(bucket,b).replace("week of ",""))+"</text>");
+if((buckets.length-1-i)%every===0)parts.push('<text x="'+(L+band*i+band/2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle">'+esc(keyLabel(bucket,b).replace("week of ",""))+"</text>");
 parts.push('<rect class="hit" data-i="'+i+'" x="'+(L+band*i).toFixed(1)+'" y="'+T+'" width="'+band.toFixed(1)+'" height="'+ph+'"/>');});
 svg.setAttribute("viewBox","0 0 "+W+" "+H);svg.innerHTML=parts.join("");
 chartData={buckets,byBucket,keys,colors,names,metric,bucket,s};
