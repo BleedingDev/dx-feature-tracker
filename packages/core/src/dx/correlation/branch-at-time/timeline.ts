@@ -130,13 +130,86 @@ const DETACHED_NAME = /^(?:[0-9a-f]{7,64}|HEAD)$|[~^:@\s]|^refs\/(?!heads\/)/u;
 const looksLikeBranch = (name: string): boolean =>
   name !== "" && !DETACHED_NAME.test(name);
 
+interface HeadState {
+  readonly branch: string | null;
+  readonly detached: boolean;
+}
+
+const DETACHED: HeadState = { branch: null, detached: true };
+
 const stateOf = (
   name: string | null,
   branches: ReadonlySet<string>
-): { readonly branch: string | null; readonly detached: boolean } =>
+): HeadState =>
   name !== null && (branches.has(name) || looksLikeBranch(name))
     ? { branch: name.replace(/^refs\/heads\//u, ""), detached: false }
-    : { branch: null, detached: true };
+    : DETACHED;
+
+const nameGitLeft = (transition: Transition): string | null =>
+  transition.returning === true ? transition.to : transition.from;
+
+const nextLeaving = (
+  transitions: readonly (Transition | null)[]
+): readonly (Transition | undefined)[] => {
+  const leaving: (Transition | undefined)[] = [];
+  let next: Transition | undefined;
+
+  for (const [index, transition] of [...transitions.entries()].toReversed()) {
+    leaving[index] = next;
+
+    if (transition !== null && transition.to !== null) {
+      next = transition;
+    }
+  }
+
+  return leaving;
+};
+
+const leftByName = (
+  name: string,
+  next: Transition | undefined,
+  currentBranch: string | null
+): boolean | null => {
+  if (next === undefined) {
+    return currentBranch === null ? false : currentBranch === name || null;
+  }
+
+  const left = nameGitLeft(next);
+
+  if (left === name) {
+    return true;
+  }
+
+  return left !== null && DETACHED_NAME.test(left) ? false : null;
+};
+
+const checkoutStateOf = (
+  transition: Transition,
+  next: Transition | undefined,
+  branches: ReadonlySet<string>,
+  currentBranch: string | null
+): HeadState => {
+  const name = transition.to;
+
+  if (
+    name === null ||
+    transition.renamed === true ||
+    transition.returning === true ||
+    branches.has(name)
+  ) {
+    return stateOf(name, branches);
+  }
+
+  const byName = leftByName(name, next, currentBranch);
+
+  if (byName === false) {
+    return DETACHED;
+  }
+
+  return byName === true
+    ? { branch: name, detached: false }
+    : stateOf(name, branches);
+};
 
 const renamedMove = (move: HeadMove, from: string, to: string): HeadMove => {
   const renamed: HeadMove = {
@@ -205,9 +278,16 @@ export const buildHeadMoves = (
 
   const moves: { move: HeadMove; returning: boolean }[] = [];
 
-  for (const { atMs, transition } of transitions) {
+  const leaving = nextLeaving(transitions.map((t) => t.transition));
+
+  for (const [index, { atMs, transition }] of transitions.entries()) {
     if (transition !== null) {
-      state = stateOf(transition.to, branches);
+      state = checkoutStateOf(
+        transition,
+        leaving[index],
+        branches,
+        currentBranch
+      );
     }
 
     const last = moves.at(-1)?.move;
