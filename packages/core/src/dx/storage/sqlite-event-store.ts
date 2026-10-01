@@ -183,7 +183,12 @@ const originMixOf = (
 };
 
 const comparableManifest = (manifest: SnapshotManifest): string =>
-  JSON.stringify({ ...manifest, createdAt: "" });
+  JSON.stringify({
+    ...manifest,
+    createdAt: "",
+    enabledDescriptors: [],
+    metricDefinitions: [],
+  });
 
 const openDatabase = (options: SqliteEventStoreOptions): DatabaseSync => {
   mkdirSync(path.dirname(options.path), { recursive: true });

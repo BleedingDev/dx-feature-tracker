@@ -217,6 +217,63 @@ describe("B01 sqlite event store", () => {
   );
 
   it.effect(
+    "reuses a snapshot stored by an older build with a different descriptor set",
+    () =>
+      Effect.gen(function* upgradeReuse() {
+        const options: SqliteEventStoreOptions = {
+          kind: "live",
+          path: storeFile("upgrade.sqlite"),
+        };
+
+        const result = yield* withStore(options, (store) =>
+          Effect.gen(function* upgradeSteps() {
+            yield* appendAll(store, [0, 1]);
+
+            const snapshot = yield* store.snapshot(flightSelector);
+
+            const older = {
+              ...snapshot.manifest,
+              enabledDescriptors: [
+                { id: "collector.claude-jsonl", version: "1" },
+                { id: "collector.cursor-hooks", version: "1" },
+              ],
+              metricDefinitions: [{ id: "dx.cost.legacy", version: "1" }],
+            };
+
+            yield* store.putSnapshotManifest(older);
+
+            yield* store.putSnapshotManifest({
+              ...snapshot.manifest,
+              enabledDescriptors: [
+                { id: "collector.cursor-hooks", version: "2" },
+              ],
+              metricDefinitions: [{ id: "dx.cost.usage", version: "2" }],
+            });
+
+            const differentEvents = yield* Effect.flip(
+              store.putSnapshotManifest({
+                ...snapshot.manifest,
+                originMix: [],
+              })
+            );
+
+            const stored = yield* store.getSnapshot(
+              snapshot.manifest.snapshotId
+            );
+
+            const count = yield* store.snapshotCount;
+
+            return { count, differentEvents, older, stored };
+          })
+        );
+
+        expect(result.stored.manifest).toEqual(result.older);
+        expect(result.count).toBe(1);
+        expect(result.differentEvents.message).toMatch(/^snapshot_conflict/u);
+      })
+  );
+
+  it.effect(
     "reports unknown, expired and incompatible snapshots distinctly",
     () =>
       Effect.gen(function* b01Step3() {
