@@ -112,6 +112,18 @@ export const HarnessRegistryLive = HarnessRegistry.layer.pipe(
   Layer.provide(harnessKitLayer)
 );
 
+export const harnessRegistryFor = (home: string) =>
+  HarnessRegistry.layer.pipe(
+    Layer.provide(liveHarnessLayers),
+    Layer.provide(
+      Layer.mergeAll(
+        HarnessHome.forHome(home),
+        LocalSqlite.layer,
+        GitRunner.layer
+      )
+    )
+  );
+
 export const mockCursorHarness = Layer.succeed(
   CursorHarness,
   pendingHarness(

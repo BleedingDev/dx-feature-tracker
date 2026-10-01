@@ -23,7 +23,7 @@ import {
   latestSpoolRecord,
 } from "../collectors/cursor-hooks/spool.js";
 import type { EventStoreService } from "../contracts/services.js";
-import { HarnessRegistryLive } from "../harness/registry.js";
+import { harnessRegistryFor } from "../harness/registry.js";
 import { emptyFlightContext } from "../model/event.js";
 import type { FlightContext } from "../model/event.js";
 import { allCollectors } from "../registry/registry.js";
@@ -584,7 +584,7 @@ export const startLiveEngine = (
 
           for (const step of plan) {
             done.push(
-              step.ref === null
+              step.ref === null && step.unavailable === null
                 ? yield* collectStep(step.context, step.source, step.input)
                 : yield* runPlannedStep(
                     { store, storePath: home.storePath },
@@ -595,7 +595,7 @@ export const startLiveEngine = (
           }
 
           return done;
-        }).pipe(Effect.provide(HarnessRegistryLive));
+        }).pipe(Effect.provide(harnessRegistryFor(options.home)));
 
         const rows = branchesSince(before, state.repo.commonDir);
         const inserted = rows.reduce((sum, row) => sum + row.n, 0);

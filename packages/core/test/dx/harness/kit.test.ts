@@ -14,7 +14,7 @@ import { DatabaseSync } from "node:sqlite";
 
 import { NodeServices } from "@effect/platform-node";
 import { afterAll, describe, expect, it } from "@effect/vitest";
-import { Effect, Layer, Schema } from "effect";
+import { ConfigProvider, Effect, Layer, Schema } from "effect";
 
 import type { EventWithoutBlocks } from "../../../src/dx/harness/collector-blocks.js";
 import { collectorBlocks } from "../../../src/dx/harness/collector-blocks.js";
@@ -98,6 +98,8 @@ describe("HarnessHome", () => {
         cursor: "/h/.cursor",
         deepseek: "/h/.dsh",
         omp: "/h/.omp/agent",
+        ompConfig: "/h/.omp",
+        ompXdgData: null,
         opencodeConfig: "/h/.config/opencode",
         opencodeData: "/h/.local/share/opencode",
         pi: "/h/.pi/agent",
@@ -113,7 +115,9 @@ describe("HarnessHome", () => {
       expect(home.dirs.claudeCode).toBe("/c");
       expect(home.dirs.codex).toBe("/x");
       expect(home.dirs.pi).toBe("/p");
-      expect(home.dirs.omp).toBe("/o/agent");
+      expect(home.dirs.omp).toBe("/p");
+      expect(home.dirs.ompConfig).toBe("/h/.omp-work");
+      expect(home.dirs.ompXdgData).toBeNull();
       expect(home.dirs.deepseek).toBe("/d");
       expect(home.dirs.opencodeData).toBe("/data/opencode");
       expect(home.dirs.opencodeConfig).toBe("/config/opencode");
@@ -124,10 +128,75 @@ describe("HarnessHome", () => {
           CODEX_HOME: "/x",
           DSH_HOME: "/d",
           PI_CODING_AGENT_DIR: "/p",
-          PI_CONFIG_DIR: "/o",
+          PI_CONFIG_DIR: ".omp-work",
           XDG_CONFIG_HOME: "/config",
           XDG_DATA_HOME: "/data",
         })
+      )
+    )
+  );
+
+  it.effect("resolves OMP profiles and XDG data the way oh-my-pi does", () =>
+    Effect.gen(function* ompProfile() {
+      const home = yield* HarnessHome;
+
+      expect(home.dirs.ompConfig).toBe("/h/.omp/profiles/work");
+      expect(home.dirs.omp).toBe("/h/.omp/profiles/work/agent");
+      expect(home.dirs.ompXdgData).toBe("/data/omp/profiles/work");
+      expect(home.dirs.pi).toBe("/p");
+    }).pipe(
+      Effect.provide(
+        HarnessHome.at("/h", {
+          PI_CODING_AGENT_DIR: "/p",
+          PI_PROFILE: "work",
+          XDG_DATA_HOME: "/data",
+        })
+      )
+    )
+  );
+
+  it.effect("keeps a sandbox home free of the user's folder variables", () =>
+    Effect.gen(function* sandbox() {
+      const home = yield* HarnessHome;
+
+      expect(home.home).toBe("/sandbox");
+      expect(home.dirs.codex).toBe("/sandbox/.codex");
+      expect(home.dirs.opencodeData).toBe("/sandbox/.local/share/opencode");
+    }).pipe(
+      Effect.provide(
+        HarnessHome.forHome("/sandbox").pipe(
+          Layer.provide(
+            ConfigProvider.layer(
+              ConfigProvider.fromUnknown({
+                CODEX_HOME: "/real/codex",
+                HOME: "/real",
+                XDG_DATA_HOME: "/real/data",
+              })
+            )
+          )
+        )
+      )
+    )
+  );
+
+  it.effect("applies the user's folder variables to the user's own home", () =>
+    Effect.gen(function* userHome() {
+      const home = yield* HarnessHome;
+
+      expect(home.dirs.codex).toBe("/real/codex");
+      expect(home.dirs.claudeCode).toBe("/real/.claude");
+    }).pipe(
+      Effect.provide(
+        HarnessHome.forHome("/real").pipe(
+          Layer.provide(
+            ConfigProvider.layer(
+              ConfigProvider.fromUnknown({
+                CODEX_HOME: "/real/codex",
+                HOME: "/real",
+              })
+            )
+          )
+        )
       )
     )
   );

@@ -16,7 +16,8 @@ import {
   missingTranscriptFolder,
 } from "../harness/cursor/sources.js";
 import type { HarnessId } from "../harness/ids.js";
-import { HarnessRegistry, HarnessRegistryLive } from "../harness/registry.js";
+import { harnessAdapterId } from "../harness/pending.js";
+import { HarnessRegistry, harnessRegistryFor } from "../harness/registry.js";
 import type { FlightContext } from "../model/event.js";
 import type { DxCollectorServices, RegisteredCollector } from "./registry.js";
 import {
@@ -81,6 +82,7 @@ export interface PlannedSource extends AutoSource {
   readonly context: FlightContext;
   readonly harness: HarnessId | null;
   readonly ref: SessionRef | null;
+  readonly unavailable: string | null;
 }
 
 const withContext =
@@ -90,6 +92,7 @@ const withContext =
     context,
     harness: null,
     ref: null,
+    unavailable: null,
   });
 
 const samePath = (a: string, b: string): boolean =>
@@ -142,7 +145,16 @@ export const planHarnessSources = (
     const primary = scope.worktrees[0] ?? null;
     const located = yield* registry.locate(scope);
 
-    return located.refs.map((ref): PlannedSource => ({
+    const failed = located.failures.map((failure): PlannedSource => ({
+      context,
+      harness: failure.harness,
+      input: primary ?? options.cwd,
+      ref: null,
+      source: harnessAdapterId(failure.harness),
+      unavailable: failure.reason,
+    }));
+
+    const found = located.refs.map((ref): PlannedSource => ({
       context:
         ref.worktree === null ||
         primary === null ||
@@ -153,7 +165,10 @@ export const planHarnessSources = (
       input: ref.path,
       ref,
       source: ref.source,
+      unavailable: null,
     }));
+
+    return [...found, ...failed];
   });
 
 export const planSources = (
@@ -220,6 +235,7 @@ export const idleBranchSources = (
       input: worktree,
       ref: null,
       source: "collector.git-history",
+      unavailable: null,
     }));
 };
 
@@ -229,6 +245,17 @@ export const runPlannedStep = (
   step: PlannedSource
 ): Effect.Effect<SyncStep, never, DxCollectorServices | HarnessRegistry> =>
   Effect.gen(function* runStep() {
+    if (step.unavailable !== null) {
+      return {
+        duplicates: null,
+        input: step.input,
+        inserted: null,
+        reason: step.unavailable,
+        source: step.source,
+        status: "unavailable",
+      } satisfies SyncStep;
+    }
+
     const registry = yield* HarnessRegistry;
     const harness = step.harness === null ? null : registry.get(step.harness);
 
@@ -296,7 +323,7 @@ export const autoSync = (
       context,
       steps: [...steps, ...unavailableSteps(context, options.home)],
     };
-  }).pipe(Effect.provide(HarnessRegistryLive));
+  }).pipe(Effect.provide(harnessRegistryFor(options.home)));
 
 export const formatSyncLine = (report: SyncReport): string => {
   const synced = report.steps.filter((step) => step.status === "synced");

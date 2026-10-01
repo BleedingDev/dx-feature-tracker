@@ -8,6 +8,7 @@ export interface HarnessHomeOverrides {
   readonly DSH_HOME?: string | undefined;
   readonly PI_CODING_AGENT_DIR?: string | undefined;
   readonly PI_CONFIG_DIR?: string | undefined;
+  readonly PI_PROFILE?: string | undefined;
   readonly XDG_CONFIG_HOME?: string | undefined;
   readonly XDG_DATA_HOME?: string | undefined;
 }
@@ -18,6 +19,8 @@ export interface HarnessDirs {
   readonly cursor: string;
   readonly deepseek: string;
   readonly omp: string;
+  readonly ompConfig: string;
+  readonly ompXdgData: string | null;
   readonly opencodeConfig: string;
   readonly opencodeData: string;
   readonly pi: string;
@@ -35,6 +38,7 @@ export const HARNESS_HOME_ENV_VARS = [
   "CODEX_HOME",
   "PI_CODING_AGENT_DIR",
   "PI_CONFIG_DIR",
+  "PI_PROFILE",
   "DSH_HOME",
   "XDG_DATA_HOME",
   "XDG_CONFIG_HOME",
@@ -42,6 +46,46 @@ export const HARNESS_HOME_ENV_VARS = [
 
 const present = (value: string | undefined): string | null =>
   value === undefined || value.trim() === "" ? null : value.trim();
+
+const OMP_CONFIG_NAME = ".omp";
+
+interface OmpDirs {
+  readonly omp: string;
+  readonly ompConfig: string;
+  readonly ompXdgData: string | null;
+}
+
+const ompDirs = (
+  home: string,
+  overrides: HarnessHomeOverrides,
+  path: Path.Path
+): OmpDirs => {
+  const profile = present(overrides.PI_PROFILE);
+  const profileParts = profile === null ? [] : ["profiles", profile];
+
+  const ompConfig = path.join(
+    home,
+    present(overrides.PI_CONFIG_DIR) ?? OMP_CONFIG_NAME,
+    ...profileParts
+  );
+
+  const agentOverride =
+    profile === null ? present(overrides.PI_CODING_AGENT_DIR) : null;
+
+  const xdgData = present(overrides.XDG_DATA_HOME);
+
+  return {
+    omp:
+      agentOverride === null
+        ? path.join(ompConfig, "agent")
+        : path.resolve(agentOverride),
+    ompConfig,
+    ompXdgData:
+      xdgData === null || agentOverride !== null
+        ? null
+        : path.join(path.resolve(xdgData), "omp", ...profileParts),
+  };
+};
 
 export const harnessDirs = (
   home: string,
@@ -55,17 +99,12 @@ export const harnessDirs = (
 
   const dataHome = under(present(overrides.XDG_DATA_HOME), ".local", "share");
 
-  const ompRoot = present(overrides.PI_CONFIG_DIR);
-
   return {
     claudeCode: under(present(overrides.CLAUDE_CONFIG_DIR), ".claude"),
     codex: under(present(overrides.CODEX_HOME), ".codex"),
     cursor: path.join(home, ".cursor"),
     deepseek: under(present(overrides.DSH_HOME), ".dsh"),
-    omp:
-      ompRoot === null
-        ? path.join(home, ".omp", "agent")
-        : path.join(path.resolve(ompRoot), "agent"),
+    ...ompDirs(home, overrides, path),
     opencodeConfig: path.join(configHome, "opencode"),
     opencodeData: path.join(dataHome, "opencode"),
     pi: under(present(overrides.PI_CODING_AGENT_DIR), ".pi", "agent"),
@@ -125,6 +164,21 @@ const optional = (name: string) =>
     Config.map((value) => Option.getOrUndefined(value))
   );
 
+const environmentOverrides = Effect.gen(function* readOverrides() {
+  const overrides: HarnessHomeOverrides = {
+    CLAUDE_CONFIG_DIR: yield* optional("CLAUDE_CONFIG_DIR"),
+    CODEX_HOME: yield* optional("CODEX_HOME"),
+    DSH_HOME: yield* optional("DSH_HOME"),
+    PI_CODING_AGENT_DIR: yield* optional("PI_CODING_AGENT_DIR"),
+    PI_CONFIG_DIR: yield* optional("PI_CONFIG_DIR"),
+    PI_PROFILE: yield* optional("PI_PROFILE"),
+    XDG_CONFIG_HOME: yield* optional("XDG_CONFIG_HOME"),
+    XDG_DATA_HOME: yield* optional("XDG_DATA_HOME"),
+  };
+
+  return overrides;
+});
+
 export class HarnessHome extends Context.Service<
   HarnessHome,
   HarnessLocations
@@ -133,20 +187,27 @@ export class HarnessHome extends Context.Service<
     const path = yield* Path.Path;
     const home = yield* Config.String("HOME");
 
-    const overrides: HarnessHomeOverrides = {
-      CLAUDE_CONFIG_DIR: yield* optional("CLAUDE_CONFIG_DIR"),
-      CODEX_HOME: yield* optional("CODEX_HOME"),
-      DSH_HOME: yield* optional("DSH_HOME"),
-      PI_CODING_AGENT_DIR: yield* optional("PI_CODING_AGENT_DIR"),
-      PI_CONFIG_DIR: yield* optional("PI_CONFIG_DIR"),
-      XDG_CONFIG_HOME: yield* optional("XDG_CONFIG_HOME"),
-      XDG_DATA_HOME: yield* optional("XDG_DATA_HOME"),
-    };
-
-    return locationsFor(home, overrides, path);
+    return locationsFor(home, yield* environmentOverrides, path);
   }).pipe(Effect.orDie),
 }) {
   static readonly layer = Layer.effect(this, this.make);
+
+  static readonly forHome = (home: string): Layer.Layer<HarnessHome> =>
+    Layer.effect(
+      this,
+      Effect.gen(function* forHome() {
+        const path = yield* Path.Path;
+        const userHome = yield* optional("HOME");
+
+        const isUserHome =
+          userHome !== undefined &&
+          path.resolve(userHome) === path.resolve(home);
+
+        const overrides = isUserHome ? yield* environmentOverrides : {};
+
+        return locationsFor(home, overrides, path);
+      }).pipe(Effect.orDie)
+    ).pipe(Layer.provide(Path.layer));
 
   static readonly at = (
     home: string,
