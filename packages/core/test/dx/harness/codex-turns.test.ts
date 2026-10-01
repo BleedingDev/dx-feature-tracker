@@ -281,6 +281,41 @@ describe("codex turns without task_complete", () => {
       expect(quiet.unsettled).not.toBe(true);
     })
   );
+
+  it.effect(
+    "completes a turn whose first request comes after a quiet spell",
+    () =>
+      Effect.gen(function* slowFirstRequest() {
+        const waiting = sessionText(
+          meta(0),
+          turnStarted(1, EMPTY),
+          turnContext(2, EMPTY)
+        );
+
+        yield* TestClock.setTime(WRITTEN_AT + TURN_IDLE_MS + 5);
+
+        const quiet = yield* readAt(waiting, null);
+
+        const done = yield* readAt(
+          `${waiting}${sessionText(
+            record(3, "resp_slow", usage(100, 40, 10), THREAD, EMPTY),
+            taskComplete(4, EMPTY)
+          )}`,
+          quiet.cursor,
+          WRITTEN_AT + TURN_IDLE_MS + 5
+        );
+
+        expect(turnsOf(quiet.events)).toStrictEqual([]);
+        expect(turnsOf(done.events).map(statusOf)).toStrictEqual([
+          {
+            completedAt: COMPLETED_AT,
+            requests: 1,
+            status: "completed",
+            turnId: EMPTY,
+          },
+        ]);
+      })
+  );
 });
 
 const syncedTurns = (

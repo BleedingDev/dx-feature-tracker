@@ -925,21 +925,21 @@ export const holdsRequests = (state: ScanState): boolean =>
 
 export const settleOpenTurns = (result: ScanResult): ScanResult => {
   const { openTurns } = result.state;
+  const waiting = openTurns.filter((turn) => turn.requests === 0);
+  const holding = openTurns.filter((turn) => turn.requests > 0);
 
-  if (openTurns.length === 0) {
+  if (holding.length === 0) {
     return result;
   }
 
-  const closed = openTurns
-    .filter((turn) => turn.requests > 0)
-    .map((turn): EndedTurn => ({
-      ...turn,
-      abortReason: null,
-      completedAt: null,
-      durationMs: null,
-      errorKind: null,
-      status: "unfinished",
-    }));
+  const closed = holding.map((turn): EndedTurn => ({
+    ...turn,
+    abortReason: null,
+    completedAt: null,
+    durationMs: null,
+    errorKind: null,
+    status: "unfinished",
+  }));
 
   return {
     ...result,
@@ -947,10 +947,10 @@ export const settleOpenTurns = (result: ScanResult): ScanResult => {
     endedTurns: [...result.endedTurns, ...closed],
     state: {
       ...result.state,
-      openTurns: [],
+      openTurns: waiting,
       settled: [
         ...result.state.settled,
-        ...openTurns.map((turn) => turn.turnId),
+        ...closed.map((turn) => turn.turnId),
       ].slice(-MAX_SETTLED),
     },
   };
