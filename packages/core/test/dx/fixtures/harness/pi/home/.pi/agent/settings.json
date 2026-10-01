@@ -1,0 +1,4 @@
+{
+  "defaultProvider": "cliproxy",
+  "sessionDir": "~/pi-sessions"
+}

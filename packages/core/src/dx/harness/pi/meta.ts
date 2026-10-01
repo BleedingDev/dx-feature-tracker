@@ -6,4 +6,4 @@ export const PI_CHANNELS = [
   "extension",
 ] as const satisfies readonly Channel[];
 
-export const PI_READINESS: ModuleReadiness = "unsupported";
+export const PI_READINESS: ModuleReadiness = "ready";

@@ -1,0 +1,6 @@
+{
+  "providers": {
+    "bonsai2": { "baseUrl": "http://127.0.0.1:8090/v1" },
+    "cliproxy": { "baseUrl": "http://127.0.0.1:8317/v1" }
+  }
+}
