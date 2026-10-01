@@ -29,6 +29,10 @@ export interface ClaudeCodeFiles extends HarnessStore {
     ref: string
   ) => Effect.Effect<readonly StoredSession[], SourceUnavailable>;
   readonly present: Effect.Effect<boolean>;
+  readonly readHead: (
+    path: string,
+    bytes: number
+  ) => Effect.Effect<Uint8Array, SourceUnavailable>;
   readonly readFrom: (
     path: string,
     offset: number
@@ -203,6 +207,17 @@ const makeLive = Effect.gen(function* makeClaudeCodeStore() {
       )
     );
 
+  const readHead = (file: string, bytes: number) =>
+    fileSystem
+      .stream(file, { bytesToRead: bytes, chunkSize: CHUNK_BYTES })
+      .pipe(
+        Stream.runCollect,
+        Effect.map(concatBytes),
+        Effect.mapError((failure) =>
+          unavailable(`cannot read ${file}: ${failure.message}`)
+        )
+      );
+
   const files: ClaudeCodeFiles = {
     ...base,
     home: home.home,
@@ -216,6 +231,7 @@ const makeLive = Effect.gen(function* makeClaudeCodeStore() {
       fileSystem.exists(dir).pipe(Effect.orElseSucceed(() => false))
     )(configDirs).pipe(Effect.map((found) => found.includes(true))),
     readFrom,
+    readHead,
   };
 
   return files;
@@ -241,6 +257,10 @@ export const memoryClaudeCodeFiles = (
     present: Effect.succeed(input.files.length > 0),
     readFrom: (file, offset) =>
       base.readBytes(file).pipe(Effect.map((bytes) => bytes.subarray(offset))),
+    readHead: (file, length) =>
+      base
+        .readBytes(file)
+        .pipe(Effect.map((bytes) => bytes.subarray(0, length))),
   };
 };
 

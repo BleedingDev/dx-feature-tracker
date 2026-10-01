@@ -42,6 +42,7 @@ import {
 import type { SessionFamily } from "./paths.js";
 import { anyPointsIntoWorktree, placePicks } from "./placement.js";
 import type { PlacedPick } from "./placement.js";
+import { removedWorktreeFamilies } from "./removed.js";
 import { decodeClaudeLine } from "./rows.js";
 import { scanChunks } from "./scan.js";
 import type {
@@ -431,23 +432,32 @@ export class ClaudeCodeHarness extends Context.Service<
     });
 
     const locate = (scope: HarnessScope) =>
-      families.pipe(
-        Effect.map((all) => {
-          const since = sinceMillis(scope.since);
-          const recent = all.filter((family) => recentEnough(family, since));
+      Effect.gen(function* locateClaudeCode() {
+        const since = sinceMillis(scope.since);
 
-          const sessions =
-            scope.worktrees.length === 0
-              ? recent.map((family) => refOf(family, null))
-              : recent.flatMap((family) =>
-                  scope.worktrees
-                    .filter((worktree) => slugMayHold(family.project, worktree))
-                    .map((worktree) => refOf(family, worktree))
-                );
+        const recent = (yield* families).filter((family) =>
+          recentEnough(family, since)
+        );
 
-          return [...sessions, ...hookSpoolRefs(scope, "claude-code")];
-        })
-      );
+        const removed = yield* removedWorktreeFamilies(store, scope, recent);
+
+        const sessions =
+          scope.worktrees.length === 0
+            ? recent.map((family) => refOf(family, null))
+            : recent.flatMap((family) => {
+                const gone = removed.get(family.path);
+
+                return gone === undefined
+                  ? scope.worktrees
+                      .filter((worktree) =>
+                        slugMayHold(family.project, worktree)
+                      )
+                      .map((worktree) => refOf(family, worktree))
+                  : [refOf(family, gone)];
+              });
+
+        return [...sessions, ...hookSpoolRefs(scope, "claude-code")];
+      });
 
     const chunkOf = (
       file: StoredSession,
