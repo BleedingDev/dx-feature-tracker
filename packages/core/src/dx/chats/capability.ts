@@ -11,10 +11,13 @@ import {
 import type { SelectorResolver } from "../mcp/handlers/deps.js";
 import { literalSelectorResolver } from "../mcp/handlers/selector.js";
 import { isolateStdout } from "../mcp/handlers/stdio.js";
+import type { CostOptions } from "../metrics/cost/metric.js";
+import { estimateLabel, factEstimator } from "../usage/estimate.js";
 import { dxChatsContract } from "./contract.js";
 import { buildChatTree } from "./tree.js";
 
 export interface DxChatsDeps {
+  readonly costOptions?: CostOptions;
   readonly resolveSelector?: SelectorResolver;
 }
 
@@ -87,8 +90,12 @@ const cleanBranch = (branch: string | undefined) => {
   return trimmed === "" ? null : trimmed;
 };
 
-export const makeDxChatsCapability = (deps: DxChatsDeps = {}) =>
-  implement(dxChatsContract, (input) =>
+export const makeDxChatsCapability = (deps: DxChatsDeps = {}) => {
+  const costOptions = deps.costOptions ?? null;
+  const estimate = factEstimator(costOptions);
+  const label = estimateLabel(costOptions);
+
+  return implement(dxChatsContract, (input) =>
     isolateStdout(
       Effect.gen(function* dxChats() {
         const store = yield* EventStore;
@@ -108,7 +115,10 @@ export const makeDxChatsCapability = (deps: DxChatsDeps = {}) =>
 
         const selector = {
           ...resolved,
-          branch: cleanBranch(input.branch) ?? resolved.branch,
+          branch:
+            input.allBranches === true
+              ? null
+              : (cleanBranch(input.branch) ?? resolved.branch),
           from: since ?? resolved.from,
         };
 
@@ -123,8 +133,20 @@ export const makeDxChatsCapability = (deps: DxChatsDeps = {}) =>
             repoCommonDir: selector.repoCommonDir,
             since,
           },
-          retro.events
+          retro.events,
+          {
+            estimate,
+            estimateLabel: label,
+            filters: {
+              effort: input.effort,
+              model: input.model,
+              provider: input.provider,
+              tool: input.tool,
+              via: input.via,
+            },
+          }
         );
       })
     )
   );
+};

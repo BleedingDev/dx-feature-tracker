@@ -60,9 +60,35 @@ export const ModelTurnSchema = Schema.Struct({
 
 export type ModelTurn = typeof ModelTurnSchema.Type;
 
+const Amount = Schema.NullOr(Schema.Finite);
+
+export const ChatTokensSchema = Schema.Struct({
+  cacheRead: Amount,
+  cacheWrite: Amount,
+  input: Amount,
+  output: Amount,
+  reasoning: Amount,
+  total: Amount,
+});
+
+export type ChatTokens = typeof ChatTokensSchema.Type;
+
+export const ChatUsageSchema = Schema.Struct({
+  billed: Amount,
+  estimate: Amount,
+  requests: Schema.Int,
+  tokens: ChatTokensSchema,
+  toolFigure: Amount,
+  unpriced: Schema.Int,
+});
+
+export type ChatUsage = typeof ChatUsageSchema.Type;
+
 export const ChatNodeSchema = Schema.Struct({
   adapters: Schema.Array(Schema.String),
+  agentId: Schema.NullOr(Schema.String),
   agentTimeMs: ChatValueSchema,
+  agentType: Schema.NullOr(Schema.String),
   branches: Schema.Array(Schema.String),
   childSessionIds: Schema.Array(Schema.String),
   eventCount: Schema.Int,
@@ -74,6 +100,7 @@ export const ChatNodeSchema = Schema.Struct({
   moneyUnavailableReason: Schema.NullOr(Schema.String),
   parentSessionId: Schema.NullOr(Schema.String),
   parentUnavailableReason: Schema.NullOr(Schema.String),
+  providers: Schema.Array(Schema.String),
   requests: ChatValueSchema,
   sessionId: Schema.String,
   sourceIds: Schema.Array(ChatSourceIdSchema),
@@ -86,17 +113,54 @@ export const ChatNodeSchema = Schema.Struct({
   titleUnavailableReason: Schema.NullOr(Schema.String),
   tokens: Schema.Array(ChatLedgerLineSchema),
   tokensUnavailableReason: Schema.NullOr(Schema.String),
+  tool: Schema.NullOr(Schema.String),
   toolCalls: ChatValueSchema,
+  usage: ChatUsageSchema,
 });
 
 export type ChatNode = typeof ChatNodeSchema.Type;
 
+export const CHAT_FILTERS = [
+  "tool",
+  "provider",
+  "via",
+  "model",
+  "effort",
+] as const;
+
+export type ChatFilter = (typeof CHAT_FILTERS)[number];
+
+export type ChatFilters = Partial<
+  Readonly<Record<ChatFilter, readonly string[] | undefined>>
+>;
+
+const filterValues = (description: string) =>
+  Schema.optional(
+    Schema.Array(Schema.String).annotate({
+      description: `${description}; any listed value matches. "(none)" matches a missing value.`,
+    })
+  );
+
+export const ChatFiltersSchema = Schema.Struct({
+  effort: filterValues("Reasoning effort levels"),
+  model: filterValues("Normalized model names"),
+  provider: filterValues("Model makers (anthropic, openai, ...)"),
+  tool: filterValues(
+    "Tools (cursor, claude-code, codex, opencode, pi, omp, deepseek)"
+  ),
+  via: filterValues("Gateways or local runtimes (openrouter, ollama, ...)"),
+});
+
 export const ChatsReportSchema = Schema.Struct({
   branch: Schema.NullOr(Schema.String),
   chats: Schema.Array(ChatNodeSchema),
+  estimateLabel: Schema.String,
+  filters: ChatFiltersSchema,
   repoCommonDir: Schema.NullOr(Schema.String),
   rootSessionIds: Schema.Array(Schema.String),
   since: Schema.NullOr(Schema.String),
+  tools: Schema.Array(Schema.String),
+  totals: ChatUsageSchema,
   unattributed: Schema.Struct({
     adapters: Schema.Array(Schema.String),
     events: Schema.Int,
@@ -107,6 +171,12 @@ export const ChatsReportSchema = Schema.Struct({
 export type ChatsReport = typeof ChatsReportSchema.Type;
 
 export const DxChatsInput = Schema.Struct({
+  ...ChatFiltersSchema.fields,
+  allBranches: Schema.optional(
+    Schema.Boolean.annotate({
+      description: "List chats on every branch of the repo, not just one",
+    })
+  ),
   branch: Schema.optional(
     Schema.String.annotate({ description: "Branch; defaults to current" })
   ),
@@ -121,7 +191,7 @@ export const DxChatsInput = Schema.Struct({
 export const dxChatsContract = defineContract("dx_chats", {
   annotations: { idempotent: true, readOnly: true },
   description:
-    "List the feature's Cursor chats as a subagent tree with per-chat time, requests, tool calls, tokens, money per ledger and a per-turn model and reasoning-level timeline. Titles are local only; no prompt text.",
+    "List the chats of every tool (Cursor, Claude Code, Codex, OpenCode, Pi, OMP, DeepSeek Harness) on a branch as one subagent tree: tool, title, per-turn model and reasoning level, per-chat tokens, estimate, billed and the tool's own figure, requests, tool calls and time. Filter by tool, provider, via, model or effort. Titles are local only; no prompt text.",
   failure: QueryFailureSchema,
   input: DxChatsInput,
   output: ChatsReportSchema,

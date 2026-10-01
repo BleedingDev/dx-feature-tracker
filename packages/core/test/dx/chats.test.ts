@@ -331,7 +331,7 @@ describe("dx_chats", () => {
     const chat = report.chats.find((c) => c.sessionId === CHAT);
 
     expect(chat?.requests.value).toBe(1);
-    expect(chat?.title).toBeNull();
+    expect(chat?.title?.value).toBe("Fixture chat title");
     expect(JSON.stringify(report)).not.toContain("CHATS_PROMPT_CANARY");
   });
 

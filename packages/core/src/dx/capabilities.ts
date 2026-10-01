@@ -103,7 +103,11 @@ export const makeDxCapabilities = (deps: DxCapabilityDeps) => {
       : { costOptions: deps.costOptions, defaultRepo: deps.defaultRepo }
   );
 
-  const chats = DxChats.makeDxChatsCapability({ resolveSelector });
+  const chats = DxChats.makeDxChatsCapability(
+    deps.costOptions === undefined
+      ? { resolveSelector }
+      : { costOptions: deps.costOptions, resolveSelector }
+  );
 
   const usage = DxUsage.makeDxUsageCapability(
     deps.costOptions === undefined ? {} : { costOptions: deps.costOptions }

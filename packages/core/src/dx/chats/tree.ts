@@ -1,9 +1,13 @@
-import { rulesForEvent } from "../harness/rules.js";
+import { harnessOfEvent, rulesForEvent } from "../harness/rules.js";
 import type { ChatChannelRole, ChatEvidenceRole } from "../harness/rules.js";
 import { accountAiUsage } from "../metrics/ai-usage/ledger.js";
 import type { LedgerTotal } from "../metrics/ai-usage/ledger.js";
 import type { DxEventEnvelope } from "../model/event.js";
+import type { FactEstimator } from "../usage/estimate.js";
+import { CHAT_FILTERS } from "./contract.js";
 import type {
+  ChatFilter,
+  ChatFilters,
   ChatLedgerLine,
   ChatNode,
   ChatSourceId,
@@ -19,12 +23,28 @@ import {
   numberField,
   textField,
 } from "./payload.js";
+import { hasFactFilters, sessionUsage } from "./usage.js";
+import type { SessionUsage } from "./usage.js";
 
 export interface ChatTreeScope {
   readonly branch: string | null;
   readonly repoCommonDir: string | null;
   readonly since: string | null;
 }
+
+export interface ChatTreeOptions {
+  readonly estimate?: FactEstimator;
+  readonly estimateLabel?: string;
+  readonly filters?: ChatFilters;
+}
+
+const present = (value: string | null | undefined): string | null =>
+  value === null || value === undefined || value.trim() === ""
+    ? null
+    : value.trim();
+
+const sessionIdOf = (event: DxEventEnvelope): string | null =>
+  present(event.ai?.sessionId) ?? present(event.identity.sessionId);
 
 const sourceKindOf = (event: DxEventEnvelope): string | null =>
   textField(event.payload, "sourceKind");
@@ -236,14 +256,48 @@ const scopeOf = (event: DxEventEnvelope): ModelTurn["scope"] => {
   return event.kind === "ai.request" ? "request" : "turn";
 };
 
+const effortOfTurn = (event: DxEventEnvelope, rawModel: string) => {
+  const fromPayload = effortField(event.payload);
+  const { ai } = event;
+  const aiEffort = present(ai?.effort)?.toLowerCase() ?? null;
+
+  if (fromPayload !== null || aiEffort === null) {
+    return modelEffortOf(event, rawModel, fromPayload);
+  }
+
+  if (ai?.effortSource !== "model-suffix") {
+    return modelEffortOf(event, rawModel, aiEffort);
+  }
+
+  const parsed = modelEffortOf(event, rawModel, null);
+
+  return parsed.effort === null
+    ? {
+        effort: aiEffort,
+        effortReason: null,
+        effortSource: "model-name-suffix" as const,
+        model: present(ai.model) ?? parsed.model,
+      }
+    : parsed;
+};
+
 const modelTurnOf = (event: DxEventEnvelope): ModelTurn | null => {
-  const rawModel = textField(event.payload, "model");
+  const rawModel =
+    textField(event.payload, "model") ??
+    present(event.ai?.modelRaw) ??
+    present(event.ai?.model);
 
   if (rawModel === null) {
     return null;
   }
 
-  const parsed = modelEffortOf(event, rawModel, effortField(event.payload));
+  const parsed = effortOfTurn(event, rawModel);
+  const normalized = present(event.ai?.model);
+
+  const model =
+    normalized !== null && parsed.model === rawModel.trim()
+      ? normalized
+      : parsed.model;
 
   return {
     adapterId: event.adapterId,
@@ -253,7 +307,7 @@ const modelTurnOf = (event: DxEventEnvelope): ModelTurn | null => {
     effortSource: parsed.effortSource,
     generationId: event.identity.generationId,
     maxMode: maxModeField(event.payload),
-    model: parsed.model,
+    model,
     rawModel,
     requestId: event.identity.requestId,
     scope: scopeOf(event),
@@ -285,7 +339,7 @@ const modelTimelineOf = (events: readonly DxEventEnvelope[]) => {
     const turn = modelTurnOf(event);
 
     if (turn !== null) {
-      const key = `${turn.turnId ?? turn.requestId ?? turn.generationId ?? event.eventId}|${turn.rawModel}`;
+      const key = `${turn.turnId ?? turn.requestId ?? turn.generationId ?? event.eventId}|${turn.rawModel}|${turn.effort ?? "-"}`;
 
       if (!seen.has(key)) {
         seen.set(key, turn);
@@ -325,8 +379,13 @@ const sourceIdsOf = (events: readonly DxEventEnvelope[], sessionId: string) => {
   return [...ids.values()];
 };
 
+const newestFirst = (a: DxEventEnvelope, b: DxEventEnvelope) =>
+  b.observedAt.localeCompare(a.observedAt) ||
+  (b.occurredAt ?? "").localeCompare(a.occurredAt ?? "") ||
+  b.eventId.localeCompare(a.eventId);
+
 const titleOf = (events: readonly DxEventEnvelope[]) => {
-  for (const event of events) {
+  for (const event of events.toSorted(newestFirst)) {
     const title = textField(event.payload, "title");
 
     if (title !== null) {
@@ -341,17 +400,41 @@ const titleOf = (events: readonly DxEventEnvelope[]) => {
   return null;
 };
 
-const parentOf = (events: readonly DxEventEnvelope[]) => {
+const firstOf = (
+  events: readonly DxEventEnvelope[],
+  pick: (event: DxEventEnvelope) => string | null | undefined
+): string | null => {
   for (const event of events) {
-    const parent = textField(event.payload, "parentSessionId");
+    const value = present(pick(event));
 
-    if (parent !== null) {
-      return parent;
+    if (value !== null) {
+      return value;
     }
   }
 
   return null;
 };
+
+const parentOf = (events: readonly DxEventEnvelope[]) =>
+  firstOf(
+    events,
+    (event) =>
+      event.ai?.parentSessionId ?? textField(event.payload, "parentSessionId")
+  );
+
+const toolOf = (events: readonly DxEventEnvelope[]) =>
+  firstOf(events, harnessOfEvent);
+
+const providersOf = (events: readonly DxEventEnvelope[]): string[] =>
+  [
+    ...new Set(
+      events.flatMap((event) => {
+        const provider = event.ai?.provider ?? "unknown";
+
+        return provider === "unknown" ? [] : [provider];
+      })
+    ),
+  ].toSorted();
 
 const isSubagentOf = (
   events: readonly DxEventEnvelope[],
@@ -388,11 +471,21 @@ const branchesOf = (events: readonly DxEventEnvelope[]): string[] => {
     .map(([branch]) => branch);
 };
 
-const buildNode = (
-  sessionId: string,
-  events: readonly DxEventEnvelope[],
-  sessionEvents: readonly DxEventEnvelope[]
-): Omit<ChatNode, "childSessionIds"> => {
+interface NodeInput {
+  readonly events: readonly DxEventEnvelope[];
+  readonly meta: readonly DxEventEnvelope[];
+  readonly sessionEvents: readonly DxEventEnvelope[];
+  readonly sessionId: string;
+  readonly usage: SessionUsage;
+}
+
+const buildNode = ({
+  events,
+  meta,
+  sessionEvents,
+  sessionId,
+  usage,
+}: NodeInput): Omit<ChatNode, "childSessionIds"> => {
   const account = accountAiUsage(events);
 
   const tokens = account.totals.flatMap((t) =>
@@ -405,15 +498,23 @@ const buildNode = (
 
   const timeline = modelTimelineOf(events);
 
-  const title = titleOf(events);
+  const title = titleOf(meta);
 
-  const parentSessionId = parentOf(events);
+  const parentSessionId = parentOf(meta);
 
-  const isSubagent = isSubagentOf(events, parentSessionId);
+  const isSubagent = isSubagentOf(meta, parentSessionId);
 
   return {
     adapters: [...new Set(events.map((e) => e.adapterId))].toSorted(),
+    agentId: firstOf(
+      meta,
+      (event) => event.ai?.agentId ?? textField(event.payload, "agentId")
+    ),
     agentTimeMs: agentTimeOf(events),
+    agentType: firstOf(
+      meta,
+      (event) => event.ai?.agentType ?? textField(event.payload, "agentType")
+    ),
     branches: branchesOf(sessionEvents),
     eventCount: events.length,
     isSubagent,
@@ -431,6 +532,7 @@ const buildNode = (
       isSubagent === true && parentSessionId === null
         ? "source marks this chat as a subagent but does not name its parent"
         : null,
+    providers: providersOf(events),
     requests: requestsOf(events, account.requestCount),
     sessionId,
     sourceIds: sourceIdsOf(events, sessionId),
@@ -443,53 +545,104 @@ const buildNode = (
     tokens,
     tokensUnavailableReason:
       tokens.length === 0 ? "no source reported tokens for this chat" : null,
+    tool: toolOf(meta),
     toolCalls: toolCallsOf(events),
+    usage: usage.of(sessionId),
   };
 };
 
 const isAiEvent = (event: DxEventEnvelope) =>
   event.kind.startsWith("ai.") || (isHooks(event) && event.kind === "other");
 
+const push = (
+  into: Map<string, DxEventEnvelope[]>,
+  key: string,
+  event: DxEventEnvelope
+) => {
+  const list = into.get(key);
+
+  if (list === undefined) {
+    into.set(key, [event]);
+  } else {
+    list.push(event);
+  }
+};
+
+const cleanFilters = (filters: ChatFilters): ChatFilters => {
+  const kept: Partial<Record<ChatFilter, readonly string[]>> = {};
+
+  for (const name of CHAT_FILTERS) {
+    const values = (filters[name] ?? []).flatMap((value) => {
+      const trimmed = value.trim();
+
+      return trimmed === "" ? [] : [trimmed];
+    });
+
+    if (values.length > 0) {
+      kept[name] = values;
+    }
+  }
+
+  return kept;
+};
+
 export const buildChatTree = (
   events: readonly DxEventEnvelope[],
   scope: ChatTreeScope,
-  allBranches: readonly DxEventEnvelope[] = events
+  allBranches: readonly DxEventEnvelope[] = events,
+  options: ChatTreeOptions = {}
 ): ChatsReport => {
+  const filters = cleanFilters(options.filters ?? {});
   const acrossBranches = new Map<string, DxEventEnvelope[]>();
+  const meta = new Map<string, DxEventEnvelope[]>();
 
   for (const event of allBranches) {
-    const { sessionId } = event.identity;
+    const sessionId = sessionIdOf(event);
 
-    if (
-      sessionId !== null &&
-      isAiEvent(event) &&
-      inScope(event, { ...scope, branch: null })
-    ) {
-      acrossBranches.set(sessionId, [
-        ...(acrossBranches.get(sessionId) ?? []),
-        event,
-      ]);
+    if (sessionId !== null && isAiEvent(event)) {
+      push(meta, sessionId, event);
+
+      if (inScope(event, { ...scope, branch: null })) {
+        push(acrossBranches, sessionId, event);
+      }
     }
   }
 
   const bySession = new Map<string, DxEventEnvelope[]>();
   const unattributed: DxEventEnvelope[] = [];
+  const scoped: DxEventEnvelope[] = [];
 
   for (const event of events) {
     if (isAiEvent(event) && inScope(event, scope)) {
-      const { sessionId } = event.identity;
+      const sessionId = sessionIdOf(event);
+      scoped.push(event);
 
       if (sessionId === null) {
         unattributed.push(event);
       } else {
-        bySession.set(sessionId, [...(bySession.get(sessionId) ?? []), event]);
+        push(bySession, sessionId, event);
       }
     }
   }
 
-  const nodes = [...bySession.entries()].map(([sessionId, members]) =>
-    buildNode(sessionId, members, acrossBranches.get(sessionId) ?? members)
-  );
+  const usage = sessionUsage(scoped, filters, options.estimate ?? (() => null));
+  const tools = filters.tool === undefined ? null : new Set(filters.tool);
+  const needsFact = hasFactFilters(filters);
+
+  const nodes = [...bySession.entries()].flatMap(([sessionId, members]) => {
+    const node = buildNode({
+      events: members,
+      meta: meta.get(sessionId) ?? members,
+      sessionEvents: acrossBranches.get(sessionId) ?? members,
+      sessionId,
+      usage,
+    });
+
+    const toolMatches = tools === null || tools.has(node.tool ?? "(none)");
+    const factMatches = !needsFact || usage.matched.has(sessionId);
+
+    return toolMatches && factMatches ? [node] : [];
+  });
 
   const children = new Map<string, string[]>();
 
@@ -516,6 +669,8 @@ export const buildChatTree = (
   return {
     branch: scope.branch,
     chats,
+    estimateLabel: options.estimateLabel ?? "no prices",
+    filters,
     repoCommonDir: scope.repoCommonDir,
     rootSessionIds: chats.flatMap((c) =>
       c.parentSessionId === null || !known.has(c.parentSessionId)
@@ -523,6 +678,10 @@ export const buildChatTree = (
         : []
     ),
     since: scope.since,
+    tools: [
+      ...new Set(chats.flatMap((c) => (c.tool === null ? [] : [c.tool]))),
+    ].toSorted(),
+    totals: usage.total(known),
     unattributed: {
       adapters: [...new Set(unattributed.map((e) => e.adapterId))].toSorted(),
       events: unattributed.length,
