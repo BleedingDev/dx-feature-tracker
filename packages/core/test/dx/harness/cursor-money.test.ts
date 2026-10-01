@@ -446,7 +446,7 @@ describe("Cursor money ledgers stay pinned", () => {
           "dx.cost.charge.usd=1.25 partial",
           "dx.cost.metered.usd=0.3 partial",
           "dx.cost.list-price-estimate.source.usd=0.77 estimated",
-          "dx.cost.list-price-estimate.price-table.usd=0.00475 estimated",
+          "dx.cost.list-price-estimate.price-table.usd=0.00475 partial",
           "dx.cost.subscription-allocation.usd=20 estimated",
           "dx.cost.unallocated.usd=null unavailable",
         ],

@@ -92,7 +92,7 @@ const fullOptions: CostOptions = {
   subscription: fixture.subscription.plan,
 };
 
-const events: DxEventEnvelope[] = fixture.events.items.map((item) => ({
+const toEnvelope = (item: typeof FixtureEventSchema.Type): DxEventEnvelope => ({
   acquisition: "file-import",
   adapterId: item.adapterId,
   adapterVersion: "fixture",
@@ -112,7 +112,9 @@ const events: DxEventEnvelope[] = fixture.events.items.map((item) => ({
   sourceVersion: null,
   upstreamKey: item.id,
   usage: null,
-}));
+});
+
+const events: DxEventEnvelope[] = fixture.events.items.map(toEnvelope);
 
 const snapshotOf = (branch: string | null = null): StoreSnapshot => ({
   coverage: [],
@@ -242,6 +244,39 @@ describe("B31 cost ledgers", () => {
     expect(
       pick(unassigned, subscriptionAllocationDefinition).value
     ).toBeCloseTo(6.666667, 5);
+  });
+
+  it("sums the estimate across tools that share a branch", () => {
+    const usageOn = (
+      id: string,
+      sourceKind: string,
+      tokens: Record<string, number>
+    ): DxEventEnvelope =>
+      toEnvelope({
+        adapterId: sourceKind,
+        branch: "feat/two-tools",
+        id,
+        kind: "ai.usage",
+        occurredAt: "2026-09-15T00:00:00Z",
+        payload: { model: "gpt-5", sourceKind, tokens },
+      });
+
+    const twoTools: StoreSnapshot = {
+      ...snapshotOf("feat/two-tools"),
+      events: [
+        usageOn("claude-turn", "claude-jsonl", { input: 1_000_000 }),
+        usageOn("codex-turn", "codex-session", { output: 100_000 }),
+      ],
+    };
+
+    const estimate = pick(
+      computeCost(twoTools, fullOptions).results,
+      priceTableEstimateDefinition
+    );
+
+    expect(estimate.value).toBeCloseTo(2.25, 8);
+    expect(estimate.numerator).toBe(2);
+    expect(estimate.reason).not.toContain("Alternative overlapping");
   });
 
   it("collapses duplicate request keys and ignores non-AI events", () => {

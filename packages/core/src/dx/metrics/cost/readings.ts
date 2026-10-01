@@ -7,6 +7,7 @@ import {
 } from "../../harness/rules.js";
 import {
   UNKNOWN_SOURCE_RANK,
+  aiSourceHarness,
   aiSourceRank,
 } from "../../harness/source-kinds.js";
 import { AiSourceKindSchema, TokenCategorySchema } from "../../model/ai.js";
@@ -419,8 +420,8 @@ const extractEvent = (event: DxEventEnvelope) => {
   return { money: out.money, rejections: out.rejections, token };
 };
 
-const rank = (sourceKind: string | null): number => {
-  const kind = orNull(
+const kindOf = (sourceKind: string | null) =>
+  orNull(
     decodeSourceKind(
       sourceKind === null
         ? null
@@ -428,7 +429,16 @@ const rank = (sourceKind: string | null): number => {
     )
   );
 
+const rank = (sourceKind: string | null): number => {
+  const kind = kindOf(sourceKind);
+
   return kind === null ? UNKNOWN_SOURCE_RANK : aiSourceRank(kind);
+};
+
+const harnessOfKind = (sourceKind: string | null): string | null => {
+  const kind = kindOf(sourceKind);
+
+  return kind === null ? null : aiSourceHarness(kind);
 };
 
 interface Deduplicated<T> {
@@ -515,6 +525,38 @@ export interface PreferredSelection<T> {
   readonly kept: readonly T[];
 }
 
+const bestKind = (
+  kinds: readonly (string | null)[]
+): string | null | undefined => kinds.toSorted((a, b) => rank(a) - rank(b))[0];
+
+const preferredKinds = (
+  kinds: readonly (string | null)[]
+): ReadonlySet<string | null> => {
+  const harnesses = [
+    ...new Set(kinds.flatMap((kind) => harnessOfKind(kind) ?? [])),
+  ];
+
+  const harnessBests = harnesses.flatMap((harness) => {
+    const best = bestKind(
+      kinds.filter((kind) => harnessOfKind(kind) === harness)
+    );
+
+    return best === undefined ? [] : [best];
+  });
+
+  const sharedBest = bestKind(
+    kinds.filter((kind) => harnessOfKind(kind) === null)
+  );
+
+  if (sharedBest === undefined) {
+    return new Set(harnessBests);
+  }
+
+  return harnessBests.every((kind) => rank(sharedBest) < rank(kind))
+    ? new Set([sharedBest])
+    : new Set(harnessBests);
+};
+
 export const selectPreferredSource = <T extends ReadingBase>(
   items: readonly T[]
 ): PreferredSelection<T> => {
@@ -524,12 +566,12 @@ export const selectPreferredSource = <T extends ReadingBase>(
     return { alternatives: [], kept: items };
   }
 
-  const best = kinds.toSorted((a, b) => rank(a) - rank(b))[0] ?? null;
+  const keep = preferredKinds(kinds);
 
   return {
     alternatives: kinds.flatMap((kind) =>
-      kind === best ? [] : [kind ?? "unknown"]
+      keep.has(kind) ? [] : [kind ?? "unknown"]
     ),
-    kept: items.filter((item) => item.sourceKind === best),
+    kept: items.filter((item) => keep.has(item.sourceKind)),
   };
 };

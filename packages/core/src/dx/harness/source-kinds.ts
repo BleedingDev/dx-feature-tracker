@@ -77,6 +77,9 @@ export const aiSourceRank = (kind: AiSourceKind): number => {
     : harnessChannelRank(source.harness, source.channel, source.within);
 };
 
+export const aiSourceHarness = (kind: AiSourceKind): HarnessId | null =>
+  HARNESS_SOURCES[kind]?.harness ?? null;
+
 export const AI_SOURCES_BY_RANK: readonly AiSourceKind[] =
   AiSourceKindSchema.literals.toSorted(
     (a, b) => aiSourceRank(a) - aiSourceRank(b)
