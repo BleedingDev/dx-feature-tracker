@@ -756,6 +756,66 @@ const schemaVersion = (db: DatabaseSync, schema: string): number =>
   decodeVersionRow(db.prepare(`PRAGMA ${schema}.user_version`).get())
     .user_version;
 
+const backupVersion = (file: string) =>
+  Effect.try({
+    catch: (cause) =>
+      storeError(`Could not read the backup: ${messageOf(cause)}`),
+    try: () => {
+      const source = new DatabaseSync(file, { readOnly: true });
+
+      try {
+        return schemaVersion(source, "main");
+      } finally {
+        source.close();
+      }
+    },
+  });
+
+const upgradedCopy = (home: LiveHome, file: string, id: string) =>
+  Effect.gen(function* upgradeBackup() {
+    const scratch = yield* Effect.acquireRelease(
+      Effect.try({
+        catch: (cause) =>
+          storeError(`Could not copy the backup: ${messageOf(cause)}`),
+        try: () => {
+          const dir = path.join(backupsDir(home), `.upgrade-${id}`);
+
+          rmSync(dir, { force: true, recursive: true });
+          mkdirSync(dir, { recursive: true });
+
+          return dir;
+        },
+      }),
+      (dir) =>
+        Effect.sync(() => {
+          rmSync(dir, { force: true, recursive: true });
+        })
+    );
+
+    const copy = path.join(scratch, path.basename(file));
+
+    yield* Effect.try({
+      catch: (cause) =>
+        storeError(`Could not copy the backup: ${messageOf(cause)}`),
+      try: () => {
+        copyFileSync(file, copy);
+      },
+    });
+
+    const opened = yield* openSqliteEventStore({
+      kind: "live",
+      path: copy,
+    }).pipe(
+      Effect.mapError((error) =>
+        storeError(`Could not upgrade the backup: ${error.message}`)
+      )
+    );
+
+    opened.close();
+
+    return copy;
+  });
+
 export const restoreBackup = (
   home: LiveHome,
   id: string
@@ -769,31 +829,24 @@ export const restoreBackup = (
       return yield* unknownBackup(id);
     }
 
-    const compatible = yield* Effect.try({
-      catch: (cause) =>
-        storeError(`Could not read the backup: ${messageOf(cause)}`),
-      try: () => {
-        const source = new DatabaseSync(restored.path, { readOnly: true });
+    const version = yield* backupVersion(restored.path);
 
-        try {
-          return schemaVersion(source, "main") === STORE_SCHEMA_VERSION;
-        } finally {
-          source.close();
-        }
-      },
-    });
-
-    if (!compatible) {
+    if (version < 1 || version > STORE_SCHEMA_VERSION) {
       return yield* new LiveActionError({
         message: `Backup ${id} was made by a different dft version and cannot be restored here.`,
         reason: "backup-incompatible",
       });
     }
 
+    const source =
+      version === STORE_SCHEMA_VERSION
+        ? restored.path
+        : yield* upgradedCopy(home, restored.path, id);
+
     const safety = yield* createBackup(home, "restore", null, []);
 
     yield* withAdminDb(home, "restore the backup", (db) => {
-      db.prepare("ATTACH DATABASE ? AS restore_source").run(restored.path);
+      db.prepare("ATTACH DATABASE ? AS restore_source").run(source);
 
       try {
         const available = new Set(userTables(db, "restore_source"));
@@ -854,4 +907,4 @@ export const restoreBackup = (
     }
 
     return { restored, retracked, safety };
-  });
+  }).pipe(Effect.scoped);

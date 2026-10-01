@@ -20,7 +20,7 @@ import {
   HookObservationSchema,
   noHookFields,
 } from "./hook-observation.js";
-import type { HarnessId } from "./ids.js";
+import type { Channel, HarnessId } from "./ids.js";
 import { harnessAdapterId } from "./pending.js";
 import { normalizeModel, providerFor, viaFor } from "./provider.js";
 
@@ -138,7 +138,8 @@ const dayOf = (iso: string): string => iso.slice(0, 10);
 
 export const hookSpoolRefs = (
   scope: HarnessScope,
-  tool: HarnessId
+  tool: HarnessId,
+  channel: Channel = "hooks"
 ): readonly SessionRef[] => {
   if (scope.dftHome === null) {
     return [];
@@ -157,7 +158,7 @@ export const hookSpoolRefs = (
         const file = path.join(dir, name);
 
         return {
-          channel: "hooks",
+          channel,
           harness: tool,
           id: worktree === null ? file : `${file}#${worktree}`,
           mtimeMs: null,
@@ -191,6 +192,7 @@ const sha256Hex = (text: string): string =>
   createHash("sha256").update(text).digest("hex");
 
 export interface HookEventOptions {
+  readonly channel: Channel;
   readonly kind: DxEventEnvelope["kind"];
   readonly origin: Origin;
 }
@@ -211,7 +213,7 @@ export const hookObservationEvent = (
       agentId: fields.agentId,
       agentType: fields.agentType,
       branchSource: git.branch === null ? "unassigned" : "hook",
-      channel: "hooks",
+      channel: options.channel,
       cwd: fields.cwd,
       effort: fields.effort,
       effortSource: fields.effort === null ? null : "harness-recorded",
@@ -269,6 +271,7 @@ export const readHookSpool = (
     )
     .map((observation) =>
       hookObservationEvent(observation, {
+        channel: ref.channel,
         kind: decoder.kind(observation.event),
         origin,
       })

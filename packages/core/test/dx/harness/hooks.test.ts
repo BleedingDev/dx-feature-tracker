@@ -191,6 +191,15 @@ describe("hook observations", () => {
       via: "openrouter",
     });
     expect(Schema.is(DxEventEnvelopeSchema)(event)).toBe(true);
+
+    const fromExtension = hookSpoolRefs(scope, "codex", "extension").map(
+      (extensionRef) =>
+        readHookSpool(extensionRef, HOOK_DECODERS.codex, "imported").events.map(
+          (extensionEvent) => extensionEvent.ai?.channel
+        )
+    );
+
+    expect(fromExtension).toStrictEqual([["extension"]]);
     expect(
       readHookSpool(ref, HOOK_DECODERS.codex, "imported").events.map(
         (again) => again.eventId
