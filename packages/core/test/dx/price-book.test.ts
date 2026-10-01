@@ -60,6 +60,8 @@ const MAKER: PriceSheet = {
       output: 15,
     }),
     "gemini-3.8-flash": once({ input: 0.75, output: 3.75 }),
+    "gpt-4.1": once({ "cached-input": 0.5, input: 2, output: 8 }),
+    "gpt-4o-2024-11-20": once({ "cached-input": 1.25, input: 2.5, output: 10 }),
     "gpt-5": once({ "cached-input": 0.125, input: 1.25, output: 10 }),
     "gpt-5.6-luna": once({
       "cache-write": 0.25,
@@ -388,6 +390,60 @@ it.layer(PriceBook.memory([MAKER]))("PriceBook estimate", (test) => {
       expect(["default", "priority", "flex", "fast"].map(at)).toEqual([
         12, 24, 6, 24,
       ]);
+    })
+  );
+
+  test.effect(
+    "prices batch cache reads as batch input where OpenAI lists no batch cached price",
+    () =>
+      Effect.gen(function* batchCache() {
+        const book = yield* PriceBook;
+
+        const cacheReads = (model: string, serviceTier: string) =>
+          priced(
+            book.estimate(
+              request({
+                harness: "codex",
+                model,
+                provider: "openai",
+                serviceTier,
+                tokens: { cacheRead: 1_000_000, inputFresh: 0, output: 0 },
+              })
+            )
+          );
+
+        const legacyBatch = cacheReads("gpt-4.1", "batch");
+        const legacyFlex = cacheReads("gpt-4.1", "flex");
+        const currentBatch = cacheReads("gpt-5", "batch");
+
+        expect([legacyBatch.usd, legacyFlex.usd, currentBatch.usd]).toEqual([
+          1, 0.25, 0.0625,
+        ]);
+        expect(legacyBatch.complete).toBe(true);
+        expect(legacyBatch.notes).toContain(
+          "batch lists no cached-input price for gpt-4.1; cache reads priced as batch input"
+        );
+        expect(currentBatch.notes).toEqual([]);
+      })
+  );
+
+  test.effect("prices a dated gpt-4o snapshot on Fast at gpt-4o's ratio", () =>
+    Effect.gen(function* datedFast() {
+      const book = yield* PriceBook;
+
+      const fast = priced(
+        book.estimate(
+          request({
+            harness: "codex",
+            model: "gpt-4o-2024-11-20",
+            provider: "openai",
+            serviceTier: "fast",
+            tokens: ONE_MILLION_IN_OUT,
+          })
+        )
+      );
+
+      expect([fast.usd, fast.multiplier]).toEqual([21.25, 1.7]);
     })
   );
 

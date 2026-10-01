@@ -443,12 +443,26 @@ const priceTokens = (
 
   notes.push(...rateNotes(rates, tokens));
 
+  const cacheReadRate = service.cacheReadAsInput
+    ? rates.input
+    : rates.cacheRead;
+
+  if (
+    service.cacheReadAsInput &&
+    rates.cacheReadListed &&
+    (tokens.cacheRead ?? 0) > 0
+  ) {
+    notes.push(
+      `batch lists no cached-input price for ${hit.price.key}; cache reads priced as batch input`
+    );
+  }
+
   const writes = writeSplit(tokens);
   const { multiplier } = service;
 
   const lines = [
     ...tokenLine("input", tokens.inputFresh, rates.input, multiplier),
-    ...tokenLine("cache-read", tokens.cacheRead, rates.cacheRead, multiplier),
+    ...tokenLine("cache-read", tokens.cacheRead, cacheReadRate, multiplier),
     ...tokenLine(
       "cache-write-5m",
       writes.fiveMinutes,
