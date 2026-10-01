@@ -3,7 +3,6 @@ import { createHash } from "node:crypto";
 
 import { DateTime, Option, Schema } from "effect";
 
-import { DEFAULT_PROXIMITY_MS } from "../correlation/ai/overlap.js";
 import type { BranchSource } from "../harness/ids.js";
 import { harnessAdapterId } from "../harness/pending.js";
 import { inferProvider, normalizeModel, viaFor } from "../harness/provider.js";
@@ -480,6 +479,8 @@ const decodeCostModels = Schema.decodeUnknownOption(CostModelsSchema);
 
 const FIGURE_TOLERANCE = 1e-6;
 
+const ACCOUNT_PAIRING_WINDOW_MS = 60_000;
+
 const modelCosts = (
   event: DxEventEnvelope
 ): readonly (readonly [string, number])[] | null =>
@@ -771,7 +772,7 @@ const accountPairings = (
     return turns.flatMap((turn) => {
       const gap = gapToWindow(at, turn.window);
 
-      return turn.key === key && gap <= DEFAULT_PROXIMITY_MS
+      return turn.key === key && gap <= ACCOUNT_PAIRING_WINDOW_MS
         ? [
             {
               account,
