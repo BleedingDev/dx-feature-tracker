@@ -253,6 +253,41 @@ describe("dft install for every tool", () => {
     expect(actions(result.stdout)).toEqual([["pi", ["created"]]]);
   });
 
+  it("dft install --dry-run writes nothing in the repo or HOME", () => {
+    const fresh = path.join(root, "dry-repo");
+    const dryHome = path.join(root, "dry-home");
+    execFileSync("git", ["init", "-q", "-b", "main", fresh]);
+    mkdirSync(path.join(dryHome, ".claude"), { recursive: true });
+
+    const exclude = readFileSync(
+      path.join(fresh, ".git", "info", "exclude"),
+      "utf-8"
+    );
+
+    const result = spawnSync(
+      process.execPath,
+      [dftMain, "install", "--telemetry", "--dry-run", "--tool", "codex,pi"],
+      { cwd: fresh, encoding: "utf-8", env: { ...env, HOME: dryHome } }
+    );
+
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Dry run: dft wrote nothing");
+    expect(result.stdout).toContain("would add (dry run)");
+    expect(
+      execFileSync(
+        "git",
+        ["-C", fresh, "status", "--porcelain", "--ignored", "-uall"],
+        { encoding: "utf-8", env }
+      )
+    ).toBe("");
+    expect(
+      readFileSync(path.join(fresh, ".git", "info", "exclude"), "utf-8")
+    ).toBe(exclude);
+    expect(existsSync(path.join(dryHome, ".claude", "settings.json"))).toBe(
+      false
+    );
+  });
+
   it("a plain re-run repairs hooks that call a node that is gone, and status says so first", () => {
     const stale = path.join(root, "stale-repo");
     const emptyHome = path.join(root, "stale-home");

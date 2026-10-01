@@ -31,6 +31,7 @@ import { Console, Data, DateTime, Effect, Layer, Option } from "effect";
 import { Argument, Command, Flag } from "effect/unstable/cli";
 
 import {
+  CAPTURE_TOOL_NAMES,
   CAPTURE_TOOLS,
   dftCommandFor,
   hasSomeCapture,
@@ -91,7 +92,7 @@ import {
   uninstallTelemetry,
   userToolDirs,
 } from "./dft-telemetry.js";
-import type { TelemetryOptions } from "./dft-telemetry.js";
+import type { TelemetryChange, TelemetryOptions } from "./dft-telemetry.js";
 import {
   captureText,
   codexTrusted,
@@ -1200,7 +1201,7 @@ const toolList = (value: string | undefined): readonly CaptureTool[] =>
 const captureFlags = {
   dryRun: booleanFlag(
     "dry-run",
-    "With --telemetry: show the exact change without writing anything"
+    "Write nothing; with --telemetry, show the exact user settings change"
   ),
   json: reportFlags.json,
   port: Flag.Int("port").pipe(
@@ -1217,6 +1218,23 @@ const captureFlags = {
 };
 
 const entryScript = (): string => process.argv[1] ?? "dft";
+
+const installDryRunText = (
+  worktree: string,
+  tools: readonly CaptureTool[],
+  telemetry: readonly TelemetryChange[] | null
+): string =>
+  [
+    ...(telemetry === null
+      ? []
+      : [
+          telemetryText(
+            telemetry,
+            "Run it again without --dry-run to make this change."
+          ),
+        ]),
+    `Dry run: dft wrote nothing. Without --dry-run it also sets up Cursor hooks and skills${tools.length === 0 ? "" : ` and local capture for ${tools.map((tool) => CAPTURE_TOOL_NAMES[tool]).join(", ")}`} in ${worktree}.`,
+  ].join("\n\n");
 
 const installCommand = Command.make(
   "install",
@@ -1253,6 +1271,26 @@ const installCommand = Command.make(
       );
 
       const now = DateTime.toDate(yield* DateTime.now);
+
+      if (flags.dryRun) {
+        const preview = flags.telemetry
+          ? yield* Effect.sync(() =>
+              installTelemetry(telemetryOptions(paths, true, flags.port, now))
+            )
+          : null;
+
+        yield* Console.log(
+          flags.json
+            ? JSON.stringify(
+                { dryRun: true, telemetry: preview, tools, worktree },
+                null,
+                2
+              )
+            : installDryRunText(worktree, tools, preview)
+        );
+
+        return;
+      }
 
       const result = yield* Effect.sync(() => {
         const hooks = installCursorHooks(worktree, `${command} hook`);
@@ -1392,6 +1430,16 @@ const uninstallCommand = Command.make("uninstall", captureFlags, (flags) =>
     const context = contextForRepo(paths.repo);
     const worktree = context.worktreePath ?? paths.repo;
     const now = DateTime.toDate(yield* DateTime.now);
+
+    if (flags.dryRun && !flags.telemetry) {
+      yield* Console.log(
+        flags.json
+          ? JSON.stringify({ dryRun: true, steps: [], worktree }, null, 2)
+          : `Dry run: dft removed nothing. Without --dry-run it removes what dft install added in ${worktree}.`
+      );
+
+      return;
+    }
 
     if (flags.telemetry) {
       const changes = yield* Effect.sync(() =>
