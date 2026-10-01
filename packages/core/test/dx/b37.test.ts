@@ -252,6 +252,36 @@ describe("b37 redaction", () => {
     );
   });
 
+  it("scrubs values after line breaks, unicode spaces and arrow separators", () => {
+    const cases: readonly (readonly [string, string])[] = [
+      ["password:\r\nhunter2", "password:\r\n[redacted]"],
+      ["Password:\r\n  hunter2\r\n", "Password:\r\n  [redacted]\r\n"],
+      ["password:\n  hunter2", "password:\n  [redacted]"],
+      ["api_key:\n  sk_live_abcdef", "api_key:\n  [redacted]"],
+      ["password=\r\nhunter2", "password=\r\n[redacted]"],
+      ['password:  \n"hunter2"', "password:  \n[redacted]"],
+      ["password = hunter2", "password = [redacted]"],
+      ["password =　hunter2", "password =　[redacted]"],
+      ["password => 'hunter2'", "password => [redacted]"],
+      ['password := "hunter2"', "password := [redacted]"],
+      ["if (password === 'hunter2')", "if (password === [redacted])"],
+      ["MY_API_KEY:\n  hunter2", "MY_API_KEY:\n  [redacted]"],
+      ["password: hunter2\r\nuser: bob", "password: [redacted]\r\nuser: bob"],
+    ];
+
+    for (const [line, expected] of cases) {
+      expect(redactText(line), JSON.stringify(line)).toEqual({
+        redacted: true,
+        text: expected,
+      });
+    }
+
+    expect(redactText("password:   ")).toEqual({
+      redacted: false,
+      text: "password:   ",
+    });
+  });
+
   it("scrubs short secret labels, flags and command credentials", () => {
     const secret = ["hun", "ter", "2Fixture"].join("");
     const google = ["AIza", "Sy", "D".repeat(33)].join("");
@@ -341,6 +371,10 @@ describe("b37 redaction", () => {
       `${"A_".repeat(size / 2)}KEY`,
       `${"x.".repeat(size / 2)}@a.b`,
       `${"a.".repeat(size / 2)}://`,
+      `password:${" ".repeat(size)}`,
+      `password=${"\r\n".repeat(size / 2)}`,
+      `token${" ".repeat(size)}x`,
+      "password:\n".repeat(size / 10),
     ]) {
       redactText(input);
     }

@@ -17,21 +17,23 @@ export interface RedactedText {
   readonly redacted: boolean;
 }
 
-const SECRET_WORD = String.raw`(?:secret|passw(?:or)?d|passphrase|(?<=[_.-])pass(?![a-z])|pwd(?![ \t]*=[ \t]*["']?[~/])|api[_-]?key|access[_-]?key|private[_-]?key|credentials?|authorization|(?<![a-z])o?auth(?![\w.-])|token(?![a-z]|[_-]?(?:counts?|limits?|usage|budget|type)))`;
+const SECRET_WORD = String.raw`(?:secret|passw(?:or)?d|passphrase|(?<=[_.-])pass(?![a-z])|pwd(?!\s*=\s*["']?[~/])|api[_-]?key|access[_-]?key|private[_-]?key|credentials?|authorization|(?<![a-z])o?auth(?![\w.-])|token(?![a-z]|[_-]?(?:counts?|limits?|usage|budget|type)))`;
 
 const QUOTED_VALUE = String.raw`"(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?`;
 
-const LABEL_VALUE = String.raw`(?:${QUOTED_VALUE}|(?<=:[ \t]*)[^\n]+|[^\s&]+)`;
+const LABEL_SEPARATOR = String.raw`\s*[:=]=*>?\s*`;
+
+const LABEL_VALUE = String.raw`(?:${QUOTED_VALUE}|(?=\S)(?<=:\s*)[^\r\n]+|[^\s&]+)`;
 
 const FLAG_VALUE = String.raw`(?!-)(?:${QUOTED_VALUE}|[^\s&;|]+)`;
 
 const SECRET_LABEL = new RegExp(
-  String.raw`(?<prefix>${SECRET_WORD}[\w.-]{0,64}["']?[ \t]*[=:][ \t]*)${LABEL_VALUE}`,
+  String.raw`(?<prefix>${SECRET_WORD}[\w.-]{0,64}["']?${LABEL_SEPARATOR})${LABEL_VALUE}`,
   "giu"
 );
 
 const ENV_KEY_LABEL = new RegExp(
-  String.raw`(?<prefix>(?<![\w.-])[A-Z][\dA-Z]*(?:_[\dA-Z]+)*_(?:KEY|PAT)["']?[ \t]*[=:][ \t]*)${LABEL_VALUE}`,
+  String.raw`(?<prefix>(?<![\w.-])[A-Z][\dA-Z]*(?:_[\dA-Z]+)*_(?:KEY|PAT)["']?${LABEL_SEPARATOR})${LABEL_VALUE}`,
   "gu"
 );
 
