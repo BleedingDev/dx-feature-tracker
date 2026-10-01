@@ -14,6 +14,8 @@ import { AiSourceKindSchema, TokenCategorySchema } from "../../model/ai.js";
 import type { TokenCategory } from "../../model/ai.js";
 import type { AiUsage } from "../../model/attribution.js";
 import type { DxEventEnvelope } from "../../model/event.js";
+import { withoutReplacedRequests } from "../../usage/derive.js";
+import { tokenCategoriesOf } from "../ai-usage/typed.js";
 import type { PricedRequest } from "./price-book/estimate.js";
 
 export const MoneyLedgerSchema = Schema.Literals([
@@ -353,36 +355,15 @@ const listPriceOf = (event: DxEventEnvelope): number | null => {
     : null;
 };
 
-const writesOf = (usage: AiUsage): number | null => {
-  const { cacheWrite, cacheWrite1h, cacheWrite5m } = usage.tokens;
-
-  return cacheWrite1h === null && cacheWrite5m === null
-    ? cacheWrite
-    : Math.max(cacheWrite ?? 0, (cacheWrite5m ?? 0) + (cacheWrite1h ?? 0));
-};
-
-const usageTokens = (usage: AiUsage): TokenCounts => {
-  const { tokens } = usage;
-
-  const entries: readonly (readonly [TokenCategory, number | null])[] = [
-    ["input", tokens.inputFresh],
-    ["cached-input", tokens.cacheRead],
-    ["cache-write", writesOf(usage)],
-    ["output", tokens.output],
-    ["reasoning", tokens.reasoning],
-    ["total", tokens.total],
-  ];
-
-  return Object.fromEntries(
-    entries.flatMap(([category, value]) =>
-      value === null ? [] : [[category, value]]
-    )
-  );
-};
+const usageTokens = (usage: AiUsage): TokenCounts =>
+  Object.fromEntries(tokenCategoriesOf(usage.tokens));
 
 const rawUsageGated = (event: DxEventEnvelope): boolean =>
   rulesForEvent(event).rawUsage?.sourceKind ===
   orNull(decodeText(event.payload.sourceKind));
+
+const typedTokens = (event: DxEventEnvelope): TokenCounts =>
+  event.usage === null || rawUsageGated(event) ? {} : usageTokens(event.usage);
 
 const requestOf = (event: DxEventEnvelope): PricedRequest | null =>
   event.usage === null || rawUsageGated(event)
@@ -402,19 +383,14 @@ const extractEvent = (event: DxEventEnvelope) => {
   fromListPrice(event, base, out);
   fromTokenRecord(event, out);
 
-  if (
-    Object.keys(out.tokens).length === 0 &&
-    event.usage !== null &&
-    !rawUsageGated(event)
-  ) {
-    Object.assign(out.tokens, usageTokens(event.usage));
-  }
+  const typed = typedTokens(event);
+  const tokens = Object.keys(typed).length > 0 ? typed : out.tokens;
 
   const requests =
     orNull(decodeNumber(event.payload.requests)) ??
     orNull(decodeNumber(event.payload.requestUnits));
 
-  const hasTokens = Object.keys(out.tokens).length > 0;
+  const hasTokens = Object.keys(tokens).length > 0;
 
   const token: TokenReading | null =
     hasTokens || requests !== null
@@ -424,7 +400,7 @@ const extractEvent = (event: DxEventEnvelope) => {
             orNull(decodeText(event.payload.model)) ?? event.ai?.model ?? null,
           request: requestOf(event),
           requests,
-          tokens: out.tokens,
+          tokens,
         }
       : null;
 
@@ -492,7 +468,7 @@ export const extractReadings = (
   const listPrices = new Map<string, number>();
   const seen = new Set<string>();
 
-  for (const event of events) {
+  for (const event of withoutReplacedRequests(events)) {
     if (!event.kind.startsWith("ai.") || seen.has(event.eventId)) {
       continue;
     }

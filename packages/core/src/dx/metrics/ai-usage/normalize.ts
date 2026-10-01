@@ -20,6 +20,7 @@ import { ValueMethodSchema } from "../../model/common.js";
 import type { DxEventEnvelope } from "../../model/event.js";
 import type { EvidenceId } from "../../model/ids.js";
 import { EvidenceIdSchema } from "../../model/ids.js";
+import { withoutReplacedRequests } from "../../usage/derive.js";
 import type { TypedSource } from "./typed.js";
 import { figureLedger, tokenCategoriesOf, typedSourceOf } from "./typed.js";
 
@@ -451,7 +452,7 @@ export const normalizeAiUsage = (
 ): NormalizedUsage => {
   const rows: AiUsageRow[] = [];
   const uncovered: UncoveredUsage[] = [];
-  const usageBearing = events.filter(carriesUsage);
+  const usageBearing = withoutReplacedRequests(events).filter(carriesUsage);
 
   for (const event of usageBearing) {
     const evidenceId = EvidenceIdSchema.make(event.eventId);

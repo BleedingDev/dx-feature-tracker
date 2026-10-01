@@ -23,6 +23,8 @@ import {
   parseUserPriceTable,
   selectPriceTable,
 } from "../../src/dx/metrics/cost/price-tables/defaults.js";
+import type { AiTokens } from "../../src/dx/model/attribution.js";
+import { unknownTokens } from "../../src/dx/model/attribution.js";
 import type { DxEventEnvelope } from "../../src/dx/model/event.js";
 import { EventIdSchema } from "../../src/dx/model/ids.js";
 import type { MetricResult } from "../../src/dx/model/metric.js";
@@ -73,6 +75,17 @@ const withModel = (
       ? { ...event, payload: { ...event.payload, model } }
       : event
   );
+
+const withUsageTokens = (
+  event: DxEventEnvelope,
+  tokens: Partial<AiTokens>
+): DxEventEnvelope =>
+  event.usage === null
+    ? event
+    : {
+        ...event,
+        usage: { ...event.usage, tokens: { ...unknownTokens, ...tokens } },
+      };
 
 const snapshotOf = (events: readonly DxEventEnvelope[]): StoreSnapshot => ({
   coverage: [],
@@ -160,13 +173,16 @@ describe("P1 bundled price tables", () => {
   it("prices the other categories when the model lists no cache-write rate", () => {
     const events = withModel(liveEvents(), "gpt-5").map((event) =>
       event.kind === "ai.usage"
-        ? {
-            ...event,
-            payload: {
-              ...event.payload,
-              tokens: { "cache-write": 10, input: 5, output: 1 },
+        ? withUsageTokens(
+            {
+              ...event,
+              payload: {
+                ...event.payload,
+                tokens: { "cache-write": 10, input: 5, output: 1 },
+              },
             },
-          }
+            { cacheWrite: 10, inputFresh: 5, output: 1 }
+          )
         : event
     );
 
@@ -272,21 +288,25 @@ const usageEvent = (spec: UsageRowSpec): DxEventEnvelope => {
     throw new Error("missing live usage event");
   }
 
-  return {
-    ...template,
-    context: { ...template.context, branch: spec.branch },
-    eventId: EventIdSchema.make(spec.id),
-    payload: {
-      costLedger: spec.listPriceUsd === null ? null : "metered",
-      costRawField: spec.listPriceUsd === null ? null : "tokenUsage.totalCents",
-      costUsd: spec.listPriceUsd,
-      currency: spec.listPriceUsd === null ? null : "USD",
-      model: spec.model,
-      requestKey: spec.requestKey,
-      sourceKind: spec.sourceKind,
-      tokens: { input: 1_000_000, output: 100_000 },
+  return withUsageTokens(
+    {
+      ...template,
+      context: { ...template.context, branch: spec.branch },
+      eventId: EventIdSchema.make(spec.id),
+      payload: {
+        costLedger: spec.listPriceUsd === null ? null : "metered",
+        costRawField:
+          spec.listPriceUsd === null ? null : "tokenUsage.totalCents",
+        costUsd: spec.listPriceUsd,
+        currency: spec.listPriceUsd === null ? null : "USD",
+        model: spec.model,
+        requestKey: spec.requestKey,
+        sourceKind: spec.sourceKind,
+        tokens: { input: 1_000_000, output: 100_000 },
+      },
     },
-  };
+    { inputFresh: 1_000_000, output: 100_000 }
+  );
 };
 
 const SONNET_USD = 3 + 1.5;

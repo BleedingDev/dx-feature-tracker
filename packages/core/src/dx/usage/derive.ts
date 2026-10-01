@@ -729,6 +729,16 @@ const isSuperseded = (
   );
 };
 
+export const withoutReplacedRequests = (
+  events: readonly DxEventEnvelope[]
+): readonly DxEventEnvelope[] => {
+  const replaced = replacedKeys(events);
+
+  return replaced.size === 0
+    ? events
+    : events.filter((event) => !isSuperseded(event, replaced));
+};
+
 interface Readings {
   readonly adapters: Set<string>;
   readonly channels: Set<string>;
