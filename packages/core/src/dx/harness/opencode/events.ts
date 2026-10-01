@@ -231,11 +231,19 @@ const modelPayload = (model: OcModel | null) => ({
   providerId: model?.providerId ?? null,
 });
 
+const splitGenerationOf = (placements: readonly Placement[]): string =>
+  sha256Hex(
+    placements
+      .map((part) => `${part.git.worktreePath ?? "-"}=${String(part.share)}`)
+      .join("\n")
+  ).slice(0, 12);
+
 const requestEvents = (
   ctx: EventContext,
   view: OcSessionView,
   request: OcRequest,
-  placements: readonly Placement[]
+  placements: readonly Placement[],
+  splitAt: number
 ): DxEventEnvelope[] => {
   const { message } = request;
 
@@ -325,16 +333,20 @@ const requestEvents = (
     placements.map((part) => part.share)
   );
 
+  const generation = splitGenerationOf(placements);
+  const whole = requestKeyOf(message.id);
+
   return placements.flatMap((part, index) => {
     const piece = pieces[index];
-    const key = `${requestKeyOf(message.id)}:split:${part.git.worktreePath ?? "-"}`;
+    const worktree = part.git.worktreePath ?? "-";
+    const key = `${whole}:split:${generation}:${worktree}`;
 
     if (piece === undefined) {
       return [];
     }
 
     const cost = request.cost === null ? null : request.cost * part.share;
-    const pieceId = `${message.id}:split:${index}`;
+    const pieceId = `${message.id}:${generation}:split:${index}`;
 
     return [
       envelope(ctx, {
@@ -342,18 +354,20 @@ const requestEvents = (
         at: message.created,
         identity: { ...identity, generationId: pieceId, requestId: pieceId },
         kind: "ai.usage",
-        observedAt: message.updated,
+        observedAt: Math.max(message.updated, splitAt),
         payload: {
           ...base,
           cost: costPayload(cost),
+          replacesRequestKey: whole,
           requestKey: key,
           share: part.share,
-          splitOf: requestKeyOf(message.id),
+          splitGeneration: generation,
+          splitOf: whole,
           tokens: rawTokens(piece),
         },
         placement: part,
         semantics: USAGE_SEMANTICS,
-        upstreamKey: `opencode:message:${message.id}:split:${part.git.worktreePath ?? "-"}`,
+        upstreamKey: `opencode:message:${message.id}:split:${generation}:${worktree}`,
         usage: usageOf(key, piece, cost),
       }),
     ];
@@ -502,7 +516,8 @@ export const sessionEvents = (
           ctx,
           view,
           request,
-          placement.requests.get(request.message.id) ?? []
+          placement.requests.get(request.message.id) ?? [],
+          placement.splitAt
         )
       : []
   );

@@ -1,4 +1,4 @@
-import { Context, Effect, Layer } from "effect";
+import { Context, Effect, Layer, Option, Schema } from "effect";
 
 import type { SourceGap } from "../../model/coverage.js";
 import type { DxEventEnvelope, EventBatch } from "../../model/event.js";
@@ -63,6 +63,15 @@ const linkedSessionsOf = (events: readonly DxEventEnvelope[]) =>
     )
   );
 
+const decodeSplitPiece = Schema.decodeUnknownOption(
+  Schema.Struct({ splitOf: Schema.NonEmptyString })
+);
+
+const splitOfEvent = (event: DxEventEnvelope): readonly string[] =>
+  Option.toArray(
+    Option.map(decodeSplitPiece(event.payload), (piece) => piece.splitOf)
+  );
+
 export const eventsForWorktree = (
   events: readonly DxEventEnvelope[],
   worktree: string | null
@@ -73,10 +82,12 @@ export const eventsForWorktree = (
 
   const inside = events.filter((event) => inWorktree(event, worktree));
   const linked = linkedSessionsOf(inside);
+  const split = new Set(inside.flatMap(splitOfEvent));
 
   return events.filter(
     (event) =>
       inWorktree(event, worktree) ||
+      splitOfEvent(event).some((key) => split.has(key)) ||
       pointsInto(event, worktree) ||
       (event.context.worktreePath === null &&
         linked.has(event.ai?.sessionId ?? ""))

@@ -98,16 +98,23 @@ export const toolPathsToResolve = (
 export interface SessionPlacement {
   readonly requests: ReadonlyMap<string, readonly Placement[]>;
   readonly session: Placement;
+  readonly splitAt: number;
+}
+
+interface Weight {
+  readonly at: number;
+  readonly git: GitAt;
+  readonly weight: number;
 }
 
 interface OwnPlacement {
   readonly placed: Map<string, Placement>;
-  readonly weights: Map<string, { git: GitAt; weight: number }>;
+  readonly weights: Map<string, Weight>;
 }
 
 const ownPlacement = (view: OcSessionView, lookup: GitLookup): OwnPlacement => {
   const placed = new Map<string, Placement>();
-  const weights = new Map<string, { git: GitAt; weight: number }>();
+  const weights = new Map<string, Weight>();
   const byTurn = new Map<string, OcRequest[]>();
 
   for (const request of view.requests) {
@@ -125,6 +132,7 @@ const ownPlacement = (view: OcSessionView, lookup: GitLookup): OwnPlacement => {
     if (worktree !== null) {
       const prior = weights.get(worktree);
       weights.set(worktree, {
+        at: Math.max(prior?.at ?? 0, request.message.updated),
         git: placement.git,
         weight: (prior?.weight ?? 0) + tokenWeight(request),
       });
@@ -149,9 +157,7 @@ const ownPlacement = (view: OcSessionView, lookup: GitLookup): OwnPlacement => {
   return { placed, weights };
 };
 
-const splitAcross = (
-  weights: readonly { git: GitAt; weight: number }[]
-): readonly Placement[] => {
+const splitAcross = (weights: readonly Weight[]): readonly Placement[] => {
   const total = weights.reduce((sum, entry) => sum + entry.weight, 0);
 
   if (total <= 0) {
@@ -179,12 +185,13 @@ const childWeights = (
   children: readonly OcSessionView[],
   own: ReadonlyMap<string, OwnPlacement>
 ) => {
-  const merged = new Map<string, { git: GitAt; weight: number }>();
+  const merged = new Map<string, Weight>();
 
   for (const child of children) {
     for (const [worktree, entry] of own.get(child.session.id)?.weights ?? []) {
       const prior = merged.get(worktree);
       merged.set(worktree, {
+        at: Math.max(prior?.at ?? 0, entry.at),
         git: entry.git,
         weight: (prior?.weight ?? 0) + entry.weight,
       });
@@ -220,7 +227,8 @@ export const placeSessions = (
       (other) => other.session.parentId === view.session.id
     );
 
-    const split = splitAcross(childWeights(view, children, own));
+    const weights = childWeights(view, children, own);
+    const split = splitAcross(weights);
 
     const inherited: readonly Placement[] = isRepo(parentGit)
       ? [whole(parentGit, "cwd-inferred")]
@@ -246,6 +254,7 @@ export const placeSessions = (
       session: isRepo(sessionGit)
         ? whole(sessionGit, "cwd-inferred")
         : (firstPlaced ?? unplaced),
+      splitAt: Math.max(0, ...weights.map((entry) => entry.at)),
     });
   }
 

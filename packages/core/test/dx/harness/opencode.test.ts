@@ -26,6 +26,7 @@ import {
   HarnessRegistryLive,
   registryWith,
 } from "../../../src/dx/harness/registry.js";
+import { accountAiUsage } from "../../../src/dx/metrics/ai-usage/ledger.js";
 import type { DxEventEnvelope } from "../../../src/dx/model/event.js";
 import { emptyFlightContext } from "../../../src/dx/model/event.js";
 import { deriveUsageFacts } from "../../../src/dx/usage/derive.js";
@@ -465,6 +466,88 @@ const read = (tables: MemoryTables, repos = FIXTURE_REPOS) =>
   readEverything.pipe(
     Effect.provide(memoryLayer({ "/m/opencode.db": tables }, repos))
   );
+
+const CHILDREN = [
+  { at: 20, dir: `${REALDATA}/repo`, id: "c1", stage: 1 },
+  { at: 30, dir: "/home/user/projects/p1", id: "c2", stage: 2 },
+  { at: 40, dir: `${REALDATA}/repo`, id: "c1", stage: 3 },
+  { at: 50, dir: `${REALDATA}/wt-two`, id: "c3", stage: 4 },
+] as const;
+
+const orchestratorTables = (stage: number): MemoryTables => {
+  const children = CHILDREN.filter(
+    (child) => child.stage <= stage && (stage !== 4 || child.stage !== 3)
+  );
+
+  return {
+    session_message: [
+      v2Message({
+        at: 10,
+        id: "msg_p",
+        seq: 1,
+        sessionId: S,
+        tokens: [101, 10, 0, 0, 0],
+      }),
+      ...children.map((child) =>
+        v2Message({
+          at: child.at,
+          id: `msg_${child.id}_${String(child.stage)}`,
+          seq: child.stage,
+          sessionId: `ses_${child.id}`,
+          tokens: [child.id === "c1" ? 30 : 10, 0, 0, 0, 0],
+        })
+      ),
+    ],
+    session_v2: [
+      v2Session({
+        directory: "/home/user/scratch",
+        id: S,
+        tokens: [101, 10, 0, 0, 0],
+      }),
+      ...[...new Map(children.map((child) => [child.id, child])).values()].map(
+        (child) =>
+          v2Session({
+            directory: child.dir,
+            id: `ses_${child.id}`,
+            parentId: S,
+          })
+      ),
+    ],
+  };
+};
+
+const storedOnce = (
+  ...syncs: readonly (readonly DxEventEnvelope[])[]
+): readonly DxEventEnvelope[] => [
+  ...new Map(
+    syncs
+      .flat()
+      .toReversed()
+      .map((event) => [event.eventId, event] as const)
+  ).values(),
+];
+
+const orchestratorFacts = (events: readonly DxEventEnvelope[]) =>
+  Effect.map(placedLikeTheStore(events), (placed) => {
+    const facts = deriveUsageFacts(placed).facts.filter(
+      (fact) => fact.session === S
+    );
+
+    return {
+      input: facts.reduce((n, fact) => n + (fact.tokens.inputFresh ?? 0), 0),
+      output: facts.reduce((n, fact) => n + (fact.tokens.output ?? 0), 0),
+      requests: facts.reduce((n, fact) => n + fact.requests, 0),
+      worktrees: facts
+        .map(
+          (fact) =>
+            `${fact.worktree ?? "-"} ${String(fact.tokens.inputFresh)}/${String(fact.tokens.output)}`
+        )
+        .toSorted((a, b) => a.localeCompare(b)),
+    };
+  });
+
+const ledgerTokens = (events: readonly DxEventEnvelope[]) =>
+  accountAiUsage(events).totals.map((total) => [total.category, total.value]);
 
 describe("OpenCode dedupe rules", () => {
   it.effect("counts a v1 row copied into session_message once", () =>
@@ -945,6 +1028,124 @@ describe("OpenCode dedupe rules", () => {
         ]);
         expect(orchestrator.reduce((n, fact) => n + fact.requests, 0)).toBe(1);
       })
+  );
+
+  it.effect(
+    "replaces an unsplit reading when a later sync splits the orchestrator",
+    () =>
+      Effect.gen(function* resplit() {
+        const second = yield* read(orchestratorTables(2));
+
+        expect(
+          usageOf(second, S).every(
+            (event) => event.payload.replacesRequestKey === "opencode:msg_p"
+          )
+        ).toBe(true);
+
+        for (const stage of [0, 1]) {
+          const first = yield* read(orchestratorTables(stage));
+          const stored = storedOnce(first, second);
+
+          expect(yield* orchestratorFacts(stored)).toStrictEqual({
+            input: 101,
+            output: 10,
+            requests: 1,
+            worktrees: ["/home/user/projects/p1 25/2", `${REALDATA}/repo 76/8`],
+          });
+          expect(ledgerTokens(yield* placedLikeTheStore(stored))).toStrictEqual(
+            ledgerTokens(yield* placedLikeTheStore(second))
+          );
+        }
+      })
+  );
+
+  it.effect(
+    "keeps only the newest pieces when a later sync splits with other weights",
+    () =>
+      Effect.gen(function* reweighted() {
+        const second = yield* read(orchestratorTables(2));
+        const third = yield* read(orchestratorTables(3));
+
+        expect(
+          new Set(
+            [...usageOf(second, S), ...usageOf(third, S)].map(
+              (event) => event.eventId
+            )
+          ).size
+        ).toBe(4);
+
+        for (const stored of [
+          storedOnce(second, third),
+          storedOnce(third, second),
+        ]) {
+          expect(yield* orchestratorFacts(stored)).toStrictEqual({
+            input: 101,
+            output: 10,
+            requests: 1,
+            worktrees: ["/home/user/projects/p1 14/1", `${REALDATA}/repo 87/9`],
+          });
+        }
+      })
+  );
+
+  it.effect("replaces a split that later reaches another worktree", () =>
+    Effect.gen(function* widened() {
+      const second = yield* read(orchestratorTables(2));
+      const fourth = yield* read(orchestratorTables(4));
+
+      expect(
+        yield* orchestratorFacts(storedOnce(second, fourth))
+      ).toMatchObject({ input: 101, output: 10, requests: 1 });
+      expect(
+        (yield* orchestratorFacts(storedOnce(second, fourth))).worktrees
+      ).toHaveLength(3);
+    })
+  );
+
+  it.effect(
+    "drops the unsplit reading that 0.2.0 stored next to its pieces",
+    () =>
+      Effect.gen(function* legacy() {
+        const first = yield* read(orchestratorTables(1));
+        const second = yield* read(orchestratorTables(2));
+
+        const legacyPieces = second.map((event) => ({
+          ...event,
+          payload: Object.fromEntries(
+            Object.entries(event.payload).filter(
+              ([field]) =>
+                field !== "replacesRequestKey" && field !== "splitGeneration"
+            )
+          ),
+        }));
+
+        expect(
+          yield* orchestratorFacts(storedOnce(first, legacyPieces))
+        ).toMatchObject({ input: 101, output: 10, requests: 1 });
+      })
+  );
+
+  it.effect(
+    "keeps every piece of a split when a repo-scoped sync reads it",
+    () =>
+      Effect.gen(function* scoped() {
+        const harness = yield* OpencodeHarness;
+
+        const refs = yield* harness.locate({
+          ...everywhere,
+          worktrees: ["/home/user/projects/p1"],
+        });
+
+        const events = yield* readAll(harness, refs);
+
+        expect(
+          usageOf(events, S)
+            .map((event) => event.context.worktreePath)
+            .toSorted((a, b) => (a ?? "").localeCompare(b ?? ""))
+        ).toStrictEqual(["/home/user/projects/p1", `${REALDATA}/repo`]);
+      }).pipe(
+        Effect.provide(memoryLayer({ "/m/opencode.db": orchestratorTables(2) }))
+      )
   );
 
   it.effect("follows a session that moved to another folder", () =>

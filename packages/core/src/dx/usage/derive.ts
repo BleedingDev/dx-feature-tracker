@@ -710,33 +710,101 @@ const sessionFigureFacts = (
 
 const decodeKey = Schema.decodeUnknownOption(Schema.NonEmptyString);
 
+const SplitReadingSchema = Schema.Struct({
+  splitGeneration: Schema.optional(Schema.NonEmptyString),
+  splitOf: Schema.NonEmptyString,
+});
+
+const decodeSplitReading = Schema.decodeUnknownOption(SplitReadingSchema);
+
 const replacedKeyOf = (event: DxEventEnvelope): Option.Option<string> =>
-  decodeKey(event.payload.replacesRequestKey);
+  Option.orElse(decodeKey(event.payload.replacesRequestKey), () =>
+    Option.map(decodeSplitReading(event.payload), (piece) => piece.splitOf)
+  );
 
 const replacedKeys = (events: readonly DxEventEnvelope[]): Set<string> =>
   new Set(events.flatMap((event) => Option.toArray(replacedKeyOf(event))));
 
+const SHARE_SUFFIX = /#split:\d+\/\d+$/u;
+
+const instantOf = (iso: string): number => {
+  const at = Date.parse(iso);
+
+  return Number.isNaN(at) ? 0 : at;
+};
+
+const newestSplits = (
+  events: readonly DxEventEnvelope[]
+): ReadonlyMap<string, string> => {
+  const newest = new Map<string, { at: number; generation: string }>();
+
+  for (const event of events) {
+    for (const piece of Option.toArray(decodeSplitReading(event.payload))) {
+      const generation = piece.splitGeneration;
+      const at = instantOf(event.observedAt);
+      const best = newest.get(piece.splitOf);
+
+      if (
+        generation !== undefined &&
+        (best === undefined ||
+          at > best.at ||
+          (at === best.at && generation > best.generation))
+      ) {
+        newest.set(piece.splitOf, { at, generation });
+      }
+    }
+  }
+
+  return new Map(
+    [...newest].map(([splitOf, { generation }]) => [splitOf, generation])
+  );
+};
+
+interface Replacements {
+  readonly newest: ReadonlyMap<string, string>;
+  readonly replaced: ReadonlySet<string>;
+}
+
+const replacementsOf = (events: readonly DxEventEnvelope[]): Replacements => ({
+  newest: newestSplits(events),
+  replaced: replacedKeys(events),
+});
+
+const isOlderSplit = (
+  event: DxEventEnvelope,
+  newest: ReadonlyMap<string, string>
+): boolean =>
+  Option.match(decodeSplitReading(event.payload), {
+    onNone: () => false,
+    onSome: (piece) => {
+      const winner = newest.get(piece.splitOf);
+
+      return winner !== undefined && piece.splitGeneration !== winner;
+    },
+  });
+
 const isSuperseded = (
   event: DxEventEnvelope,
-  replaced: ReadonlySet<string>
+  { newest, replaced }: Replacements
 ): boolean => {
-  const key = event.usage?.requestKey ?? null;
+  const key = event.usage?.requestKey?.replace(SHARE_SUFFIX, "") ?? null;
 
   return (
-    key !== null &&
-    replaced.has(key) &&
-    !Option.contains(replacedKeyOf(event), key)
+    (key !== null &&
+      replaced.has(key) &&
+      !Option.contains(replacedKeyOf(event), key)) ||
+    isOlderSplit(event, newest)
   );
 };
 
 export const withoutReplacedRequests = (
   events: readonly DxEventEnvelope[]
 ): readonly DxEventEnvelope[] => {
-  const replaced = replacedKeys(events);
+  const replacements = replacementsOf(events);
 
-  return replaced.size === 0
+  return replacements.replaced.size === 0
     ? events
-    : events.filter((event) => !isSuperseded(event, replaced));
+    : events.filter((event) => !isSuperseded(event, replacements));
 };
 
 interface Readings {
@@ -989,12 +1057,12 @@ interface RequestGrouping extends PairedGroups {
 const requestGrouping = (
   events: readonly DxEventEnvelope[]
 ): RequestGrouping => {
-  const replaced = replacedKeys(events);
+  const replacements = replacementsOf(events);
 
   const bearing = [
     ...new Map(
       events.flatMap((event) =>
-        usageBearing(event) && !isSuperseded(event, replaced)
+        usageBearing(event) && !isSuperseded(event, replacements)
           ? [[event.eventId, event] as const]
           : []
       )
