@@ -4,11 +4,18 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 
 import { gitSelectorResolver, makeDxChatsCapability } from "@rat-stack/core/dx";
-import type { FlightHistoryRow, HistoryMeasure } from "@rat-stack/core/dx";
+import type {
+  DxUsageInputType,
+  DxUsageOutputType,
+  FlightHistoryRow,
+  HistoryMeasure,
+} from "@rat-stack/core/dx";
 import { Data, DateTime, Effect, Option } from "effect";
 
 import { chatLabel, chatStatsParts } from "./dft-chats.js";
 import type { ChatLike } from "./dft-chats.js";
+import { USAGE_STYLE, usageSection } from "./dft-dashboard-usage.js";
+import type { StaticUsage } from "./dft-dashboard-usage.js";
 import {
   collapseTurns,
   enterpriseHtml,
@@ -55,6 +62,7 @@ export interface DashboardData {
   readonly scope: DashboardScope;
   readonly since: string | null;
   readonly titles: boolean;
+  readonly usage?: StaticUsage | null;
   readonly version: string;
 }
 
@@ -98,11 +106,11 @@ export const rowTokens = (row: FlightHistoryRow): number | null => {
   return values.length === 0 ? null : values.reduce((sum, n) => sum + n, 0);
 };
 
-export const rowCursorFigure = (row: FlightHistoryRow): number | null =>
+export const rowToolFigure = (row: FlightHistoryRow): number | null =>
   measure(row.money.metered);
 
 export const rowBilled = (row: FlightHistoryRow): number | null =>
-  measure(row.money.billed) ?? measure(row.money.metered);
+  measure(row.money.billed);
 
 export const rowEstimate = (row: FlightHistoryRow): number | null =>
   measure(row.money.estimatedPriceTable) ?? measure(row.money.estimatedSource);
@@ -345,8 +353,9 @@ const COLUMNS: readonly (readonly [string, boolean])[] = [
   ["Last active", true],
   ["Agent time", true],
   ["Tokens", true],
-  ["Billed", true],
   ["Estimate", true],
+  ["Tool's figure", true],
+  ["Billed", true],
   ["Cost", true],
   ["Chats", true],
   ["Commits", true],
@@ -394,8 +403,9 @@ const branchRows = (
     },
     numberCell(measure(row.agentTime), formatDuration),
     numberCell(rowTokens(row), formatCount),
-    numberCell(rowBilled(row), formatUsd),
     numberCell(rowEstimate(row), formatUsd),
+    numberCell(rowToolFigure(row), formatUsd),
+    numberCell(rowBilled(row), formatUsd),
     barCell(row, max),
     numberCell(measure(row.chats), formatCount),
     numberCell(measure(row.commits), formatCount),
@@ -554,18 +564,30 @@ export const renderDashboard = (
       ? "all time"
       : `since ${dayText(data.since, options.timeZone)}`;
 
+  const ledgers =
+    data.usage === undefined || data.usage === null
+      ? [
+          tile(
+            "Estimate",
+            orDash(totals.estimate, formatUsd),
+            totals.estimatePartial ? "some tokens have no price" : "list price"
+          ),
+          tile("Billed", orDash(totals.billed, formatUsd)),
+          tile("Tokens", orDash(totals.tokens, formatCount)),
+        ]
+      : [];
+
   const tiles = [
-    tile("Billed", orDash(totals.billed, formatUsd)),
-    tile(
-      "Estimate",
-      orDash(totals.estimate, formatUsd),
-      totals.estimatePartial ? "some tokens have no price" : "list price"
-    ),
-    tile("Tokens", orDash(totals.tokens, formatCount)),
+    ...ledgers,
     tile("Agent time", orDash(totals.agentMs, formatDuration)),
     tile("Branches", formatCount(rows.length)),
     tile("Active", rangeText(all, options.timeZone)),
   ].join("");
+
+  const usage =
+    data.usage === undefined || data.usage === null
+      ? []
+      : [usageSection(data.usage)];
 
   return [
     "<!doctype html>",
@@ -576,19 +598,20 @@ export const renderDashboard = (
     '<meta name="viewport" content="width=device-width,initial-scale=1">',
     '<meta name="referrer" content="no-referrer">',
     `<title>AI cost · ${escapeHtml(data.scope === "all" ? "all repos" : data.repoLabel)}</title>`,
-    `<style>${STYLE}</style>`,
+    `<style>${STYLE}${USAGE_STYLE}</style>`,
     "</head>",
     "<body>",
     "<main>",
     "<header>",
-    "<h1>AI cost per branch</h1>",
+    "<h1>AI usage and cost</h1>",
     `<p class="sub">${escapeHtml(`${scopeText} · ${windowText}`)}</p>`,
-    `<dl class="totals">${tiles}</dl>`,
     "</header>",
+    ...usage,
+    `<dl class="totals">${tiles}</dl>`,
     branchTable(data),
     accountBlock(data),
     "<footer>",
-    `<span>Billed is what Cursor charged. Estimate is list price for the tokens. They are shown apart, never added. <span class="legend"><span><i style="background:var(--billed)"></i>billed</span><span><i style="background:var(--estimate)"></i>estimate</span></span></span>`,
+    `<span>Estimate is the model maker's list price for the tokens. Tool's figure is the cost a tool reported itself. Billed is a real charge. They are shown apart, never added. <span class="legend"><span><i style="background:var(--billed)"></i>billed</span><span><i style="background:var(--estimate)"></i>estimate</span></span></span>`,
     `<span>Generated ${escapeHtml(stampText(data.generatedAt, options.timeZone))} · dft ${escapeHtml(data.version)}</span>`,
     `<p class="enterprise">${enterpriseHtml()}</p>`,
     "</footer>",
@@ -612,13 +635,16 @@ export interface DashboardChatsQuery {
   readonly since?: string;
 }
 
-export interface DashboardSources<HE, HR, CE, CR> {
+export interface DashboardSources<HE, HR, CE, CR, UE = never, UR = never> {
   readonly chats: (
     input: DashboardChatsQuery
   ) => Effect.Effect<DashboardChats, CE, CR>;
   readonly history: (
     input: DashboardHistoryQuery
   ) => Effect.Effect<DashboardHistory, HE, HR>;
+  readonly usage?: (
+    input: DxUsageInputType
+  ) => Effect.Effect<DxUsageOutputType, UE, UR>;
 }
 
 export interface DashboardOptions {
@@ -735,10 +761,42 @@ export const openInBrowser = (file: string, platform: NodeJS.Platform) =>
     }
   });
 
-export const writeDashboard = <HE, HR, CE, CR>(
+const loadUsage = <UE, UR>(
   options: DashboardOptions,
-  sources: DashboardSources<HE, HR, CE, CR>
-): Effect.Effect<DashboardResult, HE | DashboardWriteError, HR | CR> =>
+  usage:
+    | ((input: DxUsageInputType) => Effect.Effect<DxUsageOutputType, UE, UR>)
+    | undefined
+): Effect.Effect<StaticUsage | null, never, UR> => {
+  if (usage === undefined) {
+    return Effect.succeed(null);
+  }
+
+  const repo = options.scope === "repo" ? [options.repo] : undefined;
+  const scoped: DxUsageInputType = repo === undefined ? {} : { repo };
+
+  const base: DxUsageInputType =
+    options.since === undefined ? scoped : { ...scoped, since: options.since };
+
+  return Effect.all({
+    models: usage({ ...base, groupBy: "model", limit: 12, sortBy: "estimate" }),
+    series: usage({
+      ...base,
+      bucket: "day",
+      limit: 6,
+      metrics: ["estimate"],
+      stackBy: "tool",
+    }),
+    tools: usage({ ...base, groupBy: "tool", limit: 50, sortBy: "estimate" }),
+  }).pipe(
+    Effect.option,
+    Effect.map((loaded) => (Option.isSome(loaded) ? loaded.value : null))
+  );
+};
+
+export const writeDashboard = <HE, HR, CE, CR, UE = never, UR = never>(
+  options: DashboardOptions,
+  sources: DashboardSources<HE, HR, CE, CR, UE, UR>
+): Effect.Effect<DashboardResult, HE | DashboardWriteError, HR | CR | UR> =>
   Effect.gen(function* dashboard() {
     const history = yield* sources.history(
       withSince(
@@ -759,6 +817,7 @@ export const writeDashboard = <HE, HR, CE, CR>(
       )
     );
 
+    const usage = yield* loadUsage(options, sources.usage);
     const now = yield* DateTime.now;
     const generatedAt = DateTime.toEpochMillis(now);
 
@@ -776,6 +835,7 @@ export const writeDashboard = <HE, HR, CE, CR>(
       scope: options.scope,
       since: history.since,
       titles: options.titles ?? true,
+      usage,
       version: options.version ?? VERSION,
     });
 

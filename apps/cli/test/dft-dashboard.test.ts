@@ -4,7 +4,11 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 
 import { afterEach, describe, expect, it } from "@effect/vitest";
-import type { FlightHistoryRow, HistoryMeasure } from "@rat-stack/core/dx";
+import type {
+  DxUsageOutputType,
+  FlightHistoryRow,
+  HistoryMeasure,
+} from "@rat-stack/core/dx";
 import { Effect } from "effect";
 
 import {
@@ -179,6 +183,95 @@ afterEach(() => {
 const ENTERPRISE_FOOTER =
   /<p class="enterprise">Want it for your whole company\?.*?<\/p>/u;
 
+type UsageRow = DxUsageOutputType["groups"][number];
+
+const usageRow = (
+  key: string,
+  values: Readonly<Record<string, number | null>>
+): UsageRow => ({ facts: 1, key, values });
+
+const usageOutput = (
+  groupBy: "model" | "tool" | null,
+  groups: readonly UsageRow[],
+  extra: Partial<DxUsageOutputType> = {}
+): DxUsageOutputType => ({
+  asOf: "2026-09-30T14:00:00.000Z",
+  bucket: "day",
+  contractVersion: "dx.usage.v1",
+  coverage: {
+    accountBuckets: usageRow("account-bucket", {}),
+    derivationVersion: 1,
+    derivedAt: null,
+    disagreements: [],
+    facts: groups.length,
+    matched: groups.length,
+    tools: [],
+    unpriced: 2,
+    unresolved: 0,
+    withoutTime: 0,
+  },
+  groupBy,
+  groups,
+  limit: 10,
+  metrics: ["tokens", "requests", "estimate", "billed", "toolFigure"],
+  notes: [],
+  other: null,
+  series: [],
+  sortBy: "estimate",
+  stackBy: null,
+  total: usageRow("total", {
+    billed: null,
+    estimate: 4,
+    requests: 9,
+    tokens: 1_200_000,
+    toolFigure: 0.5,
+  }),
+  unattributed: null,
+  window: { since: null, tz: "UTC", until: null },
+  ...extra,
+});
+
+const staticUsage = {
+  models: usageOutput("model", [
+    usageRow("claude-sonnet-5", { estimate: 3, tokens: 900_000 }),
+    usageRow(EVIL, { estimate: 1, tokens: 300_000 }),
+  ]),
+  series: usageOutput(null, [], {
+    series: [
+      {
+        bucket: "2026-09-29",
+        stacks: [usageRow("claude-code", { estimate: 3 })],
+        values: { estimate: 3 },
+      },
+      {
+        bucket: "2026-09-30",
+        stacks: [
+          usageRow("claude-code", { estimate: 0.5 }),
+          usageRow("pi", { estimate: 0.5 }),
+        ],
+        values: { estimate: 1 },
+      },
+    ],
+    stackBy: "tool",
+  }),
+  tools: usageOutput("tool", [
+    usageRow("claude-code", {
+      billed: null,
+      estimate: 3.5,
+      requests: 6,
+      tokens: 1_000_000,
+      toolFigure: null,
+    }),
+    usageRow("pi", {
+      billed: null,
+      estimate: 0.5,
+      requests: 3,
+      tokens: 200_000,
+      toolFigure: 0.5,
+    }),
+  ]),
+};
+
 describe("dft dashboard", () => {
   it("renders one balanced, self-contained HTML page", () => {
     const html = renderDashboard(fixture, { timeZone: "UTC" });
@@ -225,6 +318,31 @@ describe("dft dashboard", () => {
     expect(html).toContain("grok-4.7 high ×2");
     expect(html).toContain('<span class="tag">subagent</span> Subagent job');
     expect(html).toContain("Chats for this branch could not be read.");
+  });
+
+  it("leads with every tool's usage when the usage query is available", () => {
+    const html = renderDashboard(
+      { ...fixture, usage: staticUsage },
+      { timeZone: "UTC" }
+    );
+
+    expect(unbalancedTags(html.replace("<!doctype html>", ""))).toEqual([]);
+    expect(html).toContain(
+      "<dt>Estimate</dt><dd>$4.00<small>from Claude Code, Pi. 2 requests have no price</small></dd>"
+    );
+    expect(html).toContain(
+      "<dt>Tool&#39;s figure</dt><dd>$0.50<small>from Pi</small></dd>"
+    );
+    expect(html).toContain(
+      "<dt>Billed</dt><dd>-<small>no bills imported</small></dd>"
+    );
+    expect(html).toContain("Estimate per day, by tool");
+    expect(html.match(/<rect /gu)).toHaveLength(3);
+    expect(html).toContain("<span>88%</span>");
+    expect(html).toContain(escapeHtml(EVIL));
+    expect(html).not.toContain(EVIL);
+    expect(html.indexOf("By tool")).toBeLessThan(html.indexOf("Branches"));
+    expect(html).not.toMatch(/[\u2013\u2014]/u);
   });
 
   it("escapes every string that came from data", () => {

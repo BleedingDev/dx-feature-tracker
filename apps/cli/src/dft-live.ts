@@ -1,16 +1,21 @@
 // @effect-diagnostics nodeBuiltinImport:off -- The live dashboard serves one local page over node:http on 127.0.0.1 and runs the engine's Effects through a captured runtime at the process boundary.
 import { randomBytes } from "node:crypto";
+import { existsSync } from "node:fs";
 import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 
 import {
+  HarnessRegistry,
   dxStoreLayer,
+  harnessRegistryFor,
   resolveGitRepo,
   resolveSince,
   startLiveEngine,
 } from "@rat-stack/core/dx";
 import type {
+  DxUsageInputType,
+  DxUsageOutputType,
   FlightHistoryRow,
   LiveChange,
   LiveEngine,
@@ -29,6 +34,7 @@ import {
   Schema,
 } from "effect";
 
+import { hasCapture, isCaptureTool } from "./dft-capture.js";
 import {
   baseName,
   branchChatsWith,
@@ -36,10 +42,6 @@ import {
   openInBrowser,
   repoName,
   repoPathOf,
-  rowBilled,
-  rowCursorFigure,
-  rowEstimate,
-  rowTokens,
   writeDashboard,
 } from "./dft-dashboard.js";
 import {
@@ -54,7 +56,7 @@ import {
   loadIntroAssets,
   parseRange,
 } from "./dft-intro.js";
-import { liveDashboardPage } from "./dft-live-page.js";
+import { TOOL_LABELS, liveDashboardPage } from "./dft-live-page.js";
 import { OTLP_PATHS, receiveOtlp } from "./dft-otlp-receiver.js";
 import {
   analyzeText,
@@ -62,13 +64,14 @@ import {
   formatAgo,
   formatCount,
   formatDuration,
-  formatUsd,
-  modelShares,
   sourceLabel,
   sourceNote,
 } from "./dft-render.js";
 import { capabilitiesFor, capabilityAt } from "./dft-session.js";
 import type { CostOptions } from "./dft-session.js";
+import { telemetryState, userToolDirs } from "./dft-telemetry.js";
+import type { TelemetryState } from "./dft-telemetry.js";
+import { lastEventTimes } from "./dft-tools.js";
 import { usageInputFromQuery } from "./dft-usage.js";
 
 export const DEFAULT_DASHBOARD_PORT = 7420;
@@ -88,7 +91,6 @@ export interface LivePaths {
 }
 
 export interface LiveServerOptions {
-  readonly allRepos: boolean;
   readonly costOptions: CostOptions;
   readonly engine: LiveEngine;
   readonly introDir?: string;
@@ -103,163 +105,223 @@ export interface LiveServer {
   readonly url: string;
 }
 
-interface Cell {
-  readonly t: string;
-  readonly v: number | string;
-}
-
 const DASH = "-";
 
-const SINCE_CHOICES = new Set(["7d", "30d", "all"]);
+const OTHER_KEY = "(other)";
 
 const measure = (item: { readonly value: number | null }) => item.value;
 
 const orDash = (value: number | null, format: (n: number) => string) =>
   value === null ? DASH : format(value);
 
-const numberCell = (
-  value: number | null,
-  format: (n: number) => string
-): Cell => ({ t: orDash(value, format), v: value ?? -1 });
-
-const sumOrNull = (values: readonly (number | null)[]): number | null => {
-  const present = values.filter((value): value is number => value !== null);
-
-  return present.length === 0
-    ? null
-    : present.reduce((sum, value) => sum + value, 0);
-};
-
 const mainRoot = (commonDir: string | null): string | null =>
   commonDir === null || baseName(commonDir) !== ".git"
     ? null
     : path.dirname(commonDir);
 
-const worktreeMarker = (row: FlightHistoryRow): Cell => {
-  const main = mainRoot(row.repoCommonDir);
-  const linked = row.worktrees.filter((worktree) => worktree !== main);
-
-  if (linked.length === 0) {
-    return { t: "", v: "" };
-  }
-
-  return {
-    t: linked.length === 1 ? "worktree" : `${String(linked.length)} worktrees`,
-    v: linked.join("\n"),
-  };
-};
-
-const rowCells = (row: FlightHistoryRow, now: number) => {
-  const last =
-    row.lastActivityAt === null ? Number.NaN : Date.parse(row.lastActivityAt);
-
-  return {
-    agent: numberCell(measure(row.agentTime), formatDuration),
-    billed: numberCell(rowBilled(row), formatUsd),
-    branch: { t: row.branch ?? "unassigned", v: row.branch ?? "" },
-    chats: numberCell(measure(row.chats), formatCount),
-    commits: numberCell(measure(row.commits), formatCount),
-    estimate: numberCell(rowEstimate(row), formatUsd),
-    last: {
-      t: formatAgo(row.lastActivityAt, now),
-      v: Number.isNaN(last) ? -1 : last,
-    },
-    repo: { t: repoName(row.repoCommonDir), v: repoName(row.repoCommonDir) },
-    status: {
-      t: row.status.value === "unknown" ? DASH : row.status.value,
-      v: row.status.value,
-    },
-    tokens: numberCell(rowTokens(row), formatCount),
-    worktree: worktreeMarker(row),
-  };
-};
-
-const tiles = (rows: readonly FlightHistoryRow[]) => [
+const branchSummary = (row: FlightHistoryRow) => [
+  { label: "Agent time", text: orDash(measure(row.agentTime), formatDuration) },
+  { label: "Chats", text: orDash(measure(row.chats), formatCount) },
+  { label: "Commits", text: orDash(measure(row.commits), formatCount) },
   {
-    label: "Billed",
-    note: "what Cursor charged",
-    text: orDash(
-      sumOrNull(rows.map((row) => measure(row.money.billed))),
-      formatUsd
-    ),
-  },
-  {
-    label: "Cursor's figure",
-    note: "from Cursor's usage data",
-    text: orDash(sumOrNull(rows.map(rowCursorFigure)), formatUsd),
-  },
-  {
-    label: "Estimate",
-    note: rows.some(
-      (row) => rowTokens(row) !== null && rowEstimate(row) === null
-    )
-      ? "some tokens have no price"
-      : "list price for the tokens",
-    text: orDash(sumOrNull(rows.map(rowEstimate)), formatUsd),
-  },
-  {
-    label: "Tokens",
-    note: "",
-    text: orDash(sumOrNull(rows.map(rowTokens)), formatCount),
-  },
-  {
-    label: "Agent time",
-    note: "",
-    text: orDash(
-      sumOrNull(rows.map((row) => measure(row.agentTime))),
-      formatDuration
-    ),
+    label: "Status",
+    text: row.status.value === "unknown" ? DASH : row.status.value,
   },
 ];
 
-const accountLine = (
-  rows: readonly FlightHistoryRow[],
-  now: number
-): string | null => {
-  if (rows.length === 0) {
-    return null;
-  }
-
-  const billed = sumOrNull(rows.map(rowBilled));
-  const estimate = sumOrNull(rows.map(rowEstimate));
-  const tokens = sumOrNull(rows.map(rowTokens));
-
-  const last = rows
-    .flatMap((row) => (row.lastActivityAt === null ? [] : [row.lastActivityAt]))
-    .toSorted()
-    .at(-1);
-
-  return [
-    "Account usage not linked to a branch",
-    ...(billed === null ? [] : [`${formatUsd(billed)} billed`]),
-    ...(estimate === null ? [] : [`${formatUsd(estimate)} estimate`]),
-    ...(tokens === null ? [] : [`${formatCount(tokens)} tokens`]),
-    `last active ${formatAgo(last ?? null, now)}`,
-  ].join(" · ");
-};
-
 const sinceParam = (value: string | null, fallback: string | undefined) => {
-  const chosen = value !== null && SINCE_CHOICES.has(value) ? value : fallback;
+  const chosen =
+    value === null || value.trim() === "" ? fallback : value.trim();
 
   return chosen === undefined || chosen === "all" ? undefined : chosen;
 };
 
-const trackedCommonDirs = (repos: readonly string[]): ReadonlySet<string> =>
-  new Set(
-    repos.flatMap((repo) => {
-      const resolved = resolveGitRepo(repo);
+const BRANCH_METRICS = [
+  "tokens",
+  "requests",
+  "estimate",
+  "toolFigure",
+  "billed",
+];
 
-      return resolved === null ? [] : [resolved.commonDir];
-    })
-  );
+const branchUsageQuery = (
+  url: URL,
+  groupBy: "model" | "tool",
+  since: string | undefined
+): URLSearchParams => {
+  const params = new URLSearchParams(url.searchParams);
+
+  params.delete("since");
+  params.delete("until");
+
+  if (since !== undefined) {
+    params.set("since", since);
+  }
+
+  params.set("groupBy", groupBy);
+  params.set("metrics", BRANCH_METRICS.join(","));
+  params.set("sortBy", "tokens");
+  params.set("limit", groupBy === "model" ? "12" : "50");
+
+  return params;
+};
+
+const tokenShares = (
+  output: DxUsageOutputType
+): readonly (readonly [string, number])[] => {
+  const total = output.total.values.tokens ?? 0;
+
+  return total <= 0
+    ? []
+    : output.groups.map(
+        (group) => [group.key, (group.values.tokens ?? 0) / total] as const
+      );
+};
+
+interface FoundTool {
+  readonly installed: boolean;
+  readonly name: string;
+  readonly sessions: number;
+  readonly tool: string;
+}
+
+const discoverTools = (home: string) =>
+  Effect.gen(function* discover() {
+    const registry = yield* HarnessRegistry;
+    const found = yield* registry.discover;
+
+    return found.map((discovery): FoundTool => ({
+      installed:
+        discovery.present ||
+        discovery.roots.some(
+          (root) => existsSync(root) || existsSync(path.dirname(root))
+        ),
+      name: registry.get(discovery.harness)?.displayName ?? discovery.harness,
+      sessions: discovery.sessions,
+      tool: discovery.harness,
+    }));
+  }).pipe(Effect.provide(harnessRegistryFor(home)));
+
+interface ToolContext {
+  readonly lastEvents: ReadonlyMap<string, string>;
+  readonly now: number;
+  readonly repos: readonly string[];
+  readonly telemetry: TelemetryState;
+}
+
+const captureIn = (tool: string, repos: readonly string[]) =>
+  repos.flatMap((root) => {
+    const installed = isCaptureTool(tool)
+      ? hasCapture(tool, root)
+      : tool === "cursor" && hasDftHooks(root);
+
+    return installed ? [baseName(root)] : [];
+  });
+
+const telemetryOf = (tool: string, telemetry: TelemetryState) => {
+  if (tool === "claude-code") {
+    return telemetry.claudeCode;
+  }
+
+  return tool === "codex" ? telemetry.codex : null;
+};
+
+export const toolsView = (found: readonly FoundTool[], context: ToolContext) =>
+  found.map((item) => {
+    const last = context.lastEvents.get(item.tool) ?? null;
+
+    return {
+      capture: captureIn(item.tool, context.repos),
+      installed: item.installed,
+      lastEvent: last === null ? null : formatAgo(last, context.now),
+      name: item.name,
+      sessions: item.sessions,
+      telemetry: telemetryOf(item.tool, context.telemetry),
+      tool: item.tool,
+    };
+  });
+
+export const sourcesView = (output: DxUsageOutputType, now: number) => {
+  const { coverage } = output;
+
+  const rows = [
+    ...output.groups,
+    ...(output.other === null ? [] : [output.other]),
+  ];
+
+  const tools = [
+    ...new Set([
+      ...rows.map((row) => row.key),
+      ...coverage.disagreements.flatMap((entry) =>
+        entry.tool === null ? [] : [entry.tool]
+      ),
+    ]),
+  ].filter((tool) => tool !== OTHER_KEY);
+
+  return {
+    derivedAt:
+      coverage.derivedAt === null ? null : formatAgo(coverage.derivedAt, now),
+    facts: coverage.facts,
+    matched: coverage.matched,
+    tools: tools.map((tool) => {
+      const fields = coverage.disagreements
+        .filter((entry) => entry.tool === tool)
+        .map((entry) => ({ count: entry.count, field: entry.field }))
+        .toSorted((a, b) => b.count - a.count);
+
+      return {
+        disagreements: fields.reduce((sum, entry) => sum + entry.count, 0),
+        fields,
+        name: TOOL_LABELS.get(tool) ?? tool,
+        requests: rows.find((row) => row.key === tool)?.values.requests ?? 0,
+        tool,
+      };
+    }),
+    unpriced: coverage.unpriced,
+    unresolved: coverage.unresolved,
+  };
+};
 
 const withSince = <A extends object>(
   base: A,
   since: string | undefined
 ): A & { since?: string } => (since === undefined ? base : { ...base, since });
 
+const addCounts = (a: number | null, b: number | null): number | null =>
+  a === null && b === null ? null : (a ?? 0) + (b ?? 0);
+
+export const mergeSteps = (steps: readonly SyncStep[]): readonly SyncStep[] => {
+  const merged = new Map<string, SyncStep>();
+
+  for (const step of steps) {
+    const seen = merged.get(step.source);
+
+    if (seen === undefined || seen.status !== "synced") {
+      merged.set(
+        step.source,
+        seen === undefined || step.status === "synced" ? step : seen
+      );
+    } else if (step.status === "synced") {
+      merged.set(step.source, {
+        ...seen,
+        duplicates: addCounts(seen.duplicates, step.duplicates),
+        inserted: addCounts(seen.inserted, step.inserted),
+      });
+    }
+  }
+
+  return [...merged.values()];
+};
+
+const stepLabel = (source: string): string => {
+  const tool = /^harness\.(?<tool>.+)$/u.exec(source)?.groups?.tool;
+  const name = tool === undefined ? undefined : TOOL_LABELS.get(tool);
+
+  return name === undefined ? sourceLabel(source) : `${name} sessions`;
+};
+
 const stepView = (step: SyncStep) => ({
-  label: sourceLabel(step.source),
+  label: stepLabel(step.source),
   note: sourceNote(step),
   ok: step.status === "synced",
 });
@@ -336,7 +398,12 @@ export const serveDashboard = (options: LiveServerOptions) =>
   Effect.gen(function* serve() {
     const { engine, paths } = options;
     const token = randomBytes(24).toString("hex");
-    const run = yield* FiberSet.makeRuntime();
+
+    const run =
+      yield* FiberSet.makeRuntime<
+        Effect.Services<ReturnType<typeof discoverTools>>
+      >();
+
     const clients = new Set<ServerResponse>();
 
     const intro = yield* Effect.sync(() =>
@@ -380,55 +447,30 @@ export const serveDashboard = (options: LiveServerOptions) =>
         );
       });
 
-    const branchesView = (url: URL) =>
-      Effect.gen(function* branches() {
-        const since = sinceParam(url.searchParams.get("since"), options.since);
-        const repoFilter = url.searchParams.get("repo") ?? "";
-        const data = yield* history(since);
-        const config = yield* engine.config;
-        const tracked = trackedCommonDirs(config.repos);
-        const now = DateTime.toEpochMillis(yield* DateTime.now);
+    const usageOf = (input: DxUsageInputType) =>
+      Effect.gen(function* usage() {
+        const caps = yield* capsFor(paths.repo, null, options.since);
 
-        const shown = data.rows.filter(
-          (row) =>
-            row.repoCommonDir !== null &&
-            (options.allRepos || tracked.has(row.repoCommonDir))
-        );
-
-        const repos = [
-          ...new Set(
-            shown.flatMap((row) =>
-              row.repoCommonDir === null ? [] : [row.repoCommonDir]
+        return yield* provideStore(caps.usage.handler(input)).pipe(
+          Effect.catchTag("InvalidInput", (error) =>
+            Effect.fail(
+              new DashboardServerError({ message: error.message, status: 400 })
             )
-          ),
-        ].map((commonDir) => ({ id: commonDir, name: repoName(commonDir) }));
-
-        const rows = shown.filter(
-          (row) => repoFilter === "" || row.repoCommonDir === repoFilter
+          )
         );
-
-        const account =
-          repoFilter === ""
-            ? data.rows.filter((row) => row.repoCommonDir === null)
-            : [];
-
-        return {
-          data,
-          view: {
-            account: accountLine(account, now),
-            repos,
-            rows: rows.map((row) => ({
-              branch: row.branch,
-              cells: rowCells(row, now),
-              commonDir: row.repoCommonDir,
-              key: `${row.repoCommonDir ?? ""}\n${row.branch ?? ""}`,
-              root: repoPathOf(row),
-            })),
-            since: since ?? "all",
-            totals: tiles([...rows, ...account]),
-          },
-        };
       });
+
+    const usageFromQuery = (params: URLSearchParams) =>
+      usageInputFromQuery(params).pipe(
+        Effect.mapError(
+          (issue) =>
+            new DashboardServerError({
+              message: `Bad usage query: ${issue.message}`,
+              status: 400,
+            })
+        ),
+        Effect.flatMap(usageOf)
+      );
 
     const branchView = (url: URL) =>
       Effect.gen(function* branch() {
@@ -455,6 +497,14 @@ export const serveDashboard = (options: LiveServerOptions) =>
           return yield* fail(404, "This branch's repo folder is gone.");
         }
 
+        const tools = yield* usageFromQuery(
+          branchUsageQuery(url, "tool", since)
+        );
+
+        const models = yield* usageFromQuery(
+          branchUsageQuery(url, "model", since)
+        );
+
         const caps = yield* capsFor(repo, name, since);
         const report = yield* provideStore(caps.analyze.handler({ repo }));
 
@@ -467,7 +517,6 @@ export const serveDashboard = (options: LiveServerOptions) =>
         ).pipe(Effect.option);
 
         const now = DateTime.toEpochMillis(yield* DateTime.now);
-        const cells = rowCells(row, now);
 
         return {
           data: report,
@@ -480,67 +529,32 @@ export const serveDashboard = (options: LiveServerOptions) =>
             repoRoot: mainRoot(row.repoCommonDir),
             report: analyzeText(
               report,
-              {
-                models: Option.isSome(chats)
-                  ? modelShares(chats.value.chats)
-                  : [],
-                status: row.status.value,
-              },
+              { models: tokenShares(models), status: row.status.value },
               { now, verbose: false }
             ),
             root: repo,
-            summary: [
-              {
-                label: "Billed",
-                text: orDash(measure(row.money.billed), formatUsd),
-              },
-              {
-                label: "Cursor's figure",
-                text: orDash(rowCursorFigure(row), formatUsd),
-              },
-              { label: "Estimate", text: cells.estimate.t },
-              { label: "Tokens", text: cells.tokens.t },
-              { label: "Agent time", text: cells.agent.t },
-              { label: "Chats", text: cells.chats.t },
-              { label: "Commits", text: cells.commits.t },
-              { label: "Status", text: cells.status.t },
-            ],
+            summary: branchSummary(row),
             timeline: Option.isSome(timeline)
               ? explainText(timeline.value, name)
               : "The timeline could not be read.",
+            usage: { models, tools },
             worktrees: row.worktrees,
           },
         };
       });
 
-    const usageView = (url: URL) =>
-      Effect.gen(function* usage() {
-        const input = yield* usageInputFromQuery(url.searchParams).pipe(
-          Effect.mapError(
-            (error) =>
-              new DashboardServerError({
-                message: `Bad usage query: ${error.message}`,
-                status: 400,
-              })
-          )
-        );
-
-        const caps = yield* capsFor(paths.repo, null, options.since);
-
-        return yield* provideStore(caps.usage.handler(input)).pipe(
-          Effect.catchTag("InvalidInput", (error) =>
-            Effect.fail(
-              new DashboardServerError({ message: error.message, status: 400 })
-            )
-          )
-        );
-      });
+    const toolRows = yield* Effect.cachedWithTTL(
+      discoverTools(paths.home),
+      "60 seconds"
+    );
 
     const setupView = Effect.gen(function* setup() {
       const status = yield* engine.status;
       const config = yield* engine.config;
       const backups = yield* engine.listBackups;
       const now = DateTime.toEpochMillis(yield* DateTime.now);
+      const found = yield* toolRows;
+      const coverage = yield* usageOf({ groupBy: "tool", limit: 50 });
 
       return {
         backups: backups.map((backup) => ({
@@ -560,10 +574,22 @@ export const serveDashboard = (options: LiveServerOptions) =>
                 : `synced ${formatAgo(live.lastSyncAt, now)}`,
             name: baseName(root),
             root,
-            sources: (live?.sources ?? []).map(stepView),
+            sources: mergeSteps(live?.sources ?? []).map(stepView),
           };
         }),
+        sources: sourcesView(coverage, now),
         store: paths.store.path,
+        tools: yield* Effect.sync(() =>
+          toolsView(found, {
+            lastEvents: lastEventTimes(paths.store.path),
+            now,
+            repos: config.repos,
+            telemetry: telemetryState(
+              userToolDirs(paths.home, process.env).claudeDir,
+              userToolDirs(paths.home, process.env).codexDir
+            ),
+          })
+        ),
         usage: {
           enabled: config.cursorUsageImport,
           note:
@@ -680,7 +706,11 @@ export const serveDashboard = (options: LiveServerOptions) =>
                     scope: "all",
                     since: options.since,
                   },
-                  { chats: liveChats, history: caps.history.handler }
+                  {
+                    chats: liveChats,
+                    history: caps.history.handler,
+                    usage: caps.usage.handler,
+                  }
                 );
               })
             );
@@ -880,14 +910,6 @@ export const serveDashboard = (options: LiveServerOptions) =>
             return yield* openEvents(response);
           }
 
-          case "/api/branches": {
-            return yield* sendJson(
-              response,
-              200,
-              JSON.stringify(yield* branchesView(url))
-            );
-          }
-
           case "/api/branch": {
             return yield* sendJson(
               response,
@@ -900,7 +922,7 @@ export const serveDashboard = (options: LiveServerOptions) =>
             return yield* sendJson(
               response,
               200,
-              JSON.stringify(yield* usageView(url))
+              JSON.stringify(yield* usageFromQuery(url.searchParams))
             );
           }
 
@@ -1027,7 +1049,6 @@ export const serveDashboard = (options: LiveServerOptions) =>
   });
 
 export interface LiveDashboardOptions {
-  readonly allRepos: boolean;
   readonly costOptions: CostOptions;
   readonly open: boolean;
   readonly paths: LivePaths;

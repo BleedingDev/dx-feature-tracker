@@ -11,6 +11,8 @@ import { afterAll, describe, expect, it } from "@effect/vitest";
 import { runCursorHook, startLiveEngine } from "@rat-stack/core/dx";
 import { DateTime, Effect, Schema } from "effect";
 
+import { dashboardStateKit } from "../src/dft-dashboard-state.js";
+import type { UsageViewState } from "../src/dft-dashboard-state.js";
 import { serveDashboard } from "../src/dft-live.js";
 import type { LiveServer } from "../src/dft-live.js";
 import { costOptionsFor } from "../src/dft-session.js";
@@ -205,7 +207,6 @@ const withDashboard = <A, E>(
       const costOptions = yield* costOptionsFor(dftHome, scratch);
 
       const server = yield* serveDashboard({
-        allRepos: false,
         costOptions,
         engine,
         paths: {
@@ -270,7 +271,7 @@ describe("dft dashboard live server", () => {
 
         expect(page.body).toContain('id="intro"');
         expect(page.body).toMatch(
-          /<nav>.*<button type="button" id="nav-intro">Intro<\/button><\/nav>/u
+          /<nav class="main">.*<button type="button" id="nav-intro">Intro<\/button><\/nav>/u
         );
         expect(page.body).toContain("/intro/dft-intro.webm?v=");
         expect(page.body).toMatch(/<video id="intro-video" muted playsinline/u);
@@ -342,24 +343,25 @@ describe("dft dashboard live server", () => {
     )
   );
 
-  it.live("returns the same JSON as dft history and dft analyze", () =>
+  it.live("returns the same JSON as dft usage and dft analyze", () =>
     withDashboard((server) =>
       Effect.gen(function* json() {
-        const branches = yield* call(server, "/api/branches?since=all");
+        const usage = yield* call(server, "/api/usage?groupBy=tool&tz=UTC");
 
-        expect(branches.status).toBe(200);
+        expect(usage.status).toBe(200);
 
-        const history = runCli([
-          "history",
+        const cli = runCli([
+          "usage",
           "--json",
-          "--all-repos",
           "--no-sync",
+          "--by",
+          "tool",
+          "--tz",
+          "UTC",
         ]);
 
-        expect(history.status).toBe(0);
-        expect(normalized(JSON.stringify(decodeData(branches.body).data))).toBe(
-          normalized(history.stdout)
-        );
+        expect(cli.status).toBe(0);
+        expect(normalized(usage.body)).toBe(normalized(cli.stdout));
 
         const branch = yield* call(
           server,
@@ -551,6 +553,170 @@ describe("dft dashboard usage endpoint", () => {
   );
 });
 
+const PageQueryReply = Schema.fromJsonString(
+  Schema.Struct({
+    groupBy: Schema.NullOr(Schema.String),
+    limit: Schema.Int,
+    metrics: Schema.Array(Schema.String),
+    sortBy: Schema.String,
+    stackBy: Schema.NullOr(Schema.String),
+  })
+);
+
+const decodePageQuery = Schema.decodeUnknownSync(PageQueryReply);
+
+const SetupTools = Schema.fromJsonString(
+  Schema.Struct({
+    sources: Schema.Struct({
+      facts: Schema.Int,
+      tools: Schema.Array(Schema.Struct({ tool: Schema.String })),
+    }),
+    tools: Schema.Array(
+      Schema.Struct({
+        capture: Schema.Array(Schema.String),
+        installed: Schema.Boolean,
+        tool: Schema.String,
+      })
+    ),
+  })
+);
+
+const decodeSetupTools = Schema.decodeUnknownSync(SetupTools);
+
+const BranchUsage = Schema.fromJsonString(
+  Schema.Struct({
+    view: Schema.Struct({
+      summary: Schema.Array(Schema.Struct({ label: Schema.String })),
+      usage: Schema.Struct({
+        models: Schema.Struct({ groupBy: Schema.NullOr(Schema.String) }),
+        tools: Schema.Struct({ groupBy: Schema.NullOr(Schema.String) }),
+      }),
+    }),
+  })
+);
+
+const decodeBranchUsage = Schema.decodeUnknownSync(BranchUsage);
+
+describe("dft dashboard page queries", () => {
+  const kit = dashboardStateKit();
+
+  const state: UsageViewState = {
+    by: "model",
+    filters: [
+      ["tool", "cursor"],
+      ["tool", "codex"],
+      ["repo", path.join(repo, ".git")],
+    ],
+    metric: "toolFigure",
+    since: "2026-09-01",
+    until: "2026-10-01",
+  };
+
+  it.live(
+    "answers every query the page builds with the shape it asks for",
+    () =>
+      withDashboard((server) =>
+        Effect.gen(function* queries() {
+          const table = yield* call(
+            server,
+            `/api/usage?${kit.tableQuery(state, "UTC")}`
+          );
+
+          expect(table.status).toBe(200);
+          expect(decodePageQuery(table.body)).toMatchObject({
+            groupBy: "model",
+            limit: 25,
+            sortBy: "toolFigure",
+          });
+
+          const chart = decodePageQuery(
+            (yield* call(server, `/api/usage?${kit.chartQuery(state, "UTC")}`))
+              .body
+          );
+
+          expect(chart).toMatchObject({
+            groupBy: null,
+            limit: 6,
+            metrics: ["toolFigure"],
+            stackBy: "model",
+          });
+
+          const facet = decodePageQuery(
+            (yield* call(
+              server,
+              `/api/usage?${kit.facetQuery(state, "UTC", "tool")}`
+            )).body
+          );
+
+          expect(facet.groupBy).toBe("tool");
+
+          const daily = yield* call(
+            server,
+            `/api/usage?${kit.tableQuery({ ...state, by: "day", since: "all" }, "UTC")}`
+          );
+
+          expect(daily.status).toBe(200);
+
+          const bad = yield* call(
+            server,
+            `/api/usage?${kit.tableQuery({ ...state, since: "someday" }, "UTC")}`
+          );
+
+          expect(bad.status).toBe(400);
+          expect(decodeError(bad.body).error).toContain("someday");
+        })
+      )
+  );
+
+  it.live("lists every tool and the sources panel on the setup screen", () =>
+    withDashboard((server) =>
+      Effect.gen(function* setup() {
+        const reply = decodeSetupTools(
+          (yield* call(server, "/api/setup")).body
+        );
+
+        expect(reply.tools.map((tool) => tool.tool).toSorted()).toEqual(
+          [
+            "claude-code",
+            "codex",
+            "cursor",
+            "deepseek",
+            "omp",
+            "opencode",
+            "pi",
+          ].toSorted()
+        );
+        expect(reply.tools.every((tool) => !tool.installed)).toBe(true);
+        expect(reply.sources.facts).toBe(0);
+      })
+    )
+  );
+
+  it.live("gives the branch screen its usage by tool and by model", () =>
+    withDashboard((server) =>
+      Effect.gen(function* branch() {
+        const reply = yield* call(
+          server,
+          `/api/branch?repo=${encodeURIComponent(path.join(repo, ".git"))}&branch=main&since=all&tz=UTC&tool=cursor`
+        );
+
+        expect(reply.status).toBe(200);
+
+        const { view } = decodeBranchUsage(reply.body);
+
+        expect(view.usage.tools.groupBy).toBe("tool");
+        expect(view.usage.models.groupBy).toBe("model");
+        expect(view.summary.map((tile) => tile.label)).toEqual([
+          "Agent time",
+          "Chats",
+          "Commits",
+          "Status",
+        ]);
+      })
+    )
+  );
+});
+
 describe("dft dashboard --one-time", () => {
   it("still writes the static page and exits", () => {
     const out = path.join(scratch, "static.html");
@@ -569,7 +735,8 @@ describe("dft dashboard --one-time", () => {
 
     const html = fs.readFileSync(out, "utf-8");
 
-    expect(html).toContain("AI cost per branch");
+    expect(html).toContain("AI usage and cost");
+    expect(html).toContain("Estimate per day, by tool");
     expect(html).not.toMatch(/[–—]/u);
     expect(html).not.toContain("dft-intro");
     expect(html).not.toContain("<video");

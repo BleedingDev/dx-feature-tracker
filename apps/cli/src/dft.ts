@@ -792,7 +792,7 @@ const usageCommand = Command.make("usage", usageFlags, (flags) =>
 const dashboardFlags = {
   allRepos: booleanFlag(
     "all-repos",
-    "Show every repo dft has seen, not just the tracked ones (with --one-time: not just this one)"
+    "With --one-time: include every repo dft has seen, not just this one (the live dashboard always shows every repo)"
   ),
   db: reportFlags.db,
   json: booleanFlag(
@@ -857,6 +857,7 @@ const oneTimeDashboard = (flags: DashboardCommandFlags) =>
         {
           chats: branchChatsWith(session.costOptions),
           history: capabilityAt(session).history.handler,
+          usage: capabilityAt(session).usage.handler,
         }
       ),
     { render: (output) => dashboardText(output) }
@@ -868,7 +869,6 @@ const liveDashboard = (flags: DashboardCommandFlags) =>
     const costOptions = yield* costOptionsFor(paths.dftHome, paths.home);
 
     return yield* runLiveDashboard({
-      allRepos: flags.allRepos,
       costOptions,
       open: !flags.noOpen,
       paths,
