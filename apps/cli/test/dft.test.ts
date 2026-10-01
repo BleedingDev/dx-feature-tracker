@@ -4,6 +4,7 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
+  readdirSync,
   readFileSync,
   rmSync,
   statSync,
@@ -34,8 +35,10 @@ import {
   otherWorktrees,
   parseWorktreeList,
   uninstallGitHooks,
+  uninstallSkills,
 } from "../src/dft-install.js";
 import { enterpriseLine } from "../src/dft-render.js";
+import { skillDigest, skillsSourceDir } from "../src/dft-skills.js";
 
 const created: string[] = [];
 
@@ -156,6 +159,38 @@ describe("dft install cursor hooks", () => {
         "utf-8"
       )
     ).toContain("dft analyze --json");
+  });
+});
+
+describe("dft uninstall cursor skills", () => {
+  it("removes skills an earlier dft wrote and keeps, and names, one the user changed", () => {
+    const repo = scratchRepo();
+
+    const skill = (name: string) =>
+      path.join(repo, ".cursor", "skills", name, "SKILL.md");
+
+    const olderBody =
+      "---\nname: dx-chats\n---\n\n# dx-chats from an older dft\n";
+
+    installSkills(repo);
+    writeFileSync(skill("dx-chats"), olderBody);
+    writeFileSync(skill("dx-line"), "# my own notes\n");
+
+    const steps = uninstallSkills(
+      repo,
+      skillsSourceDir(),
+      new Set([skillDigest(olderBody)])
+    );
+
+    expect(existsSync(skill("dx-chats"))).toBe(false);
+    expect(readFileSync(skill("dx-line"), "utf-8")).toBe("# my own notes\n");
+    expect(steps.filter((step) => step.action === "removed")).toHaveLength(5);
+    expect(steps.find((step) => step.action === "skipped")).toMatchObject({
+      path: skill("dx-line"),
+    });
+    expect(readdirSync(path.join(repo, ".cursor", "skills"))).toEqual([
+      "dx-line",
+    ]);
   });
 });
 

@@ -23,6 +23,7 @@ Rules:
 - The untracked `.cursor/hooks.json` and `dx-*` skills go into the same block.
 - `--git-hooks` when `core.hooksPath` points into the repo (husky 8 and older, a committed `githooks/`): a tracked hook, or an untracked one git does not ignore, is left alone and dft prints the line to add yourself. A hook dft creates there goes into the exclude block.
 - Running it again reports every file as unchanged.
+- `dft uninstall` removes a `dx-*` skill whose body matches this build or a released one (`RELEASED_SKILL_DIGESTS`), so an upgrade without a re-install still cleans up. Any other body may hold the user's changes: it is kept and listed.
 
 What each tool still needs from the user, printed by `dft install`:
 

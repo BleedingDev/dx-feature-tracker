@@ -12,6 +12,7 @@ scripts/release.sh 0.1.5 --notes release-notes.md
 - `gh` is logged in with push rights to `BleedingDev/dx-feature-tracker` (`gh auth status`).
 - pnpm is 11.3.0. The script uses `~/.proto/tools/pnpm/11.3.0/shims/pnpm` when it exists, otherwise `pnpm` on `PATH`; set `PNPM_BIN` to override.
 - Write the release notes to a Markdown file. It becomes the GitHub release body.
+- Add any new digest from `shasum -a 256 .cursor/skills/*/SKILL.md` to `RELEASED_SKILL_DIGESTS` in `apps/cli/src/dft-skills.ts`, so `dft uninstall` after a later upgrade still removes the skills this release copies.
 
 ## What the script does
 

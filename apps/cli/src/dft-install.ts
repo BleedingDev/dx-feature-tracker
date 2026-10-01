@@ -17,7 +17,12 @@ import { DatabaseSync } from "node:sqlite";
 import { Option, Result, Schema } from "effect";
 
 import { enterpriseLine } from "./dft-render.js";
-import { loadSkills, skillsSourceDir } from "./dft-skills.js";
+import {
+  RELEASED_SKILL_DIGESTS,
+  loadSkills,
+  skillDigest,
+  skillsSourceDir,
+} from "./dft-skills.js";
 
 export const CURSOR_HOOK_EVENTS = [
   "sessionStart",
@@ -927,7 +932,7 @@ export const installText = (
 };
 
 export interface RemovalStep {
-  readonly action: "removed" | "updated";
+  readonly action: "removed" | "updated" | "skipped";
   readonly detail: string;
   readonly path: string;
 }
@@ -1008,7 +1013,8 @@ export const uninstallCursorHooks = (
 
 export const uninstallSkills = (
   worktree: string,
-  source: string = skillsSourceDir()
+  source: string = skillsSourceDir(),
+  released: ReadonlySet<string> = RELEASED_SKILL_DIGESTS
 ): readonly RemovalStep[] => {
   if (path.resolve(source) === path.resolve(worktree, ".cursor", "skills")) {
     return [];
@@ -1023,8 +1029,20 @@ export const uninstallSkills = (
       "SKILL.md"
     );
 
-    if (!existsSync(file) || readFileSync(file, "utf-8") !== skill.body) {
+    if (!existsSync(file)) {
       return [];
+    }
+
+    const body = readFileSync(file, "utf-8");
+
+    if (body !== skill.body && !released.has(skillDigest(body))) {
+      return [
+        {
+          action: "skipped",
+          detail: `${skill.name} differs from every skill dft shipped, so it may hold your changes; dft kept it. Delete it yourself if you do not need it.`,
+          path: file,
+        },
+      ];
     }
 
     rmSync(file);
