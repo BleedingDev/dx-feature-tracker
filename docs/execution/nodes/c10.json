@@ -35,7 +35,7 @@
     { "cmd": "pnpm --filter @rat-stack/core exec tsc --noEmit -p tsconfig.json", "exit": 1, "result": "0 errors in C10 files; 1 error in src/dx/collectors/opencode/collector.ts (not owned)" }
   ],
   "findings": [
-    { "severity": "high", "owner": "B05 (cursor-hooks)", "file": "packages/core/src/dx/collectors/cursor-hooks/sanitize.ts", "summary": "commandBin = first whitespace token, so `GITHUB_TOKEN=<secret> gh ...` stores the secret verbatim in spool and event payload", "test": "KNOWN FINDING: env-prefixed shell secret must not reach commandBin (it.fails)" },
+    { "severity": "high", "owner": "B05 (cursor-hooks)", "file": "packages/core/src/dx/collectors/cursor-hooks/sanitize.ts", "summary": "commandBin = first whitespace token, so `GITHUB_TOKEN=<secret> gh ...` stores the secret verbatim in spool and event payload", "test": "env-prefixed shell secret never reaches commandBin", "status": "fixed in 0.2.0" },
     { "severity": "medium", "owner": "B37", "file": "packages/core/src/dx/reports/evidence/redact.ts", "summary": "credential-pair regex uses \\b before `secret`, so AWS_SECRET_ACCESS_KEY= / GITHUB_TOKEN= style labels are not redacted", "test": "KNOWN FINDING B37: compound secret labels ... (it.fails)" },
     { "severity": "low", "owner": "B37", "file": "packages/core/src/dx/reports/evidence/redact.ts", "summary": "bare unlabelled AWS secret access key passes pattern redaction (already disclosed B37 gap)", "test": "KNOWN FINDING B37: bare unlabelled AWS secret ... (it.fails)" }
   ],

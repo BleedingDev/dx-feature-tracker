@@ -25,6 +25,7 @@ import {
   handleCursorHook,
   resolveGitContext,
 } from "../../src/dx/collectors/cursor-hooks/handler.js";
+import { sanitizeHookPayload } from "../../src/dx/collectors/cursor-hooks/sanitize.js";
 import type { CollectInput } from "../../src/dx/contracts/services.js";
 import { withCollectorBlocks } from "../../src/dx/harness/collector-blocks.js";
 import { accountAiUsage } from "../../src/dx/metrics/ai-usage/ledger.js";
@@ -47,6 +48,12 @@ const fixedGit: GitResolver = () => ({
   repoCommonDir: "/fixture/workspace/.git",
   worktreePath: "/fixture/workspace",
 });
+
+const binOf = (command: string): string | null =>
+  sanitizeHookPayload({
+    command,
+    hook_event_name: "afterShellExecution",
+  })?.commandBin ?? null;
 
 let counter = 0;
 
@@ -183,6 +190,21 @@ describe("B05 cursor hooks collector", () => {
     expect(spooled).not.toContain("FIXTURE_SECRET");
     expect(spooled).not.toContain("fixture@example.invalid");
     expect(spooled).toContain('"commandBin":"pnpm"');
+  });
+
+  it("keeps only the executable name when a shell command starts with secrets", () => {
+    const secret = ["fixture", "Secret", "Value"].join("");
+
+    expect(binOf(`GITHUB_TOKEN=${secret} gh pr list`)).toBe("gh");
+    expect(binOf(`PGPASSWORD=${secret} PGHOST=db psql -c 'select 1'`)).toBe(
+      "psql"
+    );
+    expect(binOf(`AWS_SECRET_ACCESS_KEY=a/${secret} aws s3 ls`)).toBe("aws");
+    expect(binOf(`TOKEN="one ${secret} two" ./deploy.sh`)).toBe("deploy.sh");
+    expect(binOf(`env -i API_KEY=${secret} /usr/bin/curl x`)).toBe("curl");
+    expect(binOf(`sudo LOGIN=${secret} make`)).toBe("make");
+    expect(binOf(`"${secret} x"`)).toBeNull();
+    expect(binOf(`$(${secret})`)).toBeNull();
   });
 
   it.effect("collapses duplicate stop emissions for one turn", () =>

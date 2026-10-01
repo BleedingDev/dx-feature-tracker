@@ -20,6 +20,7 @@ Audit test: `packages/core/test/dx/audits/c10.test.ts`. Fixtures: `packages/core
    - The value is written to the spool file and to the event payload, and analyze/explain then show it.
    - Fix: skip leading `NAME=value` tokens (and `env`/`sudo` wrappers) before choosing the binary name, or apply `redactText`.
    - Severity: high for the live Cursor path.
+   - Fixed in 0.2.0: `commandBin` skips leading `NAME=value` words and `env`/`sudo`/`command`-style wrappers, keeps quoted values whole, and stores only a plain executable name or `null`. The test is now a plain `it`.
 2. **Evidence redaction (B37 owner), `redact.ts`: compound secret labels are not matched.**
    - The credential-pair regex begins with `\b(?:...|secret|...)`. In `AWS_SECRET_ACCESS_KEY=` the `_` before `SECRET` is a word character, so the word boundary never matches. `GITHUB_TOKEN=`-style labels are also not in the list.
    - Fix: allow a `[A-Za-z0-9_]*` prefix, or match `(?:^|[^A-Za-z0-9])` plus `\w*(?:secret|token|key|password)\w*\s*[=:]`.

@@ -222,11 +222,12 @@ describe("c10 cursor hook path: redact, bound, never execute", () => {
     expect(JSON.stringify(stop)).toContain("input_tokens");
   });
 
-  it.fails("KNOWN FINDING: env-prefixed shell secret must not reach commandBin", () => {
+  it("env-prefixed shell secret never reaches commandBin", () => {
     const run = runHook("c10-shell-env-prefixed-secret");
 
     assertClean("env-prefixed spool", run.spoolText);
     assertClean("env-prefixed events", JSON.stringify(run.events));
+    expect(run.events[0]?.payload.commandBin).toBe("gh");
   });
 
   it("env-prefixed secret is still never executed", () => {

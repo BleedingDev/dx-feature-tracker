@@ -78,14 +78,61 @@ export const extractRawUsage = (source: RawObject): RawUsageEntry[] => {
   return out;
 };
 
-const firstToken = (command: string): string | null => {
-  const token = command.trim().split(/\s+/u)[0] ?? "";
+const ENV_ASSIGNMENT = /^[A-Za-z_]\w*=/u;
 
-  if (token === "") {
-    return null;
+const BINARY_NAME = /^[\w.+-]+$/u;
+
+const COMMAND_WRAPPERS = new Set([
+  "command",
+  "doas",
+  "env",
+  "exec",
+  "nice",
+  "nohup",
+  "sudo",
+  "time",
+]);
+
+const shellWords = (command: string): readonly string[] => {
+  const words: string[] = [];
+  let word = "";
+  let quote: string | null = null;
+
+  for (const char of command) {
+    if (quote !== null) {
+      quote = char === quote ? null : quote;
+      word += char;
+    } else if (char === '"' || char === "'") {
+      quote = char;
+      word += char;
+    } else if (/\s/u.test(char)) {
+      if (word !== "") {
+        words.push(word);
+      }
+
+      word = "";
+    } else {
+      word += char;
+    }
   }
 
-  return token.split("/").at(-1) ?? null;
+  return word === "" ? words : [...words, word];
+};
+
+const commandBinary = (command: string): string | null => {
+  for (const word of shellWords(command)) {
+    const name = word.split("/").at(-1) ?? "";
+
+    if (
+      !ENV_ASSIGNMENT.test(word) &&
+      !word.startsWith("-") &&
+      !COMMAND_WRAPPERS.has(name)
+    ) {
+      return BINARY_NAME.test(name) ? name : null;
+    }
+  }
+
+  return null;
 };
 
 const orNull = <A>(value: A | null | undefined): A | null => value ?? null;
@@ -98,7 +145,7 @@ const commandFields = (raw: RawHookPayload) => {
   const command = raw.command ?? raw.tool_input?.command ?? null;
 
   return {
-    commandBin: command === null ? null : firstToken(command),
+    commandBin: command === null ? null : commandBinary(command),
     commandHash: command === null ? null : sha256Hex(command),
   };
 };
