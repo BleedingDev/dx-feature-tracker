@@ -1,12 +1,13 @@
 import { Context, Effect, FileSystem, Layer, Option, Path } from "effect";
 
 import { SourceUnavailable } from "../../contracts/error-source-unavailable.js";
-import type { HarnessStore } from "../contract.js";
+import type { HarnessStore, StoredSession } from "../contract.js";
 import { liveFileStore, memoryFileStore } from "../file-store.js";
 import type { MemoryStoreInput } from "../file-store.js";
 import { HarnessHome } from "../home.js";
 import { LocalSqlite } from "../local-sqlite.js";
 import { harnessAdapterId } from "../pending.js";
+import { ownsSharedSession, sharesPiAgentDir } from "../pi-family.js";
 import { gunzipSession } from "./gzip.js";
 import { isArchivedSession, isOmpSessionPath } from "./paths.js";
 import {
@@ -45,6 +46,8 @@ const decompressIfArchived = (file: string, bytes: Uint8Array) =>
   isArchivedSession(file) ? gunzipSession(file, bytes) : Effect.succeed(bytes);
 
 const STATS_TTL = "10 minutes";
+
+const headDecoder = new TextDecoder();
 
 export class OmpStore extends Context.Service<OmpStore, OmpStoreService>()(
   "dx/harness/omp/OmpStore",
@@ -129,8 +132,23 @@ export class OmpStore extends Context.Service<OmpStore, OmpStoreService>()(
 
       const statsTotals = yield* Effect.cachedWithTTL(loadStats, STATS_TTL);
 
+      const sharedRoot = `${path.join(omp, "sessions")}${path.sep}`;
+
+      const ownedByOmp = (session: StoredSession) =>
+        session.path.startsWith(sharedRoot)
+          ? readHead(session.path).pipe(
+              Effect.map((head) =>
+                ownsSharedSession("omp", headDecoder.decode(head))
+              ),
+              Effect.orElseSucceed(() => false)
+            )
+          : Effect.succeed(true);
+
       const store: OmpStoreService = {
         ...base,
+        listSessions: sharesPiAgentDir(home.dirs)
+          ? base.listSessions.pipe(Effect.flatMap(Effect.filter(ownedByOmp)))
+          : base.listSessions,
         readHead,
         readSession,
         realPath,

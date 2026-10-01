@@ -15,6 +15,7 @@ import { liveFileStore, memoryFileStore } from "../file-store.js";
 import type { MemoryStoreInput } from "../file-store.js";
 import { HarnessHome } from "../home.js";
 import { harnessAdapterId } from "../pending.js";
+import { ownsSharedSession, sharesPiAgentDir } from "../pi-family.js";
 
 export const PI_SESSION_DIR_ENV = "PI_CODING_AGENT_SESSION_DIR";
 
@@ -177,10 +178,20 @@ export class PiStore extends Context.Service<PiStore, PiSessionStore>()(
           )
         );
 
+      const ownedByPi = (session: StoredSession) =>
+        readHead(session.path).pipe(
+          Effect.map((head) => ownsSharedSession("pi", head)),
+          Effect.orElseSucceed(() => true)
+        );
+
+      const listed = base.listSessions.pipe(Effect.map(uniquePaths));
+
       const store: PiSessionStore = {
         ...base,
         agentDir: home.dirs.pi,
-        listSessions: base.listSessions.pipe(Effect.map(uniquePaths)),
+        listSessions: sharesPiAgentDir(home.dirs)
+          ? listed.pipe(Effect.flatMap(Effect.filter(ownedByPi)))
+          : listed,
         readHead,
         readOptional,
         sessionsUnder,
