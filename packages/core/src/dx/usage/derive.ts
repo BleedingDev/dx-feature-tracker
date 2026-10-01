@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { DateTime, Option, Schema } from "effect";
 
 import type { BranchSource } from "../harness/ids.js";
+import { normalizeModel } from "../harness/provider.js";
 import {
   UNKNOWN_SOURCE_RANK,
   harnessChannelRank,
@@ -255,16 +256,16 @@ const branchMember = (
     .filter((member) => member.context.branch !== null)
     .toSorted((a, b) => sourceOrder(a) - sourceOrder(b))[0] ?? null;
 
+const digestId = (text: string): string =>
+  `uf_${createHash("sha256").update(text).digest("hex").slice(0, 24)}`;
+
 const factIdOf = (members: readonly DxEventEnvelope[]): string =>
-  `uf_${createHash("sha256")
-    .update(
-      members
-        .map((member) => member.eventId)
-        .toSorted()
-        .join("\n")
-    )
-    .digest("hex")
-    .slice(0, 24)}`;
+  digestId(
+    members
+      .map((member) => member.eventId)
+      .toSorted()
+      .join("\n")
+  );
 
 const utcOf = (iso: string | null): { at: string; ms: number } | null => {
   if (iso === null) {
@@ -460,6 +461,66 @@ const harnessSessionKey = (event: DxEventEnvelope): string | null => {
 const figureAmount = (event: DxEventEnvelope): number =>
   event.usage?.toolFigure?.amount ?? Number.NEGATIVE_INFINITY;
 
+const CostModelsSchema = Schema.Struct({
+  costState: Schema.Struct({
+    models: Schema.Record(
+      Schema.String,
+      Schema.Struct({ costUsd: Schema.NullOr(Schema.Finite) })
+    ),
+  }),
+});
+
+const decodeCostModels = Schema.decodeUnknownOption(CostModelsSchema);
+
+const FIGURE_TOLERANCE = 1e-6;
+
+const modelCosts = (
+  event: DxEventEnvelope
+): readonly (readonly [string, number])[] | null =>
+  Option.match(decodeCostModels(event.payload), {
+    onNone: () => null,
+    onSome: (decoded) => {
+      const costs = Object.entries(decoded.costState.models).flatMap(
+        ([model, usage]) =>
+          usage.costUsd === null ? [] : [[model, usage.costUsd] as const]
+      );
+
+      return costs.length === 0 ||
+        costs.length < Object.keys(decoded.costState.models).length
+        ? null
+        : costs;
+    },
+  });
+
+const addsUpTo = (
+  costs: readonly (readonly [string, number])[],
+  amount: number
+): boolean =>
+  Math.abs(costs.reduce((total, [, cost]) => total + cost, 0) - amount) <=
+  FIGURE_TOLERANCE * Math.max(1, amount);
+
+const byModel = (whole: UsageFact, event: DxEventEnvelope): UsageFact[] => {
+  const figure = whole.toolFigure;
+  const costs = modelCosts(event);
+
+  if (
+    figure === null ||
+    whole.model !== null ||
+    costs === null ||
+    !addsUpTo(costs, figure.amount)
+  ) {
+    return [whole];
+  }
+
+  return costs.map(([raw, cost]) => ({
+    ...whole,
+    factId: digestId(`${whole.factId}\n${raw}`),
+    model: normalizeModel(raw),
+    modelRaw: raw,
+    toolFigure: { ...figure, amount: cost },
+  }));
+};
+
 const sessionFigureFacts = (
   events: readonly DxEventEnvelope[]
 ): UsageFact[] => {
@@ -484,11 +545,15 @@ const sessionFigureFacts = (
     }
   }
 
-  return [...latest.values()].map((event) => ({
-    ...factOf([event]),
-    requests: 0,
-    tokens: unknownTokens,
-  }));
+  return [...latest.values()].flatMap((event) => {
+    const whole: UsageFact = {
+      ...factOf([event]),
+      requests: 0,
+      tokens: unknownTokens,
+    };
+
+    return byModel(whole, event);
+  });
 };
 
 const decodeKey = Schema.decodeUnknownOption(Schema.NonEmptyString);

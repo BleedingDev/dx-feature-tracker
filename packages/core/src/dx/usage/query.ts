@@ -486,27 +486,231 @@ const matchesFilters = (
   return true;
 };
 
+const SPREAD_DIMENSIONS: ReadonlySet<UsageDimension> = new Set([
+  "agent",
+  "attribution",
+  "branch",
+  "day",
+  "effort",
+  "model",
+  "month",
+  "repo",
+  "week",
+  "worktree",
+]);
+
+const MIXED = "\u0000mixed";
+
+export const isSessionFigure = (fact: UsageFact): boolean =>
+  fact.requests === 0 && fact.toolFigure !== null;
+
+const sessionKeyOf = (fact: UsageFact): string | null =>
+  fact.session === null ? null : `${fact.harness ?? ""}|${fact.session}`;
+
+const spreads = (fact: UsageFact, dimension: UsageDimension): boolean =>
+  SPREAD_DIMENSIONS.has(dimension) &&
+  !(dimension === "model" && fact.model !== null);
+
+interface SessionSpan {
+  from: number;
+  readonly keys: Map<UsageDimension, string | null>;
+  readonly matchAll: Map<FilterDimension, boolean>;
+  readonly matchAny: Map<FilterDimension, boolean>;
+  to: number;
+}
+
+const commonKey = (
+  known: string | null | undefined,
+  key: string | null
+): string | null => (known === undefined || known === key ? key : MIXED);
+
+const updateSpan = (
+  span: SessionSpan,
+  fact: UsageFact,
+  dimensions: readonly UsageDimension[],
+  filters: ReturnType<typeof filterSets>,
+  clock: ZoneClock
+): void => {
+  if (fact.occurredMs !== null) {
+    span.from = Math.min(span.from, fact.occurredMs);
+    span.to = Math.max(span.to, fact.occurredMs);
+  }
+
+  for (const dimension of dimensions) {
+    span.keys.set(
+      dimension,
+      commonKey(span.keys.get(dimension), keyOf(fact, dimension, clock))
+    );
+  }
+
+  for (const [dimension, wanted] of filters) {
+    const hit = wanted.has(dimensionValue(fact, dimension) ?? NONE_VALUE);
+
+    span.matchAll.set(dimension, (span.matchAll.get(dimension) ?? true) && hit);
+    span.matchAny.set(
+      dimension,
+      (span.matchAny.get(dimension) ?? false) || hit
+    );
+  }
+};
+
+const sessionSpans = (
+  facts: readonly UsageFact[],
+  query: UsageQuery,
+  filters: ReturnType<typeof filterSets>,
+  clock: ZoneClock
+): ReadonlyMap<string, SessionSpan> => {
+  const spans = new Map<string, SessionSpan>();
+
+  for (const fact of facts) {
+    const key = isSessionFigure(fact) ? sessionKeyOf(fact) : null;
+
+    if (key !== null) {
+      spans.set(key, {
+        from: Number.POSITIVE_INFINITY,
+        keys: new Map(),
+        matchAll: new Map(),
+        matchAny: new Map(),
+        to: Number.NEGATIVE_INFINITY,
+      });
+    }
+  }
+
+  if (spans.size === 0) {
+    return spans;
+  }
+
+  const dimensions = [query.groupBy, query.stackBy].flatMap((dimension) =>
+    dimension === null || !SPREAD_DIMENSIONS.has(dimension) ? [] : [dimension]
+  );
+
+  const spreadFilters = filters.filter(([dimension]) =>
+    SPREAD_DIMENSIONS.has(dimension)
+  );
+
+  for (const fact of facts) {
+    const key = fact.requests > 0 ? sessionKeyOf(fact) : null;
+    const span = key === null ? undefined : spans.get(key);
+
+    if (span !== undefined) {
+      updateSpan(span, fact, dimensions, spreadFilters, clock);
+    }
+  }
+
+  return spans;
+};
+
+interface Placed {
+  readonly at: number | null;
+  readonly cut: boolean;
+  readonly included: boolean;
+  readonly keyOf: (dimension: UsageDimension) => string | null;
+  readonly untimed: boolean;
+}
+
+const spanOfFigure = (
+  fact: UsageFact,
+  spans: ReadonlyMap<string, SessionSpan>
+): SessionSpan | undefined => {
+  const key = isSessionFigure(fact) ? sessionKeyOf(fact) : null;
+  const span = key === null ? undefined : spans.get(key);
+
+  return span === undefined || span.from > span.to ? undefined : span;
+};
+
+interface FigureMatch {
+  readonly all: boolean;
+  readonly any: boolean;
+}
+
+const figureMatches = (
+  fact: UsageFact,
+  span: SessionSpan,
+  filters: ReturnType<typeof filterSets>
+): FigureMatch => {
+  let all = true;
+  let any = true;
+
+  for (const [dimension, wanted] of filters) {
+    if (spreads(fact, dimension)) {
+      all &&= span.matchAll.get(dimension) ?? false;
+      any &&= span.matchAny.get(dimension) ?? false;
+    } else if (!wanted.has(dimensionValue(fact, dimension) ?? NONE_VALUE)) {
+      return { all: false, any: false };
+    }
+  }
+
+  return { all, any };
+};
+
+const placeFact = (
+  fact: UsageFact,
+  spans: ReadonlyMap<string, SessionSpan>,
+  query: UsageQuery,
+  filters: ReturnType<typeof filterSets>,
+  clock: ZoneClock
+): Placed => {
+  const span = spanOfFigure(fact, spans);
+
+  if (span === undefined) {
+    const windowed = inWindow(fact, query);
+
+    return {
+      at: fact.occurredMs,
+      cut: false,
+      included: windowed && matchesFilters(fact, filters),
+      keyOf: (dimension) => keyOf(fact, dimension, clock),
+      untimed: !windowed && fact.occurredMs === null,
+    };
+  }
+
+  const inside =
+    (query.sinceMs === null || span.from >= query.sinceMs) &&
+    (query.untilMs === null || span.to < query.untilMs);
+
+  const overlaps =
+    (query.sinceMs === null || span.to >= query.sinceMs) &&
+    (query.untilMs === null || span.from < query.untilMs);
+
+  const matches = figureMatches(fact, span, filters);
+
+  return {
+    at: span.to,
+    cut: overlaps && matches.any && !(inside && matches.all),
+    included: inside && matches.all,
+    keyOf: (dimension) => {
+      if (!spreads(fact, dimension)) {
+        return keyOf(fact, dimension, clock);
+      }
+
+      const key = span.keys.get(dimension) ?? null;
+
+      return key === MIXED ? null : key;
+    },
+    untimed: false,
+  };
+};
+
 const STACK_TOTAL = "(all)";
 
 const addToSeries = (
   cells: Map<string, Map<string, Accumulator>>,
   prepared: PreparedFacts,
   index: number,
+  placed: Placed,
   query: UsageQuery,
   clock: ZoneClock
 ): void => {
-  const fact = prepared.facts[index];
-
-  if (fact === undefined || fact.occurredMs === null) {
+  if (placed.at === null) {
     return;
   }
 
-  const bucket = clock.bucketOf(fact.occurredMs, query.bucket);
+  const bucket = clock.bucketOf(placed.at, query.bucket);
 
   const stack =
     query.stackBy === null
       ? STACK_TOTAL
-      : (keyOf(fact, query.stackBy, clock) ?? UNATTRIBUTED_KEY);
+      : (placed.keyOf(query.stackBy) ?? UNATTRIBUTED_KEY);
 
   let perBucket = cells.get(bucket);
 
@@ -524,6 +728,23 @@ const unpriced = (prepared: PreparedFacts, index: number): boolean =>
     prepared.values[index * SUMMED_COUNT + SLOT.estimate] ?? Number.NaN
   );
 
+const figureNotes = (
+  cut: number,
+  spread: number,
+  groupBy: UsageDimension | null
+): string[] => [
+  ...(cut > 0
+    ? [
+        `${String(cut)} tool session figure(s) left out: the session runs past the time window or the filter, and the figure covers the whole session.`,
+      ]
+    : []),
+  ...(spread > 0 && groupBy !== null
+    ? [
+        `${String(spread)} tool session figure(s) sit in ${UNATTRIBUTED_KEY}: the session spans several ${groupBy} values and the figure is not split.`,
+      ]
+    : []),
+];
+
 export const queryUsage = (
   prepared: PreparedFacts,
   query: UsageQuery,
@@ -538,9 +759,12 @@ export const queryUsage = (
   const cells = new Map<string, Map<string, Accumulator>>();
   const { facts } = prepared;
   const { groupBy } = query;
+  const spans = sessionSpans(facts, query, filters, clock);
   let withoutTime = 0;
   let unpricedInWindow = 0;
   let matched = 0;
+  let figuresCut = 0;
+  let figuresSpread = 0;
 
   for (let index = 0; index < facts.length; index += 1) {
     const fact = facts[index];
@@ -549,12 +773,11 @@ export const queryUsage = (
       continue;
     }
 
-    if (!inWindow(fact, query)) {
-      withoutTime += fact.occurredMs === null ? 1 : 0;
-      continue;
-    }
+    const placed = placeFact(fact, spans, query, filters, clock);
 
-    if (filters.length > 0 && !matchesFilters(fact, filters)) {
+    if (!placed.included) {
+      withoutTime += placed.untimed ? 1 : 0;
+      figuresCut += placed.cut ? 1 : 0;
       continue;
     }
 
@@ -567,13 +790,15 @@ export const queryUsage = (
     total.addRow(prepared, index);
 
     unpricedInWindow += unpriced(prepared, index) ? 1 : 0;
-    addToSeries(cells, prepared, index, query, clock);
+    addToSeries(cells, prepared, index, placed, query, clock);
 
     if (groupBy !== null) {
-      const key = keyOf(fact, groupBy, clock);
+      const key = placed.keyOf(groupBy);
 
       if (key === null) {
         unattributed.addRow(prepared, index);
+        figuresSpread +=
+          isSessionFigure(fact) && spreads(fact, groupBy) ? 1 : 0;
       } else {
         accumulate(groups, key, prepared, index);
       }
@@ -589,7 +814,7 @@ export const queryUsage = (
     accountBuckets: rowOf("account-bucket", accountBuckets, query.metrics),
     groups: grouped.rows,
     matched,
-    notes: [],
+    notes: figureNotes(figuresCut, figuresSpread, groupBy),
     other: grouped.other,
     series: buildSeries(cells, query),
     total: rowOf("total", total, query.metrics),

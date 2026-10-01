@@ -236,6 +236,64 @@ describe("usage query", () => {
     ]);
   });
 
+  it("counts a tool session figure only where its whole session counts", () => {
+    const figure = fact("figure", {
+      ...at("2026-09-30T10:00:00.000Z"),
+      branch: "feature/one",
+      requests: 0,
+      tokens: unknownTokens,
+      toolFigure: { amount: 0.4, currency: "USD", kind: "api-equivalent" },
+    });
+
+    const facts = [
+      fact("early", {
+        ...at("2026-09-30T10:00:00.000Z"),
+        branch: "feature/one",
+      }),
+      fact("late", {
+        ...at("2026-09-30T11:00:00.000Z"),
+        branch: "feature/two",
+      }),
+      figure,
+    ];
+
+    const whole = run(facts, { groupBy: "branch" });
+
+    const clipped = run(facts, {
+      untilMs: Date.parse("2026-09-30T10:30:00.000Z"),
+    });
+
+    const after = run(facts, {
+      sinceMs: Date.parse("2026-09-30T10:30:00.000Z"),
+    });
+
+    const oneBranch = run([...facts.slice(0, 1), figure], {
+      groupBy: "branch",
+    });
+
+    expect(whole.total.values.toolFigure).toBe(0.4);
+    expect(whole.groups.map((group) => group.values.toolFigure)).toEqual([
+      null,
+      null,
+    ]);
+    expect(whole.unattributed?.values.toolFigure).toBe(0.4);
+    expect(whole.notes).toEqual([
+      "1 tool session figure(s) sit in (unattributed): the session spans several branch values and the figure is not split.",
+    ]);
+    expect(whole.series.map((point) => point.bucket)).toEqual(["2026-09-30"]);
+    expect(clipped.total.values).toMatchObject({
+      requests: 1,
+      toolFigure: null,
+    });
+    expect(after.total.values).toMatchObject({ requests: 1, toolFigure: null });
+    expect(clipped.notes).toEqual([
+      "1 tool session figure(s) left out: the session runs past the time window or the filter, and the figure covers the whole session.",
+    ]);
+    expect(
+      oneBranch.groups.map((group) => [group.key, group.values.toolFigure])
+    ).toEqual([["feature/one", 0.4]]);
+  });
+
   it("keeps every money ledger apart and never adds them", () => {
     const facts = [
       fact("billed", {
@@ -525,6 +583,57 @@ describe("usage facts", () => {
       tokens: 1100,
       toolFigure: 0.8,
     });
+  });
+
+  it("splits a session figure by the models its cost state lists", () => {
+    const base = usageEvent(
+      "cost",
+      "claude-code",
+      "session-file",
+      0,
+      "claude-opus-5",
+      "main"
+    );
+
+    const derived = deriveUsageFacts([
+      {
+        ...base,
+        ai: base.ai === null ? null : { ...base.ai, model: null },
+        identity: { ...emptyEventIdentity, sessionId: "session-1" },
+        kind: "ai.session",
+        payload: {
+          costState: {
+            models: {
+              "claude-haiku-4-5-20251001": { costUsd: 0.25 },
+              "claude-opus-5": { costUsd: 0.5 },
+            },
+          },
+        },
+        usage: {
+          premiumRequests: null,
+          requestKey: null,
+          serviceTier: null,
+          speed: null,
+          tokens: unknownTokens,
+          toolFigure: {
+            amount: 0.75,
+            currency: "USD",
+            kind: "api-equivalent",
+          },
+        },
+      },
+    ]);
+
+    const byModel = run(derived.facts, { groupBy: "model" });
+
+    expect(
+      byModel.groups.map((group) => [group.key, group.values.toolFigure])
+    ).toEqual([
+      ["claude-haiku-4-5", 0.25],
+      ["claude-opus-5", 0.5],
+    ]);
+    expect(byModel.unattributed).toBeNull();
+    expect(byModel.total.values.toolFigure).toBe(0.75);
   });
 
   it("leaves out an OpenTelemetry row without a request id when the session file has the session", () => {

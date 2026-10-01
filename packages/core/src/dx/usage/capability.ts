@@ -110,6 +110,7 @@ const notesOf = (
   foreignMoney: number
 ): string[] => [
   `Estimate: tokens x the model maker's public price (${estimateLabel(costOptions)}). Billed and the tool's own figure are separate ledgers and are never added to it or to each other.`,
+  ...result.notes,
   ...(result.unpricedInWindow > 0
     ? [
         `${plural(result.unpricedInWindow, "request")} have no price; the estimate leaves them out.`,
