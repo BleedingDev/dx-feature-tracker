@@ -11,7 +11,7 @@
 The tiers and checks are described in [architecture/harnesses.md](architecture/harnesses.md#test-tiers).
 
 - Mock and fixture tiers always run. They never touch the real `~/.claude`, `~/.codex`, `~/.pi`, `~/.omp`, `~/.dsh` or `~/.cursor`; fixture tests point `HarnessHome.at(...)` at an owned temp folder.
-- The live tier runs only for the ids in `DFT_LIVE_HARNESSES` (comma-separated, any of `cursor`, `claude-code`, `codex`, `opencode`, `pi`, `omp`, `deepseek`). It is read-only: SQLite files are copied before they are opened, session files are only read, and at most 25 sessions per tool are checked. It asserts invariants only, never exact numbers. A tool that is not installed passes with no sessions.
+- The live tier runs only for the ids in `DFT_LIVE_HARNESSES` (comma-separated, any of `cursor`, `claude-code`, `codex`, `opencode`, `pi`, `omp`, `deepseek`). It is read-only: SQLite files are copied before they are opened, session files are only read, and at most 25 sessions per tool are checked. It asserts invariants only, never exact numbers. A tool that is not installed passes with no sessions. Every tool except Cursor also has a live run that is not scoped to this checkout; Cursor locates its sources per worktree, and its checkout run always finds its local databases. Claude Code's unscoped run and Cursor's checkout run fail when the tool reports sessions but none are located, so a clone or worktree with no sessions of its own cannot pass them vacuously.
 
 ## Rules
 

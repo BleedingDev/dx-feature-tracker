@@ -26,6 +26,7 @@ export type ConformanceTier = "mock" | "fixture" | "live";
 export interface ConformanceOptions {
   readonly context?: FlightContext;
   readonly expectEvents?: boolean;
+  readonly expectLocated?: boolean;
   readonly maxSessions?: number;
   readonly scope?: HarnessScope;
   readonly tier: ConformanceTier;
@@ -169,6 +170,17 @@ export const harnessConformance = <E>(
 
         if (options.expectEvents === true) {
           expect(allEvents(reading).length).toBeGreaterThan(0);
+        }
+
+        if (
+          options.expectLocated === true &&
+          reading.discovery.present &&
+          reading.discovery.sessions > 0
+        ) {
+          expect(
+            reading.sessions.length,
+            `${name} reports ${reading.discovery.sessions} sessions but none were located`
+          ).toBeGreaterThan(0);
         }
       })
     );

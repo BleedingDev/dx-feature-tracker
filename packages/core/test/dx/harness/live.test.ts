@@ -24,8 +24,16 @@ const liveRegistry = HarnessRegistryLive.pipe(
 
 for (const id of HARNESS_IDS) {
   harnessConformance(id, liveRegistry, {
+    expectLocated: id === "cursor",
     maxSessions: 25,
     scope: { ...everywhere, worktrees: [repoRoot] },
     tier: "live",
   });
 }
+
+harnessConformance("claude-code", liveRegistry, {
+  expectLocated: true,
+  maxSessions: 25,
+  scope: everywhere,
+  tier: "live",
+});
