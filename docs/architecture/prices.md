@@ -21,7 +21,7 @@ Every tool gets one estimate (D26, D30, D40): its tokens times the public price 
 | Cache write 5 minutes | catalog rate; Anthropic without a listed rate is 1.25x input |
 | Cache write 1 hour | Anthropic 2x input; others use the 5 minute rate |
 | Long context | when the prompt (input, cache read and writes) is above a catalog tier, the whole request uses that tier |
-| Fast and priority | Claude `speed: fast` (or a `-fast` model suffix) uses the published multiplier per model; Codex `service_tier` priority or fast is 2x, flex and batch 0.5x; an unpublished tier is priced at standard and marked incomplete |
+| Fast and priority | Claude `speed: fast` (or a `-fast` model suffix) uses the multiplier each model had on the request's date (Opus 4.6 3x at its launch discount, then 6x until fast mode was removed on 2026-06-29, standard after; Opus 4.7 6x while it had fast mode); Codex `service_tier` priority or fast is 2x, flex and batch 0.5x; an unpublished tier is priced at standard and marked incomplete |
 | Web search | Claude and Codex (OpenAI): USD 10 per 1,000 searches (`usage.webSearchRequests`); search content tokens are already in the request's tokens; searches on a model whose maker has no published search price are noted and mark the estimate incomplete |
 | Copilot premium requests | USD 0.04 each, shown beside the estimate; used as the estimate only when no tokens can be priced |
 | Local runtime | `provider: local` or a local `via` (Ollama, LM Studio, ...) costs 0, method `local` |

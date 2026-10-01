@@ -254,6 +254,36 @@ it.layer(
     })
   );
 
+  test.effect(
+    "prices Opus 4.6 and 4.7 fast requests at the fast price in force when they ran",
+    () =>
+      Effect.gen(function* retiredFastMode() {
+        const book = yield* PriceBook;
+
+        const fast = (model: string, at: string) =>
+          book.estimate(
+            tiered({ at, model, provider: "anthropic", speed: "fast" })
+          );
+
+        expect(
+          [
+            fast("claude-opus-4-6", "2026-02-10T12:00:00.000Z"),
+            fast("claude-opus-4-6", "2026-03-10T12:00:00.000Z"),
+            fast("claude-opus-4-6", "2026-07-10T12:00:00.000Z"),
+            fast("claude-opus-4-7", "2026-05-20T12:00:00.000Z"),
+          ].map((estimate) => ({
+            complete: estimate.kind === "priced" && estimate.complete,
+            usd: usdOf(estimate),
+          }))
+        ).toEqual([
+          { complete: true, usd: 90 },
+          { complete: true, usd: 180 },
+          { complete: true, usd: 30 },
+          { complete: true, usd: 180 },
+        ]);
+      })
+  );
+
   test.effect("uses each OpenAI model's own Fast and Ultrafast price", () =>
     Effect.gen(function* openaiTiers() {
       const book = yield* PriceBook;

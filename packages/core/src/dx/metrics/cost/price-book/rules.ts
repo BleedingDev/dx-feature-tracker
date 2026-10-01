@@ -1,9 +1,10 @@
 import { DateTime, Option } from "effect";
 
 import type { ModelProvider } from "../../../harness/ids.js";
+import { versionAt } from "./sheet.js";
 
 export const PRICING_RULES_SOURCE =
-  "Maker pricing pages read 2026-10-01: Anthropic prompt caching (5 minute write 1.25x input, 1 hour write 2x input), Anthropic fast mode (Claude Opus 5.5, Opus 5 and Opus 4.8 at 2x; Opus 4.6 runs and bills at standard), Anthropic web search (USD 10 per 1,000 searches), OpenAI web search tool (USD 10 per 1,000 calls; search content tokens are already in the request's tokens), OpenAI Fast, formerly Priority (2x, except gpt-5.5 2.5x, gpt-5-mini 1.8x, gpt-4.1 and o3 1.75x, gpt-4o 1.7x, o4-mini 20/11x), OpenAI Ultrafast (gpt-6-astra 6x), OpenAI Flex and Batch (0.5x), DeepSeek peak hours (2x, 01:00-04:00 and 06:00-10:00 UTC on weekdays; Chinese public holidays are not modelled), GitHub Copilot premium requests (USD 0.04 each).";
+  "Maker pricing pages read 2026-10-01: Anthropic prompt caching (5 minute write 1.25x input, 1 hour write 2x input), Anthropic fast mode (Claude Opus 5.5, Opus 5 and Opus 4.8 at 2x; Opus 4.6 at USD 30/150 per million, 6x, from its 2026-02-07 launch with half off through 2026-02-16, and billed at standard since its removal on 2026-06-29; Opus 4.7 at the Opus 4.6 price from 2026-05-12 until its removal on 2026-07-24, per the Claude API release notes), Anthropic web search (USD 10 per 1,000 searches), OpenAI web search tool (USD 10 per 1,000 calls; search content tokens are already in the request's tokens), OpenAI Fast, formerly Priority (2x, except gpt-5.5 2.5x, gpt-5-mini 1.8x, gpt-4.1 and o3 1.75x, gpt-4o 1.7x, o4-mini 20/11x), OpenAI Ultrafast (gpt-6-astra 6x), OpenAI Flex and Batch (0.5x), DeepSeek peak hours (2x, 01:00-04:00 and 06:00-10:00 UTC on weekdays; Chinese public holidays are not modelled), GitHub Copilot premium requests (USD 0.04 each).";
 
 export const ANTHROPIC_CACHE_WRITE_5M_MULTIPLIER = 1.25;
 
@@ -17,11 +18,31 @@ export const WEB_SEARCH_USD_PER_REQUEST: ReadonlyMap<ModelProvider, number> =
     ["openai", 0.01],
   ]);
 
-export const FAST_MODE_MULTIPLIERS: ReadonlyMap<string, number> = new Map([
-  ["claude-opus-5-5", 2],
-  ["claude-opus-5", 2],
-  ["claude-opus-4-8", 2],
-  ["claude-opus-4-6", 1],
+export interface DatedMultiplier {
+  readonly effectiveFrom: string | null;
+  readonly multiplier: number;
+}
+
+const always = (multiplier: number): readonly DatedMultiplier[] => [
+  { effectiveFrom: null, multiplier },
+];
+
+export const FAST_MODE_MULTIPLIERS: ReadonlyMap<
+  string,
+  readonly DatedMultiplier[]
+> = new Map([
+  ["claude-opus-5-5", always(2)],
+  ["claude-opus-5", always(2)],
+  ["claude-opus-4-8", always(2)],
+  ["claude-opus-4-7", always(6)],
+  [
+    "claude-opus-4-6",
+    [
+      { effectiveFrom: null, multiplier: 3 },
+      { effectiveFrom: "2026-02-17T00:00:00.000Z", multiplier: 6 },
+      { effectiveFrom: "2026-06-29T00:00:00.000Z", multiplier: 1 },
+    ],
+  ],
 ]);
 
 const OPENAI_FAST_MULTIPLIERS: ReadonlyMap<string, number> = new Map([
@@ -87,12 +108,19 @@ const standard: TierPricing = {
   unpricedTier: null,
 };
 
-const speedPricing = (key: string, speed: "fast" | null): TierPricing => {
+const speedPricing = (
+  key: string,
+  speed: "fast" | null,
+  at: string | null
+): TierPricing => {
   if (speed === null) {
     return standard;
   }
 
-  const multiplier = FAST_MODE_MULTIPLIERS.get(key);
+  const multiplier = versionAt(
+    FAST_MODE_MULTIPLIERS.get(key) ?? [],
+    at
+  )?.multiplier;
 
   return multiplier === undefined
     ? { label: null, multiplier: 1, unpricedTier: "fast" }
@@ -167,6 +195,7 @@ export interface TierRequest {
 }
 
 const speedOrTier = ({
+  at,
   key,
   maker,
   serviceTier,
@@ -176,7 +205,7 @@ const speedOrTier = ({
   const byTier = serviceTierPricing(maker, key, serviceTier);
 
   if (maker === "anthropic") {
-    return [speedPricing(key, fast ? "fast" : null), byTier];
+    return [speedPricing(key, fast ? "fast" : null, at), byTier];
   }
 
   return byTier.label === null && byTier.unpricedTier === null && fast

@@ -26,10 +26,10 @@ export const decodePriceSheet = Schema.decodeUnknownSync(PriceSheetSchema);
 const timeOf = (iso: string | null): number =>
   iso === null ? Number.NEGATIVE_INFINITY : Date.parse(iso);
 
-export const versionAt = (
-  versions: readonly ModelPriceVersion[],
+export const versionAt = <V extends { readonly effectiveFrom: string | null }>(
+  versions: readonly V[],
   at: string | null
-): ModelPriceVersion | undefined => {
+): V | undefined => {
   const ordered = versions.toSorted(
     (a, b) => timeOf(a.effectiveFrom) - timeOf(b.effectiveFrom)
   );
