@@ -71,6 +71,50 @@ export const claudeLogsJson = (requestId: string): string =>
     ],
   });
 
+export interface CodexCompletion {
+  readonly cached: number;
+  readonly effort: string | null;
+  readonly input: number;
+  readonly output: number;
+  readonly reasoning: number | null;
+  readonly timestamp: string;
+}
+
+const codexCompletionRecord = (completion: CodexCompletion) => ({
+  attributes: [
+    text("event.name", "codex.sse_event"),
+    text("event.kind", "response.completed"),
+    text("input_token_count", String(completion.input)),
+    text("output_token_count", String(completion.output)),
+    int("cached_token_count", completion.cached),
+    ...(completion.reasoning === null
+      ? []
+      : [int("reasoning_token_count", completion.reasoning)]),
+    int("tool_token_count", 0),
+    ...(completion.effort === null
+      ? []
+      : [text("model_reasoning_effort", completion.effort)]),
+    text("event.timestamp", completion.timestamp),
+    text("conversation.id", CONVERSATION),
+    text("app.version", "0.159.3"),
+    text("model", "gpt-5.6-luna"),
+  ],
+  eventName: "event otel/src/events/session_telemetry.rs:1103",
+  observedTimeUnixNano: "1790860683381242000",
+});
+
+export const codexLogsJson = (
+  completions: readonly CodexCompletion[]
+): string =>
+  JSON.stringify({
+    resourceLogs: [
+      {
+        resource: { attributes: [text("service.name", "codex_exec")] },
+        scopeLogs: [{ logRecords: completions.map(codexCompletionRecord) }],
+      },
+    ],
+  });
+
 const varint = (value: bigint): readonly number[] => {
   const out: number[] = [];
   let rest = value;

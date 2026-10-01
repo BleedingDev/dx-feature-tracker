@@ -8,6 +8,7 @@ import {
   CONVERSATION,
   SESSION,
   claudeLogsJson,
+  codexLogsJson,
   codexLogsProtobuf,
   gzip,
 } from "./otlp-payloads.js";
@@ -115,6 +116,61 @@ describe("OTLP logs receiver decoding", () => {
     expect(event?.usage?.requestKey).toBeNull();
     expect(event?.upstreamKey).toBe(
       `otel:codex:${CONVERSATION}:2026-10-01T13:18:03.381Z`
+    );
+  });
+
+  it("drops the Codex session-start warmup response.completed and keeps real requests", () => {
+    const warmup = {
+      cached: 0,
+      effort: null,
+      input: 9412,
+      output: 0,
+      reasoning: null,
+      timestamp: "2026-10-01T13:18:01.002Z",
+    };
+
+    const request = {
+      cached: 9216,
+      effort: "high",
+      input: 9731,
+      output: 41,
+      reasoning: 12,
+      timestamp: "2026-10-01T13:18:03.381Z",
+    };
+
+    const events = otelEvents(
+      decodeOtlpLogs(json(codexLogsJson([warmup, request]))) ?? [],
+      NOW
+    );
+
+    expect(events.map((event) => event.occurredAt)).toEqual([
+      "2026-10-01T13:18:03.381Z",
+    ]);
+    expect(events[0]?.usage?.tokens.output).toBe(41);
+  });
+
+  it("keeps Codex completions that only look partly like the warmup", () => {
+    const base = {
+      cached: 0,
+      effort: null,
+      input: 120,
+      output: 0,
+      reasoning: null,
+    };
+
+    const kept = [
+      { ...base, effort: "low", timestamp: "2026-10-01T13:19:00.000Z" },
+      { ...base, output: 7, timestamp: "2026-10-01T13:19:01.000Z" },
+      { ...base, reasoning: 5, timestamp: "2026-10-01T13:19:02.000Z" },
+    ];
+
+    const events = otelEvents(
+      decodeOtlpLogs(json(codexLogsJson(kept))) ?? [],
+      NOW
+    );
+
+    expect(events.map((event) => event.occurredAt)).toEqual(
+      kept.map((completion) => completion.timestamp)
     );
   });
 

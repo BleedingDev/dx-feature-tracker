@@ -49,7 +49,7 @@ dft only adds. When Claude Code already exports logs (settings or shell `OTEL_LO
 | Record | Event |
 | --- | --- |
 | `claude_code.api_request` | `ai.request`, channel `otel`, tokens from `input_tokens`, `cache_read_tokens`, `cache_creation_tokens`, `output_tokens`; `cost_usd` as tool figure `list-price`; request key and `identity.requestId` = `request_id` |
-| `codex.sse_event` with `event.kind=response.completed` | `ai.request`, channel `otel`; `input_token_count` includes cached tokens, so fresh input is input minus cached and cache write; request key `codex:<conversation.id>:<event.timestamp>` |
+| `codex.sse_event` with `event.kind=response.completed` | `ai.request`, channel `otel`; `input_token_count` includes cached tokens, so fresh input is input minus cached and cache write; request key `codex:<conversation.id>:<event.timestamp>`. The session-start warmup (output 0, no reasoning tokens, no `model_reasoning_effort`) is dropped: Codex sends it with `generate=false` to open the connection, so no model output exists |
 
 Prompt and response text in the records is never read. Event ids hash the request key, so a resend is a duplicate. The events carry no folder, so their branch comes from correlation (a hook turn of the same session, D28).
 

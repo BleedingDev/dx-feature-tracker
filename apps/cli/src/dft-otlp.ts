@@ -466,9 +466,15 @@ const isClaudeRequest = (record: OtlpRecord, name: string | null): boolean =>
     ? text(record.resource.get("service.name"))?.startsWith("claude") !== false
     : false;
 
+const isCodexWarmup = (record: OtlpRecord): boolean =>
+  count(record.attributes.get("output_token_count")) === 0 &&
+  (count(record.attributes.get("reasoning_token_count")) ?? 0) === 0 &&
+  text(record.attributes.get("model_reasoning_effort")) === null;
+
 const isCodexCompletion = (record: OtlpRecord, name: string | null): boolean =>
   name === "codex.sse_event" &&
-  text(record.attributes.get("event.kind")) === "response.completed";
+  text(record.attributes.get("event.kind")) === "response.completed" &&
+  !isCodexWarmup(record);
 
 const claudeUsage = (record: OtlpRecord, observedAt: string): OtelUsage => {
   const attr = (key: string) => record.attributes.get(key);
