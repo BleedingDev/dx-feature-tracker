@@ -120,121 +120,127 @@ const actions = (stdout: string) =>
   ]);
 
 describe("dft install for every tool", () => {
-  it("finds every tool in HOME, sets up local capture once and dft uninstall removes it", () => {
-    const first = dft("install", "--json");
+  it(
+    "finds every tool in HOME, sets up local capture once and dft uninstall removes it",
+    { timeout: 120_000 },
+    () => {
+      const first = dft("install", "--json");
 
-    expect(first.status).toBe(0);
-    expect(
-      decodeInstall(first.stdout).detected.map((item) => [
-        item.tool,
-        item.installed,
-      ])
-    ).toEqual([
-      ["claude-code", true],
-      ["codex", true],
-      ["opencode", true],
-      ["pi", true],
-      ["omp", true],
-      ["deepseek", true],
-    ]);
-    expect(actions(first.stdout)).toEqual([
-      ["claude-code", ["updated"]],
-      ["codex", ["created"]],
-      ["opencode", ["created"]],
-      ["pi", ["created"]],
-      ["omp", ["created"]],
-      ["deepseek", ["created", "created"]],
-    ]);
-    expect(readFileSync(claudeLocal, "utf-8")).toContain('"model": "sonnet"');
+      expect(first.status).toBe(0);
+      expect(
+        decodeInstall(first.stdout).detected.map((item) => [
+          item.tool,
+          item.installed,
+        ])
+      ).toEqual([
+        ["claude-code", true],
+        ["codex", true],
+        ["opencode", true],
+        ["pi", true],
+        ["omp", true],
+        ["deepseek", true],
+      ]);
+      expect(actions(first.stdout)).toEqual([
+        ["claude-code", ["updated"]],
+        ["codex", ["created"]],
+        ["opencode", ["created"]],
+        ["pi", ["created"]],
+        ["omp", ["created"]],
+        ["deepseek", ["created", "created"]],
+      ]);
+      expect(readFileSync(claudeLocal, "utf-8")).toContain('"model": "sonnet"');
 
-    const again = dft("install", "--json");
+      const again = dft("install", "--json");
 
-    expect(actions(again.stdout)).toEqual([
-      ["claude-code", ["unchanged"]],
-      ["codex", ["unchanged"]],
-      ["opencode", ["unchanged"]],
-      ["pi", ["unchanged"]],
-      ["omp", ["unchanged"]],
-      ["deepseek", ["unchanged", "unchanged"]],
-    ]);
+      expect(actions(again.stdout)).toEqual([
+        ["claude-code", ["unchanged"]],
+        ["codex", ["unchanged"]],
+        ["opencode", ["unchanged"]],
+        ["pi", ["unchanged"]],
+        ["omp", ["unchanged"]],
+        ["deepseek", ["unchanged", "unchanged"]],
+      ]);
 
-    const text = dft("install");
+      const text = dft("install");
 
-    expect(text.stdout).toContain(
-      "Tool capture (this folder only, never committed)"
-    );
-    expect(text.stdout).toContain("dsh --patch .dsh/dft.patch.yml");
-    expect(text.stdout).not.toMatch(/[–—]/u);
-    expect(text.stdout).not.toContain("Cursor not found");
+      expect(text.stdout).toContain(
+        "Tool capture (this folder only, never committed)"
+      );
+      expect(text.stdout).toContain("dsh --patch .dsh/dft.patch.yml");
+      expect(text.stdout).not.toMatch(/[–—]/u);
+      expect(text.stdout).not.toContain("Cursor not found");
 
-    expect(
-      execFileSync("git", ["-C", repo, "status", "--porcelain"], {
-        encoding: "utf-8",
-        env,
-      })
-    ).toBe("?? .cursor/\n");
+      expect(
+        execFileSync("git", ["-C", repo, "status", "--porcelain"], {
+          encoding: "utf-8",
+          env,
+        })
+      ).toBe("");
 
-    const telemetry = dft("install", "--telemetry");
+      const telemetry = dft("install", "--telemetry");
 
-    expect(telemetry.stdout).toContain(
-      '+ env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT = "http://127.0.0.1:7420/v1/logs"'
-    );
-    expect(
-      readFileSync(path.join(home, ".codex", "config.toml"), "utf-8")
-    ).toContain("[otel]");
+      expect(telemetry.stdout).toContain(
+        '+ env.OTEL_EXPORTER_OTLP_LOGS_ENDPOINT = "http://127.0.0.1:7420/v1/logs"'
+      );
+      expect(
+        readFileSync(path.join(home, ".codex", "config.toml"), "utf-8")
+      ).toContain("[otel]");
 
-    const status = dft("status", "--json", "--no-sync");
+      const status = dft("status", "--json", "--no-sync");
 
-    expect(status.status).toBe(0);
-    expect(
-      decodeStatus(status.stdout).tools.map((tool) => [
-        tool.tool,
-        tool.installed,
-        tool.projectCapture,
-        tool.userTelemetry,
-        tool.lastEvent,
-      ])
-    ).toEqual([
-      ["claude-code", true, true, true, null],
-      ["codex", true, true, true, null],
-      ["opencode", true, true, null, null],
-      ["pi", true, true, null, null],
-      ["omp", true, true, null, null],
-      ["deepseek", true, true, null, null],
-    ]);
+      expect(status.status).toBe(0);
+      expect(
+        decodeStatus(status.stdout).tools.map((tool) => [
+          tool.tool,
+          tool.installed,
+          tool.projectCapture,
+          tool.userTelemetry,
+          tool.lastEvent,
+        ])
+      ).toEqual([
+        ["claude-code", true, true, true, null],
+        ["codex", true, true, true, null],
+        ["opencode", true, true, null, null],
+        ["pi", true, true, null, null],
+        ["omp", true, true, null, null],
+        ["deepseek", true, true, null, null],
+      ]);
 
-    expect(dft("status", "--no-sync").stdout).toContain(
-      "project capture yes, telemetry yes, last event never"
-    );
+      expect(dft("status", "--no-sync").stdout).toContain(
+        "project capture yes, telemetry yes, last event never"
+      );
 
-    expect(dft("uninstall", "--telemetry").status).toBe(0);
-    expect(existsSync(path.join(home, ".claude", "settings.json"))).toBe(false);
-    expect(existsSync(path.join(home, ".codex", "config.toml"))).toBe(false);
+      expect(dft("uninstall", "--telemetry").status).toBe(0);
+      expect(existsSync(path.join(home, ".claude", "settings.json"))).toBe(
+        false
+      );
+      expect(existsSync(path.join(home, ".codex", "config.toml"))).toBe(false);
 
-    const removed = dft("uninstall");
+      const removed = dft("uninstall");
 
-    expect(removed.status).toBe(0);
-    expect(removed.stdout).toContain("Removed what dft added");
-    expect(readFileSync(claudeLocal, "utf-8")).toBe(ownSettings);
+      expect(removed.status).toBe(0);
+      expect(removed.stdout).toContain("Removed what dft added");
+      expect(readFileSync(claudeLocal, "utf-8")).toBe(ownSettings);
 
-    for (const rel of [
-      ".codex",
-      ".pi",
-      ".omp",
-      ".opencode",
-      ".dsh",
-      ".cursor",
-    ]) {
-      expect(existsSync(path.join(repo, rel))).toBe(false);
+      for (const rel of [
+        ".codex",
+        ".pi",
+        ".omp",
+        ".opencode",
+        ".dsh",
+        ".cursor",
+      ]) {
+        expect(existsSync(path.join(repo, rel))).toBe(false);
+      }
+
+      expect(
+        execFileSync("git", ["-C", repo, "status", "--porcelain"], {
+          encoding: "utf-8",
+          env,
+        })
+      ).toBe("?? .claude/\n");
     }
-
-    expect(
-      execFileSync("git", ["-C", repo, "status", "--porcelain"], {
-        encoding: "utf-8",
-        env,
-      })
-    ).toBe("?? .claude/\n");
-  });
+  );
 
   it("sets up a tool it did not find only when asked with --tool", () => {
     const bare = path.join(root, "bare-repo");

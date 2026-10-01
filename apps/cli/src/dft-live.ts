@@ -34,7 +34,12 @@ import {
   Schema,
 } from "effect";
 
-import { hasCapture, isCaptureTool } from "./dft-capture.js";
+import {
+  hasCapture,
+  ignoreCaptureFiles,
+  isCaptureTool,
+  writtenUntracked,
+} from "./dft-capture.js";
 import {
   baseName,
   branchChatsWith,
@@ -669,8 +674,13 @@ export const serveDashboard = (options: LiveServerOptions) =>
             );
 
             yield* Effect.sync(() => {
-              installCursorHooks(repo.root, `${command} hook`);
-              installSkills(repo.root);
+              const hooks = installCursorHooks(repo.root, `${command} hook`);
+              const skills = installSkills(repo.root);
+
+              ignoreCaptureFiles(
+                repo.root,
+                writtenUntracked(repo.root, [hooks, ...skills])
+              );
             });
 
             return {

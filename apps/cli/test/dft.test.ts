@@ -266,6 +266,30 @@ describe("dft install output", () => {
     expect(text.endsWith(enterpriseLine())).toBe(true);
   });
 
+  it("gives Cursor steps only when Cursor is on this machine", () => {
+    const repo = scratchRepo();
+
+    const text = installText(
+      {
+        git: null,
+        hooks: installCursorHooks(repo, "dft hook"),
+        skills: installSkills(repo),
+        worktree: repo,
+      },
+      {
+        cursorInstalled: false,
+        gitRepo: true,
+        login: "unknown",
+        nodeVersion: "v24.18.0",
+        otherTools: ["claude-code"],
+      }
+    );
+
+    expect(text).toMatch(/1\. Work as usual +in your coding tools/u);
+    expect(text).not.toContain("Restart Cursor");
+    expect(text).not.toContain("in Cursor chat");
+  });
+
   it("warns about missing git, Cursor, login and old Node", () => {
     expect(
       installWarnings({

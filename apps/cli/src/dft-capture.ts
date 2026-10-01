@@ -281,8 +281,43 @@ const insideGit = (worktree: string): boolean =>
 export const isTracked = (worktree: string, rel: string): boolean =>
   runGit(worktree, ["ls-files", "--error-unmatch", "--", rel]) !== null;
 
-export const isIgnored = (worktree: string, rel: string): boolean =>
-  runGit(worktree, ["check-ignore", "-q", "--no-index", "--", rel]) !== null;
+const posixRel = (rel: string): string => rel.split(path.sep).join("/");
+
+const listed = (out: string | null, separator: string): readonly string[] =>
+  (out ?? "").split(separator).filter((line) => line !== "");
+
+const trackedAmong = (
+  worktree: string,
+  rels: readonly string[]
+): readonly string[] => {
+  if (rels.length === 0) {
+    return [];
+  }
+
+  const files = listed(
+    runGit(worktree, ["ls-files", "-z", "--", ...rels]),
+    "\0"
+  );
+
+  return rels.filter((rel) => {
+    const want = posixRel(rel);
+
+    return files.some((file) => file === want || file.startsWith(`${want}/`));
+  });
+};
+
+const ignoredAmong = (
+  worktree: string,
+  rels: readonly string[]
+): ReadonlySet<string> =>
+  rels.length === 0
+    ? new Set()
+    : new Set(
+        listed(
+          runGit(worktree, ["check-ignore", "--no-index", "--", ...rels]),
+          "\n"
+        )
+      );
 
 export const EXCLUDE_START = "# >>> dft local capture files";
 
@@ -343,7 +378,8 @@ export const ignoreCaptureFiles = (
     return [];
   }
 
-  const missing = rels.filter((rel) => !isIgnored(worktree, rel));
+  const ignored = ignoredAmong(worktree, rels);
+  const missing = rels.filter((rel) => !ignored.has(posixRel(rel)));
 
   if (missing.length === 0) {
     return [];
@@ -687,18 +723,39 @@ const written = (capture: ToolCapture): readonly string[] =>
     item.action === "skipped" ? [] : [item.path]
   );
 
+export const writtenUntracked = (
+  worktree: string,
+  steps: readonly { readonly action: string; readonly path: string }[]
+): readonly string[] => {
+  const rels = steps
+    .flatMap((item) =>
+      item.action === "skipped" || item.action === "printed"
+        ? []
+        : [path.relative(worktree, item.path)]
+    )
+    .filter(
+      (rel) => rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel)
+    );
+
+  const tracked = trackedAmong(worktree, rels);
+
+  return rels.filter((rel) => !tracked.includes(rel));
+};
+
 export const installCapture = (
   tools: readonly CaptureTool[],
   worktree: string,
-  command: DftCommand
+  command: DftCommand,
+  alsoIgnore: readonly string[] = []
 ): CaptureInstall => {
   const captures = tools.map((tool) =>
     installToolCapture(tool, worktree, command)
   );
 
-  const rels = captures
-    .flatMap(written)
-    .map((file) => path.relative(worktree, file));
+  const rels = [
+    ...alsoIgnore,
+    ...captures.flatMap(written).map((file) => path.relative(worktree, file)),
+  ];
 
   return { ignore: ignoreCaptureFiles(worktree, rels), tools: captures };
 };

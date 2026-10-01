@@ -34,11 +34,14 @@ import {
   parseHookConfig,
   removeDftHooks,
   uninstallCapture,
+  writtenUntracked,
 } from "../src/dft-capture.js";
 import type { DftCommand } from "../src/dft-capture.js";
 import {
   installCursorHooks,
+  installSkills,
   uninstallCursorHooks,
+  uninstallSkills,
 } from "../src/dft-install.js";
 import {
   CODEX_BLOCK_END,
@@ -452,6 +455,45 @@ describe("dft install project capture (D39)", () => {
     expect(read(repo, CLAUDE_SETTINGS_LOCAL)).toBe(teammateSettings);
     expect(existsSync(path.join(repo, CODEX_PROJECT_HOOKS))).toBe(false);
     expect(existsSync(path.join(repo, ".cursor", "hooks.json"))).toBe(false);
+  });
+
+  it("keeps the Cursor hooks and skills it writes out of git, except a tracked hooks file, and drops the lines on uninstall", () => {
+    const repo = scratchRepo();
+    const exclude = read(repo, ".git/info/exclude");
+
+    const cursorInstall = () =>
+      installCapture(
+        [],
+        repo,
+        command,
+        writtenUntracked(repo, [
+          installCursorHooks(repo, `${command.line} hook`),
+          ...installSkills(repo),
+        ])
+      );
+
+    cursorInstall();
+
+    expect(git(repo, "status", "--porcelain", "--untracked-files=all")).toBe(
+      ""
+    );
+    expect(read(repo, ".git/info/exclude")).toContain("/.cursor/hooks.json");
+    expect(cursorInstall().ignore).toEqual([]);
+
+    uninstallCursorHooks(repo);
+    uninstallSkills(repo);
+    uninstallCapture(repo, command);
+
+    expect(read(repo, ".git/info/exclude")).toBe(exclude);
+    expect(existsSync(path.join(repo, ".cursor"))).toBe(false);
+
+    write(repo, ".cursor/hooks.json", '{"version": 1}\n');
+    git(repo, "add", ".cursor/hooks.json");
+    cursorInstall();
+
+    expect(read(repo, ".git/info/exclude")).not.toContain(
+      "/.cursor/hooks.json"
+    );
   });
 
   it("dft uninstall in one worktree keeps the ignore lines another worktree still needs", () => {

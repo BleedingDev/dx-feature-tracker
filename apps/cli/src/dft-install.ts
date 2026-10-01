@@ -687,7 +687,7 @@ const gitLines = (result: InstallResult): GitLines => {
   };
 };
 
-const NEXT_STEPS: readonly Row[] = [
+const CURSOR_NEXT_STEPS: readonly Row[] = [
   {
     label: "Restart Cursor",
     text: "so it loads the hooks (or run Developer: Reload Window)",
@@ -703,6 +703,14 @@ const NEXT_STEPS: readonly Row[] = [
     label: "New worktree?",
     text: "run dft install --all-worktrees if you open it in Cursor",
   },
+  { label: "dft --help", text: "all commands" },
+];
+
+const TOOL_NEXT_STEPS: readonly Row[] = [
+  { label: "Work as usual", text: "in your coding tools, on a branch" },
+  { label: "dft analyze", text: "cost of this branch" },
+  { label: "dft history", text: "cost of every branch" },
+  { label: "dft dashboard", text: "the same as a web page" },
   { label: "dft --help", text: "all commands" },
 ];
 
@@ -833,12 +841,16 @@ export const installText = (
     );
   }
 
-  const width = Math.max(...NEXT_STEPS.map((step) => step.label.length));
+  const nextSteps = checks.cursorInstalled
+    ? CURSOR_NEXT_STEPS
+    : TOOL_NEXT_STEPS;
+
+  const width = Math.max(...nextSteps.map((step) => step.label.length));
 
   blocks.push(
     section(
       "Next steps",
-      NEXT_STEPS.map(
+      nextSteps.map(
         (step, index) =>
           `  ${index + 1}. ${step.label.padEnd(width)}  ${step.text}`
       )

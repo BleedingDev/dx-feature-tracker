@@ -38,6 +38,7 @@ import {
   installCapture,
   isCaptureTool,
   uninstallCapture,
+  writtenUntracked,
 } from "./dft-capture.js";
 import type { CaptureTool } from "./dft-capture.js";
 import { chatsInputOf, chatsText, withoutTitles } from "./dft-chats.js";
@@ -1358,7 +1359,12 @@ const installCommand = Command.make(
       });
 
       const tooling = yield* Effect.sync(() =>
-        installCapture(tools, worktree, capture)
+        installCapture(
+          tools,
+          worktree,
+          capture,
+          writtenUntracked(worktree, [result.hooks, ...result.skills])
+        )
       );
 
       const telemetry = flags.telemetry
