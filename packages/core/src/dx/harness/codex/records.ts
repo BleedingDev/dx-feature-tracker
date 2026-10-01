@@ -151,6 +151,17 @@ export const ThreadSettingsSchema = Schema.Struct({
 
 export type ThreadSettings = typeof ThreadSettingsSchema.Type;
 
+export const UserMessageSchema = Schema.Struct({ message: Text });
+
+export const ResponseMessageSchema = Schema.Struct({
+  content: Schema.optional(Schema.NullOr(Schema.Array(Schema.Unknown))),
+  role: Text,
+});
+
+const ContentTextSchema = Schema.Struct({ text: Schema.String });
+
+export const isContentText = Schema.is(ContentTextSchema);
+
 export const SessionIndexEntrySchema = Schema.Struct({
   id: Schema.String,
   thread_name: Text,
@@ -184,6 +195,10 @@ export const decodeTurnAbortedLine = decoderOf(TurnAbortedSchema);
 export const decodeTokenCountLine = decoderOf(TokenCountSchema);
 
 export const decodeThreadSettingsLine = decoderOf(ThreadSettingsSchema);
+
+export const decodeUserMessageLine = decoderOf(UserMessageSchema);
+
+export const decodeResponseMessageLine = decoderOf(ResponseMessageSchema);
 
 export const decodeSessionIndexLine = Schema.decodeUnknownOption(
   Schema.fromJsonString(SessionIndexEntrySchema)

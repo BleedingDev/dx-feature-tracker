@@ -1,5 +1,7 @@
 import { Option, Schema } from "effect";
 
+import { titleText } from "../title.js";
+
 const RawLineSchema = Schema.Record(Schema.String, Schema.Unknown);
 
 type RawLine = typeof RawLineSchema.Type;
@@ -210,8 +212,6 @@ const TITLE_KEYS = new Map<string, readonly [string, TitleSource]>([
   ["custom-title", ["customTitle", "custom"]],
 ]);
 
-const MAX_TITLE_CHARS = 200;
-
 const placeOf = (line: RawLine): RowPlace => ({
   agentId: textOf(line, "agentId"),
   cwd: textOf(line, "cwd"),
@@ -263,7 +263,7 @@ const costRow = (line: RawLine): CostRow => ({
 
 const titleRow = (line: RawLine, type: string): ClaudeRow => {
   const spec = TITLE_KEYS.get(type);
-  const title = spec === undefined ? null : textOf(line, spec[0]);
+  const title = spec === undefined ? null : titleText(textOf(line, spec[0]));
 
   return spec === undefined || title === null
     ? { kind: "other" }
@@ -271,7 +271,7 @@ const titleRow = (line: RawLine, type: string): ClaudeRow => {
         kind: "title",
         sessionId: textOf(line, "sessionId"),
         source: spec[1],
-        title: title.trim().slice(0, MAX_TITLE_CHARS),
+        title,
       };
 };
 

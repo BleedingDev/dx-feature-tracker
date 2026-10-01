@@ -1,5 +1,6 @@
 import { Option, Schema } from "effect";
 
+import { titleText } from "../title.js";
 import type { BodyRow } from "./sql.js";
 
 const Text = Schema.optional(Schema.NullOr(Schema.String));
@@ -197,7 +198,7 @@ const sessionOf = (body: typeof SessionBodySchema.Type): OcSession => ({
   model: modelOf(body.model),
   parentId: nonEmpty(body.parentId),
   table: body.table,
-  title: nonEmpty(body.title),
+  title: titleText(body.title),
   tokens:
     body.tokens === null || body.tokens === undefined
       ? null

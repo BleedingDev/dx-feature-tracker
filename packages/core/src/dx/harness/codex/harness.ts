@@ -19,6 +19,7 @@ import type {
   SessionRef,
 } from "../contract.js";
 import { hookSpoolRefs, readHookSpool } from "../hook-spool.js";
+import { titleUnlessPrompt } from "../title.js";
 import {
   CODEX_ADAPTER_ID,
   sessionEvent,
@@ -330,7 +331,10 @@ const makeCodexHarness = Effect.gen(function* makeCodexHarness() {
         origin: input.origin,
         parent: yield* parentOf(head),
         selected: input.context,
-        title: titles.get(head.threadId) ?? null,
+        title: titleUnlessPrompt(
+          titles.get(head.threadId) ?? null,
+          result.state.prompts
+        ),
       };
 
       const firstFacts =

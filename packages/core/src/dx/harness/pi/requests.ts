@@ -1,5 +1,6 @@
 import { DateTime, Option, Schema } from "effect";
 
+import { titleText } from "../title.js";
 import { nestedMessagesOf, subagentResultsOf, toolCallsOf } from "./entries.js";
 import type {
   PiEntry,
@@ -455,7 +456,7 @@ export const readPiSession = (
     const { prior, turnId } = track(tracker, entry);
 
     if (entry.type === "session_info") {
-      title = entry.name ?? null;
+      title = titleText(entry.name);
     }
 
     const ownership = ownershipOf(entry, copiedKeys, seen);

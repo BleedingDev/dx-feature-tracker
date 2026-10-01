@@ -1,6 +1,7 @@
 import { Option, Schema } from "effect";
 
 import type { EffortSource } from "../ids.js";
+import { titleText } from "../title.js";
 import {
   AssistantAttemptSchema,
   AssistantMessageSchema,
@@ -807,8 +808,9 @@ const turnEnd = (fold: Fold, _sessionId: string, row: Row) => {
 
 const sessionTitle = (fold: Fold, _sessionId: string, row: Row) => {
   const data = decodeTitle(row);
+  const title = titleText(data?.title);
 
-  if (data === null || data.source.kind === "fallback") {
+  if (data === null || title === null || data.source.kind === "fallback") {
     return;
   }
 
@@ -817,7 +819,7 @@ const sessionTitle = (fold: Fold, _sessionId: string, row: Row) => {
     seq: row.seq,
     source: data.source.kind,
     time: row.time ?? null,
-    title: data.title,
+    title,
   });
 };
 

@@ -1,5 +1,6 @@
-import { DateTime, Option, Schema } from "effect";
+import { DateTime, Effect, Option, Schema } from "effect";
 
+import { promptDigest } from "../title.js";
 import {
   CodexHeadSchema,
   headOfMeta,
@@ -11,6 +12,7 @@ import {
   SNIFF_CHARS,
   TOOL_CALL_TYPES,
   decodeMetaLine,
+  decodeResponseMessageLine,
   decodeTaskCompleteLine,
   decodeTaskStartedLine,
   decodeThreadSettingsLine,
@@ -18,7 +20,9 @@ import {
   decodeTurnAbortedLine,
   decodeTurnContextLine,
   decodeUsageRecordLine,
+  decodeUserMessageLine,
   errorKindOf,
+  isContentText,
   lineKindOf,
   sniffLine,
 } from "./records.js";
@@ -55,6 +59,9 @@ export const ScanStateSchema = Schema.Struct({
   head: Schema.NullOr(CodexHeadSchema),
   lastTotal: Schema.NullOr(Schema.Finite),
   openTurns: Schema.Array(OpenTurnSchema),
+  prompts: Schema.NullOr(Schema.Array(Schema.String)).pipe(
+    Schema.withDecodingDefaultKey(Effect.succeed(null))
+  ),
   replaying: Schema.Boolean,
   sawRecord: Schema.Boolean,
   settings: TurnFactsSchema,
@@ -124,6 +131,7 @@ export const initialScanState: ScanState = {
   head: null,
   lastTotal: null,
   openTurns: [],
+  prompts: [],
   replaying: false,
   sawRecord: false,
   settings: noFacts,
@@ -154,6 +162,7 @@ interface Scan {
   lastTotal: number | null;
   malformedLines: number;
   readonly open: Map<string, MutableTurn>;
+  readonly prompts: string[] | null;
   repeatedEmissions: number;
   replayedEmissions: number;
   replaying: boolean;
@@ -595,6 +604,61 @@ const onTokenCount = (scan: Scan, line: LineRef) => {
   });
 };
 
+const MAX_PROMPTS = 16;
+
+const USER_ROLE = '"role":"user"';
+
+const notePrompt = (scan: Scan, text: string | null | undefined) => {
+  const prompt = text?.trim() ?? "";
+
+  if (scan.prompts === null || prompt === "") {
+    return;
+  }
+
+  const digest = promptDigest(prompt);
+
+  if (scan.prompts.length < MAX_PROMPTS && !scan.prompts.includes(digest)) {
+    scan.prompts.push(digest);
+  }
+};
+
+const wantsPrompts = (scan: Scan): boolean =>
+  scan.prompts !== null && scan.prompts.length < MAX_PROMPTS;
+
+const onUserMessage = (scan: Scan, lineOf: () => LineRef) => {
+  if (!wantsPrompts(scan)) {
+    return;
+  }
+
+  Option.map(decodeUserMessageLine(lineOf().text), (decoded) => {
+    notePrompt(scan, decoded.payload.message);
+
+    return null;
+  });
+};
+
+const onResponseMessage = (scan: Scan, lineOf: () => LineRef) => {
+  if (!wantsPrompts(scan)) {
+    return;
+  }
+
+  const { text } = lineOf();
+
+  if (!text.includes(USER_ROLE)) {
+    return;
+  }
+
+  Option.map(decodeResponseMessageLine(text), (decoded) => {
+    if (decoded.payload.role === "user") {
+      for (const item of decoded.payload.content ?? []) {
+        notePrompt(scan, isContentText(item) ? item.text : null);
+      }
+    }
+
+    return null;
+  });
+};
+
 const onToolCall = (scan: Scan, lineOf: () => LineRef) => {
   if (scan.replaying || scan.current === null) {
     return;
@@ -664,6 +728,16 @@ const dispatch = (scan: Scan, kind: LineKind, lineOf: () => LineRef) => {
     if (kind.payloadType !== null && TOOL_CALL_TYPES.has(kind.payloadType)) {
       onToolCall(scan, lineOf);
     }
+
+    if (kind.payloadType === "message") {
+      onResponseMessage(scan, lineOf);
+    }
+
+    return;
+  }
+
+  if (kind.type === "event_msg" && kind.payloadType === "user_message") {
+    onUserMessage(scan, lineOf);
 
     return;
   }
@@ -741,6 +815,7 @@ const startScan = (state: ScanState): Scan => ({
   open: new Map(
     state.openTurns.map((turn) => [turn.turnId, { ...turn }] as const)
   ),
+  prompts: state.prompts === null ? null : [...state.prompts],
   repeatedEmissions: 0,
   replayedEmissions: 0,
   replaying: state.replaying,
@@ -792,6 +867,7 @@ const finish = (scan: Scan, consumed: number): ScanResult => ({
     head: scan.head,
     lastTotal: scan.lastTotal,
     openTurns: [...scan.open.values()].map((turn) => ({ ...turn })),
+    prompts: scan.prompts,
     replaying: scan.replaying,
     sawRecord: scan.sawRecord,
     settings: scan.settings,

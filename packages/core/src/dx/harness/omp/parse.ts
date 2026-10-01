@@ -1,5 +1,6 @@
 import { Schema } from "effect";
 
+import { titleText } from "../title.js";
 import {
   decodeOmpLine,
   serviceTierFor,
@@ -194,7 +195,7 @@ export const slotTitleOf = (bytes: Uint8Array): string | null => {
   const decoded = decodeOmpLine(first.text);
 
   return decoded.state === "ok" && decoded.line.type === TITLE_SLOT
-    ? nonEmpty(decoded.line.title)
+    ? titleText(decoded.line.title)
     : null;
 };
 
@@ -361,7 +362,7 @@ const nextState = (state: OmpState, line: OmpLine): OmpState => {
 
       return header === null || state.header?.id === header.id
         ? state
-        : { ...state, header, title: nonEmpty(line.title) ?? state.title };
+        : { ...state, header, title: titleText(line.title) ?? state.title };
     }
 
     case "model_change": {
@@ -385,7 +386,7 @@ const nextState = (state: OmpState, line: OmpLine): OmpState => {
     }
 
     case TITLE_CHANGE: {
-      return { ...state, title: nonEmpty(line.title) };
+      return { ...state, title: titleText(line.title) };
     }
 
     default: {
