@@ -1,8 +1,17 @@
 // @effect-diagnostics nodeBuiltinImport:off asyncFunction:off newPromise:off globalTimers:off -- Black-box tests of the built binary: they spawn dist/cli.js as a child process and assert on stdout, stderr, and exit codes. Node built-ins and a Promise-based stdio conversation are the right tools at that boundary, so the Effect-native diagnostics are off here.
 import { spawn, spawnSync } from "node:child_process";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  realpathSync,
+  rmSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 
-import { describe, expect, it } from "@effect/vitest";
+import { afterAll, describe, expect, it } from "@effect/vitest";
 import { CallEntrySchema, OutcomeSchema } from "@rat-stack/devtools";
 import { Schema } from "effect";
 
@@ -13,6 +22,26 @@ const repoRoot = path.resolve(cliDir, "../..");
 const cliPath = path.join(cliDir, "dist", "cli.js");
 
 const readmePath = path.join(repoRoot, "README.md");
+
+const scratch = realpathSync(mkdtempSync(path.join(tmpdir(), "dft-e2e-")));
+
+const scratchHome = path.join(scratch, "home");
+
+const dftHome = path.join(scratch, "dft-home");
+
+mkdirSync(scratchHome, { recursive: true });
+
+afterAll(() => {
+  rmSync(scratch, { force: true, recursive: true });
+});
+
+const childEnv = {
+  ...process.env,
+  DFT_CURSOR_USAGE: "off",
+  DFT_HOME: dftHome,
+  DFT_PRICE_CATALOG: "off",
+  HOME: scratchHome,
+};
 
 const decodeOpenApi = Schema.decodeUnknownSync(
   Schema.fromJsonString(
@@ -63,6 +92,7 @@ const runCli = (arguments_: readonly string[]) =>
   spawnSync(process.execPath, [cliPath, ...arguments_], {
     cwd: repoRoot,
     encoding: "utf-8",
+    env: childEnv,
   });
 
 const mcpConversation = async (
@@ -73,6 +103,7 @@ const mcpConversation = async (
   await new Promise<(typeof JsonRpcResponse.Type)[]>((resolve, reject) => {
     const child = spawn(process.execPath, [cliPath, "mcp", ...flags], {
       cwd: repoRoot,
+      env: childEnv,
       stdio: ["pipe", "pipe", "pipe"],
     });
 
@@ -273,5 +304,19 @@ describe("built MCP server", () => {
     expect(
       entry !== undefined && OutcomeSchema.guards.Succeeded(entry.outcome)
     ).toBe(true);
+  });
+});
+
+describe("built CLI store isolation", () => {
+  it("keeps every spawned run inside the suite's own DFT_HOME", async () => {
+    runCli(["--help"]);
+    await mcpConversation([
+      ...initialize,
+      { id: 2, jsonrpc: "2.0", method: "tools/list", params: {} },
+    ]);
+
+    expect(readdirSync(scratchHome)).toEqual([]);
+    expect(existsSync(path.join(scratchHome, ".dft"))).toBe(false);
+    expect(dftHome.startsWith(scratch)).toBe(true);
   });
 });
