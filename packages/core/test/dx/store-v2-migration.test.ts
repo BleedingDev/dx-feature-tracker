@@ -15,7 +15,10 @@ import { Effect, Schema } from "effect";
 
 import { emptySelector, fakeManifest } from "../../src/dx/contracts/fakes.js";
 import { accountAiUsage } from "../../src/dx/metrics/ai-usage/ledger.js";
+import { normalizeAiUsage } from "../../src/dx/metrics/ai-usage/normalize.js";
 import { computeCost } from "../../src/dx/metrics/cost/metric.js";
+import type { TokenCategory } from "../../src/dx/model/ai.js";
+import type { AiTokens } from "../../src/dx/model/attribution.js";
 import { DxEventEnvelopeSchema } from "../../src/dx/model/event.js";
 import type { DxEventEnvelope, EventBatch } from "../../src/dx/model/event.js";
 import { STORE_MIGRATIONS } from "../../src/dx/storage/migrations.js";
@@ -106,6 +109,38 @@ const snapshotOf = (events: readonly DxEventEnvelope[]) => ({
 const byId = (events: readonly DxEventEnvelope[]) =>
   [...events].toSorted((a, b) => a.eventId.localeCompare(b.eventId));
 
+const LEDGER_BUCKETS: ReadonlyMap<TokenCategory, keyof AiTokens> = new Map([
+  ["input", "inputFresh"],
+  ["cached-input", "cacheRead"],
+  ["cache-write", "cacheWrite"],
+  ["output", "output"],
+  ["reasoning", "reasoning"],
+  ["total", "total"],
+]);
+
+const ledgerBuckets = (event: DxEventEnvelope) => {
+  const buckets = new Map<keyof AiTokens, number>();
+
+  for (const row of normalizeAiUsage([event]).rows) {
+    const bucket = LEDGER_BUCKETS.get(row.category);
+
+    if (row.ledger === "tokens" && bucket !== undefined) {
+      buckets.set(bucket, (buckets.get(bucket) ?? 0) + row.value);
+    }
+  }
+
+  return buckets;
+};
+
+const typedBuckets = (event: DxEventEnvelope) =>
+  new Map(
+    [...LEDGER_BUCKETS.values()].flatMap((bucket) => {
+      const value = event.usage?.tokens[bucket] ?? null;
+
+      return value === null ? [] : [[bucket, value] as const];
+    })
+  );
+
 const snapshotEvents = (file: string) =>
   Effect.acquireUseRelease(
     openSqliteEventStore({ kind: "live", path: file }),
@@ -171,6 +206,34 @@ describe("store migration to dx.event.v2", () => {
 
       expect(withTokens.length).toBeGreaterThan(0);
     })
+  );
+
+  it.effect(
+    "fills typed token buckets that match the ledger every migrated event had",
+    () =>
+      Effect.gen(function* typedMatchesLedger() {
+        const file = path.join(tempRoot, "ledger.db");
+
+        writeV1Store(file, fixtureEvents());
+
+        const migrated = (yield* snapshotEvents(file)).filter((event) =>
+          event.kind.startsWith("ai.")
+        );
+
+        const counted = migrated.filter(
+          (event) => ledgerBuckets(event).size > 0
+        );
+
+        expect(counted.some((event) => event.ai?.harness === "cursor")).toBe(
+          true
+        );
+
+        for (const event of migrated) {
+          expect(typedBuckets(event), event.eventId).toStrictEqual(
+            ledgerBuckets(event)
+          );
+        }
+      })
   );
 
   it.effect("upgrades a pending v1 spool batch while draining it", () =>

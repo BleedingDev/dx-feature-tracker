@@ -50,6 +50,7 @@ export const BranchSourceSchema = Schema.Literals([
   "harness-recorded",
   "hook",
   "git-at-time",
+  "session-recorded",
   "cwd-inferred",
   "tool-calls",
   "subagent-split",

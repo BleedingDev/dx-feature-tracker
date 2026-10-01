@@ -145,6 +145,7 @@ export class CursorHarness extends Context.Service<CursorHarness, Harness>()(
             "harness-recorded",
             "hook",
             "git-at-time",
+            "session-recorded",
             "cwd-inferred",
             "tool-calls",
             "subagent-split",

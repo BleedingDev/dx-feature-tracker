@@ -172,6 +172,21 @@ export const harnessConformance = <E>(
       })
     );
 
+    it.effect("located sessions stay inside the scope", () =>
+      Effect.gen(function* inScope() {
+        const reading = yield* Reading;
+        const { worktrees } = options.scope ?? everywhere;
+
+        for (const session of reading.sessions) {
+          expect(session.ref.harness, session.ref.path).toBe(name);
+
+          if (worktrees.length > 0) {
+            expect(worktrees, session.ref.path).toContain(session.ref.worktree);
+          }
+        }
+      })
+    );
+
     it.effect("every event round-trips as dx.event.v2", () =>
       Effect.gen(function* decodes() {
         const reading = yield* Reading;

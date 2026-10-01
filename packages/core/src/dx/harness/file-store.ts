@@ -86,11 +86,14 @@ export const liveFileStore = Effect.fnUntraced(function* liveFileStore(
   return store;
 });
 
-export interface MemoryFile {
+interface MemoryFileBase {
   readonly mtimeMs?: number;
   readonly path: string;
-  readonly text: string;
 }
+
+export type MemoryFile =
+  | (MemoryFileBase & { readonly text: string })
+  | (MemoryFileBase & { readonly bytes: Uint8Array });
 
 export interface MemoryStoreInput {
   readonly files: readonly MemoryFile[];
@@ -98,12 +101,21 @@ export interface MemoryStoreInput {
   readonly version?: string | null;
 }
 
+const encoder = new TextEncoder();
+
+const decoder = new TextDecoder();
+
+const bytesOf = (file: MemoryFile): Uint8Array =>
+  "bytes" in file ? file.bytes : encoder.encode(file.text);
+
+const textOf = (file: MemoryFile): string =>
+  "text" in file ? file.text : decoder.decode(file.bytes);
+
 export const memoryFileStore = (
   harness: HarnessId,
   input: MemoryStoreInput
 ): HarnessStore => {
   const byPath = new Map(input.files.map((file) => [file.path, file]));
-  const encoder = new TextEncoder();
 
   const find = (file: string) => {
     const found = byPath.get(file);
@@ -119,13 +131,12 @@ export const memoryFileStore = (
         .map((file): StoredSession => ({
           mtimeMs: file.mtimeMs ?? null,
           path: file.path,
-          size: encoder.encode(file.text).byteLength,
+          size: bytesOf(file).byteLength,
         }))
         .toSorted((a, b) => a.path.localeCompare(b.path))
     ),
-    readBytes: (file) =>
-      Effect.map(find(file), (found) => encoder.encode(found.text)),
-    readText: (file) => Effect.map(find(file), (found) => found.text),
+    readBytes: (file) => Effect.map(find(file), bytesOf),
+    readText: (file) => Effect.map(find(file), textOf),
     roots: Effect.succeed(input.roots),
     version: Effect.succeed(input.version ?? null),
   };

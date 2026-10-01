@@ -379,13 +379,20 @@ describe("file stores", () => {
       );
 
       const memory = memoryFileStore("pi", {
-        files: [{ mtimeMs: 5, path: "/m/x.jsonl", text: "ab" }],
+        files: [
+          { mtimeMs: 5, path: "/m/x.jsonl", text: "ab" },
+          { bytes: Uint8Array.of(40, 181, 47, 253), path: "/m/y.jsonl.zstd" },
+        ],
         roots: ["/m"],
       });
 
       expect(yield* memory.listSessions).toStrictEqual([
         { mtimeMs: 5, path: "/m/x.jsonl", size: 2 },
+        { mtimeMs: null, path: "/m/y.jsonl.zstd", size: 4 },
       ]);
+      expect(yield* memory.readBytes("/m/y.jsonl.zstd")).toStrictEqual(
+        Uint8Array.of(40, 181, 47, 253)
+      );
       expect((yield* Effect.flip(memory.readText("/m/none")))._tag).toBe(
         "SourceUnavailable"
       );

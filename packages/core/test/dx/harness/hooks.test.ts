@@ -4,8 +4,9 @@ import os from "node:os";
 import path from "node:path";
 
 import { afterAll, describe, expect, it } from "@effect/vitest";
-import { DateTime } from "effect";
+import { DateTime, Schema } from "effect";
 
+import { everywhere } from "../../../src/dx/harness/contract.js";
 import { HOOK_DECODERS } from "../../../src/dx/harness/hook-decoders.js";
 import {
   hookEventNameOf,
@@ -14,10 +15,13 @@ import {
 } from "../../../src/dx/harness/hook-observation.js";
 import {
   hookSpoolFile,
+  hookSpoolRefs,
   readHookObservations,
+  readHookSpool,
   recordHook,
 } from "../../../src/dx/harness/hook-spool.js";
 import { HARNESS_IDS } from "../../../src/dx/harness/ids.js";
+import { DxEventEnvelopeSchema } from "../../../src/dx/model/event.js";
 
 const dftHome = mkdtempSync(path.join(os.tmpdir(), "dft-hooks-"));
 
@@ -38,8 +42,10 @@ describe("hook observations", () => {
       standardHookFields(
         JSON.stringify({
           agent_id: "a1",
+          agent_type: "Explore",
           cwd: "/r/src",
           prompt: "never kept",
+          reasoning_effort: "high",
           session_id: "s1",
           transcript_path: "/t/s1.jsonl",
           turn_id: "t1",
@@ -47,7 +53,9 @@ describe("hook observations", () => {
       )
     ).toStrictEqual({
       agentId: "a1",
+      agentType: "Explore",
       cwd: "/r/src",
+      effort: "high",
       model: null,
       parentSessionId: null,
       sessionId: "s1",
@@ -120,5 +128,73 @@ describe("hook observations", () => {
     expect(observations[0]?.git.branch).toBe("feature/a");
     expect(observations[0]?.fields.sessionId).toBe("s1");
     expect(readHookObservations(dftHome, "codex")).toStrictEqual([]);
+  });
+
+  it("turns one tool's observations for a worktree into hook events", () => {
+    const now = DateTime.toDateUtc(
+      DateTime.makeUnsafe("2026-10-01T11:00:00.000Z")
+    );
+
+    const other = { ...git, branch: "main", worktreePath: "/elsewhere" };
+
+    for (const resolved of [git, other]) {
+      recordHook({
+        cwd: resolved.worktreePath,
+        decoder: HOOK_DECODERS.codex,
+        dftHome,
+        event: "Stop",
+        now,
+        resolveGit: () => resolved,
+        stdinText: JSON.stringify({
+          model: "openrouter/openai/gpt-5.1-codex",
+          session_id: `s-${resolved.branch}`,
+          turn_id: "t1",
+        }),
+        tool: "codex",
+      });
+    }
+
+    const scope = { ...everywhere, dftHome, worktrees: ["/r"] };
+    const refs = hookSpoolRefs(scope, "codex");
+
+    expect(refs.map((ref) => [ref.channel, ref.worktree])).toStrictEqual([
+      ["hooks", "/r"],
+    ]);
+    expect(hookSpoolRefs({ ...scope, dftHome: null }, "codex")).toStrictEqual(
+      []
+    );
+    expect(
+      hookSpoolRefs({ ...scope, since: "2026-10-02T00:00:00.000Z" }, "codex")
+    ).toStrictEqual([]);
+
+    const [ref] = refs;
+
+    expect(ref).toBeDefined();
+
+    if (ref === undefined) {
+      return;
+    }
+
+    const batch = readHookSpool(ref, HOOK_DECODERS.codex, "imported");
+    const [event] = batch.events;
+
+    expect(batch.events.length).toBe(1);
+    expect(event?.acquisition).toBe("hook");
+    expect(event?.context.branch).toBe("feature/a");
+    expect(event?.identity.sessionId).toBe("s-feature/a");
+    expect(event?.ai).toMatchObject({
+      branchSource: "hook",
+      channel: "hooks",
+      harness: "codex",
+      model: "gpt-5.1-codex",
+      provider: "openai",
+      via: "openrouter",
+    });
+    expect(Schema.is(DxEventEnvelopeSchema)(event)).toBe(true);
+    expect(
+      readHookSpool(ref, HOOK_DECODERS.codex, "imported").events.map(
+        (again) => again.eventId
+      )
+    ).toStrictEqual(batch.events.map((first) => first.eventId));
   });
 });

@@ -1,9 +1,15 @@
 // @effect-diagnostics nodeBuiltinImport:off -- Hook processes must answer in milliseconds, so the observation spool is appended and read with synchronous node:fs calls at the process boundary.
+import { createHash } from "node:crypto";
 import { appendFileSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import { Option, Schema } from "effect";
 
+import type { Origin } from "../model/common.js";
+import { EVENT_SCHEMA_VERSION, emptyEventIdentity } from "../model/event.js";
+import type { DxEventEnvelope, EventBatch } from "../model/event.js";
+import { EventIdSchema } from "../model/ids.js";
+import type { HarnessScope, SessionRef } from "./contract.js";
 import type {
   HookDecoder,
   HookGit,
@@ -15,6 +21,8 @@ import {
   noHookFields,
 } from "./hook-observation.js";
 import type { HarnessId } from "./ids.js";
+import { harnessAdapterId } from "./pending.js";
+import { normalizeModel, providerFor, viaFor } from "./provider.js";
 
 export const HOOK_SPOOL_ROOT = "hooks" as const;
 
@@ -103,6 +111,18 @@ const spoolFiles = (dir: string): readonly string[] => {
   }
 };
 
+const observationsIn = (file: string): readonly HookObservation[] => {
+  try {
+    return readFileSync(file, "utf-8")
+      .split("\n")
+      .flatMap((line) =>
+        line.trim() === "" ? [] : Option.toArray(decodeLine(line))
+      );
+  } catch {
+    return [];
+  }
+};
+
 export const readHookObservations = (
   dftHome: string,
   tool: HarnessId
@@ -110,10 +130,162 @@ export const readHookObservations = (
   const dir = hookSpoolDir(dftHome, tool);
 
   return spoolFiles(dir).flatMap((name) =>
-    readFileSync(path.join(dir, name), "utf-8")
-      .split("\n")
-      .flatMap((line) =>
-        line.trim() === "" ? [] : Option.toArray(decodeLine(line))
-      )
+    observationsIn(path.join(dir, name))
   );
+};
+
+const dayOf = (iso: string): string => iso.slice(0, 10);
+
+export const hookSpoolRefs = (
+  scope: HarnessScope,
+  tool: HarnessId
+): readonly SessionRef[] => {
+  if (scope.dftHome === null) {
+    return [];
+  }
+
+  const dir = hookSpoolDir(scope.dftHome, tool);
+  const since = scope.since === null ? null : dayOf(scope.since);
+
+  const worktrees: readonly (string | null)[] =
+    scope.worktrees.length === 0 ? [null] : scope.worktrees;
+
+  return spoolFiles(dir)
+    .filter((name) => since === null || dayOf(name) >= since)
+    .flatMap((name) =>
+      worktrees.map((worktree): SessionRef => {
+        const file = path.join(dir, name);
+
+        return {
+          channel: "hooks",
+          harness: tool,
+          id: worktree === null ? file : `${file}#${worktree}`,
+          mtimeMs: null,
+          path: file,
+          sessionId: null,
+          size: null,
+          source: harnessAdapterId(tool),
+          worktree,
+        };
+      })
+    );
+};
+
+const trimmed = (dir: string): string => dir.replace(/\/+$/u, "");
+
+const inside = (child: string | null, parent: string): boolean =>
+  child !== null &&
+  (trimmed(child) === trimmed(parent) ||
+    trimmed(child).startsWith(`${trimmed(parent)}/`));
+
+const belongsTo = (
+  observation: HookObservation,
+  worktree: string | null
+): boolean =>
+  worktree === null ||
+  inside(observation.git.worktreePath, worktree) ||
+  (observation.git.worktreePath === null &&
+    inside(observation.fields.cwd, worktree));
+
+const sha256Hex = (text: string): string =>
+  createHash("sha256").update(text).digest("hex");
+
+export interface HookEventOptions {
+  readonly kind: DxEventEnvelope["kind"];
+  readonly origin: Origin;
+}
+
+export const hookObservationEvent = (
+  observation: HookObservation,
+  options: HookEventOptions
+): DxEventEnvelope => {
+  const { fields, git, tool } = observation;
+  const adapterId = harnessAdapterId(tool);
+  const upstreamKey = `${fields.sessionId ?? "-"}:${observation.event}:${observation.observedAt}`;
+
+  return {
+    acquisition: "hook",
+    adapterId,
+    adapterVersion: HOOK_OBSERVATION_SCHEMA,
+    ai: {
+      agentId: fields.agentId,
+      agentType: fields.agentType,
+      branchSource: git.branch === null ? "unassigned" : "hook",
+      channel: "hooks",
+      cwd: fields.cwd,
+      effort: fields.effort,
+      effortSource: fields.effort === null ? null : "harness-recorded",
+      harness: tool,
+      harnessVersion: null,
+      model: normalizeModel(fields.model),
+      modelRaw: fields.model,
+      parentSessionId: fields.parentSessionId,
+      provider: providerFor(fields.model, null),
+      sessionId: fields.sessionId,
+      via: viaFor(fields.model, null),
+    },
+    context: {
+      branch: git.branch,
+      flightId: null,
+      headSha: git.headSha,
+      repoCommonDir: git.repoCommonDir,
+      worktreePath: git.worktreePath,
+    },
+    eventId: EventIdSchema.make(
+      `sha256:${sha256Hex(`${adapterId}\n${JSON.stringify(observation)}`)}`
+    ),
+    evidence: { bounded: true, hash: null, ref: `${adapterId}:${upstreamKey}` },
+    fieldSemantics: [],
+    identity: {
+      ...emptyEventIdentity,
+      sessionId: fields.sessionId,
+      turnId: fields.turnId,
+    },
+    kind: options.kind,
+    observedAt: observation.observedAt,
+    occurredAt: observation.observedAt,
+    occurredAtPrecision: "exact",
+    origin: options.origin,
+    payload: {
+      hookEvent: observation.event,
+      payloadValid: observation.payloadValid,
+    },
+    schemaVersion: EVENT_SCHEMA_VERSION,
+    sourceVersion: null,
+    upstreamKey,
+    usage: null,
+  };
+};
+
+export const readHookSpool = (
+  ref: SessionRef,
+  decoder: HookDecoder,
+  origin: Origin
+): EventBatch => {
+  const events = observationsIn(ref.path)
+    .filter(
+      (observation) =>
+        observation.tool === ref.harness && belongsTo(observation, ref.worktree)
+    )
+    .map((observation) =>
+      hookObservationEvent(observation, {
+        kind: decoder.kind(observation.event),
+        origin,
+      })
+    );
+
+  return {
+    coverage: {
+      adapterId: harnessAdapterId(ref.harness),
+      expectedItems: null,
+      gaps: [],
+      observedItems: events.length,
+      state: "complete",
+      watermark: null,
+      windowFrom: null,
+      windowTo: null,
+    },
+    cursor: null,
+    events,
+  };
 };

@@ -261,7 +261,7 @@ const toolFigureOf = (
 
 const LEGACY_BRANCH_SOURCES: ReadonlyMap<string, BranchSource> = new Map([
   ["claude-jsonl", "harness-recorded"],
-  ["cursor-agent-store", "harness-recorded"],
+  ["cursor-agent-store", "session-recorded"],
   ["collect-context", "cwd-inferred"],
 ]);
 
@@ -357,7 +357,7 @@ const usageOf = (
   }
 
   return {
-    premiumRequests: amountField(event.payload, "premiumRequests"),
+    premiumRequests: countOrNull(amountField(event.payload, "premiumRequests")),
     requestKey: textField(event.payload, "requestKey"),
     serviceTier: textField(event.payload, "serviceTier"),
     speed: null,

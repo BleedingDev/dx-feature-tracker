@@ -103,6 +103,7 @@ export {
   HarnessRegistryLive,
   harnessCatalog,
   harnessKitLayer,
+  harnessRegistryFor,
   liveHarnessLayers,
   mockCursorHarness,
   mockHarnessLayers,
@@ -141,13 +142,21 @@ export type {
 
 export {
   HOOK_SPOOL_ROOT,
+  hookObservationEvent,
   hookSpoolDir,
   hookSpoolFile,
+  hookSpoolRefs,
   observeHook,
   readHookObservations,
+  readHookSpool,
   recordHook,
 } from "./hook-spool.js";
 
-export type { HookRun, HookRunOutcome, HookRunResult } from "./hook-spool.js";
+export type {
+  HookEventOptions,
+  HookRun,
+  HookRunOutcome,
+  HookRunResult,
+} from "./hook-spool.js";
 
 export { HOOK_DECODERS } from "./hook-decoders.js";

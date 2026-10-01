@@ -87,7 +87,7 @@ export const ToolFigureSchema = Schema.Struct({
 export type ToolFigure = typeof ToolFigureSchema.Type;
 
 export const AiUsageSchema = Schema.Struct({
-  premiumRequests: Schema.NullOr(Schema.Finite),
+  premiumRequests: TokenCount,
   requestKey: OptionalText,
   serviceTier: OptionalText,
   speed: OptionalText,

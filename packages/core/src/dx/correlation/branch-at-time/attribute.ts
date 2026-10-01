@@ -24,6 +24,7 @@ export const BRANCH_AT_TIME_VERSION = "1.0.0";
 export const BRANCH_AT_TIME_TARGET_KIND = "branch";
 
 export type HistoricalBasis =
+  | "tool-recorded"
   | "hook-turn"
   | "scored-commit"
   | "worktree-at-time"
@@ -212,6 +213,21 @@ const isPlaced = (event: DxEventEnvelope): boolean =>
   event.payload.worktreePlacement !== undefined &&
   event.payload.worktreePlacement !== null;
 
+const byToolRecorded: Resolver = (event) =>
+  event.ai?.branchSource === "harness-recorded" &&
+  event.context.branch !== null &&
+  !isPlaced(event)
+    ? {
+        ...base(event),
+        attribution: "strong",
+        basis: "tool-recorded",
+        branch: event.context.branch,
+        confidence: 1,
+        method: "collected",
+        reason: `${event.ai.harness} recorded this branch on the request itself`,
+      }
+    : null;
+
 const byLiveCapture: Resolver = (event) =>
   LIVE_ACQUISITIONS.has(event.acquisition) &&
   event.context.branch !== null &&
@@ -231,6 +247,12 @@ export const HOOK_TURN_WINDOW_MS = 5 * 60 * 1000;
 
 const isJoinedAccountRow = (event: DxEventEnvelope): boolean =>
   event.payload.sessionJoin !== undefined && event.payload.sessionJoin !== null;
+
+const isToolHarnessEvent = (event: DxEventEnvelope): boolean =>
+  event.ai !== null && event.ai.harness !== "cursor";
+
+const takesHookTurn = (event: DxEventEnvelope): boolean =>
+  isJoinedAccountRow(event) || isToolHarnessEvent(event);
 
 const liveTurnsBySession = (
   events: readonly DxEventEnvelope[]
@@ -254,7 +276,7 @@ const byHookTurn =
     const sessionKey = sessionKeyOf(event);
     const at = timeOf(event);
 
-    if (sessionKey === null || at === null || !isJoinedAccountRow(event)) {
+    if (sessionKey === null || at === null || !takesHookTurn(event)) {
       return null;
     }
 
@@ -365,6 +387,7 @@ const BASIS_BRANCH_SOURCES: Readonly<
   "linked-request": null,
   "live-capture": null,
   "scored-commit": "git-at-time",
+  "tool-recorded": "harness-recorded",
   unassigned: "unassigned",
   "worktree-at-time": "git-at-time",
 };
@@ -403,6 +426,7 @@ export const attributeHistoricalBranches = (
   const options = input.options ?? DEFAULT_BRANCH_AT_OPTIONS;
 
   const direct: readonly Resolver[] = [
+    byToolRecorded,
     byLiveCapture,
     byHookTurn(liveTurnsBySession(events)),
     byScoredCommit(input.commitBranches),

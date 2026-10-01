@@ -1,5 +1,6 @@
 import { Option, Schema } from "effect";
 
+import type { EventKind } from "../model/event.js";
 import { HarnessIdSchema } from "./ids.js";
 import type { HarnessId } from "./ids.js";
 
@@ -9,7 +10,9 @@ export const MAX_HOOK_FIELD_CHARS = 512;
 
 export const HookFieldsSchema = Schema.Struct({
   agentId: Schema.NullOr(Schema.String),
+  agentType: Schema.NullOr(Schema.String),
   cwd: Schema.NullOr(Schema.String),
+  effort: Schema.NullOr(Schema.String),
   model: Schema.NullOr(Schema.String),
   parentSessionId: Schema.NullOr(Schema.String),
   sessionId: Schema.NullOr(Schema.String),
@@ -21,7 +24,9 @@ export type HookFields = typeof HookFieldsSchema.Type;
 
 export const noHookFields: HookFields = {
   agentId: null,
+  agentType: null,
   cwd: null,
+  effort: null,
   model: null,
   parentSessionId: null,
   sessionId: null,
@@ -52,6 +57,7 @@ export type HookObservation = typeof HookObservationSchema.Type;
 
 export interface HookDecoder {
   readonly decode: (stdinText: string, event: string) => HookFields | null;
+  readonly kind: (event: string) => EventKind;
   readonly respond: (event: string) => string;
 }
 
@@ -59,14 +65,19 @@ const Text = Schema.optional(Schema.NullOr(Schema.String));
 
 const StandardPayloadSchema = Schema.Struct({
   agentId: Text,
+  agentType: Text,
   agent_id: Text,
+  agent_type: Text,
   conversation_id: Text,
   cwd: Text,
+  effort: Text,
   generation_id: Text,
   model: Text,
   parentSessionId: Text,
   parent_session_id: Text,
   prompt_id: Text,
+  reasoningEffort: Text,
+  reasoning_effort: Text,
   sessionId: Text,
   session_id: Text,
   transcriptPath: Text,
@@ -96,7 +107,11 @@ export const standardHookFields = (stdinText: string): HookFields | null =>
     onNone: () => null,
     onSome: (payload) => ({
       agentId: boundedField(payload.agent_id ?? payload.agentId),
+      agentType: boundedField(payload.agent_type ?? payload.agentType),
       cwd: boundedField(payload.cwd),
+      effort: boundedField(
+        payload.effort ?? payload.reasoning_effort ?? payload.reasoningEffort
+      ),
       model: boundedField(payload.model),
       parentSessionId: boundedField(
         payload.parent_session_id ?? payload.parentSessionId
@@ -118,6 +133,7 @@ export const standardHookFields = (stdinText: string): HookFields | null =>
 
 export const standardHookDecoder: HookDecoder = {
   decode: (stdinText) => standardHookFields(stdinText),
+  kind: () => "other",
   respond: () => "",
 };
 
