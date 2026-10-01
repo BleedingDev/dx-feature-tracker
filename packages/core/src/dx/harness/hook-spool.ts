@@ -1,6 +1,12 @@
 // @effect-diagnostics nodeBuiltinImport:off -- Hook processes must answer in milliseconds, so the observation spool is appended and read with synchronous node:fs calls at the process boundary.
 import { createHash } from "node:crypto";
-import { appendFileSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
+import {
+  appendFileSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+} from "node:fs";
 import path from "node:path";
 
 import { Option, Schema } from "effect";
@@ -136,6 +142,21 @@ export const readHookObservations = (
 
 const dayOf = (iso: string): string => iso.slice(0, 10);
 
+interface FileStamp {
+  readonly mtimeMs: number | null;
+  readonly size: number | null;
+}
+
+const stampOf = (file: string): FileStamp => {
+  try {
+    const stats = statSync(file);
+
+    return { mtimeMs: stats.mtimeMs, size: stats.size };
+  } catch {
+    return { mtimeMs: null, size: null };
+  }
+};
+
 export const hookSpoolRefs = (
   scope: HarnessScope,
   tool: HarnessId,
@@ -153,23 +174,22 @@ export const hookSpoolRefs = (
 
   return spoolFiles(dir)
     .filter((name) => since === null || dayOf(name) >= since)
-    .flatMap((name) =>
-      worktrees.map((worktree): SessionRef => {
-        const file = path.join(dir, name);
+    .flatMap((name) => {
+      const file = path.join(dir, name);
+      const stamp = stampOf(file);
 
-        return {
-          channel,
-          harness: tool,
-          id: worktree === null ? file : `${file}#${worktree}`,
-          mtimeMs: null,
-          path: file,
-          sessionId: null,
-          size: null,
-          source: harnessAdapterId(tool),
-          worktree,
-        };
-      })
-    );
+      return worktrees.map((worktree): SessionRef => ({
+        channel,
+        harness: tool,
+        id: worktree === null ? file : `${file}#${worktree}`,
+        mtimeMs: stamp.mtimeMs,
+        path: file,
+        sessionId: null,
+        size: stamp.size,
+        source: harnessAdapterId(tool),
+        worktree,
+      }));
+    });
 };
 
 const trimmed = (dir: string): string => dir.replace(/\/+$/u, "");
