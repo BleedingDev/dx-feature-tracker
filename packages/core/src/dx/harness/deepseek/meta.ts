@@ -6,4 +6,4 @@ export const DEEPSEEK_CHANNELS = [
   "extension",
 ] as const satisfies readonly Channel[];
 
-export const DEEPSEEK_READINESS: ModuleReadiness = "unsupported";
+export const DEEPSEEK_READINESS: ModuleReadiness = "ready";
