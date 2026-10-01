@@ -23,6 +23,7 @@ import {
 } from "./paths.js";
 
 export interface ClaudeCodeFiles extends HarnessStore {
+  readonly home: string | null;
   readonly isRepoRoot: (dir: string) => Effect.Effect<boolean>;
   readonly listFamily: (
     ref: string
@@ -35,6 +36,7 @@ export interface ClaudeCodeFiles extends HarnessStore {
 }
 
 export interface ClaudeCodeMemoryInput extends MemoryStoreInput {
+  readonly home?: string;
   readonly repoRoots?: readonly string[];
 }
 
@@ -203,6 +205,7 @@ const makeLive = Effect.gen(function* makeClaudeCodeStore() {
 
   const files: ClaudeCodeFiles = {
     ...base,
+    home: home.home,
     isRepoRoot: (dir) =>
       fileSystem
         .exists(path.join(dir, ".git"))
@@ -230,6 +233,7 @@ export const memoryClaudeCodeFiles = (
 
   return {
     ...base,
+    home: input.home ?? null,
     isRepoRoot: (dir) => Effect.succeed(repoRoots.has(dir)),
     listFamily: (ref) =>
       sessions.pipe(Effect.map((all) => familyFilesFor(ref, all))),

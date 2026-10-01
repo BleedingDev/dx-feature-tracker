@@ -1,6 +1,7 @@
 // @effect-diagnostics-next-line nodeBuiltinImport:off -- Event IDs are the contract's synchronous sha256 over adapter, upstream key and kind.
 import { createHash } from "node:crypto";
 
+import { touchedPaths } from "../../correlation/attribution/touched-paths.js";
 import type {
   AiAttribution,
   AiTokens,
@@ -36,6 +37,7 @@ export interface Placement {
 }
 
 export interface EventInput {
+  readonly home: string | null;
   readonly observedAt: string;
   readonly origin: Origin;
 }
@@ -159,6 +161,11 @@ const attribution = (
   via: fields.via,
 });
 
+const withTouchedPaths = (
+  ai: AiAttribution,
+  paths: readonly string[]
+): AiAttribution => (paths.length === 0 ? ai : { ...ai, touchedPaths: paths });
+
 const TOKEN_SEMANTICS: readonly FieldSemantics[] = [
   {
     field: "usage.tokens.inputFresh",
@@ -255,13 +262,16 @@ export const usageEvent = (
   const serverTools = row.usage.server_tool_use ?? null;
 
   return envelope(input, {
-    ai: attribution(chat, placement, {
-      cwd: row.cwd,
-      effort,
-      model: row.model,
-      version: row.version,
-      via,
-    }),
+    ai: withTouchedPaths(
+      attribution(chat, placement, {
+        cwd: row.cwd,
+        effort,
+        model: row.model,
+        version: row.version,
+        via,
+      }),
+      touchedPaths({ calls: pick.calls, cwd: row.cwd, home: input.home })
+    ),
     identity: {
       generationId: row.messageId,
       requestId: row.requestId,

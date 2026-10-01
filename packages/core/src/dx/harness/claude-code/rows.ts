@@ -43,6 +43,7 @@ const UsageSchema = Schema.Struct({
 export type ClaudeUsage = typeof UsageSchema.Type;
 
 const MessageSchema = Schema.Struct({
+  content: Schema.optional(Schema.Unknown),
   id: Text,
   model: Text,
   stop_reason: Text,
@@ -50,6 +51,53 @@ const MessageSchema = Schema.Struct({
 });
 
 const decodeMessage = Schema.decodeUnknownOption(MessageSchema);
+
+const ToolInputSchema = Schema.Struct({
+  command: Text,
+  cwd: Text,
+  file_path: Text,
+  notebook_path: Text,
+  path: Text,
+  workdir: Text,
+});
+
+const ToolUseSchema = Schema.Struct({
+  id: Text,
+  input: Schema.optional(Schema.NullOr(ToolInputSchema)),
+  type: Schema.Literal("tool_use"),
+});
+
+const decodeBlocks = Schema.decodeUnknownOption(Schema.Array(Schema.Unknown));
+
+const decodeToolUse = Schema.decodeUnknownOption(ToolUseSchema);
+
+export interface ToolCall {
+  readonly command: string | null;
+  readonly id: string | null;
+  readonly paths: readonly string[];
+  readonly workdir: string | null;
+}
+
+const MAX_TOOL_CALLS = 64;
+
+type ClaudeMessage = typeof MessageSchema.Type;
+
+const toolCallsOf = (message: ClaudeMessage): readonly ToolCall[] =>
+  Option.getOrElse(decodeBlocks(message.content), () => [])
+    .flatMap((block) => Option.toArray(decodeToolUse(block)))
+    .slice(0, MAX_TOOL_CALLS)
+    .map((use): ToolCall => {
+      const input = use.input ?? {};
+
+      return {
+        command: input.command ?? null,
+        id: use.id ?? null,
+        paths: [input.file_path, input.notebook_path, input.path].flatMap(
+          (path) => (path === undefined || path === null ? [] : [path])
+        ),
+        workdir: input.workdir ?? input.cwd ?? null,
+      };
+    });
 
 const ModelUsageSchema = Schema.Struct({
   cacheCreationInputTokens: Count,
@@ -97,6 +145,7 @@ export interface RowPlace {
 
 export interface AssistantRow extends RowPlace {
   readonly attributionAgent: string | null;
+  readonly calls: readonly ToolCall[];
   readonly effort: string | null;
   readonly entrypoint: string | null;
   readonly kind: "assistant";
@@ -189,6 +238,7 @@ const assistantRow = (line: RawLine): ClaudeRow =>
       return {
         ...placeOf(line),
         attributionAgent: textOf(line, "attributionAgent"),
+        calls: toolCallsOf(message),
         effort: textOf(line, "effort"),
         entrypoint: textOf(line, "entrypoint"),
         kind: "assistant",

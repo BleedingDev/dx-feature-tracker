@@ -7,6 +7,7 @@ import type {
   CostRow,
   SkipReason,
   TitleSource,
+  ToolCall,
 } from "./rows.js";
 
 export interface SubagentMeta {
@@ -46,6 +47,7 @@ export interface ChatInfo {
 }
 
 export interface RequestPick {
+  readonly calls: readonly ToolCall[];
   readonly chat: ChatInfo;
   readonly file: string;
   readonly firstTimestamp: string | null;
@@ -104,6 +106,7 @@ interface Group {
   readonly appearances: Appearance[];
   best: AssistantRow;
   bestFile: number;
+  readonly calls: Map<string, ToolCall>;
   readonly chat: ChatInfo;
   readonly firstTimestamp: string | null;
   readonly key: string;
@@ -197,6 +200,14 @@ export const betterRow = (
   return sameFile;
 };
 
+const callsOf = (row: AssistantRow): Map<string, ToolCall> =>
+  new Map(
+    row.calls.map((call, index) => [
+      call.id ?? `${row.uuid ?? "-"}#${String(index)}`,
+      call,
+    ])
+  );
+
 const chatOf = (row: AssistantRow, meta: SubagentMeta | null): ChatInfo => {
   const session = row.sessionId;
 
@@ -285,6 +296,7 @@ const addAssistant = (
       ],
       best: row,
       bestFile: file,
+      calls: callsOf(row),
       chat: chatOf(row, scan.chunk.meta),
       firstTimestamp: row.timestamp,
       key,
@@ -296,6 +308,10 @@ const addAssistant = (
   }
 
   group.rows += 1;
+
+  for (const [id, call] of callsOf(row)) {
+    group.calls.set(id, call);
+  }
 
   const appearance = group.appearances.find((seen) => seen.file === file);
 
@@ -455,6 +471,7 @@ export const scanChunks = (chunks: readonly FileChunk[]): ScanResult => {
       into.tally.noUsage += 1;
     } else {
       requests.push({
+        calls: [...group.calls.values()],
         chat: group.chat,
         file: scans[group.bestFile]?.chunk.path ?? "",
         firstTimestamp: group.firstTimestamp,

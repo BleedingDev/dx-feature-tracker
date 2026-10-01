@@ -504,7 +504,7 @@ export class ClaudeCodeHarness extends Context.Service<
         const emitted = emit(
           placed,
           scan,
-          { observedAt, origin: input.origin },
+          { home: store.home, observedAt, origin: input.origin },
           fallback
         );
 

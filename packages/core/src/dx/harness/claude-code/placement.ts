@@ -112,19 +112,14 @@ export const placePicks = (
 
     const orchestrated = own.size > 0 && !elsewhere;
 
-    return picks.flatMap((pick): PlacedPick[] => {
+    return picks.map((pick): PlacedPick => {
       if (own.has(pick)) {
-        return [{ pick, placement: insideWorktree(context, pick) }];
+        return { pick, placement: insideWorktree(context, pick) };
       }
 
       return orchestrated && isStrictAncestor(pick.row.cwd, worktree)
-        ? [
-            {
-              pick,
-              placement: atBranch(context, context.branch, "tool-calls"),
-            },
-          ]
-        : [];
+        ? { pick, placement: atBranch(context, context.branch, "tool-calls") }
+        : { pick, placement: outsideWorktree(pick) };
     });
   });
 };

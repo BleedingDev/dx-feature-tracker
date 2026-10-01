@@ -295,10 +295,14 @@ describe("Claude Code fixture sessions", () => {
             inTwo.events
               .filter((event) => event.kind === "ai.usage")
               .map(
-                (event) => `${event.context.branch}|${event.ai?.branchSource}`
+                (event) =>
+                  `${event.context.worktreePath}|${event.context.branch}|${event.ai?.branchSource}`
               )
           ),
-        ]).toStrictEqual(["feat/claude-code-two|harness-recorded"]);
+        ]).toStrictEqual([
+          `${wtTwo}|feat/claude-code-two|harness-recorded`,
+          "null|null|unassigned",
+        ]);
       })
   );
 
@@ -330,6 +334,17 @@ describe("Claude Code fixture sessions", () => {
             launchDir ? source === "tool-calls" : source === "cwd-inferred"
           )
         ).toBe(true);
+
+        const touched = events
+          .filter(
+            (event) =>
+              event.kind === "ai.usage" &&
+              event.identity.sessionId?.startsWith(session) === true
+          )
+          .flatMap((event) => event.ai?.touchedPaths ?? []);
+
+        expect(touched.length).toBeGreaterThan(0);
+        expect(touched.every((found) => found.startsWith(repo))).toBe(true);
 
         const nowhere = yield* readSessions(everywhere, emptyFlightContext);
 
