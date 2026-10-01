@@ -17,6 +17,8 @@ import type { WorktreeTimeline } from "../../src/dx/correlation/branch-at-time/t
 import { GitRunner, memoryGitAt } from "../../src/dx/harness/git.js";
 import type { GitQueries, MemoryRepo } from "../../src/dx/harness/git.js";
 import type { BranchSource } from "../../src/dx/harness/ids.js";
+import { estimateRequest } from "../../src/dx/metrics/cost/price-book/estimate.js";
+import type { PriceSheet } from "../../src/dx/metrics/cost/price-book/sheet.js";
 import { unknownTokens } from "../../src/dx/model/attribution.js";
 import type { AiAttribution } from "../../src/dx/model/attribution.js";
 import type { DxEventEnvelope } from "../../src/dx/model/event.js";
@@ -26,6 +28,7 @@ import {
 } from "../../src/dx/model/event.js";
 import { EventIdSchema } from "../../src/dx/model/ids.js";
 import { deriveUsageFacts } from "../../src/dx/usage/derive.js";
+import { pricedRequestOf } from "../../src/dx/usage/estimate.js";
 
 const HOME = "/home/user";
 
@@ -56,6 +59,15 @@ const REPOS: readonly MemoryRepo[] = [
 ];
 
 const AT = "2026-10-01T10:00:00.000Z";
+
+const FIXTURE_SHEET: PriceSheet = {
+  id: "fixture",
+  models: {
+    "fixture-model": [{ effectiveFrom: null, rates: { input: 1, output: 5 } }],
+  },
+  source: "synthetic prices for tests",
+  version: "2026-10-01",
+};
 
 interface Spec {
   readonly agentId?: string | null;
@@ -602,6 +614,80 @@ describe("orchestrator outside a repo (D36)", () => {
         expect(
           facts.reduce((sum, fact) => sum + (fact.tokens.total ?? 0), 0)
         ).toBe(1400);
+      }).pipe(Effect.provide(memory))
+  );
+
+  it.effect(
+    "splits web searches across the shares so they add up to the original once",
+    () =>
+      Effect.gen(function* scenario() {
+        const orchestrate = event({
+          cwd: ORCHESTRATOR,
+          id: "orchestrate",
+          tokens: 1000,
+          touched: [APP, LIB],
+          turnId: "turn-1",
+        });
+
+        const placed = yield* attribute([
+          {
+            ...orchestrate,
+            usage:
+              orchestrate.usage === null
+                ? null
+                : {
+                    ...orchestrate.usage,
+                    tokens: {
+                      ...unknownTokens,
+                      inputFresh: 600,
+                      output: 400,
+                      total: 1000,
+                    },
+                    webSearchRequests: 10,
+                  },
+          },
+          event({
+            agentId: "agent-app",
+            at: "2026-10-01T10:00:01.000Z",
+            cwd: APP,
+            id: "app-work",
+            tokens: 300,
+          }),
+          event({
+            agentId: "agent-lib",
+            at: "2026-10-01T10:00:02.000Z",
+            cwd: LIB,
+            id: "lib-work",
+            tokens: 100,
+          }),
+        ]);
+
+        const { facts } = deriveUsageFacts(placed.events);
+
+        const shares = facts
+          .filter((fact) => fact.attribution === "subagent-split")
+          .toSorted((a, b) => a.repo.localeCompare(b.repo));
+
+        const searchUsd = shares.map((fact) => {
+          const estimate = estimateRequest(
+            [FIXTURE_SHEET],
+            pricedRequestOf(fact)
+          );
+
+          return estimate.kind === "priced"
+            ? estimate.lines
+                .filter((line) => line.part === "web-search")
+                .reduce((sum, line) => sum + line.usd, 0)
+            : Number.NaN;
+        });
+
+        expect(shares.map((fact) => fact.webSearchRequests)).toStrictEqual([
+          7.5, 2.5,
+        ]);
+        expect(searchUsd.reduce((sum, usd) => sum + usd, 0)).toBeCloseTo(
+          0.1,
+          10
+        );
       }).pipe(Effect.provide(memory))
   );
 

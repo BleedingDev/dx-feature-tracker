@@ -222,6 +222,7 @@ const scaledUsage = (
           usage.toolFigure === null
             ? null
             : { ...usage.toolFigure, amount: usage.toolFigure.amount * weight },
+        webSearchRequests: scale(usage.webSearchRequests ?? null, weight),
       };
 
 interface Relocation {
