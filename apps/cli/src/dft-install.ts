@@ -105,7 +105,7 @@ export const parseHooksFile = (text: string): HooksFile | null => {
 };
 
 export const isDftHookCommand = (command: string): boolean =>
-  /\bdft(?:-main)?(?:\.js)?['"]?\s+hook\b/u.test(command) ||
+  /\bdft(?:-main)?(?:\.[cm]?js)?['"]?\s+hook\b/u.test(command) ||
   /\bdx\s+hook\b/u.test(command);
 
 export const mergeCursorHooks = (

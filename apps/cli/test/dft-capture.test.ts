@@ -37,6 +37,10 @@ import {
 } from "../src/dft-capture.js";
 import type { DftCommand } from "../src/dft-capture.js";
 import {
+  installCursorHooks,
+  uninstallCursorHooks,
+} from "../src/dft-install.js";
+import {
   CODEX_BLOCK_END,
   CODEX_BLOCK_START,
   codexTelemetryBlock,
@@ -353,6 +357,38 @@ describe("dft install project capture (D39)", () => {
     expect(existsSync(path.join(repo, ".codex"))).toBe(false);
     expect(existsSync(path.join(repo, ".dsh"))).toBe(false);
     expect(uninstallCapture(repo, command)).toEqual([]);
+  });
+
+  it("recognises its own hooks when dft runs from a pnpm global dist/dft.mjs", () => {
+    const repo = scratchRepo();
+
+    const shim = dftCommandFor(
+      "/usr/bin/node",
+      "/pnpm/global/v11/0a1b/node_modules/dx-feature-tracker/dist/dft.mjs"
+    );
+
+    const tools = ["claude-code", "codex"] as const;
+    const cursorCommand = `${shim.line} hook`;
+    write(repo, CLAUDE_SETTINGS_LOCAL, teammateSettings);
+
+    installCapture(tools, repo, shim);
+    installCursorHooks(repo, cursorCommand);
+
+    const again = installCapture(tools, repo, shim);
+
+    expect(
+      again.tools.flatMap((tool) => tool.steps.map((step) => step.action))
+    ).toEqual(["unchanged", "unchanged"]);
+    expect(installCursorHooks(repo, cursorCommand).action).toBe("unchanged");
+    expect(hasCapture("claude-code", repo)).toBe(true);
+    expect(hasCapture("codex", repo)).toBe(true);
+
+    uninstallCapture(repo, shim);
+    uninstallCursorHooks(repo);
+
+    expect(read(repo, CLAUDE_SETTINGS_LOCAL)).toBe(teammateSettings);
+    expect(existsSync(path.join(repo, CODEX_PROJECT_HOOKS))).toBe(false);
+    expect(existsSync(path.join(repo, ".cursor", "hooks.json"))).toBe(false);
   });
 
   it("dft uninstall in one worktree keeps the ignore lines another worktree still needs", () => {
