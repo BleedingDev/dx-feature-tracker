@@ -2,7 +2,9 @@ import { describe, expect, it } from "@effect/vitest";
 
 import { attributeHistoricalBranches } from "../../src/dx/correlation/branch-at-time/attribute.js";
 import type { WorktreeTimeline } from "../../src/dx/correlation/branch-at-time/timeline.js";
+import { HARNESS_IDS } from "../../src/dx/harness/ids.js";
 import type { BranchSource, HarnessId } from "../../src/dx/harness/ids.js";
+import { rulesForEvent } from "../../src/dx/harness/rules.js";
 import type { AiAttribution } from "../../src/dx/model/attribution.js";
 import type { DxEventEnvelope } from "../../src/dx/model/event.js";
 import {
@@ -54,7 +56,8 @@ interface EventSpec {
   readonly ai: AiAttribution | null;
   readonly branch: string | null;
   readonly id: string;
-  readonly occurredAt: string;
+  readonly occurredAt: string | null;
+  readonly worktreePath?: string | null;
 }
 
 const event = (spec: EventSpec): DxEventEnvelope => ({
@@ -65,14 +68,15 @@ const event = (spec: EventSpec): DxEventEnvelope => ({
   context: {
     ...emptyFlightContext,
     branch: spec.branch,
-    worktreePath: WORKTREE,
+    worktreePath:
+      spec.worktreePath === undefined ? WORKTREE : spec.worktreePath,
   },
   eventId: EventIdSchema.make(spec.id),
   evidence: { bounded: true, hash: null, ref: `fixture:${spec.id}` },
   fieldSemantics: [],
   identity: { ...emptyEventIdentity, sessionId: "session-1" },
   kind: spec.acquisition === "hook" ? "other" : "ai.usage",
-  observedAt: spec.occurredAt,
+  observedAt: spec.occurredAt ?? REQUEST_AT,
   occurredAt: spec.occurredAt,
   occurredAtPrecision: "exact",
   origin: "fixture",
@@ -153,6 +157,101 @@ describe("branch precedence (D28)", () => {
     expect(result.get("request")).toStrictEqual({
       branch: "feature/hooked",
       source: "hook",
+    });
+  });
+});
+
+const PRECEDENCE_STEPS = [
+  {
+    branch: "feature/recorded",
+    expected: { branch: "feature/recorded", source: "harness-recorded" },
+    name: "a branch the tool recorded on the row",
+    source: "harness-recorded",
+  },
+  {
+    branch: "feature/at-start",
+    expected: { branch: "main", source: "git-at-time" },
+    name: "checkout history over a branch recorded once per session",
+    source: "session-recorded",
+  },
+  {
+    branch: "HEAD",
+    expected: { branch: "main", source: "git-at-time" },
+    name: "checkout history over a recorded HEAD",
+    source: "harness-recorded",
+  },
+] as const;
+
+describe.each(HARNESS_IDS)("branch precedence (D28) for %s", (harness) => {
+  it.each(PRECEDENCE_STEPS)("takes $name", (step) => {
+    const result = attribute([
+      event({
+        ai: attribution(harness, step.source),
+        branch: step.branch,
+        id: "row",
+        occurredAt: REQUEST_AT,
+      }),
+    ]);
+
+    expect(result.get("row")).toStrictEqual(step.expected);
+  });
+
+  it("takes the hook turn's branch before checkout history when the tool's rule allows it", () => {
+    const request = event({
+      ai: attribution(harness, "session-recorded"),
+      branch: null,
+      id: "request",
+      occurredAt: REQUEST_AT,
+    });
+
+    const result = attribute([
+      event({
+        acquisition: "hook",
+        ai: { ...attribution(harness, "hook"), channel: "hooks" },
+        branch: "feature/hooked",
+        id: "hook-turn",
+        occurredAt: "2026-09-30T09:58:00.000Z",
+      }),
+      request,
+    ]);
+
+    expect(result.get("request")).toStrictEqual(
+      rulesForEvent(request).takesHookTurn(request)
+        ? { branch: "feature/hooked", source: "hook" }
+        : { branch: "main", source: "git-at-time" }
+    );
+  });
+
+  it("falls back to the folder's branch when the row has no time", () => {
+    const result = attribute([
+      event({
+        ai: attribution(harness, "cwd-inferred"),
+        branch: "feature/folder",
+        id: "untimed",
+        occurredAt: null,
+      }),
+    ]);
+
+    expect(result.get("untimed")).toStrictEqual({
+      branch: "feature/folder",
+      source: "cwd-inferred",
+    });
+  });
+
+  it("leaves the row unassigned when nothing knows the branch", () => {
+    const result = attribute([
+      event({
+        ai: attribution(harness, "cwd-inferred"),
+        branch: null,
+        id: "lost",
+        occurredAt: REQUEST_AT,
+        worktreePath: null,
+      }),
+    ]);
+
+    expect(result.get("lost")).toStrictEqual({
+      branch: null,
+      source: "unassigned",
     });
   });
 });

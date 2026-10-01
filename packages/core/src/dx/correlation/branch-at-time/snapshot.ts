@@ -8,6 +8,7 @@ import type {
 } from "../../contracts/services.js";
 import type { DxEventEnvelope } from "../../model/event.js";
 import type { SnapshotSelector } from "../../model/snapshot.js";
+import { attributeReposIfPossible } from "../attribution/ambient.js";
 import { summarizeAttribution } from "./attribute.js";
 import type { BranchAttributionSummary } from "./attribute.js";
 import { reattributeHistoricalBranches } from "./pipeline.js";
@@ -76,13 +77,18 @@ const joinWithinRepo = (
   repoEvents: readonly DxEventEnvelope[],
   accountRows: readonly DxEventEnvelope[],
   repoCommonDir: string | null
-): readonly DxEventEnvelope[] =>
-  joinAccountRows([
-    ...new Map(
-      [...repoEvents, ...accountRows].map((e) => [e.eventId, e] as const)
-    ).values(),
-  ]).filter(
-    (e) => repoCommonDir === null || e.context.repoCommonDir === repoCommonDir
+): Effect.Effect<readonly DxEventEnvelope[]> =>
+  Effect.map(
+    attributeReposIfPossible([
+      ...new Map(
+        [...repoEvents, ...accountRows].map((e) => [e.eventId, e] as const)
+      ).values(),
+    ]),
+    (placed) =>
+      joinAccountRows(placed).filter(
+        (e) =>
+          repoCommonDir === null || e.context.repoCommonDir === repoCommonDir
+      )
   );
 
 const accountRowsFor = (
@@ -111,7 +117,7 @@ export const replayAccountAwareEvents = (
     const account = yield* accountRowsFor(store, selector);
     const createdAtMs = Date.parse(createdAt);
 
-    return joinWithinRepo(
+    return yield* joinWithinRepo(
       pinned.events,
       account.filter((e) => Date.parse(e.observedAt) <= createdAtMs),
       selector.repoCommonDir
@@ -129,7 +135,12 @@ export const accountAwareEvents = (
     const wide = yield* store.snapshot({ ...selector, branch: null });
 
     const account = yield* accountRowsFor(store, selector);
-    const joined = joinWithinRepo(wide.events, account, selector.repoCommonDir);
+
+    const joined = yield* joinWithinRepo(
+      wide.events,
+      account,
+      selector.repoCommonDir
+    );
 
     return { events: joined, wide };
   });

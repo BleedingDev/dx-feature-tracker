@@ -30,6 +30,7 @@ export const AiAttributionSchema = Schema.Struct({
   parentSessionId: OptionalText,
   provider: ModelProviderSchema,
   sessionId: OptionalText,
+  touchedPaths: Schema.optionalKey(Schema.Array(Schema.String)),
   via: OptionalText,
 });
 

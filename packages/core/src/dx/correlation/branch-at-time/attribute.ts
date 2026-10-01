@@ -13,6 +13,8 @@ import type { AttributionState } from "../../model/common.js";
 import type { ModuleDescriptor } from "../../model/descriptor.js";
 import type { DxEventEnvelope } from "../../model/event.js";
 import { DescriptorIdSchema, EvidenceIdSchema } from "../../model/ids.js";
+import { branchNameOrNull } from "../attribution/branch-name.js";
+import { repoMethodOf } from "../attribution/repos.js";
 import { DEFAULT_BRANCH_AT_OPTIONS, branchAt } from "./timeline.js";
 import type {
   BranchAtMethod,
@@ -214,35 +216,44 @@ const isPlaced = (event: DxEventEnvelope): boolean =>
   event.payload.worktreePlacement !== undefined &&
   event.payload.worktreePlacement !== null;
 
-const byToolRecorded: Resolver = (event) =>
-  event.ai?.branchSource === "harness-recorded" &&
-  event.context.branch !== null &&
-  !isPlaced(event)
+const namedBranch = (event: DxEventEnvelope): string | null =>
+  branchNameOrNull(event.context.branch);
+
+const byToolRecorded: Resolver = (event) => {
+  const branch = namedBranch(event);
+
+  return event.ai?.branchSource === "harness-recorded" &&
+    branch !== null &&
+    !isPlaced(event)
     ? {
         ...base(event),
         attribution: "strong",
         basis: "tool-recorded",
-        branch: event.context.branch,
+        branch,
         confidence: 1,
         method: "collected",
         reason: `${event.ai.harness} recorded this branch on the request itself`,
       }
     : null;
+};
 
-const byLiveCapture: Resolver = (event) =>
-  LIVE_ACQUISITIONS.has(event.acquisition) &&
-  event.context.branch !== null &&
-  !isPlaced(event)
+const byLiveCapture: Resolver = (event) => {
+  const branch = namedBranch(event);
+
+  return LIVE_ACQUISITIONS.has(event.acquisition) &&
+    branch !== null &&
+    !isPlaced(event)
     ? {
         ...base(event),
         attribution: "strong",
         basis: "live-capture",
-        branch: event.context.branch,
+        branch,
         confidence: 1,
         method: "hook",
         reason: "captured live with the branch checked out at that moment",
       }
     : null;
+};
 
 export const HOOK_TURN_WINDOW_MS = 5 * 60 * 1000;
 
@@ -293,16 +304,18 @@ const byHookTurn =
       }
     }
 
-    return best === undefined || best.context.branch === null
+    const branch = best === undefined ? null : namedBranch(best);
+
+    return best === undefined || branch === null
       ? null
       : {
           ...base(event),
           attribution: "strong",
           basis: "hook-turn",
-          branch: best.context.branch,
+          branch,
           confidence: 0.95,
           method: "hook",
-          reason: `matches hook turn ${best.eventId} of the same conversation ${Math.round(bestGap / 1000)}s away, captured live on ${best.context.branch}`,
+          reason: `matches hook turn ${best.eventId} of the same conversation ${Math.round(bestGap / 1000)}s away, captured live on ${branch}`,
         };
   };
 
@@ -350,19 +363,22 @@ const byPlacedWorktree: Resolver = (event) =>
 
 const untimedCollected = (
   event: DxEventEnvelope
-): HistoricalAttribution | null =>
-  timeOf(event) === null && event.context.branch !== null
+): HistoricalAttribution | null => {
+  const branch = namedBranch(event);
+
+  return timeOf(event) === null && branch !== null
     ? {
         ...base(event),
         attribution: "provisional",
         basis: "collected-context",
-        branch: event.context.branch,
+        branch,
         confidence: 0.5,
         method: "collected",
         reason:
           "event has no timestamp; kept the branch its collector recorded",
       }
     : null;
+};
 
 const unassigned = (
   event: DxEventEnvelope,
@@ -390,13 +406,41 @@ const BASIS_BRANCH_SOURCES: Readonly<
   "worktree-at-time": "git-at-time",
 };
 
+const PLACED_BY_REPO_ATTRIBUTION: ReadonlySet<HistoricalBasis> = new Set([
+  "worktree-at-time",
+  "scored-commit",
+  "collected-context",
+  "linked-request",
+  "unassigned",
+]);
+
+const repoLabel = (
+  event: DxEventEnvelope,
+  found: HistoricalAttribution
+): BranchSource | null => {
+  const method = repoMethodOf(event);
+
+  return (method === "tool-calls" || method === "subagent-split") &&
+    PLACED_BY_REPO_ATTRIBUTION.has(found.basis)
+    ? method
+    : null;
+};
+
 const attributedAi = (event: DxEventEnvelope, found: HistoricalAttribution) => {
-  const source = BASIS_BRANCH_SOURCES[found.basis];
+  const source = repoLabel(event, found) ?? BASIS_BRANCH_SOURCES[found.basis];
 
   return source === null || event.ai === null
     ? event.ai
     : withBranchSource(event.ai, found.branch, source);
 };
+
+const inferredAttribution = (
+  event: DxEventEnvelope,
+  found: HistoricalAttribution
+): HistoricalAttribution["attribution"] =>
+  repoMethodOf(event) === "subagent-split" && found.attribution === "strong"
+    ? "provisional"
+    : found.attribution;
 
 const withBranch = (
   event: DxEventEnvelope,
@@ -408,7 +452,7 @@ const withBranch = (
   payload: {
     ...event.payload,
     historicalBranch: {
-      attribution: found.attribution,
+      attribution: inferredAttribution(event, found),
       basis: found.basis,
       collectedBranch: found.collectedBranch,
       confidence: found.confidence,
