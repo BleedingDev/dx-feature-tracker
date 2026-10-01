@@ -27,6 +27,7 @@ import type { DxCollector, DxMetric } from "../contracts/services.js";
 import { aiCorrelationDescriptor } from "../correlation/ai/descriptor.js";
 import { flightCorrelationDescriptor } from "../correlation/flight/correlator.js";
 import { repoCorrelationDescriptor } from "../correlation/repo/descriptor.js";
+import { harnessCollectors } from "../harness/collector.js";
 import { mcpQueryHandlersDescriptor } from "../mcp/handlers/descriptor.js";
 import { aiUsageMetric } from "../metrics/ai-usage/metric.js";
 import * as CostMetric from "../metrics/cost/metric.js";
@@ -71,6 +72,7 @@ export const allCollectors: readonly RegisteredCollector[] = [
   providerUsageCollector,
   gitAiCollector,
   entireCheckpointsCollector,
+  ...harnessCollectors,
 ];
 
 export const allMetrics: readonly DxMetric[] = [

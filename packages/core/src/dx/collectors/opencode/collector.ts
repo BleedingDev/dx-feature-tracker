@@ -8,6 +8,7 @@ import { SourceUnavailable } from "../../contracts/error-source-unavailable.js";
 import { UnsupportedSource } from "../../contracts/error-unsupported-source.js";
 import type { CollectInput, DxCollector } from "../../contracts/services.js";
 import { CONTRACT_VERSION } from "../../contracts/version.js";
+import { withCollectorBlocks } from "../../harness/collector-blocks.js";
 import { canonicalRequestKey, canonicalTurnKey } from "../../model/ai.js";
 import type { CoverageState, SourceGap } from "../../model/coverage.js";
 import type { ModuleDescriptor } from "../../model/descriptor.js";
@@ -385,7 +386,7 @@ const usageEnvelope = (
   const completed = countOf(info.time?.completed);
   const occurredAt = isoOf(created);
 
-  return {
+  return withCollectorBlocks({
     ...baseEnvelope(input, observedAt, exported.info.version ?? null),
     eventId: EventIdSchema.make(eventIdOf(upstreamKey, "ai.usage")),
     evidence: {
@@ -425,7 +426,7 @@ const usageEnvelope = (
       unavailable: unavailableOf(info, parts !== null),
     },
     upstreamKey,
-  };
+  });
 };
 
 const sessionEnvelope = (
@@ -438,7 +439,7 @@ const sessionEnvelope = (
   const occurredAt = isoOf(info.time?.created);
   const roles = exported.messages.map((message) => message.info.role);
 
-  return {
+  return withCollectorBlocks({
     ...baseEnvelope(input, observedAt, info.version ?? null),
     eventId: EventIdSchema.make(eventIdOf(upstreamKey, "ai.session")),
     evidence: {
@@ -462,7 +463,7 @@ const sessionEnvelope = (
       userMessageCount: roles.filter((role) => role === "user").length,
     },
     upstreamKey,
-  };
+  });
 };
 
 const coverageStateOf = (

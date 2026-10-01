@@ -234,6 +234,7 @@ const usageRow = (
   acquisition: "api",
   adapterId: "cursor-usage-api",
   adapterVersion: "fixture",
+  ai: null,
   context: emptyFlightContext,
   eventId: EventIdSchema.make(`usage-${session}`),
   evidence: { bounded: true, hash: null, ref: `fixture:usage-${session}` },
@@ -259,9 +260,10 @@ const usageRow = (
       total: null,
     },
   },
-  schemaVersion: "dx.event.v1",
+  schemaVersion: "dx.event.v2",
   sourceVersion: null,
   upstreamKey: `usage-${session}`,
+  usage: null,
 });
 
 const usageRows = [

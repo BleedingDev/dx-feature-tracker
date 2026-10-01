@@ -107,6 +107,7 @@ const marker = (
   acquisition: "manual",
   adapterId: "c03-marker",
   adapterVersion: "1",
+  ai: null,
   context: {
     branch,
     flightId: null,
@@ -127,6 +128,7 @@ const marker = (
   schemaVersion: EVENT_SCHEMA_VERSION,
   sourceVersion: null,
   upstreamKey: id,
+  usage: null,
 });
 
 const targetOf = (

@@ -47,6 +47,7 @@
           "acquisition": "manual",
           "adapterId": "marker",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0001",
@@ -79,14 +80,16 @@
           "payload": {
             "label": "fixture flight start"
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "flight-fixture-0001:start"
+          "upstreamKey": "flight-fixture-0001:start",
+          "usage": null
         },
         {
           "acquisition": "manual",
           "adapterId": "marker",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0001",
@@ -119,14 +122,16 @@
           "payload": {
             "label": "waiting for CI"
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "flight-fixture-0001:wait-1:start"
+          "upstreamKey": "flight-fixture-0001:wait-1:start",
+          "usage": null
         },
         {
           "acquisition": "manual",
           "adapterId": "marker",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0001",
@@ -159,14 +164,16 @@
           "payload": {
             "label": "waiting for CI"
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "flight-fixture-0001:wait-1:stop"
+          "upstreamKey": "flight-fixture-0001:wait-1:stop",
+          "usage": null
         },
         {
           "acquisition": "manual",
           "adapterId": "marker",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0001",
@@ -199,9 +206,10 @@
           "payload": {
             "label": "fixture flight stop"
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "flight-fixture-0001:stop"
+          "upstreamKey": "flight-fixture-0001:stop",
+          "usage": null
         }
       ]
     },
@@ -225,6 +233,7 @@
           "acquisition": "git",
           "adapterId": "git",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0001",
@@ -258,14 +267,16 @@
             "detached": false,
             "dirty": false
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "context:/redacted/repos/sample-app:1111111111111111111111111111111111111111"
+          "upstreamKey": "context:/redacted/repos/sample-app:1111111111111111111111111111111111111111",
+          "usage": null
         },
         {
           "acquisition": "git",
           "adapterId": "git",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0001",
@@ -310,14 +321,16 @@
             "parentCount": 1,
             "trailers": []
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "commit:2222222222222222222222222222222222222222"
+          "upstreamKey": "commit:2222222222222222222222222222222222222222",
+          "usage": null
         },
         {
           "acquisition": "git",
           "adapterId": "git",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0001",
@@ -362,9 +375,10 @@
             "parentCount": 1,
             "trailers": []
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "commit:3333333333333333333333333333333333333333"
+          "upstreamKey": "commit:3333333333333333333333333333333333333333",
+          "usage": null
         }
       ]
     },
@@ -388,6 +402,7 @@
           "acquisition": "api",
           "adapterId": "github-actions",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0001",
@@ -423,14 +438,16 @@
             "completedAt": "2026-09-30T09:44:00.000Z",
             "workflow": "ci"
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "run:9001:attempt:1"
+          "upstreamKey": "run:9001:attempt:1",
+          "usage": null
         },
         {
           "acquisition": "api",
           "adapterId": "github-actions",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0001",
@@ -466,14 +483,16 @@
             "completedAt": "2026-09-30T09:54:00.000Z",
             "workflow": "ci"
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "run:9001:attempt:2"
+          "upstreamKey": "run:9001:attempt:2",
+          "usage": null
         },
         {
           "acquisition": "api",
           "adapterId": "github-actions",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0001",
@@ -509,9 +528,10 @@
             "headRef": "feature/fixture-flight",
             "baseRef": "main"
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "pr:17"
+          "upstreamKey": "pr:17",
+          "usage": null
         }
       ]
     },
@@ -535,6 +555,23 @@
           "acquisition": "hook",
           "adapterId": "cursor-hooks",
           "adapterVersion": "fixture-1.0.0",
+          "ai": {
+            "agentId": null,
+            "agentType": null,
+            "branchSource": "hook",
+            "channel": "hooks",
+            "cwd": null,
+            "effort": null,
+            "effortSource": null,
+            "harness": "cursor",
+            "harnessVersion": "fixture-1",
+            "model": "redacted-model",
+            "modelRaw": "redacted-model",
+            "parentSessionId": null,
+            "provider": "unknown",
+            "sessionId": "sess-a",
+            "via": "cursor"
+          },
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0001",
@@ -569,9 +606,10 @@
             "status": "completed",
             "model": "redacted-model"
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "session:sess-a:gen:gen-1"
+          "upstreamKey": "session:sess-a:gen:gen-1",
+          "usage": null
         }
       ]
     },
@@ -595,6 +633,23 @@
           "acquisition": "file-import",
           "adapterId": "cursor-usage-csv",
           "adapterVersion": "fixture-1.0.0",
+          "ai": {
+            "agentId": null,
+            "agentType": null,
+            "branchSource": "cwd-inferred",
+            "channel": "usage-api",
+            "cwd": null,
+            "effort": null,
+            "effortSource": null,
+            "harness": "cursor",
+            "harnessVersion": "fixture-1",
+            "model": null,
+            "modelRaw": null,
+            "parentSessionId": null,
+            "provider": "unknown",
+            "sessionId": null,
+            "via": "cursor"
+          },
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0001",
@@ -662,9 +717,26 @@
             },
             "charge": null
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "csv:row:1"
+          "upstreamKey": "csv:row:1",
+          "usage": {
+            "premiumRequests": null,
+            "requestKey": null,
+            "serviceTier": null,
+            "speed": null,
+            "tokens": {
+              "cacheRead": 800,
+              "cacheWrite": null,
+              "cacheWrite1h": null,
+              "cacheWrite5m": null,
+              "inputFresh": 1200,
+              "output": 350,
+              "reasoning": null,
+              "total": null
+            },
+            "toolFigure": null
+          }
         }
       ]
     }

@@ -218,6 +218,7 @@ export const buildMarkerEvent = Effect.fn("Manual.buildMarkerEvent")(
       acquisition: options.acquisition,
       adapterId: MANUAL_ADAPTER_ID,
       adapterVersion: MANUAL_ADAPTER_VERSION,
+      ai: null,
       context: { ...options.context, flightId },
       eventId: EventIdSchema.make(
         sha256(`${MANUAL_ADAPTER_ID}\n${upstreamKey}\n${kind}`)
@@ -242,9 +243,10 @@ export const buildMarkerEvent = Effect.fn("Manual.buildMarkerEvent")(
         method: "user-claimed",
         note,
       },
-      schemaVersion: "dx.event.v1",
+      schemaVersion: "dx.event.v2",
       sourceVersion: null,
       upstreamKey,
+      usage: null,
     };
 
     return event;

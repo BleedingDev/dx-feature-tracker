@@ -26,21 +26,6 @@ export const AiSourceKindSchema = Schema.Literals([
 
 export type AiSourceKind = typeof AiSourceKindSchema.Type;
 
-export const AI_SOURCE_PRECEDENCE: readonly AiSourceKind[] = [
-  "usage-csv",
-  "dashboard-json",
-  "sdk",
-  "cursor-cli",
-  "provider-receipt",
-  "hooks-stop",
-  "local-db",
-  "claude-jsonl",
-  "codex-session",
-  "opencode",
-  "entire",
-  "transcript-estimate",
-];
-
 export const AiRequestIdentitySchema = Schema.Struct({
   generationId: Schema.NullOr(Schema.String),
   requestId: Schema.NullOr(Schema.String),

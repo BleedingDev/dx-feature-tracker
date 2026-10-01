@@ -18,6 +18,7 @@
       "acquisition": "git",
       "adapterId": "git-identity",
       "adapterVersion": "1.0.0",
+      "ai": null,
       "context": {
         "branch": "feature/fixture-flight",
         "flightId": null,
@@ -73,9 +74,10 @@
         "unavailable": [],
         "worktreeCount": 1
       },
-      "schemaVersion": "dx.event.v1",
+      "schemaVersion": "dx.event.v2",
       "sourceVersion": "2.50.1",
-      "upstreamKey": "context:/redacted/repos/sample-app:2222222222222222222222222222222222222222:feature/fixture-flight:1111111111111111111111111111111111111111"
+      "upstreamKey": "context:/redacted/repos/sample-app:2222222222222222222222222222222222222222:feature/fixture-flight:1111111111111111111111111111111111111111",
+      "usage": null
     }
   ]
 }

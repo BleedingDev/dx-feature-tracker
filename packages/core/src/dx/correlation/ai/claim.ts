@@ -1,7 +1,10 @@
 import { Option, Schema } from "effect";
 
 import {
-  AI_SOURCE_PRECEDENCE,
+  UNKNOWN_SOURCE_RANK,
+  aiSourceRank,
+} from "../../harness/source-kinds.js";
+import {
   AiSourceKindSchema,
   LedgerKindSchema,
   TokenCategorySchema,
@@ -182,9 +185,7 @@ const amountsOf = (view: PayloadView): ClaimAmount[] => {
 };
 
 export const sourceRank = (sourceKind: string): number =>
-  isAiSourceKind(sourceKind)
-    ? AI_SOURCE_PRECEDENCE.indexOf(sourceKind)
-    : AI_SOURCE_PRECEDENCE.length;
+  isAiSourceKind(sourceKind) ? aiSourceRank(sourceKind) : UNKNOWN_SOURCE_RANK;
 
 const requestKeyOf = (
   sourceKind: string,

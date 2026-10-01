@@ -274,7 +274,7 @@ describe("C01 contract audit: event envelopes", () => {
       op: "set",
       path: ["schemaVersion"],
       reason: "unknown version inside batch",
-      value: "dx.event.v2",
+      value: "dx.event.v3",
     });
 
     const exit = decodeBatch({
@@ -304,7 +304,7 @@ describe("C01 contract audit: event envelopes", () => {
 
 describe("C01 contract audit: versions", () => {
   it("pins the envelope schema version literal", () => {
-    expect(EVENT_SCHEMA_VERSION).toBe("dx.event.v1");
+    expect(EVENT_SCHEMA_VERSION).toBe("dx.event.v2");
   });
 
   it("every core fixture carries the current contract version and digest", () => {
@@ -348,7 +348,7 @@ describe("C01 contract audit: versions", () => {
 
         tamper
           .prepare(
-            "UPDATE events SET body = json_set(body, '$.schemaVersion', 'dx.event.v2') WHERE event_id = ?"
+            "UPDATE events SET body = json_set(body, '$.schemaVersion', 'dx.event.v3') WHERE event_id = ?"
           )
           .run(target);
         tamper.close();

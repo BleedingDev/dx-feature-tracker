@@ -88,6 +88,7 @@ const envelope = (
   acquisition: "api",
   adapterId: "cursor-usage-api",
   adapterVersion: "fixture",
+  ai: null,
   context: emptyFlightContext,
   eventId: EventIdSchema.make(id),
   evidence: { bounded: true, hash: null, ref: `fixture:${id}` },
@@ -99,9 +100,10 @@ const envelope = (
   occurredAtPrecision: "exact",
   origin: "fixture",
   payload: {},
-  schemaVersion: "dx.event.v1",
+  schemaVersion: "dx.event.v2",
   sourceVersion: null,
   upstreamKey: id,
+  usage: null,
   ...overrides,
 });
 

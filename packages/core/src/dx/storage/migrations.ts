@@ -1,10 +1,14 @@
+import { upgradedEventJson } from "./upgrade-v1.js";
+
 export interface StoreMigration {
+  readonly rewriteEventBody: ((body: string) => string | null) | null;
   readonly statements: readonly string[];
   readonly version: number;
 }
 
 export const STORE_MIGRATIONS: readonly StoreMigration[] = [
   {
+    rewriteEventBody: null,
     statements: [
       "CREATE TABLE store_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)",
       "CREATE TABLE events (seq INTEGER PRIMARY KEY AUTOINCREMENT, event_id TEXT NOT NULL UNIQUE, adapter_id TEXT NOT NULL, kind TEXT NOT NULL, origin TEXT NOT NULL, flight_id TEXT, repo_common_dir TEXT, branch TEXT, occurred_at TEXT, observed_at TEXT NOT NULL, body TEXT NOT NULL)",
@@ -18,6 +22,11 @@ export const STORE_MIGRATIONS: readonly StoreMigration[] = [
       "CREATE TABLE snapshot_events (snapshot_id TEXT NOT NULL, ordinal INTEGER NOT NULL, event_id TEXT NOT NULL, PRIMARY KEY (snapshot_id, ordinal))",
     ],
     version: 1,
+  },
+  {
+    rewriteEventBody: upgradedEventJson,
+    statements: [],
+    version: 2,
   },
 ];
 

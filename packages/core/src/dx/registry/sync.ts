@@ -1,21 +1,22 @@
-// @effect-diagnostics nodeBuiltinImport:off -- Auto-sync discovers per-repo pull sources (transcript folders) with synchronous directory listings at the process boundary.
+// @effect-diagnostics nodeBuiltinImport:off -- Auto-sync lists local branches with a synchronous git call at the process boundary.
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync } from "node:fs";
 import path from "node:path";
 
 import { Console, Effect } from "effect";
 
-import { runCollect } from "../cli/commands/collect.js";
-import { chatStoreSources } from "../collectors/cursor-chats-store/sources.js";
-import {
-  HOOK_SPOOL_FOLDER,
-  LEGACY_SPOOL_FOLDER,
-  latestSpoolRecord,
-} from "../collectors/cursor-hooks/spool.js";
-import { localDbSources } from "../collectors/cursor-local-db/sources.js";
+import { runCollect, runHarnessRead } from "../cli/commands/collect.js";
+import type { DxCommandEnv } from "../cli/commands/context.js";
+import { LEGACY_SPOOL_FOLDER } from "../collectors/cursor-hooks/spool.js";
 import { autoSources, worktreeSources } from "../composition.js";
 import type { AutoSource } from "../composition.js";
 import type { EventStoreService } from "../contracts/services.js";
+import type { HarnessScope, SessionRef } from "../harness/contract.js";
+import {
+  CURSOR_TRANSCRIPT_SOURCE,
+  missingTranscriptFolder,
+} from "../harness/cursor/sources.js";
+import type { HarnessId } from "../harness/ids.js";
+import { HarnessRegistry, HarnessRegistryLive } from "../harness/registry.js";
 import type { FlightContext } from "../model/event.js";
 import type { DxCollectorServices, RegisteredCollector } from "./registry.js";
 import {
@@ -25,6 +26,11 @@ import {
   listRepoWorktrees,
   repoWorktrees,
 } from "./runtime.js";
+
+export {
+  cursorProjectSlug,
+  transcriptDirFor,
+} from "../harness/cursor/sources.js";
 
 export interface SyncStep {
   readonly duplicates: number | null;
@@ -51,149 +57,117 @@ export interface AutoSyncOptions {
 export const LEGACY_FOLDER_NOTE =
   `Old folder ${LEGACY_SPOOL_FOLDER}/ in this repo is no longer used; you can delete it.` as const;
 
-const TRANSCRIPT_SOURCE = "collector.cursor-transcripts";
-
-const TRANSCRIPT_EXTENSIONS = new Set([".jsonl", ".txt"]);
-
-export const cursorProjectSlug = (worktree: string): string =>
-  worktree.replaceAll(/[^A-Za-z0-9]+/gu, "-").replace(/^-+/u, "");
-
-const listFiles = (dir: string): readonly string[] => {
-  try {
-    return readdirSync(dir, { withFileTypes: true })
-      .filter(
-        (entry) =>
-          entry.isFile() && TRANSCRIPT_EXTENSIONS.has(path.extname(entry.name))
-      )
-      .map((entry) => path.join(dir, entry.name))
-      .toSorted();
-  } catch {
-    return [];
-  }
-};
-
-const listDirs = (dir: string): readonly string[] => {
-  try {
-    return readdirSync(dir, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory())
-      .map((entry) => path.join(dir, entry.name))
-      .toSorted();
-  } catch {
-    return [];
-  }
-};
-
-export const transcriptDirFor = (home: string, worktree: string): string =>
-  path.join(
-    home,
-    ".cursor",
-    "projects",
-    cursorProjectSlug(worktree),
-    "agent-transcripts"
-  );
-
-export const transcriptSources = (
-  home: string,
-  worktree: string
-): readonly AutoSource[] => {
-  const root = transcriptDirFor(home, worktree);
-
-  const nested = listDirs(root).flatMap((dir) => [
-    ...listFiles(dir),
-    ...listFiles(path.join(dir, "subagents")),
-  ]);
-
-  return [...listFiles(root), ...nested].map((input) => ({
-    input,
-    source: TRANSCRIPT_SOURCE,
-  }));
-};
-
 export const unavailableSteps = (
   context: FlightContext,
   home: string
 ): readonly SyncStep[] => {
-  const worktree = context.worktreePath;
+  const gap = missingTranscriptFolder(home, context.worktreePath);
 
-  const transcripts =
-    worktree === null ? null : transcriptDirFor(home, worktree);
-
-  return transcripts === null || existsSync(transcripts)
+  return gap === null
     ? []
     : [
         {
           duplicates: null,
-          input: transcripts,
+          input: gap.input,
           inserted: null,
-          reason:
-            "no Cursor agent-transcripts folder for this worktree (slug match is by path)",
-          source: TRANSCRIPT_SOURCE,
+          reason: gap.reason,
+          source: CURSOR_TRANSCRIPT_SOURCE,
           status: "unavailable",
         },
       ];
 };
 
-export const leftoverSpoolSources = (
-  dftHome: string,
-  repoCommonDir: string | null,
-  planned: ReadonlySet<string>
-): readonly AutoSource[] =>
-  repoCommonDir === null
-    ? []
-    : listDirs(path.join(dftHome, "spool"))
-        .map((dir) => path.join(dir, HOOK_SPOOL_FOLDER))
-        .filter(
-          (dir) =>
-            !planned.has(dir) &&
-            latestSpoolRecord(dir)?.git.repoCommonDir === repoCommonDir
-        )
-        .map((input) => ({ input, source: "collector.cursor-hooks" }));
-
 export interface PlannedSource extends AutoSource {
   readonly context: FlightContext;
+  readonly harness: HarnessId | null;
+  readonly ref: SessionRef | null;
 }
 
 const withContext =
   (context: FlightContext) =>
-  (source: AutoSource): PlannedSource => ({ ...source, context });
+  (source: AutoSource): PlannedSource => ({
+    ...source,
+    context,
+    harness: null,
+    ref: null,
+  });
 
-export const planSources = (
+const samePath = (a: string, b: string): boolean =>
+  path.resolve(a) === path.resolve(b);
+
+export const planGitSources = (
   context: FlightContext,
   options: AutoSyncOptions,
   worktrees: readonly string[] = []
 ): readonly PlannedSource[] => {
   const worktree = context.worktreePath ?? options.cwd;
-  const dftHome = options.dftHome ?? defaultDftHome();
+  const siblings = worktrees.filter((other) => !samePath(other, worktree));
 
-  const siblings = worktrees.filter(
-    (other) => path.resolve(other) !== path.resolve(worktree)
-  );
-
-  const live = [
-    ...[
-      ...autoSources(context, options.cwd, options.storePath, dftHome),
-      ...transcriptSources(options.home, worktree),
-      ...chatStoreSources(options.home, worktree),
-      ...localDbSources(options.home),
-    ].map(withContext(context)),
+  return [
+    ...autoSources(context, options.cwd, options.storePath).map(
+      withContext(context)
+    ),
     ...siblings.flatMap((other) =>
-      [
-        ...worktreeSources(other, dftHome),
-        ...transcriptSources(options.home, other),
-        ...chatStoreSources(options.home, other),
-        ...localDbSources(options.home),
-      ].map(withContext(contextForRepo(other)))
+      worktreeSources(other).map(withContext(contextForRepo(other)))
     ),
   ];
-
-  const leftovers = leftoverSpoolSources(
-    dftHome,
-    context.repoCommonDir,
-    new Set(live.map((step) => step.input))
-  ).map(withContext(context));
-
-  return [...live, ...leftovers];
 };
+
+export const harnessScopeFor = (
+  context: FlightContext,
+  options: AutoSyncOptions,
+  worktrees: readonly string[] = []
+): HarnessScope => {
+  const worktree = context.worktreePath ?? options.cwd;
+
+  return {
+    dftHome: options.dftHome ?? defaultDftHome(),
+    repoCommonDir: context.repoCommonDir,
+    since: null,
+    worktrees: [
+      worktree,
+      ...worktrees.filter((other) => !samePath(other, worktree)),
+    ],
+  };
+};
+
+export const planHarnessSources = (
+  context: FlightContext,
+  options: AutoSyncOptions,
+  worktrees: readonly string[] = []
+): Effect.Effect<readonly PlannedSource[], never, HarnessRegistry> =>
+  Effect.gen(function* planHarnesses() {
+    const registry = yield* HarnessRegistry;
+    const scope = harnessScopeFor(context, options, worktrees);
+    const primary = scope.worktrees[0] ?? null;
+    const located = yield* registry.locate(scope);
+
+    return located.refs.map((ref): PlannedSource => ({
+      context:
+        ref.worktree === null ||
+        primary === null ||
+        samePath(ref.worktree, primary)
+          ? context
+          : contextForRepo(ref.worktree),
+      harness: ref.harness,
+      input: ref.path,
+      ref,
+      source: ref.source,
+    }));
+  });
+
+export const planSources = (
+  context: FlightContext,
+  options: AutoSyncOptions,
+  worktrees: readonly string[] = []
+): Effect.Effect<readonly PlannedSource[], never, HarnessRegistry> =>
+  Effect.map(
+    planHarnessSources(context, options, worktrees),
+    (harnessSteps) => [
+      ...planGitSources(context, options, worktrees),
+      ...harnessSteps,
+    ]
+  );
 
 const BRANCH_LIST_TIMEOUT_MS = 3000;
 
@@ -242,10 +216,56 @@ export const idleBranchSources = (
     .filter((branch) => !checkedOut.has(branch) && branch !== context.branch)
     .map((branch) => ({
       context: { ...context, branch, headSha: null },
+      harness: null,
       input: worktree,
+      ref: null,
       source: "collector.git-history",
     }));
 };
+
+export const runPlannedStep = (
+  env: DxCommandEnv,
+  collectors: readonly RegisteredCollector[],
+  step: PlannedSource
+): Effect.Effect<SyncStep, never, DxCollectorServices | HarnessRegistry> =>
+  Effect.gen(function* runStep() {
+    const registry = yield* HarnessRegistry;
+    const harness = step.harness === null ? null : registry.get(step.harness);
+
+    const collected =
+      harness === null || step.ref === null
+        ? runCollect(env, collectors, {
+            context: step.context,
+            input: step.input,
+            source: step.source,
+          })
+        : runHarnessRead(env, {
+            context: step.context,
+            harness,
+            ref: step.ref,
+          });
+
+    return yield* collected.pipe(
+      Effect.map((result): SyncStep => ({
+        duplicates: result.duplicates,
+        input: step.input,
+        inserted: result.inserted,
+        reason: null,
+        source: step.source,
+        status: "synced",
+      })),
+      Effect.catch((error) =>
+        Effect.succeed<SyncStep>({
+          duplicates: null,
+          input: step.input,
+          inserted: null,
+          reason: error.message,
+          source: step.source,
+          status: "unavailable",
+        })
+      )
+    );
+  });
 
 export const autoSync = (
   store: EventStoreService,
@@ -254,38 +274,16 @@ export const autoSync = (
 ): Effect.Effect<SyncReport, never, DxCollectorServices> =>
   Effect.gen(function* syncRepo() {
     const context = contextForRepo(options.repo);
+    const env = { store, storePath: options.storePath };
 
     const plan = [
-      ...planSources(context, options, repoWorktrees(options.repo)),
+      ...(yield* planSources(context, options, repoWorktrees(options.repo))),
       ...idleBranchSources(context, options.repo),
     ];
 
     // oxlint-disable-next-line unicorn/no-array-method-this-argument -- Effect.forEach takes an options object, not a thisArg.
     const steps = yield* Effect.forEach(plan, (step) =>
-      runCollect({ store, storePath: options.storePath }, collectors, {
-        context: step.context,
-        input: step.input,
-        source: step.source,
-      }).pipe(
-        Effect.map((result): SyncStep => ({
-          duplicates: result.duplicates,
-          input: step.input,
-          inserted: result.inserted,
-          reason: null,
-          source: step.source,
-          status: "synced",
-        })),
-        Effect.catch((error) =>
-          Effect.succeed<SyncStep>({
-            duplicates: null,
-            input: step.input,
-            inserted: null,
-            reason: error.message,
-            source: step.source,
-            status: "unavailable",
-          })
-        )
-      )
+      runPlannedStep(env, collectors, step)
     );
 
     const legacy = legacyHookSpoolDirFor(context.worktreePath ?? options.cwd);
@@ -298,7 +296,7 @@ export const autoSync = (
       context,
       steps: [...steps, ...unavailableSteps(context, options.home)],
     };
-  });
+  }).pipe(Effect.provide(HarnessRegistryLive));
 
 export const formatSyncLine = (report: SyncReport): string => {
   const synced = report.steps.filter((step) => step.status === "synced");

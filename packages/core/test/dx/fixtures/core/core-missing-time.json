@@ -47,6 +47,7 @@
           "acquisition": "manual",
           "adapterId": "marker",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0002",
@@ -77,14 +78,16 @@
           "occurredAtPrecision": "exact",
           "origin": "fixture",
           "payload": {},
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "flight-fixture-0002:start"
+          "upstreamKey": "flight-fixture-0002:start",
+          "usage": null
         },
         {
           "acquisition": "manual",
           "adapterId": "marker",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0002",
@@ -115,9 +118,10 @@
           "occurredAtPrecision": "exact",
           "origin": "fixture",
           "payload": {},
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "flight-fixture-0002:wait-1:start"
+          "upstreamKey": "flight-fixture-0002:wait-1:start",
+          "usage": null
         }
       ]
     },
@@ -146,6 +150,7 @@
           "acquisition": "command-capture",
           "adapterId": "command-capture",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0002",
@@ -179,14 +184,16 @@
             "exitCode": 0,
             "durationMs": null
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "cmd:1"
+          "upstreamKey": "cmd:1",
+          "usage": null
         },
         {
           "acquisition": "command-capture",
           "adapterId": "command-capture",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0002",
@@ -221,9 +228,10 @@
             "startedAt": "2026-09-30T09:20:00.000Z",
             "completedAt": "2026-09-30T09:19:00.000Z"
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "cmd:2"
+          "upstreamKey": "cmd:2",
+          "usage": null
         }
       ]
     }

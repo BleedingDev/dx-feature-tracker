@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 
 import { DateTime, Option, Schema } from "effect";
 
+import { withCollectorBlocks } from "../../harness/collector-blocks.js";
 import { canonicalRequestKey, canonicalTurnKey } from "../../model/ai.js";
 import type {
   AttributionState,
@@ -616,7 +617,7 @@ const makeEnvelope = (
           worktreePath: parts.cwd,
         };
 
-  return {
+  return withCollectorBlocks({
     acquisition: "file-import",
     adapterId: CODEX_ADAPTER_ID,
     adapterVersion: CODEX_ADAPTER_VERSION,
@@ -644,7 +645,7 @@ const makeEnvelope = (
     schemaVersion: EVENT_SCHEMA_VERSION,
     sourceVersion: session.cliVersion,
     upstreamKey: parts.upstreamKey,
-  };
+  });
 };
 
 const evidenceRef = (

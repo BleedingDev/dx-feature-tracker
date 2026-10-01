@@ -1,3 +1,4 @@
+import { withCollectorBlocks } from "../../harness/collector-blocks.js";
 import type { Origin } from "../../model/common.js";
 import type {
   DxEventEnvelope,
@@ -236,7 +237,7 @@ const envelope = (
       ? `${hook.conversationId}:${hook.generationId}`
       : null;
 
-  return {
+  return withCollectorBlocks({
     acquisition: "hook",
     adapterId: CURSOR_HOOKS_ADAPTER_ID,
     adapterVersion: CURSOR_HOOKS_ADAPTER_VERSION,
@@ -273,7 +274,7 @@ const envelope = (
     schemaVersion: EVENT_SCHEMA_VERSION,
     sourceVersion: hook.cursorVersion,
     upstreamKey: input.upstreamKey,
-  };
+  });
 };
 
 const UNVERIFIED_NOTE =

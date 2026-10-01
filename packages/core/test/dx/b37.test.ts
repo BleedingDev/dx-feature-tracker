@@ -66,6 +66,7 @@ const toEnvelope = (
   acquisition: "file-import",
   adapterId: entry.adapterId,
   adapterVersion: "fixture",
+  ai: null,
   context: emptyFlightContext,
   eventId: EventIdSchema.make(entry.id),
   evidence: { bounded: true, hash: entry.hash, ref: entry.ref },
@@ -77,9 +78,10 @@ const toEnvelope = (
   occurredAtPrecision: "exact",
   origin: "fixture",
   payload: entry.payload,
-  schemaVersion: "dx.event.v1",
+  schemaVersion: "dx.event.v2",
   sourceVersion: null,
   upstreamKey: entry.id,
+  usage: null,
   ...overrides,
 });
 

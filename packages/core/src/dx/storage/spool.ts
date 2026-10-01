@@ -9,8 +9,8 @@ import { DateTime, Effect, Exit, Schema } from "effect";
 
 import { StoreError } from "../contracts/error-store-error.js";
 import type { EventStoreService, StoreFailure } from "../contracts/services.js";
-import { EventBatchSchema } from "../model/event.js";
 import type { EventBatch } from "../model/event.js";
+import { StoredBatchSchema, toCurrentBatch } from "./upgrade-v1.js";
 
 export interface SpoolDrainResult {
   readonly duplicates: number;
@@ -20,7 +20,7 @@ export interface SpoolDrainResult {
 }
 
 const decodeBatch = Schema.decodeUnknownExit(
-  Schema.fromJsonString(EventBatchSchema)
+  Schema.fromJsonString(StoredBatchSchema)
 );
 
 const PENDING_SUFFIX = ".batch.json";
@@ -97,7 +97,7 @@ export const drainSpool = (
           },
         });
       } else {
-        const result = yield* store.append(decoded.value);
+        const result = yield* store.append(toCurrentBatch(decoded.value));
         inserted += result.inserted;
         duplicates += result.duplicates;
         yield* Effect.try({

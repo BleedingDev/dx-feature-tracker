@@ -72,6 +72,7 @@ const toEnvelope = (
   acquisition: "file-import",
   adapterId: item.adapterId,
   adapterVersion: "0.0.0-fixture",
+  ai: null,
   context: emptyFlightContext,
   eventId: EventIdSchema.make(item.id),
   evidence: { bounded: true, hash: null, ref: `fixture:b36:${item.id}` },
@@ -89,9 +90,10 @@ const toEnvelope = (
   occurredAtPrecision: item.precision,
   origin: "fixture",
   payload: item.payload,
-  schemaVersion: "dx.event.v1",
+  schemaVersion: "dx.event.v2",
   sourceVersion: null,
   upstreamKey: item.id,
+  usage: null,
 });
 
 const events = fixture.events.map(toEnvelope);

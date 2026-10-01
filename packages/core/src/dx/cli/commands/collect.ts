@@ -8,9 +8,10 @@ import type {
   DxCollector,
   StoreFailure,
 } from "../../contracts/services.js";
+import type { Harness, ReadError, SessionRef } from "../../harness/contract.js";
 import type { Origin } from "../../model/common.js";
 import type { SourceCoverage } from "../../model/coverage.js";
-import type { FlightContext } from "../../model/event.js";
+import type { EventBatch, FlightContext } from "../../model/event.js";
 import { drainSpool, writeSpoolBatch } from "../../storage/spool.js";
 import type { SpoolDrainResult } from "../../storage/spool.js";
 import { spoolDirFor } from "../../storage/store-path.js";
@@ -52,6 +53,37 @@ export const findCollector = <R>(
 ): DxCollector<R> | undefined =>
   collectors.find(
     (c) => c.descriptor.id === source || adapterIdOf(c) === source
+  );
+
+const appendCollected = (
+  env: DxCommandEnv,
+  batch: EventBatch,
+  origin: Origin
+): Effect.Effect<CollectResult, StoreFailure | StoreError> =>
+  Effect.map(
+    env.store.append(batch).pipe(
+      Effect.map((r): SpoolableAppend => ({ ...r, spooledTo: null })),
+      Effect.catchTag("StoreBusy", () =>
+        Effect.map(
+          writeSpoolBatch(spoolDirFor(env.storePath), batch),
+          (spooledTo): SpoolableAppend => ({
+            duplicates: 0,
+            inserted: 0,
+            spooledTo,
+          })
+        )
+      )
+    ),
+    (appended): CollectResult => ({
+      adapterId: batch.coverage.adapterId,
+      coverage: batch.coverage,
+      duplicates: appended.duplicates,
+      events: batch.events.length,
+      inserted: appended.inserted,
+      origin,
+      spooledTo: appended.spooledTo,
+      storePath: env.storePath,
+    })
   );
 
 export const runCollect = <R>(
@@ -99,31 +131,27 @@ export const runCollect = <R>(
       selectedInput: request.input,
     });
 
-    const appended = yield* env.store.append(batch).pipe(
-      Effect.map((r): SpoolableAppend => ({ ...r, spooledTo: null })),
-      Effect.catchTag("StoreBusy", () =>
-        Effect.map(
-          writeSpoolBatch(spoolDirFor(env.storePath), batch),
-          (spooledTo): SpoolableAppend => ({
-            duplicates: 0,
-            inserted: 0,
-            spooledTo,
-          })
-        )
-      )
-    );
-
-    return {
-      adapterId: batch.coverage.adapterId,
-      coverage: batch.coverage,
-      duplicates: appended.duplicates,
-      events: batch.events.length,
-      inserted: appended.inserted,
-      origin,
-      spooledTo: appended.spooledTo,
-      storePath: env.storePath,
-    };
+    return yield* appendCollected(env, batch, origin);
   });
+
+export interface HarnessReadRequest {
+  readonly context: FlightContext;
+  readonly harness: Harness;
+  readonly ref: SessionRef;
+}
+
+export const runHarnessRead = (
+  env: DxCommandEnv,
+  request: HarnessReadRequest
+): Effect.Effect<CollectResult, ReadError | StoreFailure | StoreError> =>
+  Effect.flatMap(
+    request.harness.read(request.ref, {
+      context: request.context,
+      cursor: null,
+      origin: "imported",
+    }),
+    (batch) => appendCollected(env, batch, "imported")
+  );
 
 export interface ImportSpoolResult extends SpoolDrainResult {
   readonly drainedAt: string;

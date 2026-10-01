@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 
 import { Option, Schema } from "effect";
 
+import { withCollectorBlocks } from "../../harness/collector-blocks.js";
 import { canonicalRequestKey, canonicalTurnKey } from "../../model/ai.js";
 import type { Origin } from "../../model/common.js";
 import type { SourceGap } from "../../model/coverage.js";
@@ -494,29 +495,31 @@ const makeEmitter = (
       timestamps.push(parts.occurredAt);
     }
 
-    events.push({
-      acquisition: "file-import",
-      adapterId: ENTIRE_ADAPTER_ID,
-      adapterVersion: ENTIRE_ADAPTER_VERSION,
-      context: contextFor(parts.branch),
-      eventId: makeEventId(upstreamKey, kind),
-      evidence: parts.evidence,
-      fieldSemantics: parts.fieldSemantics,
-      identity: { ...emptyEventIdentity, ...parts.identity },
-      kind,
-      observedAt: options.observedAt,
-      occurredAt: parts.occurredAt,
-      occurredAtPrecision: parts.occurredAt === null ? "unknown" : "exact",
-      origin: options.origin,
-      payload: {
-        ...parts.payload,
-        allocation: ALLOCATION_PROVISIONAL,
-        sourceKind: ENTIRE_ADAPTER_ID,
-      },
-      schemaVersion: EVENT_SCHEMA_VERSION,
-      sourceVersion: null,
-      upstreamKey,
-    });
+    events.push(
+      withCollectorBlocks({
+        acquisition: "file-import",
+        adapterId: ENTIRE_ADAPTER_ID,
+        adapterVersion: ENTIRE_ADAPTER_VERSION,
+        context: contextFor(parts.branch),
+        eventId: makeEventId(upstreamKey, kind),
+        evidence: parts.evidence,
+        fieldSemantics: parts.fieldSemantics,
+        identity: { ...emptyEventIdentity, ...parts.identity },
+        kind,
+        observedAt: options.observedAt,
+        occurredAt: parts.occurredAt,
+        occurredAtPrecision: parts.occurredAt === null ? "unknown" : "exact",
+        origin: options.origin,
+        payload: {
+          ...parts.payload,
+          allocation: ALLOCATION_PROVISIONAL,
+          sourceKind: ENTIRE_ADAPTER_ID,
+        },
+        schemaVersion: EVENT_SCHEMA_VERSION,
+        sourceVersion: null,
+        upstreamKey,
+      })
+    );
   };
 };
 

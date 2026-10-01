@@ -150,6 +150,7 @@ const toEnvelope = (env: EnvelopeEnv, draft: EventDraft): DxEventEnvelope => ({
   acquisition: env.acquisition,
   adapterId: GIT_HISTORY_ADAPTER_ID,
   adapterVersion: GIT_HISTORY_ADAPTER_VERSION,
+  ai: null,
   context: env.context,
   eventId: eventIdFor(GIT_HISTORY_ADAPTER_ID, draft.upstreamKey, draft.kind),
   evidence: {
@@ -168,6 +169,7 @@ const toEnvelope = (env: EnvelopeEnv, draft: EventDraft): DxEventEnvelope => ({
   schemaVersion: EVENT_SCHEMA_VERSION,
   sourceVersion: env.sourceVersion,
   upstreamKey: draft.upstreamKey,
+  usage: null,
 });
 
 const sem = (

@@ -1,13 +1,19 @@
 import { Option, Schema } from "effect";
 
 import type { StoreSnapshot } from "../../contracts/services.js";
-import { AI_SOURCE_PRECEDENCE } from "../../model/ai.js";
+import {
+  UNKNOWN_SOURCE_RANK,
+  aiSourceRank,
+} from "../../harness/source-kinds.js";
+import { AiSourceKindSchema } from "../../model/ai.js";
 import type { SourceCoverage } from "../../model/coverage.js";
 import type { DxEventEnvelope } from "../../model/event.js";
 import type { EvidenceId } from "../../model/ids.js";
 import { EvidenceIdSchema } from "../../model/ids.js";
 import type { Interval } from "../../model/interval.js";
 import { matchKeysOf, sourceKindFrom } from "../ai-usage/normalize.js";
+
+const isAiSourceKind = Schema.is(AiSourceKindSchema);
 
 export const IDLE_GAP_MS = 30 * 60 * 1000;
 
@@ -421,11 +427,8 @@ const agentIntervals = (events: readonly DxEventEnvelope[]): Interval[] => {
 const activityPoints = (events: readonly DxEventEnvelope[]): Interval[] =>
   burstIntervals(activityCandidates(events), "activity-burst");
 
-const precedenceOf = (source: string): number => {
-  const index = AI_SOURCE_PRECEDENCE.map(String).indexOf(source);
-
-  return index === -1 ? AI_SOURCE_PRECEDENCE.length : index;
-};
+const precedenceOf = (source: string): number =>
+  isAiSourceKind(source) ? aiSourceRank(source) : UNKNOWN_SOURCE_RANK;
 
 interface ToolReport {
   readonly count: number;

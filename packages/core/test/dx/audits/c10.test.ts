@@ -288,6 +288,7 @@ describe("c10 evidence export path (B37)", () => {
     acquisition: "file-import",
     adapterId: "c10-hostile-import",
     adapterVersion: "fixture",
+    ai: null,
     context: emptyFlightContext,
     eventId: EventIdSchema.make("c10-hostile"),
     evidence: {
@@ -319,9 +320,10 @@ describe("c10 evidence export path (B37)", () => {
       stdout: `C10-OUTPUT-MARKER ${SECRETS.AWS_SECRET}`,
       tokens: 42,
     },
-    schemaVersion: "dx.event.v1",
+    schemaVersion: "dx.event.v2",
     sourceVersion: null,
     upstreamKey: "c10-hostile",
+    usage: null,
   };
 
   it("evidence items from a hostile imported event are redacted and bounded", () => {

@@ -1,5 +1,6 @@
 import { Crypto, Data, DateTime, Effect, Option } from "effect";
 
+import { withCollectorBlocks } from "../../harness/collector-blocks.js";
 import type { TokenCategory } from "../../model/ai.js";
 import type { Origin, TimePrecision } from "../../model/common.js";
 import type { SourceCoverage, SourceGap } from "../../model/coverage.js";
@@ -501,62 +502,63 @@ const toEvent = (
   },
   fieldSemantics: readonly FieldSemantics[],
   options: ParseOptions
-): DxEventEnvelope => ({
-  acquisition: "file-import",
-  adapterId: CURSOR_USAGE_EXPORT_ADAPTER_ID,
-  adapterVersion: CURSOR_USAGE_EXPORT_ADAPTER_VERSION,
-  context: {
-    ...options.context,
-    branch: null,
-    flightId: null,
-    headSha: null,
-  },
-  eventId: EventIdSchema.make(hashes.eventId),
-  evidence: {
-    bounded: true,
-    hash: hashes.rowHash,
-    ref: `cursor-usage-csv://${options.sourceName}#line:${String(row.line)}`,
-  },
-  fieldSemantics,
-  identity: {
-    commitSha: null,
-    generationId: null,
-    githubAttempt: null,
-    githubRunId: null,
-    prNumber: null,
-    requestId: null,
-    sessionId: null,
-    turnId: null,
-  },
-  kind: "ai.usage",
-  observedAt: options.observedAt,
-  occurredAt: row.time.at,
-  occurredAtPrecision: row.time.precision,
-  origin: options.origin,
-  payload: {
-    attribution: "unassigned",
-    attributionReason:
-      "usage export rows carry no branch, request or session id; branch assignment needs time-window correlation",
-    batchId: hashes.batchId,
-    charge: row.cost.ledger === "charge" ? row.cost.amountUsd : null,
-    costCell: row.cost.cell,
-    costLedger: row.cost.ledger,
-    costUsd: row.cost.amountUsd,
-    currency: row.cost.amountUsd === null ? null : "USD",
-    maxMode: row.maxMode,
-    model: row.model,
-    rawCategory: row.kind,
-    rawTokens: row.rawTokens,
-    requestKey: null,
-    requestUnits: row.requestUnits,
-    sourceKind: "usage-csv",
-    tokens: row.tokens,
-    toolCalls: null,
-  },
-  schemaVersion: EVENT_SCHEMA_VERSION,
-  sourceVersion: null,
-  upstreamKey: hashes.upstreamKey,
-});
+): DxEventEnvelope =>
+  withCollectorBlocks({
+    acquisition: "file-import",
+    adapterId: CURSOR_USAGE_EXPORT_ADAPTER_ID,
+    adapterVersion: CURSOR_USAGE_EXPORT_ADAPTER_VERSION,
+    context: {
+      ...options.context,
+      branch: null,
+      flightId: null,
+      headSha: null,
+    },
+    eventId: EventIdSchema.make(hashes.eventId),
+    evidence: {
+      bounded: true,
+      hash: hashes.rowHash,
+      ref: `cursor-usage-csv://${options.sourceName}#line:${String(row.line)}`,
+    },
+    fieldSemantics,
+    identity: {
+      commitSha: null,
+      generationId: null,
+      githubAttempt: null,
+      githubRunId: null,
+      prNumber: null,
+      requestId: null,
+      sessionId: null,
+      turnId: null,
+    },
+    kind: "ai.usage",
+    observedAt: options.observedAt,
+    occurredAt: row.time.at,
+    occurredAtPrecision: row.time.precision,
+    origin: options.origin,
+    payload: {
+      attribution: "unassigned",
+      attributionReason:
+        "usage export rows carry no branch, request or session id; branch assignment needs time-window correlation",
+      batchId: hashes.batchId,
+      charge: row.cost.ledger === "charge" ? row.cost.amountUsd : null,
+      costCell: row.cost.cell,
+      costLedger: row.cost.ledger,
+      costUsd: row.cost.amountUsd,
+      currency: row.cost.amountUsd === null ? null : "USD",
+      maxMode: row.maxMode,
+      model: row.model,
+      rawCategory: row.kind,
+      rawTokens: row.rawTokens,
+      requestKey: null,
+      requestUnits: row.requestUnits,
+      sourceKind: "usage-csv",
+      tokens: row.tokens,
+      toolCalls: null,
+    },
+    schemaVersion: EVENT_SCHEMA_VERSION,
+    sourceVersion: null,
+    upstreamKey: hashes.upstreamKey,
+  });
 
 const buildGaps = (
   layout: Layout,

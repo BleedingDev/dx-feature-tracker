@@ -120,6 +120,7 @@ const toEnvelope = (frame: EventFrame, draft: EventDraft): DxEventEnvelope => ({
   acquisition: "git",
   adapterId: GIT_OBSERVATION_ADAPTER_ID,
   adapterVersion: GIT_OBSERVATION_ADAPTER_VERSION,
+  ai: null,
   context: frame.context,
   eventId: EventIdSchema.make(
     sha256(
@@ -142,6 +143,7 @@ const toEnvelope = (frame: EventFrame, draft: EventDraft): DxEventEnvelope => ({
   schemaVersion: EVENT_SCHEMA_VERSION,
   sourceVersion: frame.sourceVersion,
   upstreamKey: draft.upstreamKey,
+  usage: null,
 });
 
 export const workingTreeDraft = (

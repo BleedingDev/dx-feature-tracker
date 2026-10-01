@@ -424,6 +424,7 @@ const toEnvelope = Effect.fn("toEnvelope")(function* toEnvelope(
     acquisition: isHistory ? "file-import" : "command-capture",
     adapterId: SHELL_COMMAND_ADAPTER_ID,
     adapterVersion: ADAPTER_VERSION,
+    ai: null,
     context: draft.context,
     eventId: EventIdSchema.make(eventId),
     evidence: {
@@ -442,6 +443,7 @@ const toEnvelope = Effect.fn("toEnvelope")(function* toEnvelope(
     schemaVersion: EVENT_SCHEMA_VERSION,
     sourceVersion: isHistory ? "shell-history" : "dx.shell-command.v1",
     upstreamKey: draft.upstreamKey,
+    usage: null,
   };
 
   return envelope;

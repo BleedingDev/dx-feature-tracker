@@ -75,7 +75,7 @@ const collapsed = (members: readonly AiClaim[]): ClaimCluster => {
       preferredEvidenceId: preferred?.evidenceId ?? null,
       reason: sameTurnOnly
         ? `duplicate emissions of turn ${preferred?.turnKey ?? "?"} from ${sources.join(",")} collapse to one`
-        : `shared strong request/turn id across ${sources.join(",")}; ${preferred?.sourceKind ?? "?"} preferred by AI_SOURCE_PRECEDENCE`,
+        : `shared strong request/turn id across ${sources.join(",")}; ${preferred?.sourceKind ?? "?"} preferred by its harness channel precedence`,
       requestKey: preferred?.requestKey ?? null,
       resolution: sameTurnOnly
         ? OverlapPolicy.duplicateStopSameTurn

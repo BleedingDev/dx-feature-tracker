@@ -1,5 +1,6 @@
 import { Crypto, Data, DateTime, Effect, Option, Schema } from "effect";
 
+import { withCollectorBlocks } from "../../harness/collector-blocks.js";
 import type { TokenCategory } from "../../model/ai.js";
 import type { Origin } from "../../model/common.js";
 import type { SourceCoverage, SourceGap } from "../../model/coverage.js";
@@ -606,69 +607,70 @@ const toEvent = (
   },
   fieldSemantics: readonly FieldSemantics[],
   options: ParseOptions
-): DxEventEnvelope => ({
-  acquisition: "file-import",
-  adapterId: CURSOR_DASHBOARD_RESPONSE_ADAPTER_ID,
-  adapterVersion: CURSOR_DASHBOARD_RESPONSE_ADAPTER_VERSION,
-  context: {
-    ...options.context,
-    branch: null,
-    flightId: null,
-    headSha: null,
-  },
-  eventId: EventIdSchema.make(hashes.eventId),
-  evidence: {
-    bounded: true,
-    hash: hashes.rowHash,
-    ref: `cursor-dashboard-response://${options.sourceName}#${hashes.upstreamKey}`,
-  },
-  fieldSemantics,
-  identity: {
-    commitSha: null,
-    generationId: row.keys.generationId,
-    githubAttempt: null,
-    githubRunId: null,
-    prNumber: null,
-    requestId: row.keys.requestId ?? row.keys.clientRequestId,
-    sessionId: row.keys.composerId ?? row.conversationId,
-    turnId: turnIdOf(row.keys),
-  },
-  kind: "ai.usage",
-  observedAt: options.observedAt,
-  occurredAt: row.occurredAt,
-  occurredAtPrecision: "exact",
-  origin: options.origin,
-  payload: {
-    attribution: "unassigned",
-    attributionReason:
-      "dashboard usage rows carry no branch; assignment needs request/conversation key or time-window correlation",
-    batchId: hashes.batchId,
-    charge: row.cost.ledger === "charge" ? row.cost.amountUsd : null,
-    conversationId: row.conversationId,
-    correlationKeys: correlationKeysOfRow(row.keys),
-    costLedger: row.cost.ledger,
-    costRawField: row.cost.rawField,
-    costUsd: row.cost.amountUsd,
-    currency: row.cost.amountUsd === null ? null : "USD",
-    maxMode: row.maxMode,
-    model: row.model,
-    rawCategory: row.kind,
-    rawTokens: row.rawTokens,
-    requestKey:
-      row.requestId ??
-      (row.conversationId === null
-        ? null
-        : `${row.conversationId}@${row.occurredAt}`),
-    requestUnits: row.requestUnits,
-    sourceKind: "dashboard-response",
-    tokenBased: row.tokenBased,
-    tokens: row.tokens,
-    toolCalls: null,
-  },
-  schemaVersion: EVENT_SCHEMA_VERSION,
-  sourceVersion: null,
-  upstreamKey: hashes.upstreamKey,
-});
+): DxEventEnvelope =>
+  withCollectorBlocks({
+    acquisition: "file-import",
+    adapterId: CURSOR_DASHBOARD_RESPONSE_ADAPTER_ID,
+    adapterVersion: CURSOR_DASHBOARD_RESPONSE_ADAPTER_VERSION,
+    context: {
+      ...options.context,
+      branch: null,
+      flightId: null,
+      headSha: null,
+    },
+    eventId: EventIdSchema.make(hashes.eventId),
+    evidence: {
+      bounded: true,
+      hash: hashes.rowHash,
+      ref: `cursor-dashboard-response://${options.sourceName}#${hashes.upstreamKey}`,
+    },
+    fieldSemantics,
+    identity: {
+      commitSha: null,
+      generationId: row.keys.generationId,
+      githubAttempt: null,
+      githubRunId: null,
+      prNumber: null,
+      requestId: row.keys.requestId ?? row.keys.clientRequestId,
+      sessionId: row.keys.composerId ?? row.conversationId,
+      turnId: turnIdOf(row.keys),
+    },
+    kind: "ai.usage",
+    observedAt: options.observedAt,
+    occurredAt: row.occurredAt,
+    occurredAtPrecision: "exact",
+    origin: options.origin,
+    payload: {
+      attribution: "unassigned",
+      attributionReason:
+        "dashboard usage rows carry no branch; assignment needs request/conversation key or time-window correlation",
+      batchId: hashes.batchId,
+      charge: row.cost.ledger === "charge" ? row.cost.amountUsd : null,
+      conversationId: row.conversationId,
+      correlationKeys: correlationKeysOfRow(row.keys),
+      costLedger: row.cost.ledger,
+      costRawField: row.cost.rawField,
+      costUsd: row.cost.amountUsd,
+      currency: row.cost.amountUsd === null ? null : "USD",
+      maxMode: row.maxMode,
+      model: row.model,
+      rawCategory: row.kind,
+      rawTokens: row.rawTokens,
+      requestKey:
+        row.requestId ??
+        (row.conversationId === null
+          ? null
+          : `${row.conversationId}@${row.occurredAt}`),
+      requestUnits: row.requestUnits,
+      sourceKind: "dashboard-response",
+      tokenBased: row.tokenBased,
+      tokens: row.tokens,
+      toolCalls: null,
+    },
+    schemaVersion: EVENT_SCHEMA_VERSION,
+    sourceVersion: null,
+    upstreamKey: hashes.upstreamKey,
+  });
 
 const coverageState = (
   events: number,

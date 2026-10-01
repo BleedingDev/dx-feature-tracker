@@ -1,5 +1,6 @@
 import { Schema } from "effect";
 
+import { AiAttributionSchema, AiUsageSchema } from "./attribution.js";
 import {
   AcquisitionSchema,
   IsoTimestampSchema,
@@ -10,7 +11,7 @@ import {
 import { CollectCursorSchema, SourceCoverageSchema } from "./coverage.js";
 import { EventIdSchema, FlightIdSchema } from "./ids.js";
 
-export const EVENT_SCHEMA_VERSION = "dx.event.v1" as const;
+export const EVENT_SCHEMA_VERSION = "dx.event.v2" as const;
 
 export const EventKindSchema = Schema.Literals([
   "git.context",
@@ -108,6 +109,7 @@ export const DxEventEnvelopeSchema = Schema.Struct({
   acquisition: AcquisitionSchema,
   adapterId: Schema.String,
   adapterVersion: Schema.String,
+  ai: Schema.NullOr(AiAttributionSchema),
   context: FlightContextSchema,
   eventId: EventIdSchema,
   evidence: EvidenceRefSchema,
@@ -122,6 +124,7 @@ export const DxEventEnvelopeSchema = Schema.Struct({
   schemaVersion: Schema.Literal(EVENT_SCHEMA_VERSION),
   sourceVersion: Schema.NullOr(Schema.String),
   upstreamKey: Schema.String,
+  usage: Schema.NullOr(AiUsageSchema),
 });
 
 export type DxEventEnvelope = typeof DxEventEnvelopeSchema.Type;

@@ -20,6 +20,7 @@
           "acquisition": "manual",
           "adapterId": "git-history",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0001",
@@ -61,14 +62,16 @@
             "paths": ["src/a.ts", "src/b.ts"],
             "pathsTruncated": false
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "c07-commit-1"
+          "upstreamKey": "c07-commit-1",
+          "usage": null
         },
         {
           "acquisition": "manual",
           "adapterId": "git-history",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0001",
@@ -110,9 +113,10 @@
             "paths": ["src/a.ts"],
             "pathsTruncated": false
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "c07-commit-2"
+          "upstreamKey": "c07-commit-2",
+          "usage": null
         }
       ]
     },
@@ -133,6 +137,7 @@
           "acquisition": "manual",
           "adapterId": "local-test",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0001",
@@ -168,14 +173,16 @@
             "errors": 0,
             "failingTests": ["a.test.ts > sums"]
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "c07-test-1"
+          "upstreamKey": "c07-test-1",
+          "usage": null
         },
         {
           "acquisition": "manual",
           "adapterId": "local-test",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0001",
@@ -211,9 +218,10 @@
             "errors": 0,
             "failingTests": []
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "c07-test-2"
+          "upstreamKey": "c07-test-2",
+          "usage": null
         }
       ]
     }

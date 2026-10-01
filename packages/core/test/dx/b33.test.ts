@@ -76,6 +76,7 @@ const toEnvelope = (item: Scenario["events"][number]): DxEventEnvelope => ({
   acquisition: "file-import",
   adapterId: ADAPTER,
   adapterVersion: "0.0.0-fixture",
+  ai: null,
   context: emptyFlightContext,
   eventId: EventIdSchema.make(`b33-${item.id}`),
   evidence: { bounded: true, hash: null, ref: `fixture:b33:${item.id}` },
@@ -87,9 +88,10 @@ const toEnvelope = (item: Scenario["events"][number]): DxEventEnvelope => ({
   occurredAtPrecision: item.occurredAt === undefined ? "unknown" : "exact",
   origin: "fixture",
   payload: item.payload,
-  schemaVersion: "dx.event.v1",
+  schemaVersion: "dx.event.v2",
   sourceVersion: null,
   upstreamKey: item.id,
+  usage: null,
 });
 
 const snapshotOf = (scenario: Scenario): StoreSnapshot => ({

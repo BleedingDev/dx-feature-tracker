@@ -152,6 +152,7 @@ const aiEvent = (
   acquisition: "db-snapshot",
   adapterId: "cursor-local-db",
   adapterVersion: "1.0.0",
+  ai: null,
   context: { ...emptyFlightContext, branch: "feature/retro" },
   eventId: EventIdSchema.make(id),
   evidence: { bounded: true, hash: null, ref: `fixture:${id}` },
@@ -163,9 +164,10 @@ const aiEvent = (
   occurredAtPrecision: "second",
   origin: "fixture",
   payload: {},
-  schemaVersion: "dx.event.v1",
+  schemaVersion: "dx.event.v2",
   sourceVersion: null,
   upstreamKey: id,
+  usage: null,
   ...overrides,
 });
 

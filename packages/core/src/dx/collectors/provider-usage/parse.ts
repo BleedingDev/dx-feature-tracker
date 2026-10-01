@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 
 import { DateTime, Option, Result, Schema } from "effect";
 
+import { withCollectorBlocks } from "../../harness/collector-blocks.js";
 import type { Origin, TimePrecision } from "../../model/common.js";
 import type { SourceCoverage, SourceGap } from "../../model/coverage.js";
 import { EVENT_SCHEMA_VERSION } from "../../model/event.js";
@@ -472,7 +473,7 @@ const buildEvent = (
 
   const upstreamKey = `${format}:${bucket.from}:${bucket.to}:${facts.model ?? ""}:${dimensionKey}:${String(index)}`;
 
-  return {
+  return withCollectorBlocks({
     acquisition: "file-import",
     adapterId: PROVIDER_USAGE_ADAPTER_ID,
     adapterVersion: PROVIDER_USAGE_ADAPTER_VERSION,
@@ -515,7 +516,7 @@ const buildEvent = (
     schemaVersion: EVENT_SCHEMA_VERSION,
     sourceVersion: format,
     upstreamKey,
-  };
+  });
 };
 
 const eventsFor = <Row>(

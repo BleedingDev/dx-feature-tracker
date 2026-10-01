@@ -113,6 +113,7 @@ const toEvent = (
     acquisition: "file-import",
     adapterId: LOCAL_FEEDBACK_ADAPTER_ID,
     adapterVersion: `${LOCAL_FEEDBACK_ADAPTER_VERSION}+${adapter.id}@${adapter.version}`,
+    ai: null,
     context: input.context,
     eventId: EventIdSchema.make(
       sha256(`${LOCAL_FEEDBACK_ADAPTER_ID}\n${upstreamKey}\nfeedback.local`)
@@ -126,9 +127,10 @@ const toEvent = (
     occurredAtPrecision: record.occurredAtPrecision,
     origin: input.origin,
     payload: { ...record.payload, adapter: adapter.id },
-    schemaVersion: "dx.event.v1",
+    schemaVersion: "dx.event.v2",
     sourceVersion: record.sourceVersion,
     upstreamKey,
+    usage: null,
   };
 };
 

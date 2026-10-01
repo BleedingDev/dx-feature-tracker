@@ -1,5 +1,6 @@
 import { Crypto, DateTime, Effect, Option, Predicate, Schema } from "effect";
 
+import { withCollectorBlocks } from "../../harness/collector-blocks.js";
 import { canonicalRequestKey } from "../../model/ai.js";
 import type { Origin } from "../../model/common.js";
 import type { SourceCoverage, SourceGap } from "../../model/coverage.js";
@@ -300,7 +301,7 @@ const buildEvent = (
     turnIndex: null,
   });
 
-  return {
+  return withCollectorBlocks({
     acquisition: "file-import",
     adapterId: CLAUDE_JSONL_ADAPTER_ID,
     adapterVersion: CLAUDE_JSONL_ADAPTER_VERSION,
@@ -347,7 +348,7 @@ const buildEvent = (
     schemaVersion: EVENT_SCHEMA_VERSION,
     sourceVersion: first.version,
     upstreamKey,
-  };
+  });
 };
 
 const collectRows = (text: string, tally: Tally) => {

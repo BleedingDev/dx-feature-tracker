@@ -74,6 +74,7 @@ const toEnvelope = (raw: typeof FixtureEventSchema.Type): DxEventEnvelope =>
     acquisition: "file-import",
     adapterId: raw.adapterId,
     adapterVersion: "0.0.0-fixture",
+    ai: null,
     context: {
       branch: fixture.branch,
       flightId: fixture.flightId,
@@ -100,9 +101,10 @@ const toEnvelope = (raw: typeof FixtureEventSchema.Type): DxEventEnvelope =>
     occurredAtPrecision: "exact",
     origin: "fixture",
     payload: raw.payload,
-    schemaVersion: "dx.event.v1",
+    schemaVersion: "dx.event.v2",
     sourceVersion: null,
     upstreamKey: raw.eventId,
+    usage: null,
   });
 
 const batchOf = (events: readonly DxEventEnvelope[]) => ({

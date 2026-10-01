@@ -61,6 +61,7 @@ const event = (spec: EventSpec): DxEventEnvelope => ({
   acquisition: "file-import",
   adapterId: spec.adapterId,
   adapterVersion: "fixture",
+  ai: null,
   context: {
     ...emptyFlightContext,
     branch: spec.branch,
@@ -81,9 +82,10 @@ const event = (spec: EventSpec): DxEventEnvelope => ({
   occurredAtPrecision: "exact",
   origin: "fixture",
   payload: spec.payload,
-  schemaVersion: "dx.event.v1",
+  schemaVersion: "dx.event.v2",
   sourceVersion: null,
   upstreamKey: spec.id,
+  usage: null,
 });
 
 const fixtureEvents: readonly DxEventEnvelope[] = [

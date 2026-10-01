@@ -72,6 +72,7 @@ const toEnvelope = (item: FixtureEvent): DxEventEnvelope => ({
   acquisition: item.kind.startsWith("marker.") ? "manual" : "derived",
   adapterId: "b24-fixture",
   adapterVersion: "1",
+  ai: null,
   context: {
     branch: item.branch,
     flightId:
@@ -93,6 +94,7 @@ const toEnvelope = (item: FixtureEvent): DxEventEnvelope => ({
   schemaVersion: EVENT_SCHEMA_VERSION,
   sourceVersion: null,
   upstreamKey: item.id,
+  usage: null,
 });
 
 const loadFixture = (name: string) =>

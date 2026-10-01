@@ -96,6 +96,7 @@ const events: DxEventEnvelope[] = fixture.events.items.map((item) => ({
   acquisition: "file-import",
   adapterId: item.adapterId,
   adapterVersion: "fixture",
+  ai: null,
   context: { ...emptyFlightContext, branch: item.branch },
   eventId: EventIdSchema.make(item.id),
   evidence: { bounded: true, hash: null, ref: `fixture:${item.id}` },
@@ -107,9 +108,10 @@ const events: DxEventEnvelope[] = fixture.events.items.map((item) => ({
   occurredAtPrecision: "exact",
   origin: "fixture",
   payload: item.payload,
-  schemaVersion: "dx.event.v1",
+  schemaVersion: "dx.event.v2",
   sourceVersion: null,
   upstreamKey: item.id,
+  usage: null,
 }));
 
 const snapshotOf = (branch: string | null = null): StoreSnapshot => ({

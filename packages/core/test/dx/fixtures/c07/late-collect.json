@@ -20,6 +20,23 @@
           "acquisition": "file-import",
           "adapterId": "cursor-usage-csv",
           "adapterVersion": "fixture-1.0.0",
+          "ai": {
+            "agentId": null,
+            "agentType": null,
+            "branchSource": "cwd-inferred",
+            "channel": "usage-api",
+            "cwd": null,
+            "effort": null,
+            "effortSource": null,
+            "harness": "cursor",
+            "harnessVersion": "fixture-1",
+            "model": null,
+            "modelRaw": null,
+            "parentSessionId": null,
+            "provider": "unknown",
+            "sessionId": null,
+            "via": "cursor"
+          },
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": "flight-fixture-0001",
@@ -87,9 +104,26 @@
             },
             "charge": null
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "csv:row:2"
+          "upstreamKey": "csv:row:2",
+          "usage": {
+            "premiumRequests": null,
+            "requestKey": null,
+            "serviceTier": null,
+            "speed": null,
+            "tokens": {
+              "cacheRead": 111,
+              "cacheWrite": null,
+              "cacheWrite1h": null,
+              "cacheWrite5m": null,
+              "inputFresh": 999,
+              "output": 77,
+              "reasoning": null,
+              "total": null
+            },
+            "toolFigure": null
+          }
         }
       ]
     }

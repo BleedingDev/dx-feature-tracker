@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 
 import { DateTime, Option } from "effect";
 
+import { withCollectorBlocks } from "../../harness/collector-blocks.js";
 import type { Origin } from "../../model/common.js";
 import { EVENT_SCHEMA_VERSION, emptyEventIdentity } from "../../model/event.js";
 import type {
@@ -109,39 +110,37 @@ interface EnvelopeInput {
   readonly upstreamKey: string;
 }
 
-const envelope = (
-  ctx: ChatMapContext,
-  input: EnvelopeInput
-): DxEventEnvelope => ({
-  acquisition: "db-snapshot",
-  adapterId: ctx.adapterId,
-  adapterVersion: ctx.adapterVersion,
-  context: { ...ctx.context, branch: input.branch.branch },
-  eventId: EventIdSchema.make(
-    sha256(`${ctx.adapterId}\u0000${input.upstreamKey}\u0000${input.kind}`)
-  ),
-  evidence: {
-    bounded: true,
-    hash: ctx.sourceHash,
-    ref: `${ctx.adapterId}:${input.upstreamKey}`,
-  },
-  fieldSemantics: input.fieldSemantics,
-  identity: { ...emptyEventIdentity, ...input.identity },
-  kind: input.kind,
-  observedAt: ctx.observedAt,
-  occurredAt: input.occurredAt,
-  occurredAtPrecision: input.occurredAt === null ? "unknown" : "exact",
-  origin: ctx.origin,
-  payload: {
-    ...input.payload,
-    branchSource: input.branch.source,
-    sourceKind: CHAT_STORE_SOURCE_KIND,
-    tokensUnavailableReason: CHAT_STORE_TOKENS_REASON,
-  },
-  schemaVersion: EVENT_SCHEMA_VERSION,
-  sourceVersion: null,
-  upstreamKey: input.upstreamKey,
-});
+const envelope = (ctx: ChatMapContext, input: EnvelopeInput): DxEventEnvelope =>
+  withCollectorBlocks({
+    acquisition: "db-snapshot",
+    adapterId: ctx.adapterId,
+    adapterVersion: ctx.adapterVersion,
+    context: { ...ctx.context, branch: input.branch.branch },
+    eventId: EventIdSchema.make(
+      sha256(`${ctx.adapterId}\u0000${input.upstreamKey}\u0000${input.kind}`)
+    ),
+    evidence: {
+      bounded: true,
+      hash: ctx.sourceHash,
+      ref: `${ctx.adapterId}:${input.upstreamKey}`,
+    },
+    fieldSemantics: input.fieldSemantics,
+    identity: { ...emptyEventIdentity, ...input.identity },
+    kind: input.kind,
+    observedAt: ctx.observedAt,
+    occurredAt: input.occurredAt,
+    occurredAtPrecision: input.occurredAt === null ? "unknown" : "exact",
+    origin: ctx.origin,
+    payload: {
+      ...input.payload,
+      branchSource: input.branch.source,
+      sourceKind: CHAT_STORE_SOURCE_KIND,
+      tokensUnavailableReason: CHAT_STORE_TOKENS_REASON,
+    },
+    schemaVersion: EVENT_SCHEMA_VERSION,
+    sourceVersion: null,
+    upstreamKey: input.upstreamKey,
+  });
 
 const SESSION_SEMANTICS: readonly FieldSemantics[] = [
   reported(

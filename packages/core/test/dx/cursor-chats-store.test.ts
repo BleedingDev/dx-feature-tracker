@@ -30,6 +30,7 @@ import {
 } from "../../src/dx/collectors/cursor-local-db/sources.js";
 import type { CollectInput } from "../../src/dx/contracts/services.js";
 import { joinAccountRows } from "../../src/dx/correlation/branch-at-time/session-join.js";
+import { cursorSources } from "../../src/dx/harness/cursor/sources.js";
 import {
   EventBatchSchema,
   emptyEventIdentity,
@@ -40,7 +41,6 @@ import type {
   FlightContext,
 } from "../../src/dx/model/event.js";
 import { EventIdSchema } from "../../src/dx/model/ids.js";
-import { planSources } from "../../src/dx/registry/sync.js";
 
 const CANARY = "FIXTURE_SECRET_PROMPT_CANARY";
 
@@ -128,6 +128,7 @@ const accountRow = (occurredAt: string): DxEventEnvelope => ({
   acquisition: "api",
   adapterId: "cursor-usage-api",
   adapterVersion: "fixture",
+  ai: null,
   context: emptyFlightContext,
   eventId: EventIdSchema.make(`sha256:account-${occurredAt}`),
   evidence: { bounded: true, hash: null, ref: "fixture" },
@@ -139,9 +140,10 @@ const accountRow = (occurredAt: string): DxEventEnvelope => ({
   occurredAtPrecision: "exact",
   origin: "fixture",
   payload: { sourceKind: "dashboard-json", tokens: { input: 10, output: 2 } },
-  schemaVersion: "dx.event.v1",
+  schemaVersion: "dx.event.v2",
   sourceVersion: null,
   upstreamKey: `account-${occurredAt}`,
+  usage: null,
 });
 
 const inputFor = (selectedInput: string): CollectInput => ({
@@ -275,7 +277,7 @@ describe("cursor-agent chat store", () => {
     })
   );
 
-  it("plans the chats folder and the Cursor databases for every synced worktree", () => {
+  it("locates the chats folder and the Cursor databases for every synced worktree", () => {
     const worktree = path.join(tempRoot, "wt");
     const aiTracking = aiTrackingDbPath(home);
 
@@ -291,16 +293,12 @@ describe("cursor-agent chat store", () => {
       { input: aiTracking, source: "cursor-local-db" },
     ]);
 
-    const planned = planSources(
-      { ...emptyFlightContext, worktreePath: worktree },
-      {
-        cwd: worktree,
-        dftHome: path.join(tempRoot, "dft-home"),
-        home,
-        repo: worktree,
-        storePath: path.join(tempRoot, "store", "dft.db"),
-      }
-    ).map((step) => ({ input: step.input, source: step.source }));
+    const planned = cursorSources({
+      dftHome: path.join(tempRoot, "dft-home"),
+      home,
+      repoCommonDir: null,
+      worktrees: [worktree],
+    }).map((step) => ({ input: step.input, source: step.source }));
 
     expect(planned).toContainEqual({
       input: chatsDirFor(home, worktree),

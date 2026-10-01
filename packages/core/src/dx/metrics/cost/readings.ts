@@ -1,10 +1,10 @@
 import { Option, Schema } from "effect";
 
 import {
-  AI_SOURCE_PRECEDENCE,
-  AiSourceKindSchema,
-  TokenCategorySchema,
-} from "../../model/ai.js";
+  UNKNOWN_SOURCE_RANK,
+  aiSourceRank,
+} from "../../harness/source-kinds.js";
+import { AiSourceKindSchema, TokenCategorySchema } from "../../model/ai.js";
 import type { TokenCategory } from "../../model/ai.js";
 import type { DxEventEnvelope } from "../../model/event.js";
 
@@ -378,9 +378,7 @@ const rank = (sourceKind: string | null): number => {
     )
   );
 
-  return kind === null
-    ? AI_SOURCE_PRECEDENCE.length
-    : AI_SOURCE_PRECEDENCE.indexOf(kind);
+  return kind === null ? UNKNOWN_SOURCE_RANK : aiSourceRank(kind);
 };
 
 interface Deduplicated<T> {

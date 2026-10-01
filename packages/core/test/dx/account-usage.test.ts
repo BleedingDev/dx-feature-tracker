@@ -54,6 +54,7 @@ const usageRow = (
   acquisition: "api",
   adapterId: overrides.adapterId ?? "cursor-usage-api",
   adapterVersion: "0.1.0",
+  ai: null,
   context: {
     ...emptyFlightContext,
     branch: overrides.branch ?? null,
@@ -87,6 +88,7 @@ const usageRow = (
   schemaVersion: EVENT_SCHEMA_VERSION,
   sourceVersion: null,
   upstreamKey: id,
+  usage: null,
 });
 
 describe("dashboard correlation keys (account-usage)", () => {

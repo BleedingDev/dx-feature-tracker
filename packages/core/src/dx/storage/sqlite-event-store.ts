@@ -198,6 +198,26 @@ const openDatabase = (options: SqliteEventStoreOptions): DatabaseSync => {
   return db;
 };
 
+const decodeSeqBodyRow = Schema.decodeUnknownSync(
+  Schema.Struct({ body: Schema.String, seq: Schema.Int })
+);
+
+const rewriteEventBodies = (
+  db: DatabaseSync,
+  rewrite: (body: string) => string | null
+): void => {
+  const update = db.prepare("UPDATE events SET body = ? WHERE seq = ?");
+
+  for (const raw of db.prepare("SELECT seq, body FROM events").all()) {
+    const row = decodeSeqBodyRow(raw);
+    const next = rewrite(row.body);
+
+    if (next !== null) {
+      update.run(next, row.seq);
+    }
+  }
+};
+
 const migrate = (db: DatabaseSync, kind: StoreKind): void => {
   const current = decodeVersionRow(
     db.prepare("PRAGMA user_version").get()
@@ -217,6 +237,10 @@ const migrate = (db: DatabaseSync, kind: StoreKind): void => {
       try {
         for (const statement of migration.statements) {
           db.exec(statement);
+        }
+
+        if (migration.rewriteEventBody !== null) {
+          rewriteEventBodies(db, migration.rewriteEventBody);
         }
 
         db.exec(`PRAGMA user_version = ${migration.version}`);

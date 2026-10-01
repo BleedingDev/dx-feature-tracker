@@ -1,10 +1,10 @@
+import { aiSourceRank } from "../../harness/source-kinds.js";
 import type {
   AiSourceKind,
   LedgerKind,
   OverlapGroup,
   TokenCategory,
 } from "../../model/ai.js";
-import { AI_SOURCE_PRECEDENCE } from "../../model/ai.js";
 import type { ValueMethod } from "../../model/common.js";
 import type { DxEventEnvelope } from "../../model/event.js";
 import type { EvidenceId } from "../../model/ids.js";
@@ -38,11 +38,7 @@ export interface AiUsageAccount {
   readonly usageEvents: number;
 }
 
-const rank = (kind: AiSourceKind): number => {
-  const index = AI_SOURCE_PRECEDENCE.indexOf(kind);
-
-  return index === -1 ? AI_SOURCE_PRECEDENCE.length : index;
-};
+const rank = (kind: AiSourceKind): number => aiSourceRank(kind);
 
 const slotOf = (row: AiUsageRow): string =>
   `${row.ledger}|${row.category}|${row.currency ?? ""}`;

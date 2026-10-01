@@ -2,13 +2,13 @@ import { Option, Schema } from "effect";
 
 import { CURSOR_HOOKS_ADAPTER_ID } from "../../collectors/cursor-hooks/decode.js";
 import { stopTokenUsage } from "../../collectors/cursor-hooks/stop-usage.js";
+import { AI_SOURCES_BY_RANK } from "../../harness/source-kinds.js";
 import type {
   AiSourceKind,
   LedgerKind,
   TokenCategory,
 } from "../../model/ai.js";
 import {
-  AI_SOURCE_PRECEDENCE,
   AiSourceKindSchema,
   LedgerKindSchema,
   TokenCategorySchema,
@@ -143,7 +143,7 @@ export const sourceKindFrom = (
     return "transcript-estimate";
   }
 
-  return AI_SOURCE_PRECEDENCE.find((kind) => name.includes(kind)) ?? null;
+  return AI_SOURCES_BY_RANK.find((kind) => name.includes(kind)) ?? null;
 };
 
 const present = (value: string | null): value is string =>

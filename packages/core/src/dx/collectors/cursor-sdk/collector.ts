@@ -7,6 +7,7 @@ import { InvalidInput } from "../../contracts/error-invalid-input.js";
 import { SourceUnavailable } from "../../contracts/error-source-unavailable.js";
 import type { CollectInput, DxCollector } from "../../contracts/services.js";
 import { CONTRACT_VERSION } from "../../contracts/version.js";
+import { withCollectorBlocks } from "../../harness/collector-blocks.js";
 import type { SourceGap } from "../../model/coverage.js";
 import type { ModuleDescriptor } from "../../model/descriptor.js";
 import type {
@@ -162,38 +163,41 @@ const emit = (
     )
   );
 
-  sink.events.set(eventId, {
-    acquisition: "file-import",
-    adapterId: CURSOR_SDK_ADAPTER_ID,
-    adapterVersion: CURSOR_SDK_ADAPTER_VERSION,
-    context: { ...input.context, branch: seed.record.flight.branch },
+  sink.events.set(
     eventId,
-    evidence: {
-      bounded: true,
-      hash: source.hash,
-      ref: `${source.ref}#L${seed.record.line}`,
-    },
-    fieldSemantics: seed.fieldSemantics,
-    identity: {
-      ...emptyEventIdentity,
-      requestId: seed.requestId,
-      sessionId: seed.record.agentId,
-      turnId: seed.turnId,
-    },
-    kind: seed.kind,
-    observedAt,
-    occurredAt: seed.record.recordedAt,
-    occurredAtPrecision: "exact",
-    origin: input.origin,
-    payload: {
-      ...seed.payload,
-      flightTag: seed.record.flight.flightId ?? null,
-      sourceKind: "sdk",
-    },
-    schemaVersion: EVENT_SCHEMA_VERSION,
-    sourceVersion: CURSOR_SDK_PROBED_VERSION,
-    upstreamKey: seed.upstreamKey,
-  });
+    withCollectorBlocks({
+      acquisition: "file-import",
+      adapterId: CURSOR_SDK_ADAPTER_ID,
+      adapterVersion: CURSOR_SDK_ADAPTER_VERSION,
+      context: { ...input.context, branch: seed.record.flight.branch },
+      eventId,
+      evidence: {
+        bounded: true,
+        hash: source.hash,
+        ref: `${source.ref}#L${seed.record.line}`,
+      },
+      fieldSemantics: seed.fieldSemantics,
+      identity: {
+        ...emptyEventIdentity,
+        requestId: seed.requestId,
+        sessionId: seed.record.agentId,
+        turnId: seed.turnId,
+      },
+      kind: seed.kind,
+      observedAt,
+      occurredAt: seed.record.recordedAt,
+      occurredAtPrecision: "exact",
+      origin: input.origin,
+      payload: {
+        ...seed.payload,
+        flightTag: seed.record.flight.flightId ?? null,
+        sourceKind: "sdk",
+      },
+      schemaVersion: EVENT_SCHEMA_VERSION,
+      sourceVersion: CURSOR_SDK_PROBED_VERSION,
+      upstreamKey: seed.upstreamKey,
+    })
+  );
 };
 
 const subtract = (total: SdkTokenUsage, runs: SdkAgentUsage["runs"]) => {

@@ -168,6 +168,7 @@ const baseEnvelope = (
     acquisition: "file-import" as const,
     adapterId: GIT_AI_ADAPTER_ID,
     adapterVersion: GIT_AI_ADAPTER_VERSION,
+    ai: null,
     context: input.context,
     eventId: EventIdSchema.make(eventIdOf(upstreamKey)),
     evidence: { bounded: true, hash: hashOf(file.text), ref: file.ref },
@@ -179,6 +180,7 @@ const baseEnvelope = (
     origin: input.origin,
     schemaVersion: EVENT_SCHEMA_VERSION,
     upstreamKey,
+    usage: null,
   };
 };
 

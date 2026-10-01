@@ -1,5 +1,6 @@
 import { Crypto, Effect, Option, Schema } from "effect";
 
+import { withCollectorBlocks } from "../../harness/collector-blocks.js";
 import { canonicalRequestKey } from "../../model/ai.js";
 import type { Origin } from "../../model/common.js";
 import type { SourceCoverage, SourceGap } from "../../model/coverage.js";
@@ -366,7 +367,7 @@ const buildEvent = (
   const sessionId = options.sessionHint;
   const usageState: UsageState = turn.usage.state;
 
-  return {
+  return withCollectorBlocks({
     acquisition: "file-import",
     adapterId: CURSOR_TRANSCRIPT_ADAPTER_ID,
     adapterVersion: CURSOR_TRANSCRIPT_ADAPTER_VERSION,
@@ -424,7 +425,7 @@ const buildEvent = (
     schemaVersion: EVENT_SCHEMA_VERSION,
     sourceVersion: null,
     upstreamKey: upstreamKeyOf(turn, options),
-  };
+  });
 };
 
 const gapsOf = (

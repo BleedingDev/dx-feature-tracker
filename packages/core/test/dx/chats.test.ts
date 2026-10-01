@@ -36,6 +36,7 @@ const eventOf = (seed: EventSeed): DxEventEnvelope => ({
   acquisition: "file-import",
   adapterId: seed.adapterId,
   adapterVersion: "fixture",
+  ai: null,
   context: {
     branch: seed.branch ?? BRANCH,
     flightId: null,
@@ -65,9 +66,10 @@ const eventOf = (seed: EventSeed): DxEventEnvelope => ({
   occurredAtPrecision: seed.at === null ? "unknown" : "exact",
   origin: "fixture",
   payload: seed.payload,
-  schemaVersion: "dx.event.v1",
+  schemaVersion: "dx.event.v2",
   sourceVersion: null,
   upstreamKey: seed.key,
+  usage: null,
 });
 
 const HOOKS = "collector.cursor-hooks";

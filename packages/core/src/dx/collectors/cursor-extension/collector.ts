@@ -7,6 +7,7 @@ import { InvalidInput } from "../../contracts/error-invalid-input.js";
 import { SourceUnavailable } from "../../contracts/error-source-unavailable.js";
 import type { CollectInput, DxCollector } from "../../contracts/services.js";
 import { CONTRACT_VERSION } from "../../contracts/version.js";
+import { withCollectorBlocks } from "../../harness/collector-blocks.js";
 import type { SourceGap } from "../../model/coverage.js";
 import type { ModuleDescriptor } from "../../model/descriptor.js";
 import type {
@@ -132,7 +133,7 @@ const toEnvelope = (
 ): DxEventEnvelope => {
   const upstreamKey = `${record.sessionId}:${record.seq}`;
 
-  return {
+  return withCollectorBlocks({
     acquisition: "file-import",
     adapterId: CURSOR_EXTENSION_ADAPTER_ID,
     adapterVersion: CURSOR_EXTENSION_ADAPTER_VERSION,
@@ -166,7 +167,7 @@ const toEnvelope = (
     schemaVersion: EVENT_SCHEMA_VERSION,
     sourceVersion: record.hostVersion,
     upstreamKey,
-  };
+  });
 };
 
 const startLine = (input: CollectInput): number => {

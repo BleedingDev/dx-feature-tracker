@@ -4,11 +4,6 @@ import { homedir } from "node:os";
 import path from "node:path";
 
 import type { FlightContext } from "./model/event.js";
-import {
-  defaultDftHome,
-  hookSpoolDirFor,
-  legacyHookSpoolDirFor,
-} from "./registry/runtime.js";
 
 export {
   contextForRepo,
@@ -37,33 +32,18 @@ export interface AutoSource {
   readonly source: string;
 }
 
-export const worktreeSources = (
-  worktree: string,
-  dftHome: string = defaultDftHome()
-): readonly AutoSource[] => {
-  const spool = hookSpoolDirFor(worktree, dftHome);
-  const legacySpool = legacyHookSpoolDirFor(worktree);
-
-  return [
-    { input: worktree, source: "collector.git-history" },
-    ...(existsSync(spool)
-      ? [{ input: spool, source: "collector.cursor-hooks" }]
-      : []),
-    ...(existsSync(legacySpool)
-      ? [{ input: legacySpool, source: "collector.cursor-hooks" }]
-      : []),
-  ];
-};
+export const worktreeSources = (worktree: string): readonly AutoSource[] => [
+  { input: worktree, source: "collector.git-history" },
+];
 
 export const autoSources = (
   context: FlightContext,
   cwd: string,
-  storePath: string,
-  dftHome: string = defaultDftHome()
+  storePath: string
 ): readonly AutoSource[] => {
   const worktree = context.worktreePath ?? cwd;
   const commands = commandLogPath(storePath);
-  const sources: AutoSource[] = [...worktreeSources(worktree, dftHome)];
+  const sources: AutoSource[] = [...worktreeSources(worktree)];
 
   if (existsSync(commands)) {
     sources.push({ input: commands, source: "collector/shell-command" });

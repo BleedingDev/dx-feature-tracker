@@ -15,6 +15,7 @@
       "acquisition": "file-import",
       "adapterId": "b38-fixture",
       "adapterVersion": "1.0.0",
+      "ai": null,
       "context": {
         "branch": "feature/b38-demo",
         "flightId": null,
@@ -56,9 +57,10 @@
         "inputTokens": 50,
         "outputTokens": 10
       },
-      "schemaVersion": "dx.event.v1",
+      "schemaVersion": "dx.event.v2",
       "sourceVersion": "fixture",
-      "upstreamKey": "b38:4"
+      "upstreamKey": "b38:4",
+      "usage": null
     }
   ]
 }

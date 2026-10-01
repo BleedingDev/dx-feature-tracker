@@ -156,6 +156,7 @@ const commandEvent = (
     acquisition: "command-capture",
     adapterId: LOCAL_TEST_ADAPTER_ID,
     adapterVersion: LOCAL_TEST_ADAPTER_VERSION,
+    ai: null,
     context: {
       ...input.context,
       branch: session.branch ?? input.context.branch,
@@ -196,9 +197,10 @@ const commandEvent = (
       reports: session.reports,
       status,
     },
-    schemaVersion: "dx.event.v1",
+    schemaVersion: "dx.event.v2",
     sourceVersion: "dx.local-test.command.v1",
     upstreamKey,
+    usage: null,
   };
 };
 
@@ -221,6 +223,7 @@ const reportEvent = (
     acquisition: "file-import",
     adapterId: LOCAL_TEST_ADAPTER_ID,
     adapterVersion: LOCAL_TEST_ADAPTER_VERSION,
+    ai: null,
     context: {
       ...input.context,
       branch: join.session?.branch ?? input.context.branch,
@@ -266,9 +269,10 @@ const reportEvent = (
       status: report.failed + report.errors > 0 ? "failed" : "passed",
       tests: report.tests,
     },
-    schemaVersion: "dx.event.v1",
+    schemaVersion: "dx.event.v2",
     sourceVersion: report.format,
     upstreamKey,
+    usage: null,
   };
 };
 

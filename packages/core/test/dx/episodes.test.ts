@@ -28,6 +28,7 @@ const usage = (
   acquisition: "file-import",
   adapterId: "cursor-usage-export",
   adapterVersion: "1.0.0",
+  ai: null,
   context: { ...emptyFlightContext, branch: BRANCH },
   eventId: EventIdSchema.make(id),
   evidence: { bounded: true, hash: null, ref: `fixture:${id}` },
@@ -45,9 +46,10 @@ const usage = (
     sourceKind: "usage-csv",
     tokens: { input, output },
   },
-  schemaVersion: "dx.event.v1",
+  schemaVersion: "dx.event.v2",
   sourceVersion: null,
   upstreamKey: id,
+  usage: null,
 });
 
 const commit = (id: string, occurredAt: string): DxEventEnvelope => ({

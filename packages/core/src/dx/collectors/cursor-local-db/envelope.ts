@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 
 import { DateTime, Option } from "effect";
 
+import { withCollectorBlocks } from "../../harness/collector-blocks.js";
 import type { Origin } from "../../model/common.js";
 import type {
   DxEventEnvelope,
@@ -43,31 +44,34 @@ export interface EnvelopeInput {
   readonly sourceHash: string;
 }
 
-export const buildEnvelope = (input: EnvelopeInput): DxEventEnvelope => ({
-  acquisition: "db-snapshot",
-  adapterId: CURSOR_LOCAL_DB_ADAPTER_ID,
-  adapterVersion: CURSOR_LOCAL_DB_ADAPTER_VERSION,
-  context: input.context,
-  eventId: EventIdSchema.make(
-    sha256(`${CURSOR_LOCAL_DB_ADAPTER_ID}\n${input.upstreamKey}\n${input.kind}`)
-  ),
-  evidence: {
-    bounded: true,
-    hash: input.sourceHash,
-    ref: `${CURSOR_LOCAL_DB_ADAPTER_ID}:${input.upstreamKey}`,
-  },
-  fieldSemantics: input.fieldSemantics,
-  identity: { ...emptyEventIdentity, ...input.identity },
-  kind: input.kind,
-  observedAt: input.observedAt,
-  occurredAt: input.occurredAt,
-  occurredAtPrecision: input.occurredAt === null ? "unknown" : "exact",
-  origin: input.origin,
-  payload: input.payload,
-  schemaVersion: EVENT_SCHEMA_VERSION,
-  sourceVersion: input.sourceVersion,
-  upstreamKey: input.upstreamKey,
-});
+export const buildEnvelope = (input: EnvelopeInput): DxEventEnvelope =>
+  withCollectorBlocks({
+    acquisition: "db-snapshot",
+    adapterId: CURSOR_LOCAL_DB_ADAPTER_ID,
+    adapterVersion: CURSOR_LOCAL_DB_ADAPTER_VERSION,
+    context: input.context,
+    eventId: EventIdSchema.make(
+      sha256(
+        `${CURSOR_LOCAL_DB_ADAPTER_ID}\n${input.upstreamKey}\n${input.kind}`
+      )
+    ),
+    evidence: {
+      bounded: true,
+      hash: input.sourceHash,
+      ref: `${CURSOR_LOCAL_DB_ADAPTER_ID}:${input.upstreamKey}`,
+    },
+    fieldSemantics: input.fieldSemantics,
+    identity: { ...emptyEventIdentity, ...input.identity },
+    kind: input.kind,
+    observedAt: input.observedAt,
+    occurredAt: input.occurredAt,
+    occurredAtPrecision: input.occurredAt === null ? "unknown" : "exact",
+    origin: input.origin,
+    payload: input.payload,
+    schemaVersion: EVENT_SCHEMA_VERSION,
+    sourceVersion: input.sourceVersion,
+    upstreamKey: input.upstreamKey,
+  });
 
 export const reported = (
   field: string,

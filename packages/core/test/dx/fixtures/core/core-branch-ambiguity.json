@@ -47,6 +47,7 @@
           "acquisition": "git",
           "adapterId": "git",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": null,
@@ -79,14 +80,16 @@
           "payload": {
             "detached": false
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "context:/redacted/repos/sample-app:1111111111111111111111111111111111111111"
+          "upstreamKey": "context:/redacted/repos/sample-app:1111111111111111111111111111111111111111",
+          "usage": null
         },
         {
           "acquisition": "git",
           "adapterId": "git",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": null,
@@ -119,14 +122,16 @@
           "payload": {
             "detached": false
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "context:/redacted/worktrees/sample-app-feature:3333333333333333333333333333333333333333"
+          "upstreamKey": "context:/redacted/worktrees/sample-app-feature:3333333333333333333333333333333333333333",
+          "usage": null
         },
         {
           "acquisition": "git",
           "adapterId": "git",
           "adapterVersion": "fixture-1.0.0",
+          "ai": null,
           "context": {
             "branch": null,
             "flightId": null,
@@ -159,9 +164,10 @@
           "payload": {
             "detached": true
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "context:/redacted/worktrees/sample-app-feature:2222222222222222222222222222222222222222:detached"
+          "upstreamKey": "context:/redacted/worktrees/sample-app-feature:2222222222222222222222222222222222222222:detached",
+          "usage": null
         }
       ]
     },
@@ -190,6 +196,23 @@
           "acquisition": "hook",
           "adapterId": "cursor-hooks",
           "adapterVersion": "fixture-1.0.0",
+          "ai": {
+            "agentId": null,
+            "agentType": null,
+            "branchSource": "hook",
+            "channel": "hooks",
+            "cwd": null,
+            "effort": null,
+            "effortSource": null,
+            "harness": "cursor",
+            "harnessVersion": "fixture-1",
+            "model": null,
+            "modelRaw": null,
+            "parentSessionId": null,
+            "provider": "unknown",
+            "sessionId": "sess-c",
+            "via": "cursor"
+          },
           "context": {
             "branch": "feature/fixture-flight",
             "flightId": null,
@@ -222,9 +245,10 @@
           "payload": {
             "sourceKind": "hooks-stop"
           },
-          "schemaVersion": "dx.event.v1",
+          "schemaVersion": "dx.event.v2",
           "sourceVersion": "fixture-1",
-          "upstreamKey": "hook:stop:sess-c:gen-1"
+          "upstreamKey": "hook:stop:sess-c:gen-1",
+          "usage": null
         }
       ]
     }

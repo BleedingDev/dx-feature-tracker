@@ -4,6 +4,23 @@
       "acquisition": "file-import",
       "adapterId": "claude-jsonl",
       "adapterVersion": "1.0.0",
+      "ai": {
+        "agentId": null,
+        "agentType": null,
+        "branchSource": "cwd-inferred",
+        "channel": "session-file",
+        "cwd": null,
+        "effort": null,
+        "effortSource": null,
+        "harness": "claude-code",
+        "harnessVersion": null,
+        "model": null,
+        "modelRaw": null,
+        "parentSessionId": null,
+        "provider": "unknown",
+        "sessionId": "sc",
+        "via": null
+      },
       "context": {
         "branch": "feature/c05",
         "flightId": null,
@@ -43,9 +60,26 @@
           "reasoning": 7
         }
       },
-      "schemaVersion": "dx.event.v1",
+      "schemaVersion": "dx.event.v2",
       "sourceVersion": null,
-      "upstreamKey": "fixture:cache-1"
+      "upstreamKey": "fixture:cache-1",
+      "usage": {
+        "premiumRequests": null,
+        "requestKey": null,
+        "serviceTier": null,
+        "speed": null,
+        "tokens": {
+          "cacheRead": 400,
+          "cacheWrite": 50,
+          "cacheWrite1h": null,
+          "cacheWrite5m": null,
+          "inputFresh": 100,
+          "output": 20,
+          "reasoning": 7,
+          "total": null
+        },
+        "toolFigure": null
+      }
     }
   ],
   "c05/duplicate-import-keyed": [
@@ -53,6 +87,23 @@
       "acquisition": "file-import",
       "adapterId": "cursor-local-db",
       "adapterVersion": "1.0.0",
+      "ai": {
+        "agentId": null,
+        "agentType": null,
+        "branchSource": "cwd-inferred",
+        "channel": "local-db",
+        "cwd": null,
+        "effort": null,
+        "effortSource": null,
+        "harness": "cursor",
+        "harnessVersion": null,
+        "model": null,
+        "modelRaw": null,
+        "parentSessionId": null,
+        "provider": "unknown",
+        "sessionId": "sk",
+        "via": "cursor"
+      },
       "context": {
         "branch": "feature/c05",
         "flightId": null,
@@ -92,14 +143,52 @@
         "costUsd": 0.02,
         "currency": "USD"
       },
-      "schemaVersion": "dx.event.v1",
+      "schemaVersion": "dx.event.v2",
       "sourceVersion": null,
-      "upstreamKey": "fixture:dup-keyed"
+      "upstreamKey": "fixture:dup-keyed",
+      "usage": {
+        "premiumRequests": null,
+        "requestKey": null,
+        "serviceTier": null,
+        "speed": null,
+        "tokens": {
+          "cacheRead": null,
+          "cacheWrite": null,
+          "cacheWrite1h": null,
+          "cacheWrite5m": null,
+          "inputFresh": 10,
+          "output": 4,
+          "reasoning": null,
+          "total": null
+        },
+        "toolFigure": {
+          "amount": 0.02,
+          "currency": "USD",
+          "kind": "charge"
+        }
+      }
     },
     {
       "acquisition": "file-import",
       "adapterId": "cursor-local-db",
       "adapterVersion": "1.0.0",
+      "ai": {
+        "agentId": null,
+        "agentType": null,
+        "branchSource": "cwd-inferred",
+        "channel": "local-db",
+        "cwd": null,
+        "effort": null,
+        "effortSource": null,
+        "harness": "cursor",
+        "harnessVersion": null,
+        "model": null,
+        "modelRaw": null,
+        "parentSessionId": null,
+        "provider": "unknown",
+        "sessionId": "sk",
+        "via": "cursor"
+      },
       "context": {
         "branch": "feature/c05",
         "flightId": null,
@@ -139,9 +228,30 @@
         "costUsd": 0.02,
         "currency": "USD"
       },
-      "schemaVersion": "dx.event.v1",
+      "schemaVersion": "dx.event.v2",
       "sourceVersion": null,
-      "upstreamKey": "fixture:dup-keyed"
+      "upstreamKey": "fixture:dup-keyed",
+      "usage": {
+        "premiumRequests": null,
+        "requestKey": null,
+        "serviceTier": null,
+        "speed": null,
+        "tokens": {
+          "cacheRead": null,
+          "cacheWrite": null,
+          "cacheWrite1h": null,
+          "cacheWrite5m": null,
+          "inputFresh": 10,
+          "output": 4,
+          "reasoning": null,
+          "total": null
+        },
+        "toolFigure": {
+          "amount": 0.02,
+          "currency": "USD",
+          "kind": "charge"
+        }
+      }
     }
   ],
   "c05/duplicate-import-unkeyed": [
@@ -149,6 +259,23 @@
       "acquisition": "file-import",
       "adapterId": "cursor-local-db",
       "adapterVersion": "1.0.0",
+      "ai": {
+        "agentId": null,
+        "agentType": null,
+        "branchSource": "cwd-inferred",
+        "channel": "local-db",
+        "cwd": null,
+        "effort": null,
+        "effortSource": null,
+        "harness": "cursor",
+        "harnessVersion": null,
+        "model": null,
+        "modelRaw": null,
+        "parentSessionId": null,
+        "provider": "unknown",
+        "sessionId": null,
+        "via": "cursor"
+      },
       "context": {
         "branch": "feature/c05",
         "flightId": null,
@@ -185,14 +312,48 @@
           "output": 3
         }
       },
-      "schemaVersion": "dx.event.v1",
+      "schemaVersion": "dx.event.v2",
       "sourceVersion": null,
-      "upstreamKey": "fixture:dup-unkeyed"
+      "upstreamKey": "fixture:dup-unkeyed",
+      "usage": {
+        "premiumRequests": null,
+        "requestKey": null,
+        "serviceTier": null,
+        "speed": null,
+        "tokens": {
+          "cacheRead": null,
+          "cacheWrite": null,
+          "cacheWrite1h": null,
+          "cacheWrite5m": null,
+          "inputFresh": 9,
+          "output": 3,
+          "reasoning": null,
+          "total": null
+        },
+        "toolFigure": null
+      }
     },
     {
       "acquisition": "file-import",
       "adapterId": "cursor-local-db",
       "adapterVersion": "1.0.0",
+      "ai": {
+        "agentId": null,
+        "agentType": null,
+        "branchSource": "cwd-inferred",
+        "channel": "local-db",
+        "cwd": null,
+        "effort": null,
+        "effortSource": null,
+        "harness": "cursor",
+        "harnessVersion": null,
+        "model": null,
+        "modelRaw": null,
+        "parentSessionId": null,
+        "provider": "unknown",
+        "sessionId": null,
+        "via": "cursor"
+      },
       "context": {
         "branch": "feature/c05",
         "flightId": null,
@@ -229,9 +390,26 @@
           "output": 3
         }
       },
-      "schemaVersion": "dx.event.v1",
+      "schemaVersion": "dx.event.v2",
       "sourceVersion": null,
-      "upstreamKey": "fixture:dup-unkeyed"
+      "upstreamKey": "fixture:dup-unkeyed",
+      "usage": {
+        "premiumRequests": null,
+        "requestKey": null,
+        "serviceTier": null,
+        "speed": null,
+        "tokens": {
+          "cacheRead": null,
+          "cacheWrite": null,
+          "cacheWrite1h": null,
+          "cacheWrite5m": null,
+          "inputFresh": 9,
+          "output": 3,
+          "reasoning": null,
+          "total": null
+        },
+        "toolFigure": null
+      }
     }
   ],
   "c05/mixed-branches": [
@@ -239,6 +417,23 @@
       "acquisition": "file-import",
       "adapterId": "sdk-fixture",
       "adapterVersion": "1.0.0",
+      "ai": {
+        "agentId": null,
+        "agentType": null,
+        "branchSource": "cwd-inferred",
+        "channel": "cli-stream",
+        "cwd": null,
+        "effort": null,
+        "effortSource": null,
+        "harness": "cursor",
+        "harnessVersion": null,
+        "model": null,
+        "modelRaw": null,
+        "parentSessionId": null,
+        "provider": "unknown",
+        "sessionId": "sm",
+        "via": "cursor"
+      },
       "context": {
         "branch": "feature/a",
         "flightId": null,
@@ -275,14 +470,48 @@
           "output": 10
         }
       },
-      "schemaVersion": "dx.event.v1",
+      "schemaVersion": "dx.event.v2",
       "sourceVersion": null,
-      "upstreamKey": "fixture:mb-sdk"
+      "upstreamKey": "fixture:mb-sdk",
+      "usage": {
+        "premiumRequests": null,
+        "requestKey": null,
+        "serviceTier": null,
+        "speed": null,
+        "tokens": {
+          "cacheRead": null,
+          "cacheWrite": null,
+          "cacheWrite1h": null,
+          "cacheWrite5m": null,
+          "inputFresh": 100,
+          "output": 10,
+          "reasoning": null,
+          "total": null
+        },
+        "toolFigure": null
+      }
     },
     {
       "acquisition": "file-import",
       "adapterId": "cursor-local-db",
       "adapterVersion": "1.0.0",
+      "ai": {
+        "agentId": null,
+        "agentType": null,
+        "branchSource": "cwd-inferred",
+        "channel": "local-db",
+        "cwd": null,
+        "effort": null,
+        "effortSource": null,
+        "harness": "cursor",
+        "harnessVersion": null,
+        "model": null,
+        "modelRaw": null,
+        "parentSessionId": null,
+        "provider": "unknown",
+        "sessionId": "sm",
+        "via": "cursor"
+      },
       "context": {
         "branch": "main",
         "flightId": null,
@@ -319,14 +548,48 @@
           "output": 10
         }
       },
-      "schemaVersion": "dx.event.v1",
+      "schemaVersion": "dx.event.v2",
       "sourceVersion": null,
-      "upstreamKey": "fixture:mb-db"
+      "upstreamKey": "fixture:mb-db",
+      "usage": {
+        "premiumRequests": null,
+        "requestKey": null,
+        "serviceTier": null,
+        "speed": null,
+        "tokens": {
+          "cacheRead": null,
+          "cacheWrite": null,
+          "cacheWrite1h": null,
+          "cacheWrite5m": null,
+          "inputFresh": 100,
+          "output": 10,
+          "reasoning": null,
+          "total": null
+        },
+        "toolFigure": null
+      }
     },
     {
       "acquisition": "file-import",
       "adapterId": "sdk-fixture",
       "adapterVersion": "1.0.0",
+      "ai": {
+        "agentId": null,
+        "agentType": null,
+        "branchSource": "cwd-inferred",
+        "channel": "cli-stream",
+        "cwd": null,
+        "effort": null,
+        "effortSource": null,
+        "harness": "cursor",
+        "harnessVersion": null,
+        "model": null,
+        "modelRaw": null,
+        "parentSessionId": null,
+        "provider": "unknown",
+        "sessionId": "sm",
+        "via": "cursor"
+      },
       "context": {
         "branch": "feature/a",
         "flightId": null,
@@ -363,14 +626,48 @@
           "output": 1
         }
       },
-      "schemaVersion": "dx.event.v1",
+      "schemaVersion": "dx.event.v2",
       "sourceVersion": null,
-      "upstreamKey": "fixture:mb-feature-only"
+      "upstreamKey": "fixture:mb-feature-only",
+      "usage": {
+        "premiumRequests": null,
+        "requestKey": null,
+        "serviceTier": null,
+        "speed": null,
+        "tokens": {
+          "cacheRead": null,
+          "cacheWrite": null,
+          "cacheWrite1h": null,
+          "cacheWrite5m": null,
+          "inputFresh": 5,
+          "output": 1,
+          "reasoning": null,
+          "total": null
+        },
+        "toolFigure": null
+      }
     },
     {
       "acquisition": "file-import",
       "adapterId": "sdk-fixture",
       "adapterVersion": "1.0.0",
+      "ai": {
+        "agentId": null,
+        "agentType": null,
+        "branchSource": "unassigned",
+        "channel": "cli-stream",
+        "cwd": null,
+        "effort": null,
+        "effortSource": null,
+        "harness": "cursor",
+        "harnessVersion": null,
+        "model": null,
+        "modelRaw": null,
+        "parentSessionId": null,
+        "provider": "unknown",
+        "sessionId": "sm",
+        "via": "cursor"
+      },
       "context": {
         "branch": null,
         "flightId": null,
@@ -406,9 +703,26 @@
           "input": 2
         }
       },
-      "schemaVersion": "dx.event.v1",
+      "schemaVersion": "dx.event.v2",
       "sourceVersion": null,
-      "upstreamKey": "fixture:mb-detached"
+      "upstreamKey": "fixture:mb-detached",
+      "usage": {
+        "premiumRequests": null,
+        "requestKey": null,
+        "serviceTier": null,
+        "speed": null,
+        "tokens": {
+          "cacheRead": null,
+          "cacheWrite": null,
+          "cacheWrite1h": null,
+          "cacheWrite5m": null,
+          "inputFresh": 2,
+          "output": null,
+          "reasoning": null,
+          "total": null
+        },
+        "toolFigure": null
+      }
     }
   ],
   "c05/absent-values": [
@@ -416,6 +730,23 @@
       "acquisition": "file-import",
       "adapterId": "sdk-fixture",
       "adapterVersion": "1.0.0",
+      "ai": {
+        "agentId": null,
+        "agentType": null,
+        "branchSource": "cwd-inferred",
+        "channel": "cli-stream",
+        "cwd": null,
+        "effort": null,
+        "effortSource": null,
+        "harness": "cursor",
+        "harnessVersion": null,
+        "model": null,
+        "modelRaw": null,
+        "parentSessionId": null,
+        "provider": "unknown",
+        "sessionId": "sa",
+        "via": "cursor"
+      },
       "context": {
         "branch": "feature/c05",
         "flightId": null,
@@ -454,9 +785,10 @@
         "charge": null,
         "listPriceEstimateUsd": null
       },
-      "schemaVersion": "dx.event.v1",
+      "schemaVersion": "dx.event.v2",
       "sourceVersion": null,
-      "upstreamKey": "fixture:absent-1"
+      "upstreamKey": "fixture:absent-1",
+      "usage": null
     }
   ],
   "c05/explicit-zero": [
@@ -464,6 +796,23 @@
       "acquisition": "file-import",
       "adapterId": "sdk-fixture",
       "adapterVersion": "1.0.0",
+      "ai": {
+        "agentId": null,
+        "agentType": null,
+        "branchSource": "cwd-inferred",
+        "channel": "cli-stream",
+        "cwd": null,
+        "effort": null,
+        "effortSource": null,
+        "harness": "cursor",
+        "harnessVersion": null,
+        "model": null,
+        "modelRaw": null,
+        "parentSessionId": null,
+        "provider": "unknown",
+        "sessionId": "sz",
+        "via": "cursor"
+      },
       "context": {
         "branch": "feature/c05",
         "flightId": null,
@@ -502,9 +851,30 @@
         "charge": 0,
         "currency": "USD"
       },
-      "schemaVersion": "dx.event.v1",
+      "schemaVersion": "dx.event.v2",
       "sourceVersion": null,
-      "upstreamKey": "fixture:zero-1"
+      "upstreamKey": "fixture:zero-1",
+      "usage": {
+        "premiumRequests": null,
+        "requestKey": null,
+        "serviceTier": null,
+        "speed": null,
+        "tokens": {
+          "cacheRead": null,
+          "cacheWrite": null,
+          "cacheWrite1h": null,
+          "cacheWrite5m": null,
+          "inputFresh": 0,
+          "output": 0,
+          "reasoning": null,
+          "total": null
+        },
+        "toolFigure": {
+          "amount": 0,
+          "currency": "USD",
+          "kind": "charge"
+        }
+      }
     }
   ],
   "c05/keyed-csv-vs-sdk": [
@@ -512,6 +882,23 @@
       "acquisition": "file-import",
       "adapterId": "sdk-fixture",
       "adapterVersion": "1.0.0",
+      "ai": {
+        "agentId": null,
+        "agentType": null,
+        "branchSource": "cwd-inferred",
+        "channel": "cli-stream",
+        "cwd": null,
+        "effort": null,
+        "effortSource": null,
+        "harness": "cursor",
+        "harnessVersion": null,
+        "model": null,
+        "modelRaw": null,
+        "parentSessionId": null,
+        "provider": "unknown",
+        "sessionId": "skc",
+        "via": "cursor"
+      },
       "context": {
         "branch": "feature/c05",
         "flightId": null,
@@ -550,14 +937,52 @@
         "charge": 0.1,
         "currency": "USD"
       },
-      "schemaVersion": "dx.event.v1",
+      "schemaVersion": "dx.event.v2",
       "sourceVersion": null,
-      "upstreamKey": "fixture:kc-sdk"
+      "upstreamKey": "fixture:kc-sdk",
+      "usage": {
+        "premiumRequests": null,
+        "requestKey": null,
+        "serviceTier": null,
+        "speed": null,
+        "tokens": {
+          "cacheRead": null,
+          "cacheWrite": null,
+          "cacheWrite1h": null,
+          "cacheWrite5m": null,
+          "inputFresh": 30,
+          "output": 8,
+          "reasoning": null,
+          "total": null
+        },
+        "toolFigure": {
+          "amount": 0.1,
+          "currency": "USD",
+          "kind": "charge"
+        }
+      }
     },
     {
       "acquisition": "file-import",
       "adapterId": "cursor-usage-export",
       "adapterVersion": "1.0.0",
+      "ai": {
+        "agentId": null,
+        "agentType": null,
+        "branchSource": "cwd-inferred",
+        "channel": "usage-api",
+        "cwd": null,
+        "effort": null,
+        "effortSource": null,
+        "harness": "cursor",
+        "harnessVersion": null,
+        "model": null,
+        "modelRaw": null,
+        "parentSessionId": null,
+        "provider": "unknown",
+        "sessionId": null,
+        "via": "cursor"
+      },
       "context": {
         "branch": "feature/c05",
         "flightId": null,
@@ -597,9 +1022,30 @@
         "charge": 0.1,
         "currency": "USD"
       },
-      "schemaVersion": "dx.event.v1",
+      "schemaVersion": "dx.event.v2",
       "sourceVersion": null,
-      "upstreamKey": "fixture:kc-csv"
+      "upstreamKey": "fixture:kc-csv",
+      "usage": {
+        "premiumRequests": null,
+        "requestKey": "rk",
+        "serviceTier": null,
+        "speed": null,
+        "tokens": {
+          "cacheRead": null,
+          "cacheWrite": null,
+          "cacheWrite1h": null,
+          "cacheWrite5m": null,
+          "inputFresh": 30,
+          "output": 8,
+          "reasoning": null,
+          "total": null
+        },
+        "toolFigure": {
+          "amount": 0.1,
+          "currency": "USD",
+          "kind": "charge"
+        }
+      }
     }
   ],
   "c05/stop-db-entire-dashboard": [
@@ -607,6 +1053,23 @@
       "acquisition": "hook",
       "adapterId": "cursor-hooks",
       "adapterVersion": "1.0.0",
+      "ai": {
+        "agentId": null,
+        "agentType": null,
+        "branchSource": "hook",
+        "channel": "hooks",
+        "cwd": null,
+        "effort": null,
+        "effortSource": null,
+        "harness": "cursor",
+        "harnessVersion": null,
+        "model": null,
+        "modelRaw": null,
+        "parentSessionId": null,
+        "provider": "unknown",
+        "sessionId": "conv9",
+        "via": "cursor"
+      },
       "context": {
         "branch": "feature/c05",
         "flightId": null,
@@ -645,14 +1108,48 @@
         },
         "rawUsage": {}
       },
-      "schemaVersion": "dx.event.v1",
+      "schemaVersion": "dx.event.v2",
       "sourceVersion": null,
-      "upstreamKey": "fixture:x-hook"
+      "upstreamKey": "fixture:x-hook",
+      "usage": {
+        "premiumRequests": null,
+        "requestKey": null,
+        "serviceTier": null,
+        "speed": null,
+        "tokens": {
+          "cacheRead": null,
+          "cacheWrite": null,
+          "cacheWrite1h": null,
+          "cacheWrite5m": null,
+          "inputFresh": 500,
+          "output": 60,
+          "reasoning": null,
+          "total": null
+        },
+        "toolFigure": null
+      }
     },
     {
       "acquisition": "file-import",
       "adapterId": "cursor-local-db",
       "adapterVersion": "1.0.0",
+      "ai": {
+        "agentId": null,
+        "agentType": null,
+        "branchSource": "cwd-inferred",
+        "channel": "local-db",
+        "cwd": null,
+        "effort": null,
+        "effortSource": null,
+        "harness": "cursor",
+        "harnessVersion": null,
+        "model": null,
+        "modelRaw": null,
+        "parentSessionId": null,
+        "provider": "unknown",
+        "sessionId": "conv9",
+        "via": "cursor"
+      },
       "context": {
         "branch": "feature/c05",
         "flightId": null,
@@ -689,14 +1186,32 @@
           "output": 60
         }
       },
-      "schemaVersion": "dx.event.v1",
+      "schemaVersion": "dx.event.v2",
       "sourceVersion": null,
-      "upstreamKey": "fixture:x-db"
+      "upstreamKey": "fixture:x-db",
+      "usage": {
+        "premiumRequests": null,
+        "requestKey": null,
+        "serviceTier": null,
+        "speed": null,
+        "tokens": {
+          "cacheRead": null,
+          "cacheWrite": null,
+          "cacheWrite1h": null,
+          "cacheWrite5m": null,
+          "inputFresh": 500,
+          "output": 60,
+          "reasoning": null,
+          "total": null
+        },
+        "toolFigure": null
+      }
     },
     {
       "acquisition": "file-import",
       "adapterId": "entire",
       "adapterVersion": "1.0.0",
+      "ai": null,
       "context": {
         "branch": "feature/c05",
         "flightId": null,
@@ -733,14 +1248,48 @@
           "output": 60
         }
       },
-      "schemaVersion": "dx.event.v1",
+      "schemaVersion": "dx.event.v2",
       "sourceVersion": null,
-      "upstreamKey": "fixture:x-entire"
+      "upstreamKey": "fixture:x-entire",
+      "usage": {
+        "premiumRequests": null,
+        "requestKey": null,
+        "serviceTier": null,
+        "speed": null,
+        "tokens": {
+          "cacheRead": null,
+          "cacheWrite": null,
+          "cacheWrite1h": null,
+          "cacheWrite5m": null,
+          "inputFresh": 500,
+          "output": 60,
+          "reasoning": null,
+          "total": null
+        },
+        "toolFigure": null
+      }
     },
     {
       "acquisition": "file-import",
       "adapterId": "cursor-dashboard",
       "adapterVersion": "1.0.0",
+      "ai": {
+        "agentId": null,
+        "agentType": null,
+        "branchSource": "cwd-inferred",
+        "channel": "usage-api",
+        "cwd": null,
+        "effort": null,
+        "effortSource": null,
+        "harness": "cursor",
+        "harnessVersion": null,
+        "model": null,
+        "modelRaw": null,
+        "parentSessionId": null,
+        "provider": "unknown",
+        "sessionId": null,
+        "via": "cursor"
+      },
       "context": {
         "branch": "feature/c05",
         "flightId": null,
@@ -779,9 +1328,30 @@
         "charge": 0.3,
         "currency": "USD"
       },
-      "schemaVersion": "dx.event.v1",
+      "schemaVersion": "dx.event.v2",
       "sourceVersion": null,
-      "upstreamKey": "fixture:x-dashboard"
+      "upstreamKey": "fixture:x-dashboard",
+      "usage": {
+        "premiumRequests": null,
+        "requestKey": null,
+        "serviceTier": null,
+        "speed": null,
+        "tokens": {
+          "cacheRead": null,
+          "cacheWrite": null,
+          "cacheWrite1h": null,
+          "cacheWrite5m": null,
+          "inputFresh": 500,
+          "output": 60,
+          "reasoning": null,
+          "total": null
+        },
+        "toolFigure": {
+          "amount": 0.3,
+          "currency": "USD",
+          "kind": "charge"
+        }
+      }
     }
   ]
 }

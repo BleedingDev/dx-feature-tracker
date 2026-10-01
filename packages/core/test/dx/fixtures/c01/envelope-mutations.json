@@ -8,10 +8,10 @@
   "baseEventIndex": 0,
   "envelopeMutations": [
     {
-      "id": "schema-version-v2",
+      "id": "schema-version-v3",
       "op": "set",
       "path": ["schemaVersion"],
-      "value": "dx.event.v2",
+      "value": "dx.event.v3",
       "expect": "reject",
       "reason": "unknown envelope version"
     },

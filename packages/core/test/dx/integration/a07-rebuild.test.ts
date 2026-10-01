@@ -14,6 +14,7 @@ import { runCollect } from "../../../src/dx/cli/commands/collect.js";
 import { runExplain } from "../../../src/dx/cli/commands/explain.js";
 import { captureCommand } from "../../../src/dx/collectors/shell-command/capture.js";
 import { autoSources, commandLogPath } from "../../../src/dx/composition.js";
+import { hookSpoolSources } from "../../../src/dx/harness/cursor/sources.js";
 import type { MetricResult } from "../../../src/dx/model/metric.js";
 import { buildRegistry } from "../../../src/dx/registry/registry.js";
 import {
@@ -167,7 +168,8 @@ const recordFlight = (storePath: string) =>
     }
 
     const sources = [
-      ...autoSources(context, repo, storePath, dftHome),
+      ...autoSources(context, repo, storePath),
+      ...hookSpoolSources(repo, dftHome),
       { input: cliStream, source: "collector/cursor-cli" },
     ];
 

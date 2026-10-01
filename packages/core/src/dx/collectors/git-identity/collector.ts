@@ -165,6 +165,7 @@ export const buildGitContextBatch = Effect.fn("GitIdentity.buildBatch")(
       acquisition: "git",
       adapterId: GIT_IDENTITY_ADAPTER_ID,
       adapterVersion: GIT_IDENTITY_ADAPTER_VERSION,
+      ai: null,
       context: {
         branch: identity.branch,
         flightId: input.context.flightId,
@@ -189,6 +190,7 @@ export const buildGitContextBatch = Effect.fn("GitIdentity.buildBatch")(
       schemaVersion: EVENT_SCHEMA_VERSION,
       sourceVersion: identity.gitVersion,
       upstreamKey,
+      usage: null,
     };
 
     const coverage: SourceCoverage = {

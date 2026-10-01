@@ -23,6 +23,7 @@ import {
   latestSpoolRecord,
 } from "../collectors/cursor-hooks/spool.js";
 import type { EventStoreService } from "../contracts/services.js";
+import { HarnessRegistryLive } from "../harness/registry.js";
 import { emptyFlightContext } from "../model/event.js";
 import type { FlightContext } from "../model/event.js";
 import { allCollectors } from "../registry/registry.js";
@@ -35,7 +36,11 @@ import {
   repoWorktrees,
   worktreeSpoolId,
 } from "../registry/runtime.js";
-import { planSources, unavailableSteps } from "../registry/sync.js";
+import {
+  planSources,
+  runPlannedStep,
+  unavailableSteps,
+} from "../registry/sync.js";
 import type { SyncStep } from "../registry/sync.js";
 import { openSqliteEventStore } from "../storage/sqlite-event-store.js";
 import {
@@ -562,23 +567,35 @@ export const startLiveEngine = (
         const before = maxSeq();
         const context = contextForRepo(root);
 
-        const plan = planSources(
-          context,
-          {
-            cwd: root,
-            dftHome: home.dftHome,
-            home: options.home,
-            repo: root,
-            storePath: home.storePath,
-          },
-          repoWorktrees(root)
-        ).filter((step) => step.source !== USAGE_SOURCE);
+        const steps = yield* Effect.gen(function* syncPlanned() {
+          const plan = (yield* planSources(
+            context,
+            {
+              cwd: root,
+              dftHome: home.dftHome,
+              home: options.home,
+              repo: root,
+              storePath: home.storePath,
+            },
+            repoWorktrees(root)
+          )).filter((step) => step.source !== USAGE_SOURCE);
 
-        const steps: SyncStep[] = [];
+          const done: SyncStep[] = [];
 
-        for (const step of plan) {
-          steps.push(yield* collectStep(step.context, step.source, step.input));
-        }
+          for (const step of plan) {
+            done.push(
+              step.ref === null
+                ? yield* collectStep(step.context, step.source, step.input)
+                : yield* runPlannedStep(
+                    { store, storePath: home.storePath },
+                    collectors,
+                    step
+                  )
+            );
+          }
+
+          return done;
+        }).pipe(Effect.provide(HarnessRegistryLive));
 
         const rows = branchesSince(before, state.repo.commonDir);
         const inserted = rows.reduce((sum, row) => sum + row.n, 0);
