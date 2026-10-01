@@ -26,6 +26,7 @@ const DX_TOOLS = [
   "dx_explain",
   "dx_mark",
   "dx_status",
+  "dx_usage",
 ] as const;
 
 const INTERRUPTED_ON_STDIN_EOF = 130;
@@ -263,11 +264,12 @@ const runSession = (
 
 describe.skipIf(!cliBuilt)("C08 MCP launch audit (built CLI stdio)", () => {
   it.live(
-    "launches, negotiates 2025-06-18 and lists the six dx tools with schemas",
+    "launches, negotiates 2025-06-18 and lists the dx tools with schemas",
     () =>
       runSession([
         request(2, "tools/list", {}),
         toolCall(3, "dx_status", {}),
+        toolCall(4, "dx_usage", { groupBy: "tool", tz: "UTC" }),
       ]).pipe(
         check((session) => {
           expect(
@@ -290,6 +292,8 @@ describe.skipIf(!cliBuilt)("C08 MCP launch audit (built CLI stdio)", () => {
               Option.flatMap(structured(session.byId(3)), decodeStatus)
             )
           ).toBe(true);
+
+          expect(isToolError(session.byId(4))).toBe(false);
 
           expect(session.nonProtocol).toStrictEqual([]);
 

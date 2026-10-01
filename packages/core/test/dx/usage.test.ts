@@ -282,7 +282,7 @@ describe("usage query", () => {
     expect(buckets.total.facts).toBe(1);
   });
 
-  it("answers a grouped query over 200k facts in under 300 ms", () => {
+  it("answers a grouped query over 200k facts in under 300 ms of CPU time", () => {
     const harnesses: readonly HarnessId[] = [
       "cursor",
       "claude-code",
@@ -313,7 +313,7 @@ describe("usage query", () => {
     );
 
     const grouped = () => {
-      const begin = performance.now();
+      const begin = process.cpuUsage();
 
       const result = queryUsage(
         prepared,
@@ -326,7 +326,9 @@ describe("usage query", () => {
         zoneClock("Europe/Prague")
       );
 
-      return { elapsed: performance.now() - begin, result };
+      const spent = process.cpuUsage(begin);
+
+      return { elapsed: (spent.user + spent.system) / 1000, result };
     };
 
     const runs = [grouped(), grouped(), grouped()];
