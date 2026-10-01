@@ -3,8 +3,8 @@ import type { Channel } from "../ids.js";
 
 export const OPENCODE_CHANNELS = [
   "local-db",
-  "session-file",
   "extension",
+  "session-file",
 ] as const satisfies readonly Channel[];
 
-export const OPENCODE_READINESS: ModuleReadiness = "unsupported";
+export const OPENCODE_READINESS: ModuleReadiness = "ready";
