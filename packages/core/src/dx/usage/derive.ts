@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 
 import { DateTime, Option, Schema } from "effect";
 
+import { DEFAULT_PROXIMITY_MS } from "../correlation/ai/overlap.js";
 import type { BranchSource } from "../harness/ids.js";
 import { harnessAdapterId } from "../harness/pending.js";
 import { inferProvider, normalizeModel, viaFor } from "../harness/provider.js";
@@ -681,9 +682,161 @@ const sessionLedger = (
   };
 };
 
-export const deriveUsageRows = (
+const DurationSchema = Schema.Struct({ durationMs: Schema.Finite });
+
+const decodeDuration = Schema.decodeUnknownOption(DurationSchema);
+
+const instantMs = (event: DxEventEnvelope): number | null => {
+  const ms = Date.parse(event.occurredAt ?? "");
+
+  return Number.isNaN(ms) ? null : ms;
+};
+
+const isUnkeyedAccountRow = (event: DxEventEnvelope): boolean =>
+  event.ai?.channel === "usage-api" &&
+  sessionOf(event) !== null &&
+  !present(event.identity.requestId) &&
+  !present(event.identity.generationId) &&
+  !isAccountBucket(event) &&
+  !isSplitShare(event);
+
+const pairsWithAccountRow = (event: DxEventEnvelope): boolean =>
+  event.ai !== null && event.ai.channel !== "usage-api" && !isSplitShare(event);
+
+interface TurnWindow {
+  readonly end: number;
+  readonly start: number;
+}
+
+const turnWindowOf = (group: readonly DxEventEnvelope[]): TurnWindow | null => {
+  const spans = group.flatMap((member) => {
+    const at = instantMs(member);
+
+    if (at === null) {
+      return [];
+    }
+
+    const lasted = Option.match(decodeDuration(member.payload), {
+      onNone: () => 0,
+      onSome: ({ durationMs }) => Math.max(0, durationMs),
+    });
+
+    return [{ end: at, start: at - lasted }];
+  });
+
+  return spans.length === 0
+    ? null
+    : {
+        end: Math.max(...spans.map((span) => span.end)),
+        start: Math.min(...spans.map((span) => span.start)),
+      };
+};
+
+const gapToWindow = (at: number, window: TurnWindow): number =>
+  Math.max(0, window.start - at, at - window.end);
+
+interface AccountPairing {
+  readonly account: number;
+  readonly distance: number;
+  readonly gap: number;
+  readonly turn: number;
+}
+
+const sessionGroupKey = (group: readonly DxEventEnvelope[]): string | null => {
+  const keys = new Set(group.map(harnessSessionKey));
+
+  return keys.size === 1 ? ([...keys][0] ?? null) : null;
+};
+
+const accountPairings = (
+  groups: readonly (readonly DxEventEnvelope[])[]
+): AccountPairing[] => {
+  const turns = groups.flatMap((group, index) => {
+    const key = sessionGroupKey(group);
+    const window = turnWindowOf(group);
+
+    return key !== null && window !== null && group.every(pairsWithAccountRow)
+      ? [{ index, key, window }]
+      : [];
+  });
+
+  return groups.flatMap((group, account) => {
+    const key = sessionGroupKey(group);
+    const at = first(group, instantMs);
+
+    if (key === null || at === null || !group.every(isUnkeyedAccountRow)) {
+      return [];
+    }
+
+    return turns.flatMap((turn) => {
+      const gap = gapToWindow(at, turn.window);
+
+      return turn.key === key && gap <= DEFAULT_PROXIMITY_MS
+        ? [
+            {
+              account,
+              distance: Math.abs(at - turn.window.end),
+              gap,
+              turn: turn.index,
+            },
+          ]
+        : [];
+    });
+  });
+};
+
+interface PairedGroups {
+  readonly groups: readonly DxEventEnvelope[][];
+  readonly joins: ReadonlyMap<string, string>;
+}
+
+const pairAccountRows = (
+  groups: readonly DxEventEnvelope[][]
+): PairedGroups => {
+  const ranked = accountPairings(groups).toSorted(
+    (a, b) =>
+      a.gap - b.gap ||
+      a.distance - b.distance ||
+      a.account - b.account ||
+      a.turn - b.turn
+  );
+
+  const joinedTo = new Map<number, number>();
+  const taken = new Set<number>();
+
+  for (const pairing of ranked) {
+    if (!joinedTo.has(pairing.account) && !taken.has(pairing.turn)) {
+      joinedTo.set(pairing.account, pairing.turn);
+      taken.add(pairing.turn);
+    }
+  }
+
+  const merged = groups.map((group) => [...group]);
+  const joins = new Map<string, string>();
+
+  for (const [account, turn] of joinedTo) {
+    const members = merged[turn] ?? [];
+    members.push(...(groups[account] ?? []));
+    const key = `turn:${factIdOf(groups[turn] ?? [])}`;
+
+    for (const member of members) {
+      joins.set(member.eventId, key);
+    }
+  }
+
+  return {
+    groups: merged.filter((_, index) => !joinedTo.has(index)),
+    joins,
+  };
+};
+
+interface RequestGrouping extends PairedGroups {
+  readonly unkeyed: readonly DxEventEnvelope[];
+}
+
+const requestGrouping = (
   events: readonly DxEventEnvelope[]
-): DerivedRows => {
+): RequestGrouping => {
   const replaced = replacedKeys(events);
 
   const bearing = [
@@ -704,6 +857,18 @@ export const deriveUsageRows = (
   );
 
   const { groups, unkeyed } = groupRequests(unique);
+
+  return { ...pairAccountRows(groups), unkeyed };
+};
+
+export const accountRowJoins = (
+  events: readonly DxEventEnvelope[]
+): ReadonlyMap<string, string> => requestGrouping(events).joins;
+
+export const deriveUsageRows = (
+  events: readonly DxEventEnvelope[]
+): DerivedRows => {
+  const { groups, unkeyed } = requestGrouping(events);
   const readings = keyedReadings(groups);
   const sessionRows = sessionFigureFacts(events);
   const onSessionLedger = sessionLedger(sessionRows);

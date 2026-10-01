@@ -3,6 +3,7 @@ import type { ChatChannelRole, ChatEvidenceRole } from "../harness/rules.js";
 import { accountAiUsage } from "../metrics/ai-usage/ledger.js";
 import type { LedgerTotal } from "../metrics/ai-usage/ledger.js";
 import type { DxEventEnvelope } from "../model/event.js";
+import { accountRowJoins } from "../usage/derive.js";
 import type { FactEstimator } from "../usage/estimate.js";
 import { CHAT_FILTERS } from "./contract.js";
 import type {
@@ -334,12 +335,15 @@ const byTime = (a: ModelTurn, b: ModelTurn) => {
 
 const modelTimelineOf = (events: readonly DxEventEnvelope[]) => {
   const seen = new Map<string, ModelTurn>();
+  const joins = accountRowJoins(events);
 
   for (const event of events) {
     const turn = modelTurnOf(event);
 
     if (turn !== null) {
-      const key = `${turn.turnId ?? turn.requestId ?? turn.generationId ?? event.eventId}|${turn.rawModel}|${turn.effort ?? "-"}`;
+      const key =
+        joins.get(event.eventId) ??
+        `${turn.turnId ?? turn.requestId ?? turn.generationId ?? event.eventId}|${turn.rawModel}|${turn.effort ?? "-"}`;
 
       if (!seen.has(key)) {
         seen.set(key, turn);

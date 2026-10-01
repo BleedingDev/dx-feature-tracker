@@ -7,6 +7,7 @@ import type { ValueMethod } from "../../model/common.js";
 import type { DxEventEnvelope } from "../../model/event.js";
 import type { EvidenceId } from "../../model/ids.js";
 import { OverlapGroupIdSchema, RequestKeySchema } from "../../model/ids.js";
+import { accountRowJoins } from "../../usage/derive.js";
 import type { AiUsageRow, UncoveredUsage } from "./normalize.js";
 import { normalizeAiUsage } from "./normalize.js";
 
@@ -267,11 +268,32 @@ const unresolvedGroup = (row: AiUsageRow, reason: string): OverlapGroup => ({
   resolution: "unresolved",
 });
 
+const detailRows = (
+  events: readonly DxEventEnvelope[],
+  rows: readonly AiUsageRow[]
+): AiUsageRow[] => {
+  const joins = accountRowJoins(events);
+
+  return rows.flatMap((row) => {
+    if (row.scope !== "detail") {
+      return [];
+    }
+
+    const join = joins.get(row.evidenceId);
+
+    return [
+      join === undefined
+        ? row
+        : { ...row, matchKeys: [...row.matchKeys, join] },
+    ];
+  });
+};
+
 export const accountAiUsage = (
   events: readonly DxEventEnvelope[]
 ): AiUsageAccount => {
   const normalized = normalizeAiUsage(events);
-  const detail = normalized.rows.filter((row) => row.scope === "detail");
+  const detail = detailRows(events, normalized.rows);
   const aggregate = normalized.rows.filter((row) => row.scope === "aggregate");
 
   const { ambiguous, duplicateUnkeyed, keyedGroups, unkeyed } =
@@ -403,9 +425,7 @@ const branchOfGroup = (members: readonly AiUsageRow[]): string | null => {
 export const assignedBranches = (
   events: readonly DxEventEnvelope[]
 ): ReadonlyMap<string, string | null> => {
-  const detail = normalizeAiUsage(events).rows.filter(
-    (row) => row.scope === "detail"
-  );
+  const detail = detailRows(events, normalizeAiUsage(events).rows);
 
   const { ambiguous, keyedGroups, unkeyed } = partitionDetail(detail);
   const assigned = new Map<string, string | null>();

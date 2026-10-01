@@ -1,0 +1,27 @@
+{
+  "fixture": "a07-live account row for the cursor-cli.stream.jsonl request (redacted)",
+  "pages": [
+    {
+      "request": { "page": 1, "pageSize": 100 },
+      "response": {
+        "totalUsageEventsCount": 1,
+        "usageEventsDisplay": [
+          {
+            "timestamp": "1790771564710",
+            "model": "default",
+            "kind": "USAGE_EVENT_KIND_USAGE_BASED",
+            "requestsCosts": 2.7,
+            "isTokenBasedCall": true,
+            "conversationId": "487a09d4-1638-4add-a548-db653635a61b",
+            "tokenUsage": {
+              "inputTokens": 34384,
+              "outputTokens": 710,
+              "cacheReadTokens": 66304,
+              "totalCents": 10.618
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
