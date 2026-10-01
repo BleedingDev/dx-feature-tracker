@@ -504,6 +504,25 @@ export const tokenShares = (
     .map(([model, count]) => [model, count / total] as const);
 };
 
+export const turnShares = (
+  chats: readonly ChatNode[]
+): readonly (readonly [string, number])[] => {
+  const counts = new Map<string, number>();
+
+  for (const chat of chats) {
+    for (const turn of chat.modelTimeline) {
+      const model = modelLabel(turn.model);
+      counts.set(model, (counts.get(model) ?? 0) + 1);
+    }
+  }
+
+  const total = [...counts.values()].reduce((sum, n) => sum + n, 0);
+
+  return [...counts.entries()]
+    .toSorted((a, b) => b[1] - a[1])
+    .map(([model, count]) => [model, count / total] as const);
+};
+
 const modelsText = (models: readonly (readonly [string, number])[]): string => {
   const top = models
     .slice(0, TOP_MODELS)

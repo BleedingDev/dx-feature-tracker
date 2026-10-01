@@ -72,6 +72,7 @@ import {
   historyText,
   ledgerValues,
   tokenShares,
+  turnShares,
   reportFacts,
   snapshotLine,
   statusText,
@@ -414,6 +415,14 @@ const wantedRow = (flags: ReportFlags, session: Session) =>
       )
     );
 
+const turnModelShares = (flags: ReportFlags, session: Session) =>
+  capabilityAt(session)
+    .chats.handler(optionalInput({ repo: session.paths.repo }, flags))
+    .pipe(
+      Effect.map((output) => turnShares(output.chats)),
+      Effect.orElseSucceed(() => [])
+    );
+
 const analyzeExtras = (flags: ReportFlags, session: Session) =>
   Effect.gen(function* extras() {
     const branch = wantedBranch(flags, session);
@@ -436,8 +445,15 @@ const analyzeExtras = (flags: ReportFlags, session: Session) =>
 
     const row = yield* wantedRow(flags, session);
 
+    const byTokens = Option.isSome(usage)
+      ? tokenShares(usage.value.groups)
+      : [];
+
+    const models =
+      byTokens.length > 0 ? byTokens : yield* turnModelShares(flags, session);
+
     return {
-      models: Option.isSome(usage) ? tokenShares(usage.value.groups) : [],
+      models,
       status: row === null ? null : row.status.value,
       toolFigure: Option.isSome(usage)
         ? (usage.value.total.values.toolFigure ?? null)
