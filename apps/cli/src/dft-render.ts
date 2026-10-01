@@ -205,7 +205,7 @@ const blockLines = (
   return rows.map(([label, text]) => `${label.padEnd(width)}  ${text}`);
 };
 
-const table = (
+export const table = (
   header: readonly string[],
   rows: readonly (readonly string[])[],
   rightAligned: ReadonlySet<number>

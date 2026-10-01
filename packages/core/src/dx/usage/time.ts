@@ -2,6 +2,8 @@ import { DateTime } from "effect";
 
 const HOUR_MS = 3_600_000;
 
+const QUARTER_MS = 900_000;
+
 const DAY_MS = 86_400_000;
 
 const MONDAY_OFFSET = 3;
@@ -71,18 +73,7 @@ export const zoneClock = (tz: string): ZoneClock => {
     year: "numeric",
   });
 
-  const offsets = new Map<number, number>();
-  const labels = new Map<string, string>();
-
-  const offsetAt = (ms: number): number => {
-    const hour = Math.floor(ms / HOUR_MS);
-    const cached = offsets.get(hour);
-
-    if (cached !== undefined) {
-      return cached;
-    }
-
-    const at = hour * HOUR_MS;
+  const exact = (at: number): number => {
     const parts = new Map<string, number>();
 
     for (const part of formatter.formatToParts(at)) {
@@ -91,35 +82,66 @@ export const zoneClock = (tz: string): ZoneClock => {
       }
     }
 
-    const local = Date.UTC(
-      parts.get("year") ?? 1970,
-      (parts.get("month") ?? 1) - 1,
-      parts.get("day") ?? 1,
-      parts.get("hour") ?? 0,
-      parts.get("minute") ?? 0,
-      parts.get("second") ?? 0
+    return (
+      Date.UTC(
+        parts.get("year") ?? 1970,
+        (parts.get("month") ?? 1) - 1,
+        parts.get("day") ?? 1,
+        parts.get("hour") ?? 0,
+        parts.get("minute") ?? 0,
+        parts.get("second") ?? 0
+      ) - at
     );
+  };
 
-    const offset = local - at;
-    offsets.set(hour, offset);
+  const hours = new Map<number, number | null>();
+  const quarters = new Map<number, number>();
+  const labels = new Map<TimeBucket, Map<number, string>>();
+
+  const quarterOffset = (quarter: number): number => {
+    const cached = quarters.get(quarter);
+
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const offset = exact(quarter * QUARTER_MS);
+    quarters.set(quarter, offset);
 
     return offset;
+  };
+
+  const offsetAt = (ms: number): number => {
+    const hour = Math.floor(ms / HOUR_MS);
+    let steady = hours.get(hour);
+
+    if (steady === undefined) {
+      const start = exact(hour * HOUR_MS);
+
+      steady =
+        start === exact((hour + 1) * HOUR_MS - QUARTER_MS) ? start : null;
+      hours.set(hour, steady);
+    }
+
+    return steady ?? quarterOffset(Math.floor(ms / QUARTER_MS));
   };
 
   const dayOf = (ms: number): number =>
     Math.floor((ms + offsetAt(ms)) / DAY_MS);
 
   const bucketOf = (ms: number, bucket: TimeBucket): string => {
-    const day = dayOf(ms);
-    const key = `${bucket}:${String(day)}`;
-    const cached = labels.get(key);
+    const quarter = Math.floor(ms / QUARTER_MS);
+    const perQuarter = labels.get(bucket) ?? new Map<number, string>();
+    const cached = perQuarter.get(quarter);
 
     if (cached !== undefined) {
       return cached;
     }
 
-    const label = labelOf(day, bucket);
-    labels.set(key, label);
+    const label = labelOf(dayOf(quarter * QUARTER_MS), bucket);
+
+    perQuarter.set(quarter, label);
+    labels.set(bucket, perQuarter);
 
     return label;
   };

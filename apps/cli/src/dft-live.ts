@@ -68,6 +68,7 @@ import {
 } from "./dft-render.js";
 import { capabilitiesFor, capabilityAt } from "./dft-session.js";
 import type { CostOptions } from "./dft-session.js";
+import { usageInputFromQuery } from "./dft-usage.js";
 
 export const DEFAULT_DASHBOARD_PORT = 7420;
 
@@ -509,6 +510,29 @@ export const serveDashboard = (options: LiveServerOptions) =>
         };
       });
 
+    const usageView = (url: URL) =>
+      Effect.gen(function* usage() {
+        const input = yield* usageInputFromQuery(url.searchParams).pipe(
+          Effect.mapError(
+            (error) =>
+              new DashboardServerError({
+                message: `Bad usage query: ${error.message}`,
+                status: 400,
+              })
+          )
+        );
+
+        const caps = yield* capsFor(paths.repo, null, options.since);
+
+        return yield* provideStore(caps.usage.handler(input)).pipe(
+          Effect.catchTag("InvalidInput", (error) =>
+            Effect.fail(
+              new DashboardServerError({ message: error.message, status: 400 })
+            )
+          )
+        );
+      });
+
     const setupView = Effect.gen(function* setup() {
       const status = yield* engine.status;
       const config = yield* engine.config;
@@ -862,6 +886,14 @@ export const serveDashboard = (options: LiveServerOptions) =>
               response,
               200,
               JSON.stringify(yield* branchView(url))
+            );
+          }
+
+          case "/api/usage": {
+            return yield* sendJson(
+              response,
+              200,
+              JSON.stringify(yield* usageView(url))
             );
           }
 

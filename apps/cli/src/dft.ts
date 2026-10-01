@@ -15,12 +15,18 @@ import {
   dxStoreLayer,
   makeDxCapabilities,
   metricsWithCost,
+  rebuildUsageFacts,
   resolveDftHome,
   resolveDftStore,
   resolveSince,
   runToolHook,
 } from "@rat-stack/core/dx";
-import type { FlightHistoryRow, SyncReport } from "@rat-stack/core/dx";
+import type {
+  DxUsageOutputType,
+  FlightHistoryRow,
+  SyncReport,
+  UsageDimension,
+} from "@rat-stack/core/dx";
 import { Console, Data, DateTime, Effect, Layer, Option } from "effect";
 import { Argument, Command, Flag } from "effect/unstable/cli";
 
@@ -61,6 +67,8 @@ import {
   capabilityAt as capabilitiesOf,
   costOptionsFor,
 } from "./dft-session.js";
+import { USAGE_BY_CHOICES, usageInputOf, usageText } from "./dft-usage.js";
+import type { UsageFlagValues } from "./dft-usage.js";
 import { mcpServer } from "./surfaces.js";
 import { VERSION } from "./version.js";
 
@@ -484,30 +492,89 @@ const explainCommand = reportCommand(
   ])
 );
 
-const historyCommand = onelineCommand(
-  "history",
-  "One row per branch: status, agent time, tokens, billed cost and estimate. Add --oneline (-1) for one short line per branch. This repo only unless --all-repos. --branch is ignored here.",
-  (flags, session) =>
-    capabilityAt(session)
-      .history.handler(historyInput(flags, session))
-      .pipe(Effect.map((history) => ({ history, oneline: flags.oneline }))),
-  {
-    json: (output) => output.history,
-    render: (output, context) =>
-      output.oneline
-        ? historyOneline(output.history.rows, {
+const usageByFlag = (name: string, description: string) =>
+  Flag.Literals(name, USAGE_BY_CHOICES).pipe(
+    Flag.withDescription(description),
+    Flag.optional,
+    Flag.map(Option.getOrUndefined)
+  );
+
+const runUsage = (session: Session, values: UsageFlagValues) =>
+  usageInputOf(values).pipe(
+    Effect.flatMap((input) => capabilityAt(session).usage.handler(input))
+  );
+
+type HistoryOutput =
+  | {
+      readonly history: Effect.Success<
+        ReturnType<ReturnType<typeof capabilityAt>["history"]["handler"]>
+      >;
+      readonly kind: "history";
+      readonly oneline: boolean;
+    }
+  | { readonly kind: "usage"; readonly usage: DxUsageOutputType };
+
+interface HistoryFlags extends OnelineFlags {
+  readonly groupBy: UsageDimension | undefined;
+}
+
+const historyRun = (flags: HistoryFlags, session: Session) =>
+  flags.groupBy === undefined
+    ? capabilityAt(session)
+        .history.handler(historyInput(flags, session))
+        .pipe(
+          Effect.map((history): HistoryOutput => ({
+            history,
+            kind: "history",
+            oneline: flags.oneline,
+          }))
+        )
+    : runUsage(session, {
+        by: flags.groupBy,
+        filters: flags.allRepos ? {} : { repo: [session.paths.repo] },
+        limit: undefined,
+        metrics: [],
+        since: flags.since,
+        tz: undefined,
+        until: undefined,
+      }).pipe(Effect.map((usage): HistoryOutput => ({ kind: "usage", usage })));
+
+const historyView: ReportView<HistoryOutput, unknown> = {
+  json: (output) => (output.kind === "usage" ? output.usage : output.history),
+  render: (output, context) => {
+    if (output.kind === "usage") {
+      return usageText(output.usage, { verbose: context.verbose });
+    }
+
+    return output.oneline
+      ? historyOneline(output.history.rows, {
+          allRepos: output.history.allRepos,
+        })
+      : withEnterpriseLine(
+          historyText(output.history.rows, {
             allRepos: output.history.allRepos,
-          })
-        : withEnterpriseLine(
-            historyText(output.history.rows, {
-              allRepos: output.history.allRepos,
-              now: context.now,
-              verbose: context.verbose,
-            }),
-            stdoutColor()
-          ),
-  }
+            now: context.now,
+            verbose: context.verbose,
+          }),
+          stdoutColor()
+        );
+  },
+};
+
+const historyCommand = Command.make(
+  "history",
+  {
+    ...onelineFlags,
+    groupBy: usageByFlag(
+      "group-by",
+      "Group AI usage by one dimension instead of listing branches; same as dft usage --by"
+    ),
+  },
+  (flags) => runReport("history", flags, historyRun, historyView)
 ).pipe(
+  Command.withDescription(
+    "One row per branch: status, agent time, tokens, billed cost and estimate. Add --oneline (-1) for one short line per branch, or --group-by tool (or model, provider, day...) to group AI usage instead. This repo only unless --all-repos. --branch is ignored here."
+  ),
   Command.withShortDescription("Cost of every branch, one row each"),
   Command.withExamples([
     { command: "dft history", description: "All branches in this repo" },
@@ -520,8 +587,150 @@ const historyCommand = onelineCommand(
       description: "One short line per branch",
     },
     {
+      command: "dft history --group-by model --since 7d",
+      description: "This repo's AI usage per model, last 7 days",
+    },
+    {
       command: "dft history --json",
       description: "Rows as JSON for scripts",
+    },
+  ])
+);
+
+const listFlag = (name: string, description: string) =>
+  Flag.String(name).pipe(Flag.withDescription(description), Flag.atLeast(0));
+
+const usageFlags = {
+  branch: listFlag(
+    "branch",
+    "Only these branches (repeat or separate with commas)"
+  ),
+  by: usageByFlag(
+    "by",
+    "Group by tool, provider, via, model, effort, repo, branch, worktree, session, day, week or month (default tool)"
+  ),
+  db: reportFlags.db,
+  json: reportFlags.json,
+  limit: Flag.Int("limit").pipe(
+    Flag.withDescription(
+      "Most groups to list; the rest are summed into one Other row (default 10)"
+    ),
+    Flag.optional,
+    Flag.map(Option.getOrUndefined)
+  ),
+  metric: listFlag(
+    "metric",
+    "Columns to show: tokens, input, cacheRead, cacheWrite, output, reasoning, requests, sessions, estimate, billed, toolFigure"
+  ),
+  model: listFlag("model", "Only these models"),
+  noSync: reportFlags.noSync,
+  provider: listFlag(
+    "provider",
+    "Only models from these makers (anthropic, openai, google, deepseek...)"
+  ),
+  repo: listFlag(
+    "repo",
+    'Only these repositories (paths); "(no repo)" for usage outside a repo. Every repo by default'
+  ),
+  since: optionalString(
+    "since",
+    "Start of the window: 30m, 24h, 7d, 2w, an ISO time or a date like 2026-09-01"
+  ),
+  tool: listFlag(
+    "tool",
+    "Only these tools (cursor, claude-code, codex, opencode, pi, omp, deepseek)"
+  ),
+  tz: optionalString(
+    "tz",
+    "Time zone for day, week and month, e.g. Europe/Prague; defaults to this computer's"
+  ),
+  until: optionalString(
+    "until",
+    "End of the window (not included), same forms as --since; defaults to now"
+  ),
+  verbose: reportFlags.verbose,
+  via: listFlag(
+    "via",
+    "Only requests through these gateways or local runtimes (openrouter, ollama...)"
+  ),
+};
+
+interface UsageCommandFlags {
+  readonly branch: readonly string[];
+  readonly by: UsageDimension | undefined;
+  readonly db: string | undefined;
+  readonly json: boolean;
+  readonly limit: number | undefined;
+  readonly metric: readonly string[];
+  readonly model: readonly string[];
+  readonly noSync: boolean;
+  readonly provider: readonly string[];
+  readonly repo: readonly string[];
+  readonly since: string | undefined;
+  readonly tool: readonly string[];
+  readonly tz: string | undefined;
+  readonly until: string | undefined;
+  readonly verbose: boolean;
+  readonly via: readonly string[];
+}
+
+const usageValues = (flags: UsageCommandFlags): UsageFlagValues => ({
+  by: flags.by ?? "tool",
+  filters: {
+    branch: flags.branch,
+    model: flags.model,
+    provider: flags.provider,
+    repo: flags.repo,
+    tool: flags.tool,
+    via: flags.via,
+  },
+  limit: flags.limit,
+  metrics: flags.metric,
+  since: flags.since,
+  tz: flags.tz,
+  until: flags.until,
+});
+
+const usageCommand = Command.make("usage", usageFlags, (flags) =>
+  runReport(
+    "usage",
+    {
+      allRepos: true,
+      branch: undefined,
+      db: flags.db,
+      json: flags.json,
+      noSync: flags.noSync,
+      repo: undefined,
+      since: undefined,
+      verbose: flags.verbose,
+    },
+    (_flags, session) => runUsage(session, usageValues(flags)),
+    {
+      render: (output, context) =>
+        usageText(output, { verbose: context.verbose }),
+    }
+  )
+).pipe(
+  Command.withDescription(
+    "AI usage across every tool, one deduplicated row per request: tokens, requests and each cost figure (estimate, billed, the tool's own figure) shown apart, never added. Group with --by and narrow with --tool, --provider, --via, --model, --repo or --branch. Every figure counts only the --since/--until window. Imports new data first unless --no-sync."
+  ),
+  Command.withShortDescription("AI usage by tool, model, repo or day"),
+  Command.withExamples([
+    {
+      command: "dft usage --by tool --since 30d",
+      description: "Each tool's tokens and cost, last 30 days",
+    },
+    {
+      command: "dft usage --by model --tool codex --since 7d",
+      description: "Codex usage per model, last 7 days",
+    },
+    {
+      command: "dft usage --by day --tz Europe/Prague --metric tokens,estimate",
+      description: "Tokens and estimate per day in Prague time",
+    },
+    {
+      command: "dft usage --by repo --provider anthropic --json",
+      description: "Anthropic models per repo, as JSON",
     },
   ])
 );
@@ -690,12 +899,16 @@ const syncCommand = reportCommand(
     Effect.gen(function* sync() {
       const store = yield* EventStore;
 
-      return yield* autoSync(store, allCollectors, {
+      const report = yield* autoSync(store, allCollectors, {
         cwd: process.cwd(),
         home: session.paths.home,
         repo: session.paths.repo,
         storePath: session.paths.store.path,
       });
+
+      yield* rebuildUsageFacts.pipe(Effect.ignore);
+
+      return report;
     }),
   {
     presync: false,
@@ -1049,6 +1262,7 @@ export const dftCommand = Command.make("dft").pipe(
       "    dft line                     the same, on one line",
       "    dft history --all-repos      every branch in every repo, one row each",
       "    dft history --oneline        every branch in this repo, one line each",
+      "    dft usage --by tool          AI usage per tool, model, repo or day",
       "    dft dashboard                every branch as a web page, opens in your browser",
       "    dft <command> --help         flags and examples",
     ].join("\n")
@@ -1061,6 +1275,7 @@ export const dftCommand = Command.make("dft").pipe(
     lineCommand,
     explainCommand,
     historyCommand,
+    usageCommand,
     dashboardCommand,
     chatsCommand,
     markCommand,

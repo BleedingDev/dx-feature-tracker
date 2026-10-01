@@ -424,7 +424,9 @@ export const disagreementsOf = (
 };
 
 const usageBearing = (event: DxEventEnvelope): boolean =>
-  event.kind.startsWith("ai.") && event.usage !== null;
+  event.kind.startsWith("ai.") &&
+  event.kind !== "ai.session" &&
+  event.usage !== null;
 
 const harnessSessionKey = (event: DxEventEnvelope): string | null => {
   const session = sessionOf(event);
@@ -432,6 +434,40 @@ const harnessSessionKey = (event: DxEventEnvelope): string | null => {
   return event.ai === null || session === null
     ? null
     : `${event.ai.harness}|${session}`;
+};
+
+const figureAmount = (event: DxEventEnvelope): number =>
+  event.usage?.toolFigure?.amount ?? Number.NEGATIVE_INFINITY;
+
+const sessionFigureFacts = (
+  events: readonly DxEventEnvelope[]
+): UsageFact[] => {
+  const latest = new Map<string, DxEventEnvelope>();
+
+  for (const event of events) {
+    const key = harnessSessionKey(event);
+
+    if (
+      event.kind !== "ai.session" ||
+      event.usage?.toolFigure === null ||
+      event.usage?.toolFigure === undefined ||
+      key === null
+    ) {
+      continue;
+    }
+
+    const kept = latest.get(key);
+
+    if (kept === undefined || figureAmount(event) > figureAmount(kept)) {
+      latest.set(key, event);
+    }
+  }
+
+  return [...latest.values()].map((event) => ({
+    ...factOf([event]),
+    requests: 0,
+    tokens: unknownTokens,
+  }));
 };
 
 export const deriveUsageFacts = (
@@ -470,6 +506,8 @@ export const deriveUsageFacts = (
     facts.push(fact);
     disagreements.push(...disagreementsOf(fact, group));
   }
+
+  facts.push(...sessionFigureFacts(events));
 
   for (const event of unkeyed) {
     const key = harnessSessionKey(event);

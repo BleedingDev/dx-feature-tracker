@@ -509,6 +509,46 @@ describe("dft dashboard live server", () => {
   );
 });
 
+const UsageReply = Schema.fromJsonString(
+  Schema.Struct({
+    contractVersion: Schema.Literal("dx.usage.v1"),
+    groupBy: Schema.NullOr(Schema.String),
+    metrics: Schema.Array(Schema.String),
+    window: Schema.Struct({ tz: Schema.String }),
+  })
+);
+
+const decodeUsage = Schema.decodeUnknownSync(UsageReply);
+
+describe("dft dashboard usage endpoint", () => {
+  it.live("answers GET /api/usage with the dx_usage query contract", () =>
+    withDashboard((server) =>
+      Effect.gen(function* usage() {
+        const reply = yield* call(
+          server,
+          "/api/usage?groupBy=tool&tz=UTC&metrics=tokens,requests&tool=codex&tool=pi"
+        );
+
+        expect(reply.status).toBe(200);
+        expect(decodeUsage(reply.body)).toMatchObject({
+          groupBy: "tool",
+          metrics: ["tokens", "requests"],
+          window: { tz: "UTC" },
+        });
+
+        const zone = yield* call(server, "/api/usage?tz=Mars/Olympus");
+
+        expect(zone.status).toBe(400);
+        expect(decodeError(zone.body).error).toContain("Mars/Olympus");
+
+        const dimension = yield* call(server, "/api/usage?groupBy=color");
+
+        expect(dimension.status).toBe(400);
+      })
+    )
+  );
+});
+
 describe("dft dashboard --one-time", () => {
   it("still writes the static page and exits", () => {
     const out = path.join(scratch, "static.html");

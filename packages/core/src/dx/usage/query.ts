@@ -109,79 +109,6 @@ export interface UsageQueryResult {
   readonly withoutTime: number;
 }
 
-export interface PreparedFacts {
-  readonly billedUsd: Float64Array;
-  readonly estimateUsd: Float64Array;
-  readonly facts: readonly UsageFact[];
-  readonly foreignMoney: number;
-  readonly tokenTotal: Float64Array;
-  readonly toolFigureUsd: Float64Array;
-}
-
-const usdOf = (
-  figure: { readonly amount: number; readonly currency: string } | null
-): number =>
-  figure !== null && figure.currency.toUpperCase() === "USD"
-    ? figure.amount
-    : Number.NaN;
-
-const isForeign = (figure: { readonly currency: string } | null): boolean =>
-  figure !== null && figure.currency.toUpperCase() !== "USD";
-
-export const prepareFacts = (
-  facts: readonly UsageFact[],
-  estimate: (fact: UsageFact) => number | null
-): PreparedFacts => {
-  const size = facts.length;
-  const tokenTotal = new Float64Array(size);
-  const estimateUsd = new Float64Array(size);
-  const billedUsd = new Float64Array(size);
-  const toolFigureUsd = new Float64Array(size);
-  let foreignMoney = 0;
-
-  for (const [index, fact] of facts.entries()) {
-    tokenTotal[index] = knownTokenTotal(fact.tokens) ?? Number.NaN;
-    estimateUsd[index] = estimate(fact) ?? Number.NaN;
-    billedUsd[index] = usdOf(fact.billed);
-    toolFigureUsd[index] = usdOf(fact.toolFigure);
-    foreignMoney +=
-      isForeign(fact.billed) || isForeign(fact.toolFigure) ? 1 : 0;
-  }
-
-  return {
-    billedUsd,
-    estimateUsd,
-    facts,
-    foreignMoney,
-    tokenTotal,
-    toolFigureUsd,
-  };
-};
-
-const DIMENSION_READERS: Readonly<
-  Record<FilterDimension, (fact: UsageFact) => string | null>
-> = {
-  agent: (fact) => fact.agent,
-  attribution: (fact) => fact.attribution,
-  branch: (fact) => fact.branch,
-  channel: (fact) => fact.channel,
-  effort: (fact) => fact.effort,
-  model: (fact) => fact.model,
-  parentSession: (fact) => fact.parentSession,
-  provider: (fact) => fact.provider,
-  repo: (fact) => fact.repo,
-  scope: (fact) => fact.scope,
-  session: (fact) => fact.session,
-  tool: (fact) => fact.harness,
-  via: (fact) => fact.via,
-  worktree: (fact) => fact.worktree,
-};
-
-export const dimensionValue = (
-  fact: UsageFact,
-  dimension: FilterDimension
-): string | null => DIMENSION_READERS[dimension](fact);
-
 const SUMMED = [
   "tokens",
   "input",
@@ -212,19 +139,139 @@ const SLOT: Readonly<Record<Summed, number>> = {
   toolFigure: 9,
 };
 
+export interface PreparedFacts {
+  readonly facts: readonly UsageFact[];
+  readonly foreignMoney: number;
+  readonly sessionIds: Int32Array;
+  readonly values: Float64Array;
+}
+
+const usdOf = (
+  figure: { readonly amount: number; readonly currency: string } | null
+): number =>
+  figure !== null && figure.currency.toUpperCase() === "USD"
+    ? figure.amount
+    : Number.NaN;
+
+const isForeign = (figure: { readonly currency: string } | null): boolean =>
+  figure !== null && figure.currency.toUpperCase() !== "USD";
+
+const orNaN = (value: number | null): number => value ?? Number.NaN;
+
+const cacheWriteOf = (fact: UsageFact): number => {
+  const { tokens } = fact;
+
+  return tokens.cacheWrite5m === null && tokens.cacheWrite1h === null
+    ? orNaN(tokens.cacheWrite)
+    : Math.max(
+        tokens.cacheWrite ?? 0,
+        (tokens.cacheWrite5m ?? 0) + (tokens.cacheWrite1h ?? 0)
+      );
+};
+
+const factValues = (
+  fact: UsageFact,
+  estimate: number | null
+): Readonly<Record<Summed, number>> => ({
+  billed: usdOf(fact.billed),
+  cacheRead: orNaN(fact.tokens.cacheRead),
+  cacheWrite: cacheWriteOf(fact),
+  estimate: orNaN(estimate),
+  input: orNaN(fact.tokens.inputFresh),
+  output: orNaN(fact.tokens.output),
+  reasoning: orNaN(fact.tokens.reasoning),
+  requests: fact.requests,
+  tokens: orNaN(knownTokenTotal(fact.tokens)),
+  toolFigure: usdOf(fact.toolFigure),
+});
+
+export const prepareFacts = (
+  facts: readonly UsageFact[],
+  estimate: (fact: UsageFact) => number | null
+): PreparedFacts => {
+  const values = new Float64Array(facts.length * SUMMED_COUNT);
+  const sessionIds = new Int32Array(facts.length);
+  const sessions = new Map<string, number>();
+  let foreignMoney = 0;
+
+  for (const [index, fact] of facts.entries()) {
+    const row = factValues(fact, estimate(fact));
+
+    for (const name of SUMMED) {
+      values[index * SUMMED_COUNT + SLOT[name]] = row[name];
+    }
+
+    const { session } = fact;
+
+    if (session === null) {
+      sessionIds[index] = -1;
+    } else {
+      const known = sessions.get(session);
+      const id = known ?? sessions.size;
+
+      sessions.set(session, id);
+      sessionIds[index] = id;
+    }
+
+    foreignMoney +=
+      isForeign(fact.billed) || isForeign(fact.toolFigure) ? 1 : 0;
+  }
+
+  return { facts, foreignMoney, sessionIds, values };
+};
+
+const DIMENSION_READERS: Readonly<
+  Record<FilterDimension, (fact: UsageFact) => string | null>
+> = {
+  agent: (fact) => fact.agent,
+  attribution: (fact) => fact.attribution,
+  branch: (fact) => fact.branch,
+  channel: (fact) => fact.channel,
+  effort: (fact) => fact.effort,
+  model: (fact) => fact.model,
+  parentSession: (fact) => fact.parentSession,
+  provider: (fact) => fact.provider,
+  repo: (fact) => fact.repo,
+  scope: (fact) => fact.scope,
+  session: (fact) => fact.session,
+  tool: (fact) => fact.harness,
+  via: (fact) => fact.via,
+  worktree: (fact) => fact.worktree,
+};
+
+export const dimensionValue = (
+  fact: UsageFact,
+  dimension: FilterDimension
+): string | null => DIMENSION_READERS[dimension](fact);
+
 const round = (value: number): number =>
   Math.round(value * 1_000_000_000) / 1_000_000_000;
 
 class Accumulator {
   facts = 0;
   readonly known = new Uint8Array(SUMMED_COUNT);
-  readonly sessions = new Set<string>();
+  readonly sessions = new Set<number>();
   readonly sums = new Float64Array(SUMMED_COUNT);
 
-  add(slot: number, value: number): void {
-    if (!Number.isNaN(value)) {
-      this.sums[slot] = (this.sums[slot] ?? 0) + value;
-      this.known[slot] = 1;
+  addRow(prepared: PreparedFacts, index: number): void {
+    const base = index * SUMMED_COUNT;
+    const { values } = prepared;
+
+    this.facts += 1;
+
+    for (let slot = 0; slot < SUMMED_COUNT; slot += 1) {
+      const value = values[base + slot] ?? Number.NaN;
+
+      if (!Number.isNaN(value)) {
+        this.sums[slot] = (this.sums[slot] ?? 0) + value;
+        this.known[slot] = 1;
+      }
+    }
+
+    const session = prepared.sessionIds[index] ?? -1;
+
+    if (session >= 0) {
+      this.sessions.add(session);
     }
   }
 
@@ -233,7 +280,8 @@ class Accumulator {
 
     for (let slot = 0; slot < SUMMED_COUNT; slot += 1) {
       if (other.known[slot] === 1) {
-        this.add(slot, other.sums[slot] ?? 0);
+        this.sums[slot] = (this.sums[slot] ?? 0) + (other.sums[slot] ?? 0);
+        this.known[slot] = 1;
       }
     }
 
@@ -253,43 +301,20 @@ class Accumulator {
   }
 }
 
-const orNaN = (value: number | null): number => value ?? Number.NaN;
-
-const addFact = (
-  acc: Accumulator,
+const accumulate = (
+  into: Map<string, Accumulator>,
+  key: string,
   prepared: PreparedFacts,
   index: number
 ): void => {
-  const fact = prepared.facts[index];
+  let acc = into.get(key);
 
-  if (fact === undefined) {
-    return;
+  if (acc === undefined) {
+    acc = new Accumulator();
+    into.set(key, acc);
   }
 
-  const { tokens } = fact;
-  acc.facts += 1;
-  acc.add(SLOT.tokens, prepared.tokenTotal[index] ?? Number.NaN);
-  acc.add(SLOT.input, orNaN(tokens.inputFresh));
-  acc.add(SLOT.cacheRead, orNaN(tokens.cacheRead));
-  acc.add(
-    SLOT.cacheWrite,
-    tokens.cacheWrite5m === null && tokens.cacheWrite1h === null
-      ? orNaN(tokens.cacheWrite)
-      : Math.max(
-          tokens.cacheWrite ?? 0,
-          (tokens.cacheWrite5m ?? 0) + (tokens.cacheWrite1h ?? 0)
-        )
-  );
-  acc.add(SLOT.output, orNaN(tokens.output));
-  acc.add(SLOT.reasoning, orNaN(tokens.reasoning));
-  acc.add(SLOT.requests, fact.requests);
-  acc.add(SLOT.estimate, prepared.estimateUsd[index] ?? Number.NaN);
-  acc.add(SLOT.billed, prepared.billedUsd[index] ?? Number.NaN);
-  acc.add(SLOT.toolFigure, prepared.toolFigureUsd[index] ?? Number.NaN);
-
-  if (fact.session !== null) {
-    acc.sessions.add(fact.session);
-  }
+  acc.addRow(prepared, index);
 };
 
 const valuesOf = (
@@ -376,78 +401,62 @@ const limitGroups = (
   };
 };
 
-interface SeriesBuilder {
-  readonly add: (index: number, fact: UsageFact) => void;
-  readonly build: () => readonly SeriesPoint[];
-}
+const foldStacks = (
+  perBucket: ReadonlyMap<string, Accumulator>,
+  top: ReadonlySet<string>
+): Map<string, Accumulator> => {
+  const folded = new Map<string, Accumulator>();
 
-const seriesBuilder = (
-  prepared: PreparedFacts,
-  query: UsageQuery,
-  clock: ZoneClock
-): SeriesBuilder => {
-  const buckets = new Map<string, Accumulator>();
-  const stacks = new Map<string, Map<string, Accumulator>>();
+  for (const [key, acc] of perBucket) {
+    const target = key === UNATTRIBUTED_KEY || top.has(key) ? key : OTHER_KEY;
+    const into = folded.get(target) ?? new Accumulator();
+
+    into.merge(acc);
+    folded.set(target, into);
+  }
+
+  return folded;
+};
+
+const buildSeries = (
+  cells: ReadonlyMap<string, Map<string, Accumulator>>,
+  query: UsageQuery
+): readonly SeriesPoint[] => {
   const stackTotals = new Map<string, Accumulator>();
-  const { stackBy } = query;
 
-  return {
-    add: (index, fact) => {
-      if (fact.occurredMs === null) {
-        return;
+  for (const perBucket of cells.values()) {
+    for (const [key, acc] of perBucket) {
+      if (key !== UNATTRIBUTED_KEY) {
+        const total = stackTotals.get(key) ?? new Accumulator();
+
+        total.merge(acc);
+        stackTotals.set(key, total);
+      }
+    }
+  }
+
+  const { top } = limitGroups(stackTotals, query, false);
+
+  return [...cells]
+    .toSorted(([a], [b]) => a.localeCompare(b))
+    .map(([bucket, perBucket]) => {
+      const total = new Accumulator();
+
+      for (const acc of perBucket.values()) {
+        total.merge(acc);
       }
 
-      const bucket = clock.bucketOf(fact.occurredMs, query.bucket);
-      const total = buckets.get(bucket) ?? new Accumulator();
-      addFact(total, prepared, index);
-      buckets.set(bucket, total);
-
-      if (stackBy === null) {
-        return;
-      }
-
-      const stack = keyOf(fact, stackBy, clock) ?? UNATTRIBUTED_KEY;
-      const perBucket = stacks.get(bucket) ?? new Map<string, Accumulator>();
-      const acc = perBucket.get(stack) ?? new Accumulator();
-      addFact(acc, prepared, index);
-      perBucket.set(stack, acc);
-      stacks.set(bucket, perBucket);
-
-      const overall = stackTotals.get(stack) ?? new Accumulator();
-      addFact(overall, prepared, index);
-      stackTotals.set(stack, overall);
-    },
-    build: () => {
-      const named = new Map(
-        [...stackTotals].filter(([key]) => key !== UNATTRIBUTED_KEY)
-      );
-
-      const { top } = limitGroups(named, query, false);
-
-      return [...buckets]
-        .toSorted(([a], [b]) => a.localeCompare(b))
-        .map(([bucket, acc]) => {
-          const folded = new Map<string, Accumulator>();
-
-          for (const [key, stackAcc] of stacks.get(bucket) ?? []) {
-            const target =
-              key === UNATTRIBUTED_KEY || top.has(key) ? key : OTHER_KEY;
-
-            const into = folded.get(target) ?? new Accumulator();
-            into.merge(stackAcc);
-            folded.set(target, into);
-          }
-
-          return {
-            bucket,
-            stacks: [...folded]
-              .toSorted(([a], [b]) => a.localeCompare(b))
-              .map(([key, stackAcc]) => rowOf(key, stackAcc, query.metrics)),
-            values: valuesOf(acc, query.metrics),
-          };
-        });
-    },
-  };
+      return {
+        bucket,
+        stacks:
+          query.stackBy === null
+            ? []
+            : [...foldStacks(perBucket, top)]
+                .toSorted(([a], [b]) => a.localeCompare(b))
+                .map(([key, acc]) => rowOf(key, acc, query.metrics)),
+        values: valuesOf(total, query.metrics),
+      };
+    });
 };
 
 const inWindow = (fact: UsageFact, query: UsageQuery): boolean => {
@@ -464,6 +473,57 @@ const inWindow = (fact: UsageFact, query: UsageQuery): boolean => {
   );
 };
 
+const matchesFilters = (
+  fact: UsageFact,
+  filters: ReturnType<typeof filterSets>
+): boolean => {
+  for (const [dimension, wanted] of filters) {
+    if (!wanted.has(dimensionValue(fact, dimension) ?? NONE_VALUE)) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
+const STACK_TOTAL = "(all)";
+
+const addToSeries = (
+  cells: Map<string, Map<string, Accumulator>>,
+  prepared: PreparedFacts,
+  index: number,
+  query: UsageQuery,
+  clock: ZoneClock
+): void => {
+  const fact = prepared.facts[index];
+
+  if (fact === undefined || fact.occurredMs === null) {
+    return;
+  }
+
+  const bucket = clock.bucketOf(fact.occurredMs, query.bucket);
+
+  const stack =
+    query.stackBy === null
+      ? STACK_TOTAL
+      : (keyOf(fact, query.stackBy, clock) ?? UNATTRIBUTED_KEY);
+
+  let perBucket = cells.get(bucket);
+
+  if (perBucket === undefined) {
+    perBucket = new Map<string, Accumulator>();
+    cells.set(bucket, perBucket);
+  }
+
+  accumulate(perBucket, stack, prepared, index);
+};
+
+const unpriced = (prepared: PreparedFacts, index: number): boolean =>
+  (prepared.facts[index]?.requests ?? 0) > 0 &&
+  Number.isNaN(
+    prepared.values[index * SUMMED_COUNT + SLOT.estimate] ?? Number.NaN
+  );
+
 export const queryUsage = (
   prepared: PreparedFacts,
   query: UsageQuery,
@@ -475,58 +535,49 @@ export const queryUsage = (
   const accountBuckets = new Accumulator();
   const unattributed = new Accumulator();
   const groups = new Map<string, Accumulator>();
-  const series = seriesBuilder(prepared, query, clock);
+  const cells = new Map<string, Map<string, Accumulator>>();
+  const { facts } = prepared;
   const { groupBy } = query;
   let withoutTime = 0;
   let unpricedInWindow = 0;
   let matched = 0;
 
-  for (const [index, fact] of prepared.facts.entries()) {
+  for (let index = 0; index < facts.length; index += 1) {
+    const fact = facts[index];
+
+    if (fact === undefined) {
+      continue;
+    }
+
     if (!inWindow(fact, query)) {
       withoutTime += fact.occurredMs === null ? 1 : 0;
       continue;
     }
 
-    let keep = true;
-
-    for (const [dimension, wanted] of filters) {
-      if (!wanted.has(dimensionValue(fact, dimension) ?? NONE_VALUE)) {
-        keep = false;
-        break;
-      }
-    }
-
-    if (!keep) {
+    if (filters.length > 0 && !matchesFilters(fact, filters)) {
       continue;
     }
 
     if (fact.scope === "account-bucket" && !wantBuckets) {
-      addFact(accountBuckets, prepared, index);
+      accountBuckets.addRow(prepared, index);
       continue;
     }
 
     matched += 1;
-    addFact(total, prepared, index);
-    series.add(index, fact);
+    total.addRow(prepared, index);
 
-    if (Number.isNaN(prepared.estimateUsd[index] ?? Number.NaN)) {
-      unpricedInWindow += 1;
+    unpricedInWindow += unpriced(prepared, index) ? 1 : 0;
+    addToSeries(cells, prepared, index, query, clock);
+
+    if (groupBy !== null) {
+      const key = keyOf(fact, groupBy, clock);
+
+      if (key === null) {
+        unattributed.addRow(prepared, index);
+      } else {
+        accumulate(groups, key, prepared, index);
+      }
     }
-
-    if (groupBy === null) {
-      continue;
-    }
-
-    const key = keyOf(fact, groupBy, clock);
-
-    if (key === null) {
-      addFact(unattributed, prepared, index);
-      continue;
-    }
-
-    const acc = groups.get(key) ?? new Accumulator();
-    addFact(acc, prepared, index);
-    groups.set(key, acc);
   }
 
   const grouped =
@@ -540,7 +591,7 @@ export const queryUsage = (
     matched,
     notes: [],
     other: grouped.other,
-    series: series.build(),
+    series: buildSeries(cells, query),
     total: rowOf("total", total, query.metrics),
     unattributed:
       unattributed.facts === 0

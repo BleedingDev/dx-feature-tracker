@@ -48,6 +48,10 @@ export type { DxUsageInputType, DxUsageOutputType } from "./usage/contract.js";
 
 export { NO_REPO } from "./usage/fact.js";
 
+export { EventIdSchema } from "./model/ids.js";
+
+export type { DxEventEnvelope } from "./model/event.js";
+
 export { rebuildUsageFacts, usageFacts } from "./usage/load.js";
 
 export {

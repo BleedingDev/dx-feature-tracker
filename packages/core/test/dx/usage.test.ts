@@ -203,6 +203,20 @@ describe("usage query", () => {
     expect(honolulu.series.map((point) => point.bucket)).toEqual([
       "2026-09-28",
     ]);
+
+    const kolkata = run(
+      [
+        fact("before-midnight", at("2026-09-30T18:20:00.000Z")),
+        fact("after-midnight", at("2026-09-30T18:40:00.000Z")),
+      ],
+      { groupBy: "day" },
+      "Asia/Kolkata"
+    );
+
+    expect(kolkata.groups.map((group) => [group.key, group.facts])).toEqual([
+      ["2026-09-30", 1],
+      ["2026-10-01", 1],
+    ]);
   });
 
   it("keeps every money ledger apart and never adds them", () => {
@@ -418,6 +432,48 @@ describe("usage facts", () => {
         ],
       },
     ]);
+  });
+
+  it("keeps only the latest cumulative session figure and counts it as no request", () => {
+    const sessionCost = (id: string, amount: number): DxEventEnvelope => {
+      const base = usageEvent(
+        id,
+        "claude-code",
+        "session-file",
+        0,
+        "claude-opus-5",
+        "main"
+      );
+
+      return {
+        ...base,
+        identity: { ...emptyEventIdentity, sessionId: "session-1" },
+        kind: "ai.session",
+        usage: {
+          premiumRequests: null,
+          requestKey: null,
+          serviceTier: null,
+          speed: null,
+          tokens: unknownTokens,
+          toolFigure: { amount, currency: "USD", kind: "api-equivalent" },
+        },
+      };
+    };
+
+    const derived = deriveUsageFacts([
+      ...sameRequestTwice,
+      sessionCost("cost-early", 0.5),
+      sessionCost("cost-late", 0.8),
+    ]);
+
+    const result = run(derived.facts, {});
+
+    expect(derived.facts).toHaveLength(2);
+    expect(result.total.values).toMatchObject({
+      requests: 1,
+      tokens: 1100,
+      toolFigure: 0.8,
+    });
   });
 
   it.effect("serves dx_usage from stored events and caches the facts", () =>

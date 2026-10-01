@@ -64,8 +64,27 @@ export const capabilitiesFor = (input: {
 export const capabilityAt = (
   capabilities: ReturnType<typeof capabilitiesFor>
 ) => {
-  const [status, analyze, explain, evidence, collect, mark, history, chats] =
-    capabilities;
+  const [
+    status,
+    analyze,
+    explain,
+    evidence,
+    collect,
+    mark,
+    history,
+    chats,
+    usage,
+  ] = capabilities;
 
-  return { analyze, chats, collect, evidence, explain, history, mark, status };
+  return {
+    analyze,
+    chats,
+    collect,
+    evidence,
+    explain,
+    history,
+    mark,
+    status,
+    usage,
+  };
 };
