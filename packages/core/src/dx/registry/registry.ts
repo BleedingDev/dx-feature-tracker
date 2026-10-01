@@ -1,8 +1,6 @@
 import type { NodeServices } from "@effect/platform-node";
 
 import { cliCommandsDescriptor } from "../cli/commands/descriptor.js";
-import { claudeJsonlCollector } from "../collectors/claude/collector.js";
-import { codexSessionCollector } from "../collectors/codex/collector.js";
 import { cursorCliCollector } from "../collectors/cursor-cli/collector.js";
 import { cursorDashboardResponseCollector } from "../collectors/cursor-dashboard-response/collector.js";
 import { cursorExtensionCollector } from "../collectors/cursor-extension/collector.js";
@@ -20,7 +18,6 @@ import { gitObservationCollector } from "../collectors/git-observation/collector
 import { localFeedbackCollector } from "../collectors/local-feedback/collector.js";
 import { localTestCollector } from "../collectors/local-test/collector.js";
 import { manualCollector } from "../collectors/manual/collector.js";
-import { opencodeCollector } from "../collectors/opencode/collector.js";
 import { providerUsageCollector } from "../collectors/provider-usage/collector.js";
 import { shellCommandCollector } from "../collectors/shell-command/collector.js";
 import type { DxCollector, DxMetric } from "../contracts/services.js";
@@ -66,9 +63,6 @@ export const allCollectors: readonly RegisteredCollector[] = [
   localTestCollector,
   shellCommandCollector,
   localFeedbackCollector,
-  claudeJsonlCollector,
-  codexSessionCollector,
-  opencodeCollector,
   providerUsageCollector,
   gitAiCollector,
   entireCheckpointsCollector,

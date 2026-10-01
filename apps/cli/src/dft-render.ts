@@ -221,8 +221,6 @@ export const table = (
 };
 
 const SOURCE_LABELS = new Map([
-  ["claude-jsonl", "Claude Code"],
-  ["codex-session", "Codex"],
   ["cursor-cli", "Cursor CLI"],
   ["cursor-hooks", "Cursor hooks"],
   ["cursor-local-db", "Cursor app data"],
@@ -233,9 +231,14 @@ const SOURCE_LABELS = new Map([
   ["git-history", "git"],
   ["git-identity", "git"],
   ["git-observation", "git"],
+  ["harness.claude-code", "Claude Code"],
+  ["harness.codex", "Codex"],
+  ["harness.deepseek", "DeepSeek Harness"],
+  ["harness.omp", "OMP"],
+  ["harness.opencode", "OpenCode"],
+  ["harness.pi", "Pi"],
   ["local-test", "tests"],
   ["manual", "manual marks"],
-  ["opencode", "OpenCode"],
   ["shell-command", "shell"],
 ]);
 

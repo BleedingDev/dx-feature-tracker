@@ -1,4 +1,0 @@
-{"type":"assistant","sessionId":"sess-claude-2","requestId":"req_fixture_C","timestamp":"2026-09-30T10:00:00.000Z","gitBranch":"main","version":"1.0.30","costUSD":0.0123,"message":{"id":"msg_fixture_C","model":"redacted-claude-model","content":[],"usage":{"input_tokens":50,"output_tokens":7}}}
-not json at all
-{"type":"assistant","sessionId":"sess-claude-2","timestamp":"2026-09-30T10:01:00.000Z","version":"1.0.30","message":{"id":"msg_fixture_D","model":"<synthetic>","content":[],"usage":{"input_tokens":0,"output_tokens":0}}}
-{"type":"assistant","sessionId":"sess-claude-2","timestamp":"not-a-time","version":"1.0.30","message":{"id":"msg_fixture_E","model":"redacted-claude-model","content":[{"type":"tool_use","name":"Read"}]}}

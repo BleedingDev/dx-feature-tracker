@@ -259,7 +259,7 @@ export class DeepseekHarness extends Context.Service<
 }) {
   static readonly layer = Layer.effect(this, this.make);
 
-  static readonly mock = this.layer.pipe(
+  static readonly mock = Layer.effect(this, this.make).pipe(
     Layer.provide(DeepseekStore.memory({ files: [], roots: [] }))
   );
 }

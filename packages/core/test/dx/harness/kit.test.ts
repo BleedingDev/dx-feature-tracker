@@ -437,64 +437,6 @@ const aiEvent = (
 });
 
 describe("collector blocks", () => {
-  it("attributes Claude Code rows and keeps unknown tokens null", () => {
-    const { ai, usage } = collectorBlocks(
-      aiEvent("claude-jsonl", {
-        branchSource: "claude-jsonl",
-        model: "claude-opus-4-5-20251101",
-        requestKey: "source:claude-jsonl:request:r1",
-        tokens: {
-          "cache-write": 10,
-          "cached-input": 20,
-          input: 5,
-          output: 7,
-        },
-      })
-    );
-
-    expect(ai).toMatchObject({
-      branchSource: "harness-recorded",
-      channel: "session-file",
-      harness: "claude-code",
-      harnessVersion: "2.1.0",
-      model: "claude-opus-4-5",
-      provider: "anthropic",
-      sessionId: "s1",
-      via: null,
-    });
-    expect(usage?.tokens).toStrictEqual({
-      cacheRead: 20,
-      cacheWrite: 10,
-      cacheWrite1h: null,
-      cacheWrite5m: null,
-      inputFresh: 5,
-      output: 7,
-      reasoning: null,
-      total: null,
-    });
-    expect(usage?.toolFigure).toBeNull();
-  });
-
-  it("takes cached tokens out of Codex input", () => {
-    const { usage } = collectorBlocks(
-      aiEvent("codex-session", {
-        effort: "high",
-        model: "gpt-5.1-codex",
-        tokens: {
-          cachedInput: 300,
-          input: 1000,
-          output: 50,
-          reasoning: 20,
-          total: 1050,
-        },
-      })
-    );
-
-    expect(usage?.tokens.inputFresh).toBe(700);
-    expect(usage?.tokens.cacheRead).toBe(300);
-    expect(usage?.tokens.reasoning).toBe(20);
-  });
-
   it("reads Cursor effort from the model suffix and keeps the charge", () => {
     const { ai, usage } = collectorBlocks(
       aiEvent("cursor-usage-export", {

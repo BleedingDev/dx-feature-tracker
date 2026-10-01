@@ -28,11 +28,7 @@ import type {
   RegisteredCollector,
 } from "../registry/registry.js";
 import { contextForRepo, repoWorktrees } from "../registry/runtime.js";
-import {
-  planSources,
-  runPlannedStep,
-  unavailableSteps,
-} from "../registry/sync.js";
+import { planSources, runPlannedStep } from "../registry/sync.js";
 import type { SyncStep } from "../registry/sync.js";
 import {
   HarnessCursors,
@@ -633,7 +629,7 @@ export const startLiveEngine = (
         state.lastInserted = inserted;
         state.lastSyncAt = yield* nowIso;
         state.lastError = null;
-        state.sources = [...steps, ...unavailableSteps(context, options.home)];
+        state.sources = steps;
         state.syncs += 1;
         indexSpool(state);
 

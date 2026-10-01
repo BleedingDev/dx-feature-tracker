@@ -33,9 +33,15 @@ const HARNESS_SOURCES: Readonly<Partial<Record<AiSourceKind, HarnessSource>>> =
     "codex-session": { channel: "session-file", harness: "codex", within: 0 },
     "cursor-cli": { channel: "cli-stream", harness: "cursor", within: 1 },
     "dashboard-json": { channel: "usage-api", harness: "cursor", within: 1 },
+    "deepseek-session": {
+      channel: "session-file",
+      harness: "deepseek",
+      within: 0,
+    },
     "hooks-stop": { channel: "hooks", harness: "cursor", within: 0 },
     "local-db": { channel: "local-db", harness: "cursor", within: 0 },
     opencode: { channel: "session-file", harness: "opencode", within: 0 },
+    "pi-session": { channel: "session-file", harness: "pi", within: 0 },
     sdk: { channel: "cli-stream", harness: "cursor", within: 0 },
     "transcript-estimate": {
       channel: "transcript",

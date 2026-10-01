@@ -382,7 +382,7 @@ export class CodexHarness extends Context.Service<CodexHarness, Harness>()(
 ) {
   static readonly layer = Layer.effect(this, this.make);
 
-  static readonly mock = this.layer.pipe(
+  static readonly mock = Layer.effect(this, this.make).pipe(
     Layer.provide(CodexStore.memory({ files: [], roots: [] }))
   );
 }

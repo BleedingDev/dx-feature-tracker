@@ -10,6 +10,7 @@ import type {
 } from "../../../src/dx/harness/contract.js";
 import type { HarnessId } from "../../../src/dx/harness/ids.js";
 import { HarnessRegistry } from "../../../src/dx/harness/registry.js";
+import { normalizeAiUsage } from "../../../src/dx/metrics/ai-usage/normalize.js";
 import { AI_TOKEN_FIELDS } from "../../../src/dx/model/attribution.js";
 import {
   DxEventEnvelopeSchema,
@@ -294,6 +295,19 @@ export const harnessConformance = <E>(
             expect(event.ai?.branchSource, event.eventId).toBe("unassigned");
           }
         }
+      })
+    );
+
+    it.effect("the token ledger recognizes every usage event", () =>
+      Effect.gen(function* ledger() {
+        const reading = yield* Reading;
+        const { uncovered } = normalizeAiUsage(allEvents(reading));
+
+        expect(
+          uncovered
+            .filter((gap) => gap.reason.includes("unrecognized"))
+            .map((gap) => gap.evidenceId)
+        ).toStrictEqual([]);
       })
     );
 

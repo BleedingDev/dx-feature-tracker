@@ -21,6 +21,8 @@ export const AiSourceKindSchema = Schema.Literals([
   "claude-jsonl",
   "codex-session",
   "opencode",
+  "pi-session",
+  "deepseek-session",
   "provider-receipt",
 ]);
 

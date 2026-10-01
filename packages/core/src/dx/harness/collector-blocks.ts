@@ -385,9 +385,6 @@ const SOURCE_KIND_ORIGINS: ReadonlyMap<string, CollectorOrigin> = new Map([
   ["hooks-stop", cursor("hooks")],
   ["local-db", cursor("local-db")],
   ["transcript-estimate", cursor("transcript")],
-  ["claude-jsonl", tokensOnly("claude-code", "session-file", false)],
-  ["codex-session", tokensOnly("codex", "session-file", true)],
-  ["opencode", tokensOnly("opencode", "session-file", false)],
   ["entire", tokensOnly(null, "transcript", false)],
   ["provider-receipt", BILLING_EXPORT],
 ]);

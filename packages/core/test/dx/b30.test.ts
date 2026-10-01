@@ -2,7 +2,6 @@ import { NodeServices } from "@effect/platform-node";
 import { describe, expect, it } from "@effect/vitest";
 import { Effect, FileSystem, Path, Schema } from "effect";
 
-import { parseClaudeJsonl } from "../../src/dx/collectors/claude/parse.js";
 import { fakeManifest } from "../../src/dx/contracts/fakes.js";
 import type { StoreSnapshot } from "../../src/dx/contracts/services.js";
 import {
@@ -12,10 +11,7 @@ import {
 import type { AiUsageAccount } from "../../src/dx/metrics/ai-usage/ledger.js";
 import { aiUsageMetric } from "../../src/dx/metrics/ai-usage/metric.js";
 import { ModuleDescriptorSchema } from "../../src/dx/model/descriptor.js";
-import {
-  DxEventEnvelopeSchema,
-  emptyFlightContext,
-} from "../../src/dx/model/event.js";
+import { DxEventEnvelopeSchema } from "../../src/dx/model/event.js";
 import type { DxEventEnvelope } from "../../src/dx/model/event.js";
 import {
   isHonestMetric,
@@ -171,32 +167,6 @@ describe("B30 ai-usage accounting", () => {
         yield* Schema.decodeEffect(ModuleDescriptorSchema)(
           aiUsageMetric.descriptor
         );
-      }).pipe(Effect.provide(NodeServices.layer))
-  );
-
-  it.effect(
-    "accounts real producer output from the Claude JSONL collector",
-    () =>
-      Effect.gen(function* claudeProducer() {
-        const fs = yield* FileSystem.FileSystem;
-        const path = yield* Path.Path;
-
-        const file = yield* path.fromFileUrl(
-          new URL("fixtures/b11/claude-session.jsonl", import.meta.url)
-        );
-
-        const parsed = yield* parseClaudeJsonl(yield* fs.readFileString(file), {
-          context: emptyFlightContext,
-          observedAt: "2026-09-30T12:00:00.000Z",
-          origin: "fixture",
-          sourceName: "claude-session.jsonl",
-        });
-
-        const account = accountAiUsage(parsed.events);
-
-        expect(account.uncovered).toEqual([]);
-        expect(account.requestCount).toBeGreaterThan(0);
-        expect(total(account, "tokens", "output")).toBeGreaterThan(0);
       }).pipe(Effect.provide(NodeServices.layer))
   );
 

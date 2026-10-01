@@ -160,24 +160,3 @@ export const channelOfSource = (source: string): Channel => {
 
   return source === CURSOR_LOCAL_DB_ADAPTER_ID ? "local-db" : "usage-api";
 };
-
-export interface TranscriptGap {
-  readonly input: string;
-  readonly reason: string;
-}
-
-export const missingTranscriptFolder = (
-  home: string,
-  worktree: string | null
-): TranscriptGap | null => {
-  const transcripts =
-    worktree === null ? null : transcriptDirFor(home, worktree);
-
-  return transcripts === null || existsSync(transcripts)
-    ? null
-    : {
-        input: transcripts,
-        reason:
-          "no Cursor agent-transcripts folder for this worktree (slug match is by path)",
-      };
-};

@@ -11,10 +11,6 @@ import { autoSources, worktreeSources } from "../composition.js";
 import type { AutoSource } from "../composition.js";
 import type { EventStoreService } from "../contracts/services.js";
 import type { Harness, HarnessScope, SessionRef } from "../harness/contract.js";
-import {
-  CURSOR_TRANSCRIPT_SOURCE,
-  missingTranscriptFolder,
-} from "../harness/cursor/sources.js";
 import type { HarnessId } from "../harness/ids.js";
 import { harnessAdapterId } from "../harness/pending.js";
 import { HarnessRegistry, harnessRegistryFor } from "../harness/registry.js";
@@ -58,26 +54,6 @@ export interface AutoSyncOptions {
 
 export const LEGACY_FOLDER_NOTE =
   `Old folder ${LEGACY_SPOOL_FOLDER}/ in this repo is no longer used; you can delete it.` as const;
-
-export const unavailableSteps = (
-  context: FlightContext,
-  home: string
-): readonly SyncStep[] => {
-  const gap = missingTranscriptFolder(home, context.worktreePath);
-
-  return gap === null
-    ? []
-    : [
-        {
-          duplicates: null,
-          input: gap.input,
-          inserted: null,
-          reason: gap.reason,
-          source: CURSOR_TRANSCRIPT_SOURCE,
-          status: "unavailable",
-        },
-      ];
-};
 
 export interface PlannedSource extends AutoSource {
   readonly context: FlightContext;
@@ -363,10 +339,7 @@ export const autoSync = (
       yield* Console.error(LEGACY_FOLDER_NOTE);
     }
 
-    return {
-      context,
-      steps: [...steps, ...unavailableSteps(context, options.home)],
-    };
+    return { context, steps };
   }).pipe(Effect.provide(harnessRegistryFor(options.home)));
 
 export const formatSyncLine = (report: SyncReport): string => {
