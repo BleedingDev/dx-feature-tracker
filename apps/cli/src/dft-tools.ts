@@ -15,6 +15,7 @@ import {
   CAPTURE_TOOL_NAMES,
   hasCapture,
   isCaptureTool,
+  missingCursorHookPaths,
   missingHookPaths,
 } from "./dft-capture.js";
 import type {
@@ -22,6 +23,7 @@ import type {
   CaptureStep,
   CaptureTool,
 } from "./dft-capture.js";
+import { hasDftHooks } from "./dft-install.js";
 import type { TelemetryChange, TelemetryState } from "./dft-telemetry.js";
 
 export interface DetectedTool {
@@ -31,6 +33,11 @@ export interface DetectedTool {
   readonly sessions: number;
   readonly tool: CaptureTool;
 }
+
+const isInstalled = (discovery: Discovery, toolDir: string): boolean =>
+  discovery.present ||
+  existsSync(toolDir) ||
+  discovery.roots.some((root) => existsSync(root));
 
 export const detectedFrom = (
   discoveries: readonly Discovery[],
@@ -45,10 +52,7 @@ export const detectedFrom = (
 
     return [
       {
-        installed:
-          discovery.present ||
-          existsSync(toolDirOf(tool)) ||
-          discovery.roots.some((root) => existsSync(root)),
+        installed: isInstalled(discovery, toolDirOf(tool)),
         name: CAPTURE_TOOL_NAMES[tool],
         reason: discovery.reason,
         sessions: discovery.sessions,
@@ -57,17 +61,43 @@ export const detectedFrom = (
     ];
   });
 
-export const detectTools = (home: string) =>
-  Effect.gen(function* detect() {
+export interface DetectedCursor {
+  readonly installed: boolean;
+  readonly sessions: number;
+}
+
+export const cursorFrom = (
+  discoveries: readonly Discovery[],
+  cursorDir: string
+): DetectedCursor => {
+  const discovery = discoveries.find((item) => item.harness === "cursor");
+
+  return discovery === undefined
+    ? { installed: existsSync(cursorDir), sessions: 0 }
+    : {
+        installed: isInstalled(discovery, cursorDir),
+        sessions: discovery.sessions,
+      };
+};
+
+export const discoverTools = (home: string) =>
+  Effect.gen(function* discover() {
     const registry = yield* HarnessRegistry;
     const locations = yield* HarnessHome;
+    const discoveries = yield* registry.discover;
 
-    return detectedFrom(yield* registry.discover, locations.rootOf);
+    return {
+      cursor: cursorFrom(discoveries, locations.rootOf("cursor")),
+      tools: detectedFrom(discoveries, locations.rootOf),
+    };
   }).pipe(
     Effect.provide(
       Layer.merge(harnessRegistryFor(home), HarnessHome.forHome(home))
     )
   );
+
+export const detectTools = (home: string) =>
+  discoverTools(home).pipe(Effect.map((found) => found.tools));
 
 const projectPath = (value: string): string => value.replaceAll('"', '\\"');
 
@@ -153,7 +183,7 @@ export interface ToolStatus {
   readonly name: string;
   readonly projectCapture: boolean;
   readonly sessions: number;
-  readonly tool: CaptureTool;
+  readonly tool: CaptureTool | "cursor";
   readonly userTelemetry: boolean | null;
 }
 
@@ -183,13 +213,30 @@ const telemetryFor = (
   }
 };
 
+export const cursorStatus = (
+  cursor: DetectedCursor,
+  worktree: string,
+  lastEvents: ReadonlyMap<string, string>
+): ToolStatus => ({
+  installed: cursor.installed,
+  lastEvent: lastEvents.get("cursor") ?? null,
+  missingHookPaths: missingCursorHookPaths(worktree),
+  name: "Cursor",
+  projectCapture: hasDftHooks(worktree),
+  sessions: cursor.sessions,
+  tool: "cursor",
+  userTelemetry: null,
+});
+
 export const toolStatuses = (
   detected: readonly DetectedTool[],
   worktree: string,
   telemetry: TelemetryState,
-  lastEvents: ReadonlyMap<string, string>
-): readonly ToolStatus[] =>
-  detected.map((item) => ({
+  lastEvents: ReadonlyMap<string, string>,
+  cursor: DetectedCursor | null = null
+): readonly ToolStatus[] => [
+  ...(cursor === null ? [] : [cursorStatus(cursor, worktree, lastEvents)]),
+  ...detected.map((item) => ({
     installed: item.installed,
     lastEvent: lastEvents.get(item.tool) ?? null,
     missingHookPaths: missingHookPaths(item.tool, worktree),
@@ -198,7 +245,8 @@ export const toolStatuses = (
     sessions: item.sessions,
     tool: item.tool,
     userTelemetry: telemetryFor(item.tool, telemetry),
-  }));
+  })),
+];
 
 const yesNo = (value: boolean): string => (value ? "yes" : "no");
 

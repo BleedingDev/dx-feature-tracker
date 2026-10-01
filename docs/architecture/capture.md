@@ -54,4 +54,4 @@ Prompt and response text in the records is never read. Event ids hash the reques
 
 ## `dft status`
 
-Lists each tool: installed, sessions found, project capture present, user telemetry present (Claude Code and Codex) and the newest stored event for that tool.
+Lists Cursor and each other tool: installed, sessions found, project capture present (for Cursor, a dft hook on every event in `.cursor/hooks.json`), user telemetry present (Claude Code and Codex) and the newest stored event for that tool. Project capture shows as broken when a dft hook, extension or plugin calls a Node or `dft` that is gone.

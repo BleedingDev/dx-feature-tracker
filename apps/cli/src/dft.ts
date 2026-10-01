@@ -99,6 +99,7 @@ import {
   captureText,
   codexTrusted,
   detectTools,
+  discoverTools,
   lastEventTimes,
   telemetryText,
   toolStatuses,
@@ -328,16 +329,17 @@ const statusCommand = reportCommand(
   (_flags, session) =>
     Effect.gen(function* status() {
       const base = yield* capabilityAt(session).status.handler({});
-      const detected = yield* detectTools(session.paths.home);
+      const found = yield* discoverTools(session.paths.home);
       const context = contextForRepo(session.paths.repo);
       const dirs = userToolDirs(session.paths.home, process.env);
 
       const tools = yield* Effect.sync(() =>
         toolStatuses(
-          detected,
+          found.tools,
           context.worktreePath ?? session.paths.repo,
           telemetryState(dirs.claudeDir, dirs.codexDir),
-          lastEventTimes(session.paths.store.path)
+          lastEventTimes(session.paths.store.path),
+          found.cursor
         )
       );
 

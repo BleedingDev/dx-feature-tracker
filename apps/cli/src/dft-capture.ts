@@ -23,7 +23,11 @@ import {
 } from "@rat-stack/core/dx";
 import { Result, Schema, Struct } from "effect";
 
-import { isDftHookCommand, otherWorktrees } from "./dft-install.js";
+import {
+  isDftHookCommand,
+  otherWorktrees,
+  parseHooksFile,
+} from "./dft-install.js";
 
 export const CAPTURE_TOOLS = [
   "claude-code",
@@ -947,6 +951,30 @@ export const missingHookPaths = (
         .filter((word) => path.isAbsolute(word) && !existsSync(word))
     );
   });
+
+  return [...new Set(missing)];
+};
+
+export const CURSOR_HOOKS_FILE = path.join(".cursor", "hooks.json");
+
+export const missingCursorHookPaths = (worktree: string): readonly string[] => {
+  const file = path.join(worktree, CURSOR_HOOKS_FILE);
+
+  if (!existsSync(file)) {
+    return [];
+  }
+
+  const missing = Object.values(
+    parseHooksFile(readFileSync(file, "utf-8"))?.hooks ?? {}
+  ).flatMap((entries) =>
+    entries.flatMap((entry) =>
+      isDftHookCommand(entry.command)
+        ? shellWords(entry.command)
+            .slice(0, 2)
+            .filter((word) => path.isAbsolute(word) && !existsSync(word))
+        : []
+    )
+  );
 
   return [...new Set(missing)];
 };

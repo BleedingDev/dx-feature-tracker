@@ -198,6 +198,7 @@ describe("dft install for every tool", () => {
           tool.lastEvent,
         ])
       ).toEqual([
+        ["cursor", false, true, null, null],
         ["claude-code", true, true, true, null],
         ["codex", true, true, true, null],
         ["opencode", true, true, null, null],

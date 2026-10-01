@@ -52,7 +52,13 @@ import {
   uninstallTelemetry,
 } from "../src/dft-telemetry.js";
 import type { TelemetryOptions } from "../src/dft-telemetry.js";
-import { captureText, codexTrusts, detectedFrom } from "../src/dft-tools.js";
+import {
+  captureText,
+  codexTrusts,
+  cursorStatus,
+  detectedFrom,
+  toolsText,
+} from "../src/dft-tools.js";
 
 const created: string[] = [];
 
@@ -532,6 +538,48 @@ describe("dft install project capture (D39)", () => {
 });
 
 describe("tool detection and Codex trust", () => {
+  it("dft status reports Cursor hooks that are missing or call a node that is gone", () => {
+    const repo = scratchRepo();
+    const cursor = { installed: true, sessions: 2 };
+
+    const cursorLine = () =>
+      toolsText([cursorStatus(cursor, repo, new Map())])
+        .split("\n")
+        .find((line) => line.trimStart().startsWith("Cursor"));
+
+    expect(cursorLine()).toContain("project capture no");
+
+    installCursorHooks(repo, `${command.line} hook`);
+
+    expect(cursorStatus(cursor, repo, new Map())).toMatchObject({
+      missingHookPaths: ["/usr/bin/node", "/opt/dft/dist/dft-main.js"].filter(
+        (file) => !existsSync(file)
+      ),
+      projectCapture: true,
+      tool: "cursor",
+    });
+
+    installCursorHooks(
+      repo,
+      "/old/node/24.18.0/bin/node '/old/my dft/dft-main.js' hook"
+    );
+
+    expect(cursorLine()).toContain(
+      "project capture broken (its hooks call missing /old/node/24.18.0/bin/node, /old/my dft/dft-main.js"
+    );
+
+    const dftMain = path.join(scratch("dft-build-"), "dft-main.js");
+    write(path.dirname(dftMain), path.basename(dftMain), "");
+    installCursorHooks(
+      repo,
+      `${dftCommandFor(process.execPath, dftMain).line} hook`
+    );
+
+    expect(cursorLine()).toContain(
+      "installed, 2 sessions, project capture yes"
+    );
+  });
+
   it("counts a tool as installed when its folder exists even without sessions", () => {
     const home = scratch("dft-home-");
     mkdirSync(path.join(home, ".codex"));
