@@ -11,7 +11,13 @@ interface ModelTurnLike {
   readonly effort: string | null;
   readonly maxMode: boolean | null;
   readonly model: string;
+  readonly scope?: string;
 }
+
+const UNCOUNTED_SCOPES: ReadonlySet<string> = new Set([
+  "aggregate",
+  "session-setting",
+]);
 
 interface ChatLineLike {
   readonly category: string;
@@ -891,11 +897,12 @@ export const collapseTurns = (timeline: readonly ModelTurnLike[]): string => {
 
   for (const turn of timeline) {
     const key = turnKey(turn);
-    counts.set(key, (counts.get(key) ?? 0) + 1);
+    const counted = UNCOUNTED_SCOPES.has(turn.scope ?? "turn") ? 0 : 1;
+    counts.set(key, (counts.get(key) ?? 0) + counted);
   }
 
   return [...counts.entries()]
-    .map(([key, count]) => `${key} ×${String(count)}`)
+    .map(([key, count]) => (count === 0 ? key : `${key} ×${String(count)}`))
     .join(", ");
 };
 

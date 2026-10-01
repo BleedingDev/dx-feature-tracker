@@ -12,6 +12,7 @@ interface TurnLike {
   readonly effort: string | null;
   readonly maxMode: boolean | null;
   readonly model: string;
+  readonly scope?: string;
 }
 
 interface LedgerLineLike {

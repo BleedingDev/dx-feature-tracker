@@ -421,7 +421,7 @@ flowchart LR
     Q["Cursor sends a level of its own?"] -->|yes, that wins| L
 ```
 
-Known endings are `minimal`, `low`, `medium`, `high`, `xhigh`, `thinking` and `fast`. It is read per turn, because a chat can switch models halfway. `dft chats` shows it as `grok-4.7 high+fast ×3` (three turns with that model and level; Max mode adds `+max`).
+Known endings are `minimal`, `low`, `medium`, `high`, `xhigh`, `thinking` and `fast`. It is read per turn, because a chat can switch models halfway. `dft chats` shows it as `grok-4.7 high+fast ×3` (three turns with that model and level; Max mode adds `+max`). A model known only from the session's settings or a usage total is listed without a count.
 
 ### What happens in Auto mode?
 

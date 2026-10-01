@@ -37,6 +37,16 @@ describe("dft human output", () => {
     ).toBe("grok-4.7 high ×2, Auto ×2");
   });
 
+  it("counts turns, not a session's model setting", () => {
+    expect(
+      collapseTurns([
+        { ...turn("gpt-5.6-luna", "high"), scope: "session-setting" },
+        { ...turn("gpt-5.6-luna", "high"), scope: "turn" },
+        { ...turn("composer-2.5", null), scope: "aggregate" },
+      ])
+    ).toBe("gpt-5.6-luna high ×1, composer-2.5");
+  });
+
   it("keeps the sync note to one line unless verbose", () => {
     const report = {
       context: {
