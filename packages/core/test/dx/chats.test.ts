@@ -10,6 +10,7 @@ import { buildChatTree } from "../../src/dx/chats/tree.js";
 import { mapStateDb } from "../../src/dx/collectors/cursor-local-db/map-state.js";
 import { EventStore } from "../../src/dx/contracts/event-store.js";
 import { makeFakeEventStore } from "../../src/dx/contracts/fakes.js";
+import { withCollectorBlocks } from "../../src/dx/harness/collector-blocks.js";
 import { cursorModelEffort } from "../../src/dx/harness/cursor/rules.js";
 import type { DxEventEnvelope } from "../../src/dx/model/event.js";
 import { EventIdSchema } from "../../src/dx/model/ids.js";
@@ -32,45 +33,44 @@ interface EventSeed {
   readonly key: string;
 }
 
-const eventOf = (seed: EventSeed): DxEventEnvelope => ({
-  acquisition: "file-import",
-  adapterId: seed.adapterId,
-  adapterVersion: "fixture",
-  ai: null,
-  context: {
-    branch: seed.branch ?? BRANCH,
-    flightId: null,
-    headSha: null,
-    repoCommonDir: "/fixture/.git",
-    worktreePath: "/fixture",
-  },
-  eventId: EventIdSchema.make(`fixture-${seed.key}`),
-  evidence: { bounded: true, hash: null, ref: `fixture:${seed.key}` },
-  fieldSemantics: [],
-  identity: {
-    commitSha: null,
-    generationId: seed.generationId ?? null,
-    githubAttempt: null,
-    githubRunId: null,
-    prNumber: null,
-    requestId: seed.requestId ?? null,
-    sessionId: seed.sessionId,
-    turnId:
-      seed.sessionId !== null && seed.generationId !== undefined
-        ? `${seed.sessionId}:${seed.generationId}`
-        : null,
-  },
-  kind: seed.kind,
-  observedAt: "2026-09-30T12:00:00.000Z",
-  occurredAt: seed.at,
-  occurredAtPrecision: seed.at === null ? "unknown" : "exact",
-  origin: "fixture",
-  payload: seed.payload,
-  schemaVersion: "dx.event.v2",
-  sourceVersion: null,
-  upstreamKey: seed.key,
-  usage: null,
-});
+const eventOf = (seed: EventSeed): DxEventEnvelope =>
+  withCollectorBlocks({
+    acquisition: "file-import",
+    adapterId: seed.adapterId,
+    adapterVersion: "fixture",
+    context: {
+      branch: seed.branch ?? BRANCH,
+      flightId: null,
+      headSha: null,
+      repoCommonDir: "/fixture/.git",
+      worktreePath: "/fixture",
+    },
+    eventId: EventIdSchema.make(`fixture-${seed.key}`),
+    evidence: { bounded: true, hash: null, ref: `fixture:${seed.key}` },
+    fieldSemantics: [],
+    identity: {
+      commitSha: null,
+      generationId: seed.generationId ?? null,
+      githubAttempt: null,
+      githubRunId: null,
+      prNumber: null,
+      requestId: seed.requestId ?? null,
+      sessionId: seed.sessionId,
+      turnId:
+        seed.sessionId !== null && seed.generationId !== undefined
+          ? `${seed.sessionId}:${seed.generationId}`
+          : null,
+    },
+    kind: seed.kind,
+    observedAt: "2026-09-30T12:00:00.000Z",
+    occurredAt: seed.at,
+    occurredAtPrecision: seed.at === null ? "unknown" : "exact",
+    origin: "fixture",
+    payload: seed.payload,
+    schemaVersion: "dx.event.v2",
+    sourceVersion: null,
+    upstreamKey: seed.key,
+  });
 
 const HOOKS = "collector.cursor-hooks";
 

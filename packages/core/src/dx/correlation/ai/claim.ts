@@ -5,9 +5,13 @@ import {
   aiSourceRank,
 } from "../../harness/source-kinds.js";
 import {
+  figureLedger,
+  tokenCategoriesOf,
+  typedSourceOf,
+} from "../../metrics/ai-usage/typed.js";
+import {
   AiSourceKindSchema,
   LedgerKindSchema,
-  TokenCategorySchema,
   canonicalRequestKey,
 } from "../../model/ai.js";
 import type { LedgerKind, TokenCategory } from "../../model/ai.js";
@@ -49,36 +53,6 @@ export interface AiClaim {
 const nonEmpty = (value: string | null): string | null =>
   value === null || value === "" ? null : value;
 
-const TOKEN_KEYS = {
-  "cache-write": "cache-write",
-  cacheRead: "cached-input",
-  cacheWrite: "cache-write",
-  cache_read: "cached-input",
-  cache_write: "cache-write",
-  "cached-input": "cached-input",
-  cachedInput: "cached-input",
-  cached_input: "cached-input",
-  input: "input",
-  output: "output",
-  reasoning: "reasoning",
-  total: "total",
-} as const satisfies Record<string, TokenCategory>;
-
-const TokenKeySchema = Schema.Literals([
-  "cache-write",
-  "cacheRead",
-  "cacheWrite",
-  "cache_read",
-  "cache_write",
-  "cached-input",
-  "cachedInput",
-  "cached_input",
-  "input",
-  "output",
-  "reasoning",
-  "total",
-]);
-
 const isLedger = Schema.is(LedgerKindSchema);
 
 const isAiSourceKind = Schema.is(AiSourceKindSchema);
@@ -98,9 +72,6 @@ const PayloadViewSchema = Schema.Struct({
   costUsd: Schema.optionalKey(Schema.NullOr(Schema.Finite)),
   measurements: Schema.optionalKey(Schema.Array(MeasurementViewSchema)),
   sourceKind: Schema.optionalKey(Schema.NullOr(Schema.String)),
-  tokens: Schema.optionalKey(
-    Schema.NullOr(Schema.Record(Schema.String, Schema.NullOr(Schema.Finite)))
-  ),
 });
 
 type PayloadView = typeof PayloadViewSchema.Type;
@@ -109,35 +80,40 @@ type MeasurementView = typeof MeasurementViewSchema.Type;
 
 const decodePayload = Schema.decodeUnknownOption(PayloadViewSchema);
 
-const decodeTokenKey = Schema.decodeUnknownOption(TokenKeySchema);
-
-const decodeCategory = Schema.decodeUnknownOption(TokenCategorySchema);
-
 const EMPTY_VIEW: PayloadView = {};
 
 export const payloadView = (event: DxEventEnvelope): PayloadView =>
   decodePayload(event.payload).pipe(Option.getOrElse(() => EMPTY_VIEW));
 
-const tokenAmounts = (tokens: PayloadView["tokens"]): ClaimAmount[] =>
-  Object.entries(tokens ?? {}).flatMap(([key, value]) => {
-    const tokenKey = Option.getOrNull(decodeTokenKey(key));
+const tokenAmounts = (event: DxEventEnvelope): ClaimAmount[] =>
+  event.usage === null
+    ? []
+    : tokenCategoriesOf(event.usage.tokens).map(([category, value]) => ({
+        category,
+        currency: null,
+        ledger: "tokens" as const,
+        value,
+      }));
 
-    return tokenKey === null || value === null
-      ? []
-      : [
-          {
-            category: TOKEN_KEYS[tokenKey],
-            currency: null,
-            ledger: "tokens" as const,
-            value,
-          },
-        ];
-  });
+const figureAmounts = (event: DxEventEnvelope): ClaimAmount[] => {
+  const figure = figureLedger(event.usage?.toolFigure ?? null);
+
+  return figure === null
+    ? []
+    : [
+        {
+          category: null,
+          currency: figure.currency,
+          ledger: figure.ledger,
+          value: figure.value,
+        },
+      ];
+};
 
 const measurementAmount = (entry: MeasurementView): ClaimAmount[] => {
   const { ledger, value } = entry;
 
-  if (value === null || !isLedger(ledger)) {
+  if (value === null || !isLedger(ledger) || ledger === "tokens") {
     return [];
   }
 
@@ -145,10 +121,7 @@ const measurementAmount = (entry: MeasurementView): ClaimAmount[] => {
 
   return [
     {
-      category:
-        ledger === "tokens"
-          ? Option.getOrNull(decodeCategory(entry.category))
-          : null,
+      category: null,
       currency: cents ? "USD" : (entry.currency ?? null),
       ledger,
       value: cents ? value / 100 : value,
@@ -173,14 +146,18 @@ const moneyAmounts = (view: PayloadView): ClaimAmount[] => {
     : [];
 };
 
-const amountsOf = (view: PayloadView): ClaimAmount[] => {
-  const measured = (view.measurements ?? []).flatMap(measurementAmount);
-  const hasTokens = measured.some((amount) => amount.ledger === "tokens");
+const amountsOf = (
+  event: DxEventEnvelope,
+  view: PayloadView
+): ClaimAmount[] => {
+  const money = [
+    ...(view.measurements ?? []).flatMap(measurementAmount),
+    ...moneyAmounts(view),
+  ];
 
   return [
-    ...measured,
-    ...(hasTokens ? [] : tokenAmounts(view.tokens)),
-    ...moneyAmounts(view),
+    ...tokenAmounts(event),
+    ...(money.length === 0 ? figureAmounts(event) : money),
   ];
 };
 
@@ -231,7 +208,14 @@ export const toClaim = (event: DxEventEnvelope): AiClaim | null => {
 
   const { identity } = event;
   const view = payloadView(event);
-  const sourceKind = view.sourceKind ?? event.adapterId;
+
+  const typed =
+    view.sourceKind === undefined || view.sourceKind === null
+      ? typedSourceOf(event)
+      : null;
+
+  const sourceKind = view.sourceKind ?? typed?.label ?? event.adapterId;
+
   const requestId = nonEmpty(identity.requestId);
   const sessionId = nonEmpty(identity.sessionId);
   const turnPart = nonEmpty(identity.generationId) ?? nonEmpty(identity.turnId);
@@ -251,12 +235,12 @@ export const toClaim = (event: DxEventEnvelope): AiClaim | null => {
   return {
     aggregate:
       AGGREGATE_SOURCE_KINDS.has(sourceKind) || view.aggregate === true,
-    amounts: amountsOf(view),
+    amounts: amountsOf(event, view),
     estimated,
     event,
     evidenceId: EvidenceIdSchema.make(event.eventId),
     occurredMs: parseMs(event.occurredAt),
-    rank: sourceRank(sourceKind),
+    rank: typed?.rank ?? sourceRank(sourceKind),
     requestKey: requestKeyOf(
       sourceKind,
       requestId,

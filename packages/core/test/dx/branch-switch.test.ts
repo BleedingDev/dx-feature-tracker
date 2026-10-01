@@ -17,6 +17,7 @@ import {
 } from "../../src/dx/contracts/fakes.js";
 import { attributeHistoricalBranches } from "../../src/dx/correlation/branch-at-time/attribute.js";
 import { joinAccountRows } from "../../src/dx/correlation/branch-at-time/snapshot.js";
+import { withCollectorBlocks } from "../../src/dx/harness/collector-blocks.js";
 import { makeDxHistoryCapability } from "../../src/dx/history/capability.js";
 import { unknownStatus } from "../../src/dx/history/compute.js";
 import type { DxEventEnvelope } from "../../src/dx/model/event.js";
@@ -84,28 +85,27 @@ const envelope = (
   id: string,
   at: string | null,
   overrides: Partial<DxEventEnvelope>
-): DxEventEnvelope => ({
-  acquisition: "api",
-  adapterId: "cursor-usage-api",
-  adapterVersion: "fixture",
-  ai: null,
-  context: emptyFlightContext,
-  eventId: EventIdSchema.make(id),
-  evidence: { bounded: true, hash: null, ref: `fixture:${id}` },
-  fieldSemantics: [],
-  identity: { ...emptyEventIdentity, sessionId: CONVERSATION },
-  kind: "ai.usage",
-  observedAt: at ?? T.t6,
-  occurredAt: at,
-  occurredAtPrecision: "exact",
-  origin: "fixture",
-  payload: {},
-  schemaVersion: "dx.event.v2",
-  sourceVersion: null,
-  upstreamKey: id,
-  usage: null,
-  ...overrides,
-});
+): DxEventEnvelope =>
+  withCollectorBlocks({
+    acquisition: "api",
+    adapterId: "cursor-usage-api",
+    adapterVersion: "fixture",
+    context: emptyFlightContext,
+    eventId: EventIdSchema.make(id),
+    evidence: { bounded: true, hash: null, ref: `fixture:${id}` },
+    fieldSemantics: [],
+    identity: { ...emptyEventIdentity, sessionId: CONVERSATION },
+    kind: "ai.usage",
+    observedAt: at ?? T.t6,
+    occurredAt: at,
+    occurredAtPrecision: "exact",
+    origin: "fixture",
+    payload: {},
+    schemaVersion: "dx.event.v2",
+    sourceVersion: null,
+    upstreamKey: id,
+    ...overrides,
+  });
 
 const hook = (id: string, at: string) =>
   envelope(id, at, {

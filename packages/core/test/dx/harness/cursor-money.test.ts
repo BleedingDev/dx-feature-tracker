@@ -9,6 +9,7 @@ import { Effect, Schema } from "effect";
 import { cursorDashboardResponseCollector } from "../../../src/dx/collectors/cursor-dashboard-response/collector.js";
 import { fakeManifest } from "../../../src/dx/contracts/fakes.js";
 import type { StoreSnapshot } from "../../../src/dx/contracts/services.js";
+import { withCollectorBlocks } from "../../../src/dx/harness/collector-blocks.js";
 import {
   accountAiUsage,
   accountAiUsageByBranch,
@@ -78,49 +79,50 @@ const options: CostOptions = {
   subscription: b31.subscription.plan,
 };
 
-const b31Events: readonly DxEventEnvelope[] = b31.events.items.map((item) => ({
-  acquisition: "file-import",
-  adapterId: item.adapterId,
-  adapterVersion: "fixture",
-  ai: null,
-  context: { ...emptyFlightContext, branch: item.branch },
-  eventId: EventIdSchema.make(item.id),
-  evidence: { bounded: true, hash: null, ref: `fixture:${item.id}` },
-  fieldSemantics: [],
-  identity: emptyEventIdentity,
-  kind: item.kind,
-  observedAt: "2026-09-30T12:00:00Z",
-  occurredAt: item.occurredAt,
-  occurredAtPrecision: "exact",
-  origin: "fixture",
-  payload: item.payload,
-  schemaVersion: "dx.event.v2",
-  sourceVersion: null,
-  upstreamKey: item.id,
-  usage: null,
-}));
+const b31Events: readonly DxEventEnvelope[] = b31.events.items.map((item) =>
+  withCollectorBlocks({
+    acquisition: "file-import",
+    adapterId: item.adapterId,
+    adapterVersion: "fixture",
+    context: { ...emptyFlightContext, branch: item.branch },
+    eventId: EventIdSchema.make(item.id),
+    evidence: { bounded: true, hash: null, ref: `fixture:${item.id}` },
+    fieldSemantics: [],
+    identity: emptyEventIdentity,
+    kind: item.kind,
+    observedAt: "2026-09-30T12:00:00Z",
+    occurredAt: item.occurredAt,
+    occurredAtPrecision: "exact",
+    origin: "fixture",
+    payload: item.payload,
+    schemaVersion: "dx.event.v2",
+    sourceVersion: null,
+    upstreamKey: item.id,
+  })
+);
 
 const autoEvent = (
   template: DxEventEnvelope,
   id: string,
   listPriceUsd: number | null,
   model: string
-): DxEventEnvelope => ({
-  ...template,
-  context: { ...template.context, branch: "feature/auto" },
-  eventId: EventIdSchema.make(id),
-  identity: { ...template.identity, requestId: id },
-  payload: {
-    costLedger: listPriceUsd === null ? null : "metered",
-    costRawField: listPriceUsd === null ? null : "tokenUsage.totalCents",
-    costUsd: listPriceUsd,
-    currency: listPriceUsd === null ? null : "USD",
-    model,
-    requestKey: id,
-    sourceKind: "dashboard-json",
-    tokens: { input: 1_000_000, output: 100_000 },
-  },
-});
+): DxEventEnvelope =>
+  withCollectorBlocks({
+    ...template,
+    context: { ...template.context, branch: "feature/auto" },
+    eventId: EventIdSchema.make(id),
+    identity: { ...template.identity, requestId: id },
+    payload: {
+      costLedger: listPriceUsd === null ? null : "metered",
+      costRawField: listPriceUsd === null ? null : "tokenUsage.totalCents",
+      costUsd: listPriceUsd,
+      currency: listPriceUsd === null ? null : "USD",
+      model,
+      requestKey: id,
+      sourceKind: "dashboard-json",
+      tokens: { input: 1_000_000, output: 100_000 },
+    },
+  });
 
 const legacyStopEvents = (): readonly DxEventEnvelope[] => {
   const template = (c05["c05/stop-db-entire-dashboard"] ?? []).find(
@@ -131,12 +133,13 @@ const legacyStopEvents = (): readonly DxEventEnvelope[] => {
     throw new Error("C05 has no stop hook event");
   }
 
-  const stop = (id: string, rawUsage: Readonly<Record<string, number>>) => ({
-    ...template,
-    eventId: EventIdSchema.make(id),
-    identity: { ...template.identity, generationId: id },
-    payload: { rawUsage, semanticsVerified: false, sourceKind: "hooks-stop" },
-  });
+  const stop = (id: string, rawUsage: Readonly<Record<string, number>>) =>
+    withCollectorBlocks({
+      ...template,
+      eventId: EventIdSchema.make(id),
+      identity: { ...template.identity, generationId: id },
+      payload: { rawUsage, semanticsVerified: false, sourceKind: "hooks-stop" },
+    });
 
   return [
     stop("stop-full", {

@@ -1,5 +1,6 @@
 import { Option, Schema } from "effect";
 
+import { billedFigureOf, knownTokenTotal } from "../metrics/ai-usage/typed.js";
 import type { DxEventEnvelope } from "../model/event.js";
 
 export const ACCOUNT_DASHBOARD_ADAPTERS: ReadonlySet<string> = new Set([
@@ -41,19 +42,6 @@ export interface AccountUsageOptions {
 
 const decodeText = Schema.decodeUnknownOption(Schema.NonEmptyString);
 
-const decodeNumber = Schema.decodeUnknownOption(Schema.Finite);
-
-const TokensSchema = Schema.Record(Schema.String, Schema.Unknown);
-
-const decodeTokens = Schema.decodeUnknownOption(TokensSchema);
-
-const SUMMED_TOKEN_CATEGORIES = [
-  "input",
-  "output",
-  "cached-input",
-  "cache-write",
-] as const;
-
 const instantOf = (event: DxEventEnvelope): number | null => {
   const ms = Date.parse(event.occurredAt ?? "");
 
@@ -68,34 +56,16 @@ const isAccountUsage = (event: DxEventEnvelope): boolean =>
 export const isLinkedAccountRow = (event: DxEventEnvelope): boolean =>
   event.context.branch !== null || event.context.repoCommonDir !== null;
 
-export const tokensOfRow = (event: DxEventEnvelope): number => {
-  const tokens = Option.getOrNull(decodeTokens(event.payload.tokens));
+export const tokensOfRow = (event: DxEventEnvelope): number =>
+  event.usage === null ? 0 : (knownTokenTotal(event.usage.tokens) ?? 0);
 
-  if (tokens === null) {
-    return 0;
-  }
+export const billedUsdOfRow = (event: DxEventEnvelope): number | null => {
+  const figure = billedFigureOf(event);
 
-  const total = Option.getOrNull(decodeNumber(tokens.total));
-
-  if (total !== null && total >= 0) {
-    return total;
-  }
-
-  let sum = 0;
-
-  for (const category of SUMMED_TOKEN_CATEGORIES) {
-    const value = Option.getOrNull(decodeNumber(tokens[category]));
-
-    if (value !== null && value >= 0) {
-      sum += value;
-    }
-  }
-
-  return sum;
+  return figure !== null && figure.currency.toUpperCase() === "USD"
+    ? figure.amount
+    : null;
 };
-
-export const billedUsdOfRow = (event: DxEventEnvelope): number | null =>
-  Option.getOrNull(decodeNumber(event.payload.charge));
 
 const dedupe = (
   events: readonly DxEventEnvelope[]

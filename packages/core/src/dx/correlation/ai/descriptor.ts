@@ -20,7 +20,7 @@ export const aiCorrelationDescriptor: ModuleDescriptor = {
     {
       code: "amount-shapes-limited",
       message:
-        "Amounts are read from payload.measurements, payload.tokens, payload.charge and payload.costUsd+costLedger; unverified raw hook usage (semanticsVerified=false) contributes no amounts.",
+        "Tokens are read from the typed usage block; money from payload.measurements, payload.charge and payload.costUsd+costLedger, else the usage block's tool figure.",
     },
     {
       code: "no-cumulative-differencing",

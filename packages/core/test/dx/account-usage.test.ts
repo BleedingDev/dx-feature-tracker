@@ -10,6 +10,7 @@ import { correlationKeysOf, sessionIdsOf } from "../../src/dx/account/keys.js";
 import { accountUsageSummary } from "../../src/dx/account/summary.js";
 import { parseCursorDashboardResponse } from "../../src/dx/collectors/cursor-dashboard-response/parse.js";
 import { toApiEvent } from "../../src/dx/collectors/cursor-usage-api/collector.js";
+import { withCollectorBlocks } from "../../src/dx/harness/collector-blocks.js";
 import type { DxEventEnvelope } from "../../src/dx/model/event.js";
 import {
   EVENT_SCHEMA_VERSION,
@@ -50,46 +51,45 @@ const usageRow = (
     readonly sessionId?: string | null;
     readonly tokens?: Record<string, number>;
   }
-): DxEventEnvelope => ({
-  acquisition: "api",
-  adapterId: overrides.adapterId ?? "cursor-usage-api",
-  adapterVersion: "0.1.0",
-  ai: null,
-  context: {
-    ...emptyFlightContext,
-    branch: overrides.branch ?? null,
-    repoCommonDir:
-      overrides.branch === undefined || overrides.branch === null
-        ? null
-        : "/repo/.git",
-  },
-  eventId: EventIdSchema.make(id),
-  evidence: { bounded: true, hash: null, ref: `fixture://${id}` },
-  fieldSemantics: [],
-  identity: {
-    commitSha: null,
-    generationId: null,
-    githubAttempt: null,
-    githubRunId: null,
-    prNumber: null,
-    requestId: null,
-    sessionId: overrides.sessionId ?? null,
-    turnId: null,
-  },
-  kind: "ai.usage",
-  observedAt: "2026-09-30T12:00:00.000Z",
-  occurredAt: overrides.occurredAt,
-  occurredAtPrecision: "exact",
-  origin: "fixture",
-  payload: {
-    charge: overrides.charge === undefined ? 1 : overrides.charge,
-    tokens: overrides.tokens ?? { input: 100, output: 20 },
-  },
-  schemaVersion: EVENT_SCHEMA_VERSION,
-  sourceVersion: null,
-  upstreamKey: id,
-  usage: null,
-});
+): DxEventEnvelope =>
+  withCollectorBlocks({
+    acquisition: "api",
+    adapterId: overrides.adapterId ?? "cursor-usage-api",
+    adapterVersion: "0.1.0",
+    context: {
+      ...emptyFlightContext,
+      branch: overrides.branch ?? null,
+      repoCommonDir:
+        overrides.branch === undefined || overrides.branch === null
+          ? null
+          : "/repo/.git",
+    },
+    eventId: EventIdSchema.make(id),
+    evidence: { bounded: true, hash: null, ref: `fixture://${id}` },
+    fieldSemantics: [],
+    identity: {
+      commitSha: null,
+      generationId: null,
+      githubAttempt: null,
+      githubRunId: null,
+      prNumber: null,
+      requestId: null,
+      sessionId: overrides.sessionId ?? null,
+      turnId: null,
+    },
+    kind: "ai.usage",
+    observedAt: "2026-09-30T12:00:00.000Z",
+    occurredAt: overrides.occurredAt,
+    occurredAtPrecision: "exact",
+    origin: "fixture",
+    payload: {
+      charge: overrides.charge === undefined ? 1 : overrides.charge,
+      tokens: overrides.tokens ?? { input: 100, output: 20 },
+    },
+    schemaVersion: EVENT_SCHEMA_VERSION,
+    sourceVersion: null,
+    upstreamKey: id,
+  });
 
 describe("dashboard correlation keys (account-usage)", () => {
   it.effect(

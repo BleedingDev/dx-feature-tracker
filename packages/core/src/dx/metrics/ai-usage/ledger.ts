@@ -1,6 +1,4 @@
-import { aiSourceRank } from "../../harness/source-kinds.js";
 import type {
-  AiSourceKind,
   LedgerKind,
   OverlapGroup,
   TokenCategory,
@@ -18,12 +16,12 @@ export interface LedgerTotal {
   readonly evidenceIds: readonly EvidenceId[];
   readonly ledger: LedgerKind;
   readonly methods: readonly ValueMethod[];
-  readonly sources: readonly AiSourceKind[];
+  readonly sources: readonly string[];
   readonly value: number;
 }
 
 export interface AlternativeLedger {
-  readonly sourceKind: AiSourceKind;
+  readonly sourceKind: string;
   readonly totals: readonly LedgerTotal[];
 }
 
@@ -37,8 +35,6 @@ export interface AiUsageAccount {
   readonly unresolved: readonly LedgerTotal[];
   readonly usageEvents: number;
 }
-
-const rank = (kind: AiSourceKind): number => aiSourceRank(kind);
 
 const slotOf = (row: AiUsageRow): string =>
   `${row.ledger}|${row.category}|${row.currency ?? ""}`;
@@ -121,9 +117,7 @@ const pickPerSlot = (members: readonly AiUsageRow[]): AiUsageRow[] => {
   const best = new Map<string, AiUsageRow>();
 
   for (const row of members.toSorted(
-    (a, b) =>
-      rank(a.sourceKind) - rank(b.sourceKind) ||
-      a.evidenceId.localeCompare(b.evidenceId)
+    (a, b) => a.rank - b.rank || a.evidenceId.localeCompare(b.evidenceId)
   )) {
     const slot = slotOf(row);
 
@@ -145,9 +139,7 @@ const overlapGroup = (
 
   const key = members[0]?.matchKeys[0] ?? memberEvidenceIds[0] ?? "none";
 
-  const preferred =
-    chosen.toSorted((a, b) => rank(a.sourceKind) - rank(b.sourceKind))[0] ??
-    null;
+  const preferred = chosen.toSorted((a, b) => a.rank - b.rank)[0] ?? null;
 
   const sources = [...new Set(members.map((row) => row.sourceKind))];
 
@@ -165,11 +157,11 @@ const overlapGroup = (
 };
 
 const detailSlotsBySource = (rows: readonly AiUsageRow[]) => {
-  const slots = new Map<string, Set<AiSourceKind>>();
+  const slots = new Map<string, Set<string>>();
 
   for (const row of rows) {
     const slot = slotOf(row);
-    const set = slots.get(slot) ?? new Set<AiSourceKind>();
+    const set = slots.get(slot) ?? new Set<string>();
     set.add(row.sourceKind);
     slots.set(slot, set);
   }
@@ -395,12 +387,12 @@ const branchOfGroup = (members: readonly AiUsageRow[]): string | null => {
     return known[0] ?? null;
   }
 
-  const best = Math.min(...members.map((row) => rank(row.sourceKind)));
+  const best = Math.min(...members.map((row) => row.rank));
 
   const strongest = [
     ...new Set(
       members.flatMap((row) =>
-        rank(row.sourceKind) === best && row.branch !== null ? [row.branch] : []
+        row.rank === best && row.branch !== null ? [row.branch] : []
       )
     ),
   ];

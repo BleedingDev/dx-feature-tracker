@@ -52,20 +52,23 @@ const UNATTRIBUTED_RANKS: Readonly<Partial<Record<AiSourceKind, number>>> = {
 
 const UNKNOWN_RANK = 10_000;
 
+export const harnessChannelRank = (
+  harness: HarnessId,
+  channel: Channel,
+  within = 0
+): number => {
+  const local = channelRank(harness, channel) * CHANNEL_WEIGHT + within;
+  const band = HARNESS_BANDS[harness];
+
+  return band === null ? local : band + local / SECONDARY_SCALE;
+};
+
 export const aiSourceRank = (kind: AiSourceKind): number => {
   const source = HARNESS_SOURCES[kind];
 
-  if (source !== undefined) {
-    const local =
-      channelRank(source.harness, source.channel) * CHANNEL_WEIGHT +
-      source.within;
-
-    const band = HARNESS_BANDS[source.harness];
-
-    return band === null ? local : band + local / SECONDARY_SCALE;
-  }
-
-  return UNATTRIBUTED_RANKS[kind] ?? UNKNOWN_RANK;
+  return source === undefined
+    ? (UNATTRIBUTED_RANKS[kind] ?? UNKNOWN_RANK)
+    : harnessChannelRank(source.harness, source.channel, source.within);
 };
 
 export const AI_SOURCES_BY_RANK: readonly AiSourceKind[] =

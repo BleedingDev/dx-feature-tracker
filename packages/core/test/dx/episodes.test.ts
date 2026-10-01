@@ -1,6 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 
 import type { StoreSnapshot } from "../../src/dx/contracts/services.js";
+import { withCollectorBlocks } from "../../src/dx/harness/collector-blocks.js";
 import {
   computeEpisodes,
   episodesDescriptor,
@@ -24,33 +25,32 @@ const usage = (
   input: number,
   output: number,
   charge: number
-): DxEventEnvelope => ({
-  acquisition: "file-import",
-  adapterId: "cursor-usage-export",
-  adapterVersion: "1.0.0",
-  ai: null,
-  context: { ...emptyFlightContext, branch: BRANCH },
-  eventId: EventIdSchema.make(id),
-  evidence: { bounded: true, hash: null, ref: `fixture:${id}` },
-  fieldSemantics: [],
-  identity: { ...emptyEventIdentity, requestId: id },
-  kind: "ai.usage",
-  observedAt: NOW,
-  occurredAt,
-  occurredAtPrecision: "second",
-  origin: "fixture",
-  payload: {
-    charge,
-    costLedger: "charge",
-    costUsd: charge,
-    sourceKind: "usage-csv",
-    tokens: { input, output },
-  },
-  schemaVersion: "dx.event.v2",
-  sourceVersion: null,
-  upstreamKey: id,
-  usage: null,
-});
+): DxEventEnvelope =>
+  withCollectorBlocks({
+    acquisition: "file-import",
+    adapterId: "cursor-usage-export",
+    adapterVersion: "1.0.0",
+    context: { ...emptyFlightContext, branch: BRANCH },
+    eventId: EventIdSchema.make(id),
+    evidence: { bounded: true, hash: null, ref: `fixture:${id}` },
+    fieldSemantics: [],
+    identity: { ...emptyEventIdentity, requestId: id },
+    kind: "ai.usage",
+    observedAt: NOW,
+    occurredAt,
+    occurredAtPrecision: "second",
+    origin: "fixture",
+    payload: {
+      charge,
+      costLedger: "charge",
+      costUsd: charge,
+      sourceKind: "usage-csv",
+      tokens: { input, output },
+    },
+    schemaVersion: "dx.event.v2",
+    sourceVersion: null,
+    upstreamKey: id,
+  });
 
 const commit = (id: string, occurredAt: string): DxEventEnvelope => ({
   ...usage(id, occurredAt, 0, 0, 0),

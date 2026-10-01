@@ -15,6 +15,7 @@ import type { RawHookPayload } from "../../src/dx/collectors/cursor-hooks/raw-pa
 import { EventStore } from "../../src/dx/contracts/event-store.js";
 import { placeEventsInWorktrees } from "../../src/dx/correlation/branch-at-time/worktree.js";
 import { buildRepoMap } from "../../src/dx/correlation/repo/worktree-map.js";
+import { withCollectorBlocks } from "../../src/dx/harness/collector-blocks.js";
 import { makeDxHistoryCapability } from "../../src/dx/history/capability.js";
 import { unknownStatus } from "../../src/dx/history/compute.js";
 import type { FlightHistoryRow } from "../../src/dx/history/contract.js";
@@ -230,41 +231,40 @@ const usageRow = (
   session: string,
   minute: number,
   output: number
-): DxEventEnvelope => ({
-  acquisition: "api",
-  adapterId: "cursor-usage-api",
-  adapterVersion: "fixture",
-  ai: null,
-  context: emptyFlightContext,
-  eventId: EventIdSchema.make(`usage-${session}`),
-  evidence: { bounded: true, hash: null, ref: `fixture:usage-${session}` },
-  fieldSemantics: [],
-  identity: { ...emptyEventIdentity, sessionId: session },
-  kind: "ai.usage",
-  observedAt: at(minute).toISOString(),
-  occurredAt: at(minute).toISOString(),
-  occurredAtPrecision: "exact",
-  origin: "fixture",
-  payload: {
-    charge: null,
-    listPriceEstimateUsd: null,
-    model: "gpt-5",
-    requestKey: `source:cursor-usage-api:request:${session}`,
-    sourceKind: "dashboard-json",
-    tokens: {
-      "cache-write": null,
-      "cached-input": null,
-      input: 10,
-      output,
-      reasoning: null,
-      total: null,
+): DxEventEnvelope =>
+  withCollectorBlocks({
+    acquisition: "api",
+    adapterId: "cursor-usage-api",
+    adapterVersion: "fixture",
+    context: emptyFlightContext,
+    eventId: EventIdSchema.make(`usage-${session}`),
+    evidence: { bounded: true, hash: null, ref: `fixture:usage-${session}` },
+    fieldSemantics: [],
+    identity: { ...emptyEventIdentity, sessionId: session },
+    kind: "ai.usage",
+    observedAt: at(minute).toISOString(),
+    occurredAt: at(minute).toISOString(),
+    occurredAtPrecision: "exact",
+    origin: "fixture",
+    payload: {
+      charge: null,
+      listPriceEstimateUsd: null,
+      model: "gpt-5",
+      requestKey: `source:cursor-usage-api:request:${session}`,
+      sourceKind: "dashboard-json",
+      tokens: {
+        "cache-write": null,
+        "cached-input": null,
+        input: 10,
+        output,
+        reasoning: null,
+        total: null,
+      },
     },
-  },
-  schemaVersion: "dx.event.v2",
-  sourceVersion: null,
-  upstreamKey: `usage-${session}`,
-  usage: null,
-});
+    schemaVersion: "dx.event.v2",
+    sourceVersion: null,
+    upstreamKey: `usage-${session}`,
+  });
 
 const usageRows = [
   usageRow(PARENT, 41, 7),

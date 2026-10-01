@@ -26,6 +26,7 @@ import {
   resolveGitContext,
 } from "../../src/dx/collectors/cursor-hooks/handler.js";
 import type { CollectInput } from "../../src/dx/contracts/services.js";
+import { withCollectorBlocks } from "../../src/dx/harness/collector-blocks.js";
 import { accountAiUsage } from "../../src/dx/metrics/ai-usage/ledger.js";
 import type { AiUsageAccount } from "../../src/dx/metrics/ai-usage/ledger.js";
 import type { DxEventEnvelope } from "../../src/dx/model/event.js";
@@ -400,21 +401,22 @@ describe("B05 cursor hooks collector", () => {
         ]);
 
         const dashboard = usageEvents(cli.events).map(
-          (event): DxEventEnvelope => ({
-            ...event,
-            adapterId: "cursor-dashboard-response",
-            eventId: EventIdSchema.make("dashboard-row"),
-            identity: {
-              ...event.identity,
-              requestId: A07_REQUEST,
-              sessionId: null,
-            },
-            payload: {
-              requestKey: `request:${A07_REQUEST}`,
-              sourceKind: "dashboard-json",
-              tokens: { "cached-input": 66_000, input: 34_000, output: 700 },
-            },
-          })
+          (event): DxEventEnvelope =>
+            withCollectorBlocks({
+              ...event,
+              adapterId: "cursor-dashboard-response",
+              eventId: EventIdSchema.make("dashboard-row"),
+              identity: {
+                ...event.identity,
+                requestId: A07_REQUEST,
+                sessionId: null,
+              },
+              payload: {
+                requestKey: `request:${A07_REQUEST}`,
+                sourceKind: "dashboard-json",
+                tokens: { "cached-input": 66_000, input: 34_000, output: 700 },
+              },
+            })
         );
 
         const billed = accountAiUsage([

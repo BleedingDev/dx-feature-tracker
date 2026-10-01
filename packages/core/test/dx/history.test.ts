@@ -13,6 +13,7 @@ import {
   fakeManifest,
 } from "../../src/dx/contracts/fakes.js";
 import type { StoreSnapshot } from "../../src/dx/contracts/services.js";
+import { withCollectorBlocks } from "../../src/dx/harness/collector-blocks.js";
 import { makeDxHistoryCapability } from "../../src/dx/history/capability.js";
 import {
   computeHistory,
@@ -57,36 +58,35 @@ interface EventSpec {
   readonly sessionId?: string;
 }
 
-const event = (spec: EventSpec): DxEventEnvelope => ({
-  acquisition: "file-import",
-  adapterId: spec.adapterId,
-  adapterVersion: "fixture",
-  ai: null,
-  context: {
-    ...emptyFlightContext,
-    branch: spec.branch,
-    repoCommonDir: spec.repo,
-    worktreePath: spec.repo === REPO ? WORKTREE : null,
-  },
-  eventId: EventIdSchema.make(spec.id),
-  evidence: { bounded: true, hash: null, ref: `fixture:${spec.id}` },
-  fieldSemantics: [],
-  identity: {
-    ...emptyEventIdentity,
-    commitSha: spec.commitSha ?? null,
-    sessionId: spec.sessionId ?? null,
-  },
-  kind: spec.kind,
-  observedAt: "2026-09-30T12:00:00Z",
-  occurredAt: spec.occurredAt,
-  occurredAtPrecision: "exact",
-  origin: "fixture",
-  payload: spec.payload,
-  schemaVersion: "dx.event.v2",
-  sourceVersion: null,
-  upstreamKey: spec.id,
-  usage: null,
-});
+const event = (spec: EventSpec): DxEventEnvelope =>
+  withCollectorBlocks({
+    acquisition: "file-import",
+    adapterId: spec.adapterId,
+    adapterVersion: "fixture",
+    context: {
+      ...emptyFlightContext,
+      branch: spec.branch,
+      repoCommonDir: spec.repo,
+      worktreePath: spec.repo === REPO ? WORKTREE : null,
+    },
+    eventId: EventIdSchema.make(spec.id),
+    evidence: { bounded: true, hash: null, ref: `fixture:${spec.id}` },
+    fieldSemantics: [],
+    identity: {
+      ...emptyEventIdentity,
+      commitSha: spec.commitSha ?? null,
+      sessionId: spec.sessionId ?? null,
+    },
+    kind: spec.kind,
+    observedAt: "2026-09-30T12:00:00Z",
+    occurredAt: spec.occurredAt,
+    occurredAtPrecision: "exact",
+    origin: "fixture",
+    payload: spec.payload,
+    schemaVersion: "dx.event.v2",
+    sourceVersion: null,
+    upstreamKey: spec.id,
+  });
 
 const fixtureEvents: readonly DxEventEnvelope[] = [
   event({

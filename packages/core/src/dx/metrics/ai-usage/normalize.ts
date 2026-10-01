@@ -1,7 +1,10 @@
 import { Option, Schema } from "effect";
 
 import { rawUsageRuleFor } from "../../harness/rules.js";
-import { AI_SOURCES_BY_RANK } from "../../harness/source-kinds.js";
+import {
+  AI_SOURCES_BY_RANK,
+  aiSourceRank,
+} from "../../harness/source-kinds.js";
 import type {
   AiSourceKind,
   LedgerKind,
@@ -17,6 +20,8 @@ import { ValueMethodSchema } from "../../model/common.js";
 import type { DxEventEnvelope } from "../../model/event.js";
 import type { EvidenceId } from "../../model/ids.js";
 import { EvidenceIdSchema } from "../../model/ids.js";
+import type { TypedSource } from "./typed.js";
+import { figureLedger, tokenCategoriesOf, typedSourceOf } from "./typed.js";
 
 export type UsageScope = "detail" | "aggregate";
 
@@ -30,8 +35,9 @@ export interface AiUsageRow {
   readonly matchKeys: readonly string[];
   readonly method: ValueMethod;
   readonly rawCategory: string | null;
+  readonly rank: number;
   readonly scope: UsageScope;
-  readonly sourceKind: AiSourceKind;
+  readonly sourceKind: string;
   readonly value: number;
 }
 
@@ -48,18 +54,6 @@ export interface NormalizedUsage {
   readonly uncovered: readonly UncoveredUsage[];
   readonly usageEvents: number;
 }
-
-const TOKEN_KEYS = new Map<string, TokenCategory>([
-  ["cache-write", "cache-write"],
-  ["cacheRead", "cached-input"],
-  ["cacheWrite", "cache-write"],
-  ["cached-input", "cached-input"],
-  ["cachedInput", "cached-input"],
-  ["input", "input"],
-  ["output", "output"],
-  ["reasoning", "reasoning"],
-  ["total", "total"],
-]);
 
 const TokenMapSchema = Schema.Record(
   Schema.String,
@@ -178,7 +172,7 @@ const methodFor = (
 const scopeOf = (
   event: DxEventEnvelope,
   flags: UsageFlags,
-  sourceKind: AiSourceKind
+  sourceKind: string
 ): UsageScope => {
   if (flags.scope === "provider-bucket") {
     return "aggregate";
@@ -200,37 +194,33 @@ interface RowSeed {
   readonly value: number;
 }
 
-const tokenSeeds = (
-  event: DxEventEnvelope,
-  tokens: Readonly<Record<string, number | null>>,
-  prefix: string,
-  fallbackMethod: (key: string) => ValueMethod = () => "source-reported"
-): RowSeed[] =>
-  Object.entries(tokens).flatMap(([key, value]) => {
-    const category = TOKEN_KEYS.get(key);
+const derivedFromHookUsage = (event: DxEventEnvelope): boolean =>
+  event.payload.rawUsage !== undefined ||
+  event.payload.normalizedCategories !== undefined;
 
-    if (category === undefined || value === null) {
-      return [];
-    }
+const tokenSeeds = (event: DxEventEnvelope): RowSeed[] => {
+  if (event.usage === null) {
+    return [];
+  }
 
-    return [
-      {
-        category,
-        currency: null,
-        ledger: "tokens" as const,
-        method: methodFor(
-          event,
-          [`${prefix}.${key}`, `payload.${prefix}.${key}`],
-          fallbackMethod(key)
-        ),
-        rawCategory: key,
-        value,
-      },
-    ];
-  });
+  const fromHook = derivedFromHookUsage(event);
+
+  return tokenCategoriesOf(event.usage.tokens).map(([category, value]) => ({
+    category,
+    currency: null,
+    ledger: "tokens" as const,
+    method: methodFor(
+      event,
+      [`tokens.${category}`, `payload.tokens.${category}`],
+      fromHook && category === "input" ? "derived" : "source-reported"
+    ),
+    rawCategory: category,
+    value,
+  }));
+};
 
 const measurementSeed = (entry: Measurement): RowSeed[] => {
-  if (entry.value === null) {
+  if (entry.value === null || entry.ledger === "tokens") {
     return [];
   }
 
@@ -238,8 +228,7 @@ const measurementSeed = (entry: Measurement): RowSeed[] => {
 
   return [
     {
-      category:
-        entry.ledger === "tokens" ? (entry.category ?? "other") : "other",
+      category: "other",
       currency: cents ? "USD" : (entry.currency ?? null),
       ledger: entry.ledger,
       method: entry.method ?? "source-reported",
@@ -327,19 +316,6 @@ const unverifiedUsage = (event: DxEventEnvelope, flags: UsageFlags) => {
     : rule.read(numericRawUsage(event));
 };
 
-const hookCategories = (
-  event: DxEventEnvelope,
-  flags: UsageFlags
-): Option.Option<Readonly<Record<string, number | null>>> => {
-  if (flags.semanticsVerified === true) {
-    return decodeTokens(event.payload.normalizedCategories);
-  }
-
-  const legacy = unverifiedUsage(event, flags);
-
-  return legacy === null ? Option.none() : Option.some(legacy.categories);
-};
-
 const verifiedRawFieldsOf = (
   event: DxEventEnvelope,
   flags: UsageFlags
@@ -351,7 +327,24 @@ const verifiedRawFieldsOf = (
   return unverifiedUsage(event, flags)?.verifiedFields ?? [];
 };
 
-const eventSeeds = (event: DxEventEnvelope, flags: UsageFlags): RowSeed[] => {
+const figureSeeds = (event: DxEventEnvelope): RowSeed[] => {
+  const figure = figureLedger(event.usage?.toolFigure ?? null);
+
+  return figure === null
+    ? []
+    : [
+        {
+          category: "other",
+          currency: figure.currency,
+          ledger: figure.ledger,
+          method: figure.ledger === "charge" ? "source-reported" : "estimated",
+          rawCategory: "toolFigure",
+          value: figure.value,
+        },
+      ];
+};
+
+const eventSeeds = (event: DxEventEnvelope): RowSeed[] => {
   const { payload } = event;
   const cost = Option.getOrNull(decodeCost(payload.cost));
 
@@ -364,19 +357,6 @@ const eventSeeds = (event: DxEventEnvelope, flags: UsageFlags): RowSeed[] => {
       onSome: measurementSeed,
     })
   );
-
-  const tokens = Option.match(decodeTokens(payload.tokens), {
-    onNone: () => [],
-    onSome: (map) => tokenSeeds(event, map, "tokens"),
-  });
-
-  const hookTokens = Option.match(hookCategories(event, flags), {
-    onNone: () => [],
-    onSome: (map) =>
-      tokenSeeds(event, map, "normalizedCategories", (key) =>
-        key === "input" ? "derived" : "source-reported"
-      ),
-  });
 
   const money = Option.match(decodeMoney(payload), {
     onNone: () => [],
@@ -394,7 +374,12 @@ const eventSeeds = (event: DxEventEnvelope, flags: UsageFlags): RowSeed[] => {
           "cost"
         );
 
-  return [...measurements, ...tokens, ...hookTokens, ...money, ...costRows];
+  const payloadMoney = [...measurements, ...money, ...costRows];
+
+  return [
+    ...tokenSeeds(event),
+    ...(payloadMoney.length === 0 ? figureSeeds(event) : payloadMoney),
+  ];
 };
 
 const hookUncovered = (
@@ -433,9 +418,33 @@ const hookUncovered = (
 };
 
 const carriesUsage = (event: DxEventEnvelope): boolean =>
+  event.usage !== null ||
   event.kind === "ai.usage" ||
   (event.kind === "ai.turn" &&
     Option.isSome(decodeMeasurements(event.payload.measurements)));
+
+interface RowSource {
+  readonly label: string;
+  readonly rank: number;
+}
+
+const rowSourceOf = (
+  event: DxEventEnvelope,
+  flags: UsageFlags
+): RowSource | null => {
+  const typed: TypedSource | null =
+    flags.sourceKind === undefined || flags.sourceKind === null
+      ? typedSourceOf(event)
+      : null;
+
+  if (typed !== null) {
+    return typed;
+  }
+
+  const kind = sourceKindFrom(flags.sourceKind, event.adapterId);
+
+  return kind === null ? null : { label: kind, rank: aiSourceRank(kind) };
+};
 
 export const normalizeAiUsage = (
   events: readonly DxEventEnvelope[]
@@ -452,9 +461,9 @@ export const normalizeAiUsage = (
       () => EMPTY_FLAGS
     );
 
-    const sourceKind = sourceKindFrom(flags.sourceKind, event.adapterId);
+    const source = rowSourceOf(event, flags);
 
-    if (sourceKind === null) {
+    if (source === null) {
       uncovered.push({
         adapterId: event.adapterId,
         evidenceId,
@@ -467,18 +476,19 @@ export const normalizeAiUsage = (
 
     uncovered.push(...hookUncovered(event, flags, evidenceId));
 
-    const scope = scopeOf(event, flags, sourceKind);
+    const scope = scopeOf(event, flags, source.label);
     const matchKeys = matchKeysOf(event);
 
-    for (const seed of eventSeeds(event, flags)) {
+    for (const seed of eventSeeds(event)) {
       rows.push({
         ...seed,
         adapterId: event.adapterId,
         branch: event.context.branch,
         evidenceId,
         matchKeys,
+        rank: source.rank,
         scope,
-        sourceKind,
+        sourceKind: source.label,
       });
     }
   }
