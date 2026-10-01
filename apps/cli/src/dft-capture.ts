@@ -139,22 +139,28 @@ const isDftEntry = (entry: CommandHook): boolean =>
 const groupHasDft = (group: MatcherGroup): boolean =>
   (group.hooks ?? []).some(isDftEntry);
 
+const dftEntry = (
+  spec: HookSpec,
+  command: string,
+  style: HookStyle
+): CommandHook =>
+  style.async && spec.sync !== true
+    ? { async: true, command, timeout: style.timeout, type: "command" }
+    : {
+        command,
+        timeout:
+          spec.sync === true
+            ? Math.min(style.timeout, SYNC_TIMEOUT)
+            : style.timeout,
+        type: "command",
+      };
+
 const newGroup = (
   spec: HookSpec,
   command: string,
   style: HookStyle
 ): MatcherGroup => {
-  const entry: CommandHook =
-    style.async && spec.sync !== true
-      ? { async: true, command, timeout: style.timeout, type: "command" }
-      : {
-          command,
-          timeout:
-            spec.sync === true
-              ? Math.min(style.timeout, SYNC_TIMEOUT)
-              : style.timeout,
-          type: "command",
-        };
+  const entry = dftEntry(spec, command, style);
 
   return spec.matcher === null
     ? { hooks: [entry] }
@@ -168,17 +174,22 @@ export interface HookMerge {
 }
 
 const staleDft =
-  (command: string) =>
+  (want: CommandHook) =>
   (entry: CommandHook): boolean =>
-    isDftEntry(entry) && entry.command !== command;
+    isDftEntry(entry) &&
+    (entry.command !== want.command ||
+      entry.async !== want.async ||
+      entry.timeout !== want.timeout);
 
-const withCommand = (group: MatcherGroup, command: string): MatcherGroup =>
+const withEntry = (group: MatcherGroup, want: CommandHook): MatcherGroup =>
   group.hooks === undefined
     ? group
     : {
         ...group,
         hooks: group.hooks.map((entry) =>
-          isDftEntry(entry) ? { ...entry, command } : entry
+          isDftEntry(entry)
+            ? { ...Struct.omit(entry, ["async"]), ...want }
+            : entry
         ),
       };
 
@@ -195,14 +206,15 @@ export const mergeHookConfig = (
   for (const spec of specs) {
     const groups = hooks[spec.event] ?? [];
     const command = commandFor(spec.event);
+    const want = dftEntry(spec, command, style);
 
     if (!groups.some(groupHasDft)) {
       hooks[spec.event] = [...groups, newGroup(spec, command, style)];
       added.push(spec.event);
     } else if (
-      groups.some((group) => (group.hooks ?? []).some(staleDft(command)))
+      groups.some((group) => (group.hooks ?? []).some(staleDft(want)))
     ) {
-      hooks[spec.event] = groups.map((group) => withCommand(group, command));
+      hooks[spec.event] = groups.map((group) => withEntry(group, want));
       refreshed.push(spec.event);
     }
   }
@@ -468,7 +480,7 @@ const targetsFor = (
           kind: "hooks",
           rel: CODEX_PROJECT_HOOKS,
           specs: CODEX_HOOKS,
-          style: { async: true, timeout: 30 },
+          style: { async: false, timeout: 5 },
           toolArg: "codex",
         },
       ];
@@ -562,7 +574,7 @@ const hookChangeText = (change: {
     ...(change.refreshed.length === 0
       ? []
       : [
-          `pointed the dft hook in ${change.refreshed.join(", ")} at this node and dft`,
+          `pointed the dft hook in ${change.refreshed.join(", ")} at this node and dft, with this build's hook settings`,
         ]),
   ].join("; ");
 

@@ -9,7 +9,7 @@ How `dft install`, `dft install --telemetry`, `dft uninstall` and the OTLP recei
 | Tool | File written in the project | Calls |
 | --- | --- | --- |
 | Claude Code | `.claude/settings.local.json` (merged) | `dft hook claude-code <Event>` on SessionStart, SessionEnd, Stop, SubagentStop, PostToolUse; `async: true` |
-| Codex | `.codex/hooks.json` (merged) | same events; SessionEnd runs synchronously with a 3 s limit, as Codex requires |
+| Codex | `.codex/hooks.json` (merged) | same events, written without `async`: Codex runs every command hook in the foreground (it logs a warning and ignores `async`), so each has a 5 s limit and SessionEnd 3 s |
 | OpenCode | `.opencode/plugins/dft-usage.js` | `opencodePluginSource` from the tool folder |
 | Pi | `.pi/extensions/dft-observer.ts` | `piExtensionSource` |
 | OMP | `.omp/extensions/dft-telemetry.ts` | `ompExtensionSource` |
@@ -17,7 +17,7 @@ How `dft install`, `dft install --telemetry`, `dft uninstall` and the OTLP recei
 
 Rules:
 
-- Hook files are merged: dft adds one matcher group per event only when no dft command is there yet and never edits other entries. Key order is kept.
+- Hook files are merged: dft adds one matcher group per event only when no dft command is there yet and never edits other entries. Key order is kept. A re-run points dft's own entries at this Node and `dft` and gives them this build's `async` and `timeout`.
 - A file tracked by git is never written (teammates would see it). A same-named file without dft's marker is left alone.
 - Paths git does not already ignore go into a marked block in this clone's `.git/info/exclude`, never into `.gitignore`.
 - Running it again reports every file as unchanged.

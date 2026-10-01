@@ -299,6 +299,47 @@ describe("dft install project capture (D39)", () => {
     expect(missingHookPaths("codex", repo)).toEqual([]);
   });
 
+  it("writes Codex hooks without async, which Codex runs in the foreground anyway, and moves older async entries over on a re-run", () => {
+    const repo = scratchRepo();
+
+    const codexEntries = () =>
+      Object.values(
+        parseHookConfig(read(repo, CODEX_PROJECT_HOOKS))?.hooks ?? {}
+      )
+        .flat()
+        .flatMap((group) => group.hooks ?? []);
+
+    installCapture(["codex"], repo, command);
+
+    expect(codexEntries()).toHaveLength(5);
+
+    for (const entry of codexEntries()) {
+      expect(entry.async).toBeUndefined();
+      expect(entry.timeout).toBeLessThanOrEqual(5);
+    }
+
+    write(
+      repo,
+      CODEX_PROJECT_HOOKS,
+      read(repo, CODEX_PROJECT_HOOKS).replaceAll(
+        '"timeout": 5,',
+        '"async": true,\n"timeout": 30,'
+      )
+    );
+
+    expect(codexEntries().some((entry) => entry.async === true)).toBe(true);
+
+    const [codex] = installCapture(["codex"], repo, command).tools;
+
+    expect(codex?.steps.map((step) => step.action)).toEqual(["updated"]);
+    expect(codexEntries().some((entry) => entry.async === true)).toBe(false);
+    expect(
+      installCapture(["codex"], repo, command).tools.flatMap((tool) =>
+        tool.steps.map((step) => step.action)
+      )
+    ).toEqual(["unchanged"]);
+  });
+
   it("reports a plugin or extension that calls an old node or dft as broken", () => {
     const repo = scratchRepo();
     const tools = ["opencode", "pi", "omp"] as const;
