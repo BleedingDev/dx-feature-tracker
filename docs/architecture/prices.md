@@ -32,7 +32,7 @@ Model names from every tool go through `aliases.ts`: path prefixes (`factory/`, 
 
 ## Where prices come from
 
-`PriceBook.layer` reads the public models.dev catalog (LiteLLM as fallback), caches one snapshot per day under `~/.dft/price-catalog/`, and turns all cached snapshots into date-versioned prices: a request is priced with the snapshot in force at its timestamp. The bundled snapshot (`bundled-catalog.ts`) is the oldest version when it predates every cached snapshot of the same catalog, so a first fetch after a price change does not reprice earlier history; offline with no cache it is the only catalog. `PriceBook.memory(sheets)` is the test layer, and `PriceBook.fromCatalog(deps)` runs the live loader over a given cache folder and fetch.
+`loadPriceProvider` and `cachedPriceProvider` (`price-catalog/provider.ts`) read the public models.dev catalog (LiteLLM as fallback), cache one snapshot per day under `$DFT_HOME/price-catalog/` (`dftCatalogDir`), and turn all cached snapshots into date-versioned prices with `loadCatalogTimeline` and `bookFromTimeline`: a request is priced with the snapshot in force at its timestamp. The bundled snapshot (`bundled-catalog.ts`) is the oldest version when it predates every cached snapshot of the same catalog, so a first fetch after a price change does not reprice earlier history; offline with no cache it is the only catalog. Tests build books through `test/dx/price-book-layer.ts`: `PriceBook.memory(sheets)` over fixed sheets and `PriceBook.fromCatalog(deps)` over the same loader with a given cache folder and fetch.
 
 User-supplied prices (D40, later) plug in through `PriceOverrides`: sheets placed there are consulted before the catalog. No UI exists yet.
 

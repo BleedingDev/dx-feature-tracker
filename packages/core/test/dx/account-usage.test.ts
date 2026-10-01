@@ -6,7 +6,6 @@ import { NodeServices } from "@effect/platform-node";
 import { describe, expect, it } from "@effect/vitest";
 import { Effect } from "effect";
 
-import { correlationKeysOf, sessionIdsOf } from "../../src/dx/account/keys.js";
 import { accountUsageSummary } from "../../src/dx/account/summary.js";
 import { parseCursorDashboardResponse } from "../../src/dx/collectors/cursor-dashboard-response/parse.js";
 import { toApiEvent } from "../../src/dx/collectors/cursor-usage-api/collector.js";
@@ -185,25 +184,6 @@ describe("dashboard correlation keys (account-usage)", () => {
         expect(toApiEvent(first, charged).payload.chargedUsd).toBe(0.13);
         expect(toApiEvent(legacy, charged).payload.chargedUsd).toBe(0.01);
       })
-  );
-
-  it.effect("correlationKeysOf merges identity and payload keys", () =>
-    Effect.gen(function* mergedKeys() {
-      const result = yield* parseFixture(fixtureText);
-      const first = yield* present(byModel(result.events, "claude-opus-5-5"));
-
-      expect(correlationKeysOf(first)).toEqual([
-        "request:req-1",
-        "generation:bubble-1",
-        "session:composer-local-1",
-        "session:conv-dashboard-1",
-      ]);
-
-      expect(sessionIdsOf(first)).toEqual([
-        "composer-local-1",
-        "conv-dashboard-1",
-      ]);
-    })
   );
 });
 

@@ -8,7 +8,6 @@ import type {
   PricedRequest,
   RequestEstimate,
 } from "../../src/dx/metrics/cost/price-book/estimate.js";
-import { PriceBook } from "../../src/dx/metrics/cost/price-book/service.js";
 import type { PriceSheet } from "../../src/dx/metrics/cost/price-book/sheet.js";
 import type {
   AiAttribution,
@@ -17,6 +16,7 @@ import type {
   ToolFigure,
 } from "../../src/dx/model/attribution.js";
 import { unknownTokens } from "../../src/dx/model/attribution.js";
+import { PriceBook } from "./price-book-layer.js";
 
 const once = (rates: PriceSheet["models"][string][number]["rates"]) => [
   { effectiveFrom: null, rates },

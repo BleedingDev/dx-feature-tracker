@@ -46,9 +46,6 @@ export interface PriceProvider {
   readonly warnings: readonly string[];
 }
 
-export const catalogCacheDir = (home: string): string =>
-  path.join(home, ".dft", "price-catalog");
-
 export const dftCatalogDir = (dftHome: string): string =>
   path.join(dftHome, "price-catalog");
 

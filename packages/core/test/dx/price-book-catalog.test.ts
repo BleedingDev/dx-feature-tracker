@@ -11,12 +11,12 @@ import type {
   PricedRequest,
   RequestEstimate,
 } from "../../src/dx/metrics/cost/price-book/estimate.js";
-import { PriceBook } from "../../src/dx/metrics/cost/price-book/service.js";
 import type { Catalog } from "../../src/dx/metrics/cost/price-catalog/catalog.js";
 import { parseModelsDev } from "../../src/dx/metrics/cost/price-catalog/catalog.js";
 import type { CatalogFetch } from "../../src/dx/metrics/cost/price-catalog/provider.js";
 import type { AiTokens } from "../../src/dx/model/attribution.js";
 import { unknownTokens } from "../../src/dx/model/attribution.js";
+import { PriceBook } from "./price-book-layer.js";
 
 const scratch = fs.mkdtempSync(path.join(os.tmpdir(), "dft-price-book-"));
 
