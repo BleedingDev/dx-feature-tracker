@@ -218,10 +218,14 @@ const costFigure = (
     return null;
   }
 
-  if (cost.ledger === "charge" || cost.ledger === "metered") {
+  if (cost.ledger === "charge") {
     return origin.storesCharge
       ? figure(cost.value, cost.currency ?? null, "charge")
       : figure(cost.value, cost.currency ?? null, origin.estimateKind);
+  }
+
+  if (cost.ledger === "metered") {
+    return figure(cost.value, cost.currency ?? null, origin.estimateKind);
   }
 
   return cost.ledger === "list-price-estimate"
@@ -243,12 +247,12 @@ const toolFigureOf = (
   const ledger = textField(payload, "costLedger");
   const costUsd = amountField(payload, "costUsd");
 
-  if (
-    origin.storesCharge &&
-    costUsd !== null &&
-    (ledger === "charge" || ledger === "metered")
-  ) {
+  if (origin.storesCharge && costUsd !== null && ledger === "charge") {
     return figure(costUsd, currency, "charge");
+  }
+
+  if (costUsd !== null && ledger === "metered") {
+    return figure(costUsd, currency, origin.estimateKind);
   }
 
   return (

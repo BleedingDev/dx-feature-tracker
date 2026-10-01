@@ -4,7 +4,7 @@
 | --- | --- |
 | `pnpm test` | Builds and runs every package suite once. Lefthook runs it before each commit. |
 | `pnpm --filter @rat-stack/core test` | The core suite, including the mock and fixture tiers of every harness. |
-| `DFT_LIVE_HARNESSES=claude-code,codex pnpm --filter @rat-stack/core test:live` | The harness suites plus the opt-in live tier for the listed tools, against this machine's real sessions. |
+| `DFT_LIVE_HARNESSES=cursor,claude-code,codex,opencode,pi,omp,deepseek pnpm --filter @rat-stack/core test:live` | The harness suites plus the opt-in live tier for the listed tools, against this machine's real sessions. |
 
 ## Harness tiers
 
@@ -15,6 +15,6 @@ The tiers and checks are described in [architecture/harnesses.md](architecture/h
 
 ## Rules
 
-- Tests never contact real accounts or networks. Tests that spawn the CLI set `DFT_CURSOR_USAGE=off` and their own `DFT_HOME`.
+- Tests never contact real accounts or networks. Both Vitest configs set `DFT_CURSOR_USAGE=off` (no Cursor account import) and `DFT_PRICE_CATALOG=off` (no price catalog fetch; the cache or the bundled snapshot prices instead), and tests that spawn the CLI pass their own `DFT_HOME`.
 - Fixtures are redacted or synthetic: real field structure, replaced text. No prompt text, secrets, tokens or private session content.
 - Use `@effect/vitest` (`it.effect`, `layer(...)`); `Effect.run*` in tests is a lint error.

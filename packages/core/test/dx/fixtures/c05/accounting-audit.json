@@ -164,7 +164,7 @@
         "toolFigure": {
           "amount": 0.02,
           "currency": "USD",
-          "kind": "charge"
+          "kind": "list-price"
         }
       }
     },
@@ -249,7 +249,7 @@
         "toolFigure": {
           "amount": 0.02,
           "currency": "USD",
-          "kind": "charge"
+          "kind": "list-price"
         }
       }
     }

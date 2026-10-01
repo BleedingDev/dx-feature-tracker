@@ -1,6 +1,6 @@
 # Using `dft`
 
-`dft` records what your Cursor agent does in a git repository and reports, per branch, the time, tokens and every money figure it can find. Everything is stored on your machine.
+`dft` records what your AI coding tools (Cursor, Claude Code, Codex, OpenCode, Pi, OMP and DeepSeek Harness) do in a git repository and reports, per branch, the time, tokens, models and every money figure it can find. Everything is stored on your machine.
 
 Run `dft --help` or `dft <command> --help` for the full flag list.
 
@@ -8,7 +8,7 @@ Run `dft --help` or `dft <command> --help` for the full flag list.
 
 - macOS (Apple Silicon) or Linux (Ubuntu, arm64 or x86_64)
 - Node.js 24.18.0 or newer (`node --version`). Older versions are refused at install with upgrade instructions.
-- Cursor, logged in, if you want billed usage imported
+- At least one supported tool. Cursor, logged in, if you want its billed usage imported
 - git
 
 ## Install
@@ -28,9 +28,10 @@ dft install
 `dft install` writes only inside the repository:
 
 - `.cursor/hooks.json`: adds `dft hook` entries next to any hooks already there.
-- `.cursor/skills/`: copies the `dx-analyze` and `dx-explain` Cursor skills.
+- `.cursor/skills/`: copies the `dx-*` Cursor skills.
+- Local capture for every other tool it finds on this machine: Claude Code hooks in `.claude/settings.local.json`, Codex hooks in `.codex/hooks.json`, the Pi and OMP extensions, the OpenCode plugin and the DeepSeek Harness hook bridge. These files are listed in this clone's `.git/info/exclude`, so teammates never see them. [Capture install](architecture/capture.md) lists each file.
 
-It never writes `~/.cursor/hooks.json` or anything else under `~/.cursor`. Run it once per repository. Running it again is safe: it adds nothing that is already there.
+It never writes your user settings (`~/.cursor`, `~/.claude`, `~/.codex` and so on) unless you add `--telemetry`, which shows the change, keeps a backup and is undone with `dft uninstall --telemetry`. Run it once per repository. Running it again is safe: it adds nothing that is already there. Even without hooks, every tool's session files are read on each sync.
 
 To also record a snapshot on every commit and push:
 
@@ -44,10 +45,11 @@ Other flags: `--all-worktrees` to also set up every other git worktree of the re
 
 ## Daily use
 
-Work in Cursor as usual. Then:
+Work with your tools as usual. Then:
 
 ```sh
 dft analyze               # cost report for the current branch
+dft usage --by tool       # tokens and each money figure per tool; also --by model, provider, branch, day
 dft line                  # the same, on one line
 dft chats                 # every tool's chats on the branch: tool, models per turn, subagents, cost
 dft history --since 30d   # every branch you worked on, with time, tokens and each money line
@@ -140,9 +142,9 @@ dft dashboard
 
 `dft` shows each money source on its own line:
 
-- **billed**: real charges from your Cursor usage, imported from cursor.com.
-- **metered**: Cursor's own cost figure for a request, when Cursor reports one.
-- **estimated**: tokens multiplied by public list prices. The line names the price table and its version (the source and fetch date), so you know which prices were used.
+- **estimate**: tokens multiplied by the model maker's public price, the same way for every tool, so tools compare. It names the price book and its version (the source and fetch date). A model routed through a gateway (OpenRouter, Copilot, a local router) is still priced at its maker's price; local models cost $0.
+- **tool's figure**: the tool's own cost number when it stores one (Cursor, Claude Code, OpenCode, OMP, Pi). A session-level figure is counted once per session.
+- **billed**: real charges, today from your Cursor usage imported from cursor.com.
 
 These lines measure different things, so they are never added together. A total would count the same work twice. If `dft` cannot see a value, it shows `unavailable` with a reason instead of `0`.
 
@@ -150,7 +152,7 @@ These lines measure different things, so they are never added together. A total 
 
 - **branch age**: time since the branch started.
 - **active time**: time with recorded activity on the branch.
-- **agent time**: time the Cursor agent was working.
+- **agent time**: time an AI agent was working.
 
 ## Past activity
 
@@ -172,12 +174,13 @@ When Cursor runs in Auto mode, the model shows as `Auto` (Cursor records it as `
 
 ## What happens automatically
 
-- **Cursor hooks** record sanitized hook metadata while you use Cursor.
-- **Sync on every command**: before each report, `dft` imports new git history, hook data and Cursor agent transcripts for the current repository. Missing sources are reported on stderr as `unavailable <source>: <reason>`. Use `--no-sync` to skip this.
+- **Hooks and extensions** record sanitized hook metadata while you use a tool.
+- **Sync on every command**: before each report, `dft` imports new git history, hook data and every tool's session files for the current repository. It reads only what changed since the last sync. Missing sources are reported on stderr as `unavailable <source>: <reason>`. Use `--no-sync` to skip this.
+- **Dashboard**: `dft dashboard` also watches every tool's session folders and syncs a few seconds after a session writes, even when the tool's hooks are not loaded.
 - **Cursor local database**: every sync also reads Cursor's local database. `dft` reads a backup copy in a scratch folder, never the live file, removes the copy afterwards, and keeps only the chats that ran in a worktree of this repository.
 - **cursor-agent chats**: every sync also reads the chat stores `cursor-agent` keeps for this repository's worktrees. Each turn is recorded on the branch it ran on.
 - **Cursor usage import**: if you are logged in to Cursor on this machine, `dft` reads the Cursor login from Cursor's local state database and imports your usage from cursor.com. The token stays on your machine and is only sent to cursor.com. `dft` does not store it. Turn this off with `DFT_CURSOR_USAGE=off`.
-- **Price catalog**: prices for estimates come from models.dev, with LiteLLM as a fallback. They are cached in `~/.dft` and refreshed after 24 hours. Offline, `dft` uses the last cache, then a bundled table. To use your own prices, put a table at `$DFT_HOME/prices.json`.
+- **Price catalog**: prices for estimates come from models.dev, with LiteLLM as a fallback. They are cached in `~/.dft/price-catalog` (or `$DFT_HOME/price-catalog`) and refreshed after 24 hours. Offline, `dft` uses the last cache, then a bundled snapshot. `DFT_PRICE_CATALOG=off` never fetches. To use your own prices, put a table at `$DFT_HOME/prices.json`.
 
 ## Where data lives
 
@@ -210,5 +213,5 @@ dft snapshot --max-cost 5
 ## Privacy
 
 - All data stays in `~/.dft` (or `$DFT_HOME`). Nothing is uploaded.
-- Network calls: the Cursor usage import (to cursor.com only, turn off with `DFT_CURSOR_USAGE=off`) and the price catalog fetch (models.dev or LiteLLM, prices only, no usage data).
+- Network calls: the Cursor usage import (to cursor.com only, turn off with `DFT_CURSOR_USAGE=off`) and the price catalog fetch (models.dev or LiteLLM, prices only, no usage data, turn off with `DFT_PRICE_CATALOG=off`).
 - Hook data is sanitized before it is stored.

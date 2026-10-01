@@ -41,7 +41,9 @@ flowchart LR
 | `ai: AiAttribution \| null` | `harness`, `harnessVersion`, `channel`, `provider` (model maker; `local` only when a local model's maker is unknown), `via` (gateway such as `openrouter`, local runtime such as `ollama` (`isLocalRuntime`), or null), `model` (normalized), `modelRaw`, `effort`, `effortSource`, `sessionId`, `parentSessionId`, `agentId`, `agentType`, `cwd`, `branchSource`, optional `touchedPaths` (see [Repo attribution](#repo-attribution)) |
 | `usage: AiUsage \| null` | `requestKey`, `tokens` (`inputFresh`, `cacheRead`, `cacheWrite5m`, `cacheWrite1h`, `cacheWrite`, `output`, `reasoning` inside output, `total`; `null` means unknown, never `0`), `toolFigure` (`amount`, `currency`, `kind`: `charge`, `list-price` or `api-equivalent`), `serviceTier`, `speed`, `premiumRequests` |
 
-Every `ai.*` event from a harness carries `ai`; non-AI events carry `null` in both. Store migration 2 (`storage/migrations.ts`, `storage/upgrade-v1.ts`) rewrites v1 rows and pending spool batches forward. Collectors that predate harness folders fill the blocks through `withCollectorBlocks` (`harness/collector-blocks.ts`); a new harness builds them directly.
+Every `ai.*` event from a harness carries `ai`; non-AI events carry `null` in both. Store migration 2 (`storage/migrations.ts`, `storage/upgrade-v1.ts`) rewrites v1 rows and pending spool batches forward. Cursor's collectors (`collectors/cursor-*`) fill the blocks through `withCollectorBlocks` (`harness/collector-blocks.ts`); every other tool's harness builds them directly. Each tool has exactly one reader: the old `collectors/claude`, `collectors/codex` and `collectors/opencode` importers are gone, and `collector-blocks.ts` keeps their adapter ids only so the v1 upgrade can still read rows they stored. A Cursor `metered` cost becomes the tool's figure (`list-price`), never a `charge`.
+
+`usage.toolFigure` on an `ai.session` event (Claude Code `cost-state`, OMP, OpenCode session cost) is the session's running total. It grows on resume and is emitted again when it changes, so readers keep the largest per (tool, session) and never add them: usage facts do this, and the legacy ledger treats such rows as aggregates. A request whose usage a later reading replaced names the old key in `payload.replacesRequestKey` (DeepSeek); usage facts drop the replaced key.
 
 ## The per-tool contract
 
@@ -50,7 +52,7 @@ Each tool folder exports, from its `index.ts`:
 | Export | Shape |
 | --- | --- |
 | `<Tool>Store` | `Context.Service` with `HarnessStore`: `roots`, `listSessions` (path, mtime, size), `readText`, `readBytes`, `version`. `.layer` is live (needs `HarnessHome`, `FileSystem`, `Path`), `.memory(input)` is in-memory (a `MemoryFile` holds `text` or raw `bytes`, for compressed sessions). Tools with a database read it through `LocalSqlite`. A tool may widen its own store shape inside its folder. |
-| `<Tool>Harness` | `Context.Service` with `Harness`: `id`, `displayName`, `capabilities` (`branchSources`, `storedFigure`, `subagents`, `liveHooks`), `channels` (this tool's precedence, best first), `discover`, `locate(scope)`, `read(ref, input)` returning an `EventBatch` of v2 events. `.layer` needs the store and may use `HarnessHome`, `LocalSqlite` and `GitRunner`; `.mock` is the harness over an empty memory store and needs no filesystem. |
+| `<Tool>Harness` | `Context.Service` with `Harness`: `id`, `displayName`, `capabilities` (`branchSources`, `storedFigure`, `subagents`, `liveHooks`), `channels` (this tool's precedence, best first), `discover`, `locate(scope)`, `read(ref, input)` returning an `EventBatch` of v2 events. `.layer` needs the store and may use `HarnessHome`, `LocalSqlite` and `GitRunner`; `.mock` is the harness over an empty memory store and needs no filesystem. `.mock` is its own `Layer.effect(this, this.make)`, never `this.layer.pipe(...)`: layers are memoized by reference, so a shared reference would let `registryWith(<Tool>Harness.layer.pipe(...))` silently reuse the empty mock. |
 | `<TOOL>_CHANNELS`, `<TOOL>_READINESS` | `meta.ts`. Flip readiness from `unsupported` to `degraded` or `ready` when the tool reads real sessions; that also admits its `harness.<tool>` collector. |
 | `<tool>HookDecoder` | `hook.ts`. `decode` turns one hook payload into `HookFields`, `kind` maps the tool's hook event name to an event kind (`other` by default), `respond` returns the stdout the tool needs (empty for most). |
 
@@ -66,7 +68,7 @@ Correlation (`correlation/branch-at-time/attribute.ts`) applies D28 to every har
 
 ## Repo attribution
 
-Before branch precedence runs, `attributeRepos` (`correlation/attribution/repos.ts`) decides which repo and worktree each AI request belongs to. The read path runs it in `accountAwareEvents` (`correlation/branch-at-time/snapshot.ts`), so a repo's reports also pick up requests that were stored under no repo or under the wrong one.
+Before branch precedence runs, `attributeRepos` (`correlation/attribution/repos.ts`) decides which repo and worktree each AI request belongs to. The read path runs it in `accountAwareEvents` (`correlation/branch-at-time/snapshot.ts`), so a repo's reports also pick up requests that were stored under no repo or under the wrong one, and the usage facts rebuild (`usage/load.ts`) runs it over the whole store before grouping, so `dft usage`, the dashboard, `dft analyze` and `dft history` agree. A request that its harness already placed by its own tool calls (`branchSource: "tool-calls"`, as OMP does) and that carries no `touchedPaths` keeps that place.
 
 | Step | Rule | Label |
 | --- | --- | --- |
@@ -104,7 +106,7 @@ The defaults (`DEFAULT_RULES`) keep the model name, take effort only from a reco
 
 Tool hooks call `dft hook <tool> <event>` (plain `dft hook` still means Cursor). It reads one JSON payload on stdin, keeps only session id, turn id, cwd, transcript path, model, effort, agent id and type, the event and the branch at that moment (from git), appends one `dft.hook.v1` line to `~/.dft/hooks/<tool>/<date>.jsonl`, never writes into the repo, exits 0 and prints only what the tool needs. A decoder may bring its own `run`: Cursor's writes its per-worktree spool (`~/.dft/spool/<worktree id>/cursor-hooks/`), so `dft hook`, `dft hook cursor <event>` and `runCursorHook` are one path. `dft install` writes the hook, extension and plugin files that call it, and `dft dashboard` receives OpenTelemetry: see [capture.md](capture.md).
 
-The live engine (`live/engine.ts`) watches what each harness declares in `live/capture.ts`: every tool's `~/.dft/hooks/<tool>/` (a changed day file syncs the repo of its newest observation), Cursor's spool folders (`harness/cursor/capture.ts`, mapped to repos by worktree id) and Cursor's account usage poll, the only account poll today.
+The live engine (`live/engine.ts`) watches what each harness declares in `live/capture.ts`: every tool's `~/.dft/hooks/<tool>/` (a changed day file syncs the repo of its newest observation), Cursor's spool folders (`harness/cursor/capture.ts`, mapped to repos by worktree id) and Cursor's account usage poll, the only account poll today. It also watches every session root that `HarnessRegistry.discover` reports (for example `~/.claude/projects`, `~/.codex/sessions`, the OpenCode data folder with its WAL file) and syncs every tracked repo 1.5 s after the last write, so a tool whose hooks are not loaded still shows up within seconds. Sync cursors skip unchanged session files, so these syncs stay cheap.
 
 A harness turns its observations into events in two calls. `locate` adds `hookSpoolRefs(scope, id)` (one `hooks` ref per spool day and worktree; pass `"extension"` as the third argument when an extension or plugin calls `dft hook`), and `read` hands every ref it got from there to `readHookSpool(ref, <tool>HookDecoder, input.origin)`. Each observation becomes one event with `acquisition: "hook"`, the branch the hook saw, and an `ai` block on the ref's channel, so correlation can give the session's requests that branch. `readHookObservations(dftHome, tool)` still returns the raw observations.
 
@@ -114,9 +116,9 @@ A harness turns its observations into events in two calls. `locate` adds `hookSp
 | --- | --- | --- |
 | mock | `registryWith(<Tool>Harness.mock)` | always |
 | fixture | `<Tool>Harness.layer` + `<Tool>Store.layer` over committed redacted files (`HarnessHome.at(tempHome)`) | always |
-| live | `HarnessRegistryLive` over this machine, read-only, invariants only | `DFT_LIVE_HARNESSES=claude-code,codex pnpm --filter @rat-stack/core test:live` |
+| live | `HarnessRegistryLive` over this machine, read-only, invariants only | `DFT_LIVE_HARNESSES=cursor,claude-code,codex,opencode,pi,omp,deepseek pnpm --filter @rat-stack/core test:live` |
 
-`harnessConformance(name, registryLayer, { tier, scope })` (`packages/core/test/dx/harness/conformance.ts`) runs the shared checks: discovery never fails and names the harness, located sessions stay inside the scope, events round-trip as v2, every AI event carries attribution for this harness and one of its channels, reading twice gives the same ids, unknown tokens stay null, only tools that store a charge emit one, payloads carry no prompt or message text, branch source matches capabilities, request keys are unique per channel.
+`harnessConformance(name, registryLayer, { tier, scope })` (`packages/core/test/dx/harness/conformance.ts`) runs the shared checks: discovery never fails and names the harness, located sessions stay inside the scope, events round-trip as v2, every AI event carries attribution for this harness and one of its channels, reading twice gives the same ids, unknown tokens stay null, only tools that store a charge emit one, payloads carry no prompt or message text, branch source matches capabilities, the token ledger recognizes every usage event (a new `payload.sourceKind` must be registered in `model/ai.ts` and `harness/source-kinds.ts`), request keys are unique per channel.
 
 ## Adding a tool
 
@@ -125,12 +127,31 @@ A harness turns its observations into events in two calls. `locate` adds `hookSp
 3. Fill `hook.ts` if the tool has hooks (add `hookSpoolRefs` / `readHookSpool` to `locate` / `read`), list every branch source the tool can produce in `capabilities.branchSources`, and set readiness in `meta.ts`.
 4. Run the live tier on your machine before you ship.
 
-## File ownership for the 0.2.0 fan-out
+## Tool notes
 
-| Owner | Paths |
+| Tool | What to know |
 | --- | --- |
-| Each tool agent (`claude-code`, `codex`, `opencode`, `pi`, `omp`, `deepseek`) | `packages/core/src/dx/harness/<tool>/`, `packages/core/test/dx/harness/<tool>*`, `packages/core/test/dx/fixtures/harness/<tool>/` |
-| Cursor migration | `packages/core/src/dx/harness/cursor/`, `packages/core/src/dx/collectors/cursor-*/`, `packages/core/test/dx/harness/cursor*`, `packages/core/test/dx/fixtures/harness/cursor/` |
-| Foundation (shared, change only through the orchestrator) | `packages/core/src/dx/harness/*.ts`, `packages/core/src/dx/model/`, `packages/core/src/dx/storage/`, `packages/core/src/dx/registry/`, `packages/core/test/dx/harness/conformance.ts` |
+| Cursor | Phase 1 collectors under `collectors/cursor-*`, wrapped by `CursorHarness`. Account rows join a hook turn only when joined to a session (`takesHookTurn`). |
+| Claude Code | One ref per session family (main file plus `subagents/**`). A request is keyed by `(message.id, requestId)`, or `message.id` alone for gateway rows; the kept row has the largest output, then the cache split. A request settles when a later request or a boundary row (`stop_hook_summary`, `turn_duration`, `last-prompt`) follows it, or after 60 s of quiet; unfinished requests hold back the file offset. `cost-state` is a cumulative session figure. Web searches reach `usage.webSearchRequests`. |
+| Codex | `token_usage_record` rows count only when `thread_id` is the file's own `session_meta.id`; repeats of a `response_id` count once; `token_count` is used only until the first record appears. `subagent_history_start_ordinal` is not trusted: forked history is skipped by UUIDv7 time instead. The session title from `session_index.jsonl` is part of the `ai.session` id, so chats take the newest per session. |
+| OpenCode | Reads every `opencode*.db` (a copy, with its WAL) per request from `session_message` (v2) and `message` (v1). The session total minus stored requests becomes one overhead row (`opencode:<session>:overhead`, cumulative). Sessions outside any repo are kept when their folder, touched paths or a linked session point into the scope. |
+| Pi | Sessions under `PI_CODING_AGENT_SESSION_DIR` (user home only), the `sessionDir` setting or `<agent folder>/sessions`. Pi's `totalTokens` is never summed. |
+| OMP | `<omp>/sessions`, gzipped archives and XDG or profile folders; `stats.db` only cross-checks. An orchestrator outside a repo is placed per turn by its tool calls (`tool-calls`) without emitting `touchedPaths`. The `ai.session` id includes the title and first model. `harnessVersion` is the installed OMP version. |
+| DeepSeek Harness | Session logs are concatenated zstd frames, decoded one frame at a time (Node 24 decodes only the first frame of a buffer). Only the newest `session.vN` file per folder counts. Subagent ids have no `session-` prefix. The projection cache counts a fork's inherited history again, so dft folds the log itself. A replaced usage report carries `replacesRequestKey`. |
 
-Tool agents never edit another tool's folder or the shared files above. A missing kit capability is asked for, not patched in place. The old `collectors/claude`, `collectors/codex` and `collectors/opencode` importers stay until their tool agent moves the logic into the tool folder and deletes them.
+## Known limits
+
+Open points from the 0.2.0 tool work that stay open, and why:
+
+- **Locating sessions.** Claude Code picks session families by project folder name (same folder, a subfolder or a parent of the worktree), and Codex places a session by its starting folder. A session started elsewhere that later moves into the repo with `cd` is stored only when its requests point into the repo by `cwd` or touched paths. Codex code-mode `exec` scripts give touched paths by pattern match only.
+- **Sessions outside every repo.** Repo-scoped syncs store a session that points nowhere only when synced from its own folder. `dft usage --repo "(no repo)"` shows what was stored.
+- **Hooks in non-interactive runs.** Codex runs project hooks only in a trusted folder after the user approves them in `/hooks`; Pi loads `.pi/extensions` only in a trusted folder; `omp -p` did not load `.omp/extensions` without `-e`; `opencode run` 2.0.20 loads `.opencode/plugins` but never calls it. Session watching covers all four (see [0.2.0 validation](../execution/0.2.0-validation.md)). Codex hook payload fields for subagents are inferred from the binary, not from captured payloads.
+- **Hook spool fields.** `dft.hook.v1` keeps fixed fields only, so token counts that Pi and OMP extensions see at `message_end` are not kept for the D37 cross-check.
+- **OpenTelemetry.** Codex OTel records carry no response id, so they get no request key and count only for a session with no session file. The Codex warmup `response.completed` (output 0) is stored like any other request. OTel events carry no folder, so their branch needs a hook turn of the same session.
+- **Turns.** Codex emits `ai.turn` only when a turn ends; a crashed last turn has requests but no turn event.
+- **Versions.** Pi and DeepSeek Harness record no tool version, so `harnessVersion` is null.
+- **Subagents.** Fresh `ypi` children cannot be linked to their Pi parent (only a trace id joins them). OMP subagents share the parent's folder, so OMP never needs a subagent split.
+- **Legacy ledger.** `metrics/cost/readings.ts` still reads `payload.tokens` before `event.usage`, and the cost metric still names Cursor's Auto list price `cursor-list-price`; both only affect `dft analyze --json` internals. A DeepSeek replacement is dropped by usage facts but not by the legacy ledger (it never happened in real v4 data).
+- **Usage facts rebuild** when the event count or newest sequence changes; new checkout history alone waits for the next sync that stores git observations.
+- **Prices.** OpenAI priority (2x) and flex or batch (0.5x) multipliers and the Opus 4.6 fast multiplier are not checked against the makers' pages; Opus 4.8 fast mode is priced at standard and marked incomplete. Refreshing `bundled-catalog.ts` is a manual step.
+- **Cursor outside a repo.** `dft sync` in a folder that is not a repo still reads every chat in Cursor's local database as account rows.

@@ -462,6 +462,23 @@ describe("collector blocks", () => {
     });
   });
 
+  it("keeps Cursor's metered figure as the tool's figure, not a charge", () => {
+    const { usage } = collectorBlocks(
+      aiEvent("cursor-local-db", {
+        costLedger: "metered",
+        costUsd: 0.02,
+        model: "gpt-5",
+        tokens: { input: 1, output: 2 },
+      })
+    );
+
+    expect(usage?.toolFigure).toStrictEqual({
+      amount: 0.02,
+      currency: "USD",
+      kind: "list-price",
+    });
+  });
+
   it("derives fresh input from an unverified stop hook", () => {
     const { usage } = collectorBlocks(
       aiEvent("cursor-hooks", {
