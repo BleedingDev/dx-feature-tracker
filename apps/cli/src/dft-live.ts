@@ -31,7 +31,7 @@ import {
 
 import {
   baseName,
-  branchChats,
+  branchChatsWith,
   chatList,
   openInBrowser,
   repoName,
@@ -348,6 +348,8 @@ export const serveDashboard = (options: LiveServerOptions) =>
     const provideStore = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
       effect.pipe(Effect.provide(dxStoreLayer(paths.store)));
 
+    const liveChats = branchChatsWith(options.costOptions);
+
     const capsFor = (
       repo: string,
       branch: string | null,
@@ -457,7 +459,7 @@ export const serveDashboard = (options: LiveServerOptions) =>
         const report = yield* provideStore(caps.analyze.handler({ repo }));
 
         const chats = yield* provideStore(
-          branchChats(withSince({ branch: name, repo }, since))
+          liveChats(withSince({ branch: name, repo }, since))
         ).pipe(Effect.option);
 
         const timeline = yield* provideStore(
@@ -472,7 +474,7 @@ export const serveDashboard = (options: LiveServerOptions) =>
           view: {
             branch: name,
             chats: Option.isSome(chats)
-              ? chatList(chats.value, name, true)
+              ? chatList(chats.value, name, true, now)
               : `<p class="muted">Chats for this branch could not be read.</p>`,
             repo: repoName(commonDir),
             repoRoot: mainRoot(row.repoCommonDir),
@@ -678,7 +680,7 @@ export const serveDashboard = (options: LiveServerOptions) =>
                     scope: "all",
                     since: options.since,
                   },
-                  { chats: branchChats, history: caps.history.handler }
+                  { chats: liveChats, history: caps.history.handler }
                 );
               })
             );

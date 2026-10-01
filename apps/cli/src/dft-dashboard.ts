@@ -7,6 +7,8 @@ import { gitSelectorResolver, makeDxChatsCapability } from "@rat-stack/core/dx";
 import type { FlightHistoryRow, HistoryMeasure } from "@rat-stack/core/dx";
 import { Data, DateTime, Effect, Option } from "effect";
 
+import { chatLabel, chatStatsParts } from "./dft-chats.js";
+import type { ChatLike } from "./dft-chats.js";
 import {
   collapseTurns,
   enterpriseHtml,
@@ -15,6 +17,7 @@ import {
   formatDuration,
   formatUsd,
 } from "./dft-render.js";
+import type { CostOptions } from "./dft-session.js";
 import { VERSION } from "./version.js";
 
 export class DashboardWriteError extends Data.TaggedError(
@@ -24,30 +27,7 @@ export class DashboardWriteError extends Data.TaggedError(
   readonly path: string;
 }> {}
 
-interface DashboardTurn {
-  readonly effort: string | null;
-  readonly maxMode: boolean | null;
-  readonly model: string;
-}
-
-interface DashboardLine {
-  readonly category: string;
-  readonly estimate: boolean;
-  readonly ledger: string;
-  readonly value: number;
-}
-
-export interface DashboardChat {
-  readonly agentTimeMs: { readonly value: number | null };
-  readonly branches?: readonly string[];
-  readonly childSessionIds: readonly string[];
-  readonly modelTimeline: readonly DashboardTurn[];
-  readonly money: readonly DashboardLine[];
-  readonly sessionId: string;
-  readonly title: { readonly value: string } | null;
-  readonly tokens: readonly DashboardLine[];
-  readonly toolCalls: { readonly value: number | null };
-}
+export type DashboardChat = ChatLike;
 
 export interface DashboardChats {
   readonly chats: readonly DashboardChat[];
@@ -228,67 +208,24 @@ const tile = (label: string, value: string, note = ""): string =>
     note === "" ? "" : `<small>${escapeHtml(note)}</small>`
   }</dd></div>`;
 
-const sumLines = (lines: readonly DashboardLine[]): number =>
-  lines.reduce((sum, line) => sum + line.value, 0);
+const chatTitle = (
+  chat: DashboardChat,
+  depth: number,
+  titles: boolean
+): string => {
+  const label = chatLabel(chat, 0, titles);
+  const agent = chat.agentType ?? null;
 
-const chatMoney = (chat: DashboardChat): string => {
-  const ledgerLines = (ledger: string) =>
-    chat.money.filter(
-      (line) => line.ledger === ledger && line.category !== "total"
-    );
-
-  const billed = ledgerLines("charge");
-  const metered = ledgerLines("metered");
-  const estimate = chat.money.filter((line) => line.estimate);
-  const paid = billed.length > 0 ? billed : metered;
-
-  const parts = [
-    ...(paid.length === 0 ? [] : [`${formatUsd(sumLines(paid))} billed`]),
-    ...(estimate.length === 0
-      ? []
-      : [`${formatUsd(sumLines(estimate))} estimate`]),
-  ];
-
-  return parts.length === 0 ? `${DASH} cost` : parts.join(" · ");
+  return depth > 0 && agent !== null && label.startsWith("chat ")
+    ? `${agent} ${label.slice("chat ".length)}`
+    : label;
 };
-
-const chatTokens = (chat: DashboardChat): string => {
-  const total = chat.tokens.find((line) => line.category === "total");
-
-  if (total !== undefined) {
-    return `${formatCount(total.value)} tokens`;
-  }
-
-  const parts = chat.tokens.filter((line) => line.category !== "reasoning");
-
-  return parts.length === 0
-    ? `${DASH} tokens`
-    : `${formatCount(sumLines(parts))} tokens`;
-};
-
-const chatStats = (chat: DashboardChat): string =>
-  [
-    chatMoney(chat),
-    chatTokens(chat),
-    chat.agentTimeMs.value === null
-      ? `${DASH} agent time`
-      : `${formatDuration(chat.agentTimeMs.value)} agent time`,
-    ...(chat.toolCalls.value === null
-      ? []
-      : [
-          `${formatCount(chat.toolCalls.value)} tool call${chat.toolCalls.value === 1 ? "" : "s"}`,
-        ]),
-  ].join(" · ");
-
-const chatTitle = (chat: DashboardChat, titles: boolean): string =>
-  titles && chat.title !== null && chat.title.value.trim() !== ""
-    ? chat.title.value
-    : `chat ${chat.sessionId.slice(0, 8)}`;
 
 export const chatList = (
   report: DashboardChats,
   branch: string,
-  titles: boolean
+  titles: boolean,
+  now: number
 ): string => {
   if (report.chats.length === 0) {
     return `<p class="muted">No chats recorded on this branch.</p>`;
@@ -313,11 +250,12 @@ export const chatList = (
 
     const others = (chat.branches ?? []).filter((name) => name !== branch);
     const models = collapseTurns(chat.modelTimeline);
+    const tool = chat.tool ?? null;
 
     return [
       `<li${depth > 0 ? ' class="sub"' : ""}>`,
-      `<div class="chat-title">${depth > 0 ? '<span class="tag">subagent</span> ' : ""}${escapeHtml(chatTitle(chat, titles))}</div>`,
-      `<div class="muted">${escapeHtml(chatStats(chat))}</div>`,
+      `<div class="chat-title">${tool === null ? "" : `<span class="tag">${escapeHtml(tool)}</span> `}${depth > 0 ? '<span class="tag">subagent</span> ' : ""}${escapeHtml(chatTitle(chat, depth, titles))}</div>`,
+      `<div class="muted">${escapeHtml(chatStatsParts(chat, now).join(" · "))}</div>`,
       models === "" ? "" : `<div class="models">${escapeHtml(models)}</div>`,
       others.length === 0
         ? ""
@@ -414,7 +352,11 @@ const COLUMNS: readonly (readonly [string, boolean])[] = [
   ["Commits", true],
 ];
 
-const chatsNote = (branch: DashboardBranch, titles: boolean): string => {
+const chatsNote = (
+  branch: DashboardBranch,
+  titles: boolean,
+  now: number
+): string => {
   if (branch.row.branch === null) {
     return `<p class="muted">Chats are listed only for named branches.</p>`;
   }
@@ -423,7 +365,7 @@ const chatsNote = (branch: DashboardBranch, titles: boolean): string => {
     return `<p class="muted">Chats for this branch could not be read. Its worktree may be gone.</p>`;
   }
 
-  return chatList(branch.chats, branch.row.branch, titles);
+  return chatList(branch.chats, branch.row.branch, titles, now);
 };
 
 const branchRows = (
@@ -470,7 +412,7 @@ const branchRows = (
 
   return [
     `<tr class="row" tabindex="0" aria-expanded="false" data-q="${escapeHtml(search)}">${tds}</tr>`,
-    `<tr class="detail" hidden><td colspan="${String(COLUMNS.length)}">${chatsNote(branch, data.titles)}</td></tr>`,
+    `<tr class="detail" hidden><td colspan="${String(COLUMNS.length)}">${chatsNote(branch, data.titles, data.generatedAt)}</td></tr>`,
   ].join("\n");
 };
 
@@ -698,9 +640,14 @@ export interface DashboardResult {
   readonly path: string;
 }
 
-export const branchChats = makeDxChatsCapability({
-  resolveSelector: gitSelectorResolver("."),
-}).handler;
+export const branchChatsWith = (costOptions?: CostOptions) =>
+  makeDxChatsCapability(
+    costOptions === undefined
+      ? { resolveSelector: gitSelectorResolver(".") }
+      : { costOptions, resolveSelector: gitSelectorResolver(".") }
+  ).handler;
+
+export const branchChats = branchChatsWith();
 
 export const defaultDashboardPath = (dftHome: string): string =>
   path.join(dftHome, "dashboard.html");

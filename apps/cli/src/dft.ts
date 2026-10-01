@@ -38,7 +38,13 @@ import {
   uninstallCapture,
 } from "./dft-capture.js";
 import type { CaptureTool } from "./dft-capture.js";
-import { branchChats, dashboardText, writeDashboard } from "./dft-dashboard.js";
+import { chatsInputOf, chatsText, withoutTitles } from "./dft-chats.js";
+import type { ChatsFlagValues } from "./dft-chats.js";
+import {
+  branchChatsWith,
+  dashboardText,
+  writeDashboard,
+} from "./dft-dashboard.js";
 import {
   dftInvocation,
   hasDftHooks,
@@ -57,7 +63,6 @@ import { DEFAULT_DASHBOARD_PORT, runLiveDashboard } from "./dft-live.js";
 import {
   analyzeText,
   branchOneline,
-  chatsText,
   enterpriseLine,
   explainText,
   formatUsd,
@@ -849,7 +854,10 @@ const oneTimeDashboard = (flags: DashboardCommandFlags) =>
           scope: input.allRepos ? "all" : "repo",
           since: input.since,
         },
-        { chats: branchChats, history: capabilityAt(session).history.handler }
+        {
+          chats: branchChatsWith(session.costOptions),
+          history: capabilityAt(session).history.handler,
+        }
       ),
     { render: (output) => dashboardText(output) }
   );
@@ -919,24 +927,68 @@ const lineCommand = reportCommand(
   ])
 );
 
-const chatsCommand = reportCommand(
-  "chats",
-  "Show the chats on a branch as a tree, with cost, tokens and the models used.",
-  (flags, session) =>
-    capabilityAt(session).chats.handler(
-      optionalInput({ repo: session.paths.repo }, flags)
-    ),
-  {
-    render: (output, context) =>
-      chatsText(output, { now: context.now, verbose: context.verbose }),
-  }
+const chatsFlags = {
+  ...reportFlags,
+  allBranches: booleanFlag(
+    "all-branches",
+    "List chats on every branch of this repo, not just one"
+  ),
+  effort: listFlag("effort", "Only requests at these reasoning levels"),
+  model: listFlag("model", "Only chats that used these models"),
+  provider: listFlag(
+    "provider",
+    "Only chats that used models from these makers (anthropic, openai, google, deepseek...)"
+  ),
+  titles: booleanFlag(
+    "titles",
+    "Keep chat titles in --json output; they are left out by default"
+  ),
+  tool: listFlag(
+    "tool",
+    "Only these tools (cursor, claude-code, codex, opencode, pi, omp, deepseek)"
+  ),
+  via: listFlag(
+    "via",
+    "Only requests through these gateways or local runtimes (openrouter, ollama...)"
+  ),
+};
+
+interface ChatsCommandFlags extends ReportFlags, ChatsFlagValues {
+  readonly titles: boolean;
+}
+
+const chatsCommand = Command.make("chats", chatsFlags, (flags) =>
+  runReport(
+    "chats",
+    flags,
+    (chatFlags: ChatsCommandFlags, session) =>
+      capabilityAt(session).chats.handler(
+        chatsInputOf(chatFlags, session.paths.repo)
+      ),
+    {
+      json: (output) => (flags.titles ? output : withoutTitles(output)),
+      render: (output, context) =>
+        chatsText(output, { now: context.now, verbose: context.verbose }),
+    }
+  )
 ).pipe(
-  Command.withShortDescription("Chats on a branch, with cost and models used"),
+  Command.withDescription(
+    "Show the chats of every tool (Cursor, Claude Code, Codex, OpenCode, Pi, OMP, DeepSeek Harness) on a branch as one tree: each chat's tool, title, models and reasoning levels per turn, subagents under their parent, and its estimate, the tool's own figure, billed amount, tokens, requests and time. Narrow with --tool, --provider, --model, --via or --effort, like dft usage. Titles stay on this computer: --json leaves them out unless you add --titles. No prompt text is ever stored."
+  ),
+  Command.withShortDescription("Chats of every tool, with cost and models"),
   Command.withExamples([
     { command: "dft chats", description: "Chats on the checked-out branch" },
     {
       command: "dft chats --branch feature/x --since 7d",
       description: "Another branch, last 7 days",
+    },
+    {
+      command: "dft chats --all-branches --tool claude-code,codex",
+      description: "Claude Code and Codex chats on every branch of this repo",
+    },
+    {
+      command: "dft chats --provider anthropic --json",
+      description: "Chats that used Anthropic models, as JSON without titles",
     },
   ])
 );
