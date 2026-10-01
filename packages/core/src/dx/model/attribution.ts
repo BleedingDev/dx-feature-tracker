@@ -93,6 +93,7 @@ export const AiUsageSchema = Schema.Struct({
   speed: OptionalText,
   tokens: AiTokensSchema,
   toolFigure: Schema.NullOr(ToolFigureSchema),
+  webSearchRequests: Schema.optionalKey(TokenCount),
 });
 
 export type AiUsage = typeof AiUsageSchema.Type;

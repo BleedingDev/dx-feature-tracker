@@ -1,6 +1,6 @@
 import { Option, Schema } from "effect";
 
-import type { ModelRates, PriceTable } from "../price-table.js";
+import type { ContextTier, ModelRates, PriceTable } from "../price-table.js";
 import { decodePriceTable, ModelRatesSchema } from "../price-table.js";
 import { matchSlug } from "./slug.js";
 
@@ -32,12 +32,23 @@ export type Catalog = typeof CatalogSchema.Type;
 
 const Rate = Schema.optionalKey(Schema.NullOr(Schema.Finite));
 
+const ModelsDevTierSchema = Schema.Struct({
+  cache_read: Rate,
+  cache_write: Rate,
+  input: Schema.Finite,
+  output: Schema.Finite,
+  tier: Schema.Struct({ size: Schema.Finite, type: Schema.Literal("context") }),
+});
+
+const decodeModelsDevTier = Schema.decodeUnknownOption(ModelsDevTierSchema);
+
 const ModelsDevModelSchema = Schema.Struct({
   cost: Schema.Struct({
     cache_read: Rate,
     cache_write: Rate,
     input: Schema.Finite,
     output: Schema.Finite,
+    tiers: Schema.optionalKey(Schema.Array(Schema.Unknown)),
   }),
 });
 
@@ -52,9 +63,13 @@ const ModelsDevRootSchema = Schema.fromJsonString(
 
 const LiteLlmEntrySchema = Schema.Struct({
   cache_creation_input_token_cost: Rate,
+  cache_creation_input_token_cost_above_1hr: Rate,
   cache_read_input_token_cost: Rate,
+  cache_read_input_token_cost_above_200k_tokens: Rate,
   input_cost_per_token: Schema.Finite,
+  input_cost_per_token_above_200k_tokens: Rate,
   output_cost_per_token: Schema.Finite,
+  output_cost_per_token_above_200k_tokens: Rate,
 });
 
 const LiteLlmRootSchema = Schema.fromJsonString(
@@ -74,6 +89,40 @@ const perMillion = (value: number | null | undefined): number | null =>
 
 const plain = (value: number | null | undefined): number | null =>
   value === null || value === undefined || value < 0 ? null : round(value);
+
+const modelsDevTiers = (raw: readonly unknown[]): readonly ContextTier[] =>
+  raw
+    .flatMap((item) => Option.toArray(decodeModelsDevTier(item)))
+    .map((tier) => ({
+      aboveInputTokens: tier.tier.size,
+      "cache-write": plain(tier.cache_write),
+      "cached-input": plain(tier.cache_read),
+      input: round(tier.input),
+      output: round(tier.output),
+    }))
+    .toSorted((a, b) => a.aboveInputTokens - b.aboveInputTokens);
+
+const LITELLM_LONG_CONTEXT = 200_000;
+
+const liteLlmTiers = (
+  entry: typeof LiteLlmEntrySchema.Type
+): readonly ContextTier[] => {
+  const input = perMillion(entry.input_cost_per_token_above_200k_tokens);
+  const output = perMillion(entry.output_cost_per_token_above_200k_tokens);
+
+  return input === null || output === null
+    ? []
+    : [
+        {
+          aboveInputTokens: LITELLM_LONG_CONTEXT,
+          "cached-input": perMillion(
+            entry.cache_read_input_token_cost_above_200k_tokens
+          ),
+          input,
+          output,
+        },
+      ];
+};
 
 export const parseModelsDev = (text: string, fetchedAt: string): Catalog => {
   const models: Record<string, ModelRates> = {};
@@ -95,13 +144,13 @@ export const parseModelsDev = (text: string, fetchedAt: string): Catalog => {
 
       if (Option.isSome(decoded) && models[key] === undefined) {
         const { cost } = decoded.value;
-
         models[key] = {
           "cache-write": plain(cost.cache_write),
           "cached-input": plain(cost.cache_read),
           input: round(cost.input),
           output: round(cost.output),
           reasoning: 0,
+          tiers: modelsDevTiers(cost.tiers ?? []),
         };
       }
     }
@@ -129,10 +178,14 @@ export const parseLiteLlm = (text: string, fetchedAt: string): Catalog => {
 
       models[key.toLowerCase()] = {
         "cache-write": perMillion(entry.cache_creation_input_token_cost),
+        "cache-write-1h": perMillion(
+          entry.cache_creation_input_token_cost_above_1hr
+        ),
         "cached-input": perMillion(entry.cache_read_input_token_cost),
         input: round(entry.input_cost_per_token * 1e6),
         output: round(entry.output_cost_per_token * 1e6),
         reasoning: 0,
+        tiers: liteLlmTiers(entry),
       };
     }
   }

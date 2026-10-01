@@ -42,7 +42,7 @@ const decodeCached = Schema.decodeUnknownOption(
   Schema.fromJsonString(CatalogSchema)
 );
 
-const readCached = (dir: string): readonly Catalog[] => {
+export const readCached = (dir: string): readonly Catalog[] => {
   try {
     return readdirSync(dir)
       .filter((name) => name.endsWith(".json"))
@@ -159,8 +159,57 @@ export const loadPriceProvider = (
     };
   });
 
+export interface CatalogTimeline {
+  readonly catalogs: readonly Catalog[];
+  readonly origin: "cache" | "fresh" | "none";
+  readonly warnings: readonly string[];
+}
+
+export const loadCatalogTimeline = (
+  deps: PriceProviderDeps
+): Effect.Effect<CatalogTimeline> =>
+  Effect.gen(function* loadTimeline() {
+    const cached = readCached(deps.cacheDir);
+    const [newest] = cached;
+
+    if (
+      newest !== undefined &&
+      deps.nowMs - Date.parse(newest.fetchedAt) < REFRESH_MS
+    ) {
+      return { catalogs: cached, origin: "cache" as const, warnings: [] };
+    }
+
+    const fetched = yield* fetchCatalog(deps);
+
+    if (fetched.catalog !== null) {
+      const warning = writeCache(deps.cacheDir, fetched.catalog);
+
+      return {
+        catalogs: [fetched.catalog, ...cached],
+        origin: "fresh" as const,
+        warnings: warning === null ? [] : [warning],
+      };
+    }
+
+    const offline = `price catalog offline (${fetched.errors.join(", ")})`;
+
+    return newest === undefined
+      ? {
+          catalogs: [],
+          origin: "none" as const,
+          warnings: [`${offline} and no cache`],
+        }
+      : {
+          catalogs: cached,
+          origin: "cache" as const,
+          warnings: [
+            `${offline}; using cached ${newest.source} from ${newest.fetchedAt}`,
+          ],
+        };
+  });
+
 // @effect-diagnostics-next-line asyncFunction:off -- The public price catalog seam is the platform fetch; loadPriceProvider wraps it in Effect.tryPromise.
-const fetchJson: CatalogFetch = async (url) => {
+export const fetchJson: CatalogFetch = async (url) => {
   // @effect-diagnostics-next-line globalFetch:off -- Public, unauthenticated catalog GET at the process boundary.
   const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
 

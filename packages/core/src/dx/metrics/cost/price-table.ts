@@ -6,12 +6,25 @@ import type { TokenReading } from "./readings.js";
 
 const RateSchema = Schema.optional(Schema.NullOr(Schema.Finite));
 
+export const ContextTierSchema = Schema.Struct({
+  aboveInputTokens: Schema.Finite,
+  "cache-write": RateSchema,
+  "cache-write-1h": RateSchema,
+  "cached-input": RateSchema,
+  input: Schema.Finite,
+  output: Schema.Finite,
+});
+
+export type ContextTier = typeof ContextTierSchema.Type;
+
 export const ModelRatesSchema = Schema.Struct({
   "cache-write": RateSchema,
+  "cache-write-1h": RateSchema,
   "cached-input": RateSchema,
   input: RateSchema,
   output: RateSchema,
   reasoning: RateSchema,
+  tiers: Schema.optional(Schema.Array(ContextTierSchema)),
 });
 
 export type ModelRates = typeof ModelRatesSchema.Type;
