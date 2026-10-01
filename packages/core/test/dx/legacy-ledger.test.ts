@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Effect, Schema } from "effect";
 
 import { CodexHarness } from "../../src/dx/harness/codex/index.js";
 import { everywhere } from "../../src/dx/harness/contract.js";
@@ -94,6 +94,8 @@ const ledgerTotals = (events: readonly DxEventEnvelope[]): Totals => {
 
   return sum;
 };
+
+const namesReplacement = Schema.is(Schema.NonEmptyString);
 
 const usageRequests = (events: readonly DxEventEnvelope[]): number =>
   deriveUsageFacts(events).facts.reduce((sum, fact) => sum + fact.requests, 0);
@@ -214,7 +216,11 @@ const header = JSON.stringify({
   version: 4,
 });
 
-const readSplit = (bytes: Uint8Array, cursor: CollectCursor | null) =>
+const readSplit = (
+  bytes: Uint8Array,
+  cursor: CollectCursor | null,
+  mtimeMs = cursor === null ? 1 : 2
+) =>
   Effect.gen(function* readOnce() {
     const harness = yield* DeepseekHarness;
     const [ref] = yield* harness.locate(everywhere);
@@ -226,9 +232,7 @@ const readSplit = (bytes: Uint8Array, cursor: CollectCursor | null) =>
     return yield* harness.read(ref, deepseekInput(cursor));
   }).pipe(
     Effect.provide(
-      deepseekMemory([
-        memoryFile(SESSION, bytes, undefined, cursor === null ? 1 : 2),
-      ])
+      deepseekMemory([memoryFile(SESSION, bytes, undefined, mtimeMs)])
     )
   );
 
@@ -269,11 +273,57 @@ describe("legacy ledger reads the same usage as dft usage", () => {
       const events = [...first.events, ...second.events];
 
       expect(
-        events.some((event) => event.payload.replacesRequestKey !== undefined)
-      ).toBe(true);
+        events.filter((event) =>
+          namesReplacement(event.payload.replacesRequestKey)
+        )
+      ).toHaveLength(1);
       expect(usageTotals(events).total).toBe(225);
       expectAgreement(events);
     })
+  );
+
+  it.effect(
+    "keeps only the newest of three reads of one DeepSeek request",
+    () =>
+      Effect.gen(function* threeReads() {
+        const rows = [...replacedRows.slice(0, 4), failedAttempt(5, 30, 300)];
+
+        const frames = [
+          [header],
+          rows.slice(0, 3),
+          rows.slice(3, 4),
+          rows.slice(4),
+        ];
+
+        const first = yield* readSplit(zstdLog(frames.slice(0, 2)), null, 1);
+
+        const second = yield* readSplit(
+          zstdLog(frames.slice(0, 3)),
+          first.cursor,
+          2
+        );
+
+        const third = yield* readSplit(zstdLog(frames), second.cursor, 3);
+
+        const events = [...first.events, ...second.events, ...third.events];
+
+        const totals = events.flatMap((event) =>
+          event.usage === null ? [] : [event.usage.tokens.total]
+        );
+
+        expect(totals).toStrictEqual([115, 225, 335]);
+        expect(
+          events.filter((event) =>
+            namesReplacement(event.payload.replacesRequestKey)
+          )
+        ).toHaveLength(2);
+        expect(usageTotals(events).total).toBe(335);
+        expect(readingTotals(events).total).toBe(335);
+        expect(ledgerTotals(events).total).toBe(335);
+        expectAgreement(events);
+        expect(readingTotals(events.toReversed()).total).toBe(335);
+        expectAgreement(events.toReversed());
+      })
   );
 
   it.effect("agrees with usage facts on every DeepSeek fixture", () =>

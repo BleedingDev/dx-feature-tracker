@@ -760,15 +760,59 @@ const newestSplits = (
   );
 };
 
+const sourceIdOf = (event: DxEventEnvelope): string =>
+  event.eventId.replace(SHARE_SUFFIX, "");
+
+const ownKeyOf = (event: DxEventEnvelope): string | null =>
+  event.usage?.requestKey?.replace(SHARE_SUFFIX, "") ?? null;
+
+const latestReplacers = (
+  events: readonly DxEventEnvelope[]
+): ReadonlyMap<string, string> => {
+  const latest = new Map<string, { at: number; source: string }>();
+
+  for (const event of events) {
+    const key = ownKeyOf(event);
+    const best = key === null ? undefined : latest.get(key);
+    const at = instantOf(event.observedAt);
+
+    if (
+      key !== null &&
+      Option.isSome(replacedKeyOf(event)) &&
+      (best === undefined || at >= best.at)
+    ) {
+      latest.set(key, { at, source: sourceIdOf(event) });
+    }
+  }
+
+  return new Map([...latest].map(([key, { source }]) => [key, source]));
+};
+
 interface Replacements {
+  readonly latest: ReadonlyMap<string, string>;
   readonly newest: ReadonlyMap<string, string>;
   readonly replaced: ReadonlySet<string>;
 }
 
 const replacementsOf = (events: readonly DxEventEnvelope[]): Replacements => ({
+  latest: latestReplacers(events),
   newest: newestSplits(events),
   replaced: replacedKeys(events),
 });
+
+const isStaleReplacer = (
+  event: DxEventEnvelope,
+  key: string,
+  latest: ReadonlyMap<string, string>
+): boolean => {
+  const winner = latest.get(key);
+
+  return (
+    winner !== undefined &&
+    winner !== sourceIdOf(event) &&
+    Option.isSome(replacedKeyOf(event))
+  );
+};
 
 const isOlderSplit = (
   event: DxEventEnvelope,
@@ -785,14 +829,14 @@ const isOlderSplit = (
 
 const isSuperseded = (
   event: DxEventEnvelope,
-  { newest, replaced }: Replacements
+  { latest, newest, replaced }: Replacements
 ): boolean => {
-  const key = event.usage?.requestKey?.replace(SHARE_SUFFIX, "") ?? null;
+  const key = ownKeyOf(event);
 
   return (
     (key !== null &&
-      replaced.has(key) &&
-      !Option.contains(replacedKeyOf(event), key)) ||
+      ((replaced.has(key) && !Option.contains(replacedKeyOf(event), key)) ||
+        isStaleReplacer(event, key, latest))) ||
     isOlderSplit(event, newest)
   );
 };
