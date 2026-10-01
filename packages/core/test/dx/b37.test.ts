@@ -197,6 +197,157 @@ describe("b37 redaction", () => {
     }
   });
 
+  it("scrubs values behind long dotted or hyphenated secret labels", () => {
+    const secret = ["Tr0ub", "4dor", "Fixture"].join("");
+
+    for (const line of [
+      `spring.datasource.hikari.maximum-pool-size.connection-test-query.datasource.password=${secret}`,
+      `--my-application-database-connection-pool-primary-replica-readonly-password=${secret}`,
+      `${"Abcdefgh".repeat(10)}Password=${secret}`,
+    ]) {
+      const excerpt = excerptPayload({ note: line }).excerpt ?? "";
+
+      expect(excerpt, line).not.toContain(secret);
+      expect(redactText(line).text, line).not.toContain(secret);
+    }
+
+    expect(
+      redactText(
+        `spring.datasource.hikari.maximum-pool-size.connection-test-query.datasource.password=${secret}`
+      ).text
+    ).toBe(
+      "spring.datasource.hikari.maximum-pool-size.connection-test-query.datasource.password=[redacted]"
+    );
+  });
+
+  it("scrubs whole values with spaces, escaped quotes and separators", () => {
+    const cases: readonly (readonly [string, readonly string[]])[] = [
+      [
+        "password: correct horse battery staple",
+        ["correct", "horse", "staple"],
+      ],
+      [String.raw`PASSWORD="ab\"cd efgh"`, ["ab", "cd", "efgh"]],
+      [String.raw`PASSWORD='ab\'cd efgh'`, ["cd", "efgh"]],
+      ["password=abc;defghij", ["abc", "defghij"]],
+      ["password=abc,defghij", ["abc", "defghij"]],
+      [`password="unterminated quote value`, ["unterminated", "value"]],
+      [`password=ab"cd`, ["cd"]],
+    ];
+
+    for (const [line, fragments] of cases) {
+      const result = redactText(line);
+
+      for (const fragment of fragments) {
+        expect(result.text, line).not.toContain(fragment);
+      }
+
+      expect(result.redacted, line).toBe(true);
+    }
+
+    expect(redactText("password: correct horse battery staple").text).toBe(
+      "password: [redacted]"
+    );
+    expect(redactText("a=1 password=abc;def b=2").text).toBe(
+      "a=1 password=[redacted] b=2"
+    );
+  });
+
+  it("scrubs short secret labels, flags and command credentials", () => {
+    const secret = ["hun", "ter", "2Fixture"].join("");
+    const google = ["AIza", "Sy", "D".repeat(33)].join("");
+
+    for (const line of [
+      `DB_PASS=${secret}`,
+      `db.pass: ${secret}`,
+      `passphrase=${secret}`,
+      `OPENAI_KEY=${secret}`,
+      `STRIPE_KEY: ${secret}`,
+      `auth=${secret}`,
+      `BASIC_AUTH=${secret}`,
+      `authorization=${secret}`,
+      `x-auth: ${secret}`,
+      `app --password ${secret}`,
+      `app --api-key '${secret}'`,
+      `app --client-secret "${secret}"`,
+      `app --db-pass ${secret}`,
+      `app --token ${secret} --verbose`,
+      `mysql -u root -p${secret} db`,
+      `mysqldump -h host -p'${secret}' db`,
+      `sshpass -p ${secret} ssh host`,
+      `curl -u admin:${secret} https://example.test`,
+      `curl --user admin:${secret} https://example.test`,
+      `curl --user=admin:${secret} https://example.test`,
+      `curl -uadmin:${secret} https://example.test`,
+      `key ${google} end`,
+    ]) {
+      const result = redactText(line);
+
+      expect(result.text, line).not.toContain(secret);
+      expect(result.text, line).not.toContain(google);
+      expect(result.redacted, line).toBe(true);
+    }
+
+    expect(redactText(`app --password ${secret} --verbose`).text).toBe(
+      "app --password [redacted] --verbose"
+    );
+    expect(redactText(`mysql -u root -p${secret} db`).text).toBe(
+      "mysql -u root -p[redacted] db"
+    );
+    expect(
+      redactText(`curl -u admin:${secret} https://example.test`).text
+    ).toBe("curl -u [redacted] https://example.test");
+  });
+
+  it("keeps identifiers, counts, cwd paths and harmless flags", () => {
+    for (const plain of [
+      "getUserProfileByIdV2AndOrganizationName42AsyncHandlerFactory",
+      "handleRequestForUserAccount2024AndSyncV3Service",
+      "token_count: 12345",
+      "max_token_limit=8000",
+      "token_type: bearer",
+      "PWD=/tmp/proj",
+      "OLDPWD=~/work",
+      "bypass=true",
+      "compass: north",
+      "docker login --password-stdin registry.example.test",
+      "app --token-file ./token.txt",
+      "mkdir -p build/out",
+      "mysql -P3306 -h db",
+      "git push -u origin main",
+      "docker run -u 1000:1000 image",
+      "sort -u names.txt",
+    ]) {
+      expect(redactText(plain), plain).toEqual({
+        redacted: false,
+        text: plain,
+      });
+    }
+  });
+
+  it("redacts large adversarial inputs in bounded time", () => {
+    const size = 50_000;
+    const started = performance.now();
+
+    for (const input of [
+      "a".repeat(size),
+      "password".repeat(size / 8),
+      `${"-".repeat(size)}password`,
+      `${"x.".repeat(size / 2)}=v`,
+      "_pass".repeat(size / 5),
+      `mysql${" -x".repeat(size / 3)}`,
+      `curl${" a".repeat(size / 2)} -u`,
+      `password="${String.raw`\a`.repeat(size / 2)}`,
+      `--${"token".repeat(size / 5)}`,
+      `${"A_".repeat(size / 2)}KEY`,
+      `${"x.".repeat(size / 2)}@a.b`,
+      `${"a.".repeat(size / 2)}://`,
+    ]) {
+      redactText(input);
+    }
+
+    expect(performance.now() - started).toBeLessThan(5000);
+  });
+
   it("scrubs credentials inside urls in free text", () => {
     const result = redactText(
       "remote https://fixture-user:hunter2@git.example.test/repo.git"

@@ -17,11 +17,37 @@ export interface RedactedText {
   readonly redacted: boolean;
 }
 
-const SECRET_WORD = String.raw`(?:secret|passw(?:or)?d|pwd|api[_-]?key|access[_-]?key|private[_-]?key|credentials?|token(?![a-z]))`;
+const SECRET_WORD = String.raw`(?:secret|passw(?:or)?d|passphrase|(?<=[_.-])pass(?![a-z])|pwd(?![ \t]*=[ \t]*["']?[~/])|api[_-]?key|access[_-]?key|private[_-]?key|credentials?|authorization|(?<![a-z])o?auth(?![\w.-])|token(?![a-z]|[_-]?(?:counts?|limits?|usage|budget|type)))`;
+
+const QUOTED_VALUE = String.raw`"(?:[^"\\\n]|\\.)*"?|'(?:[^'\\\n]|\\.)*'?`;
+
+const LABEL_VALUE = String.raw`(?:${QUOTED_VALUE}|(?<=:[ \t]*)[^\n]+|[^\s&]+)`;
+
+const FLAG_VALUE = String.raw`(?!-)(?:${QUOTED_VALUE}|[^\s&;|]+)`;
 
 const SECRET_LABEL = new RegExp(
-  String.raw`(?<![\w.-])(?<prefix>[\w.-]{0,64}?${SECRET_WORD}[\w.-]{0,64}["']?\s*[=:]\s*)(?:"[^"\n]*"|'[^'\n]*'|["']?[^\s"'&;,]+)`,
+  String.raw`(?<prefix>${SECRET_WORD}[\w.-]{0,64}["']?[ \t]*[=:][ \t]*)${LABEL_VALUE}`,
   "giu"
+);
+
+const ENV_KEY_LABEL = new RegExp(
+  String.raw`(?<prefix>(?<![\w.-])[A-Z][\dA-Z]*(?:_[\dA-Z]+)*_(?:KEY|PAT)["']?[ \t]*[=:][ \t]*)${LABEL_VALUE}`,
+  "gu"
+);
+
+const SECRET_FLAG = new RegExp(
+  String.raw`(?<prefix>(?<![\w-])--?[\w.-]{0,64}?${SECRET_WORD}[ \t]+)${FLAG_VALUE}`,
+  "giu"
+);
+
+const COMMAND_PASSWORD_FLAG = new RegExp(
+  String.raw`(?<=\b(?:mysql\w*|mariadb[\w-]*|sshpass)\b[^\n|;&]*?[ \t])(?<prefix>-p[ \t]*)${FLAG_VALUE}`,
+  "gu"
+);
+
+const CURL_USER_FLAG = new RegExp(
+  String.raw`(?<=\bcurl\b[^\n|;&]*?[ \t])(?<prefix>(?:-[Uu]|--(?:proxy-)?user)(?:[ \t]+|=)?)${FLAG_VALUE}`,
+  "gu"
 );
 
 const SECRET_PATTERNS: readonly (readonly [RegExp, string])[] = [
@@ -35,10 +61,18 @@ const SECRET_PATTERNS: readonly (readonly [RegExp, string])[] = [
   [/\bsk-[\w-]{16,}/gu, "[redacted:token]"],
   [/\bxox[abprs]-[\w-]{10,}/gu, "[redacted:token]"],
   [/\bAKIA[0-9A-Z]{16}\b/gu, "[redacted:aws-key]"],
+  [/\bAIza[\w-]{35}(?![\w-])/gu, "[redacted:token]"],
   [/\b(?:Bearer|Basic|token)\s+[\w.~+/=-]{8,}/giu, "[redacted:credential]"],
   [SECRET_LABEL, "$<prefix>[redacted]"],
-  [/\b(?<scheme>[a-z][\d+.a-z-]*:\/\/)[^\s/@]+@/giu, "$<scheme>[redacted]@"],
-  [/\b[\w.%+-]+@[\w-]+(?:\.[\w-]+)+\b/gu, "[redacted:email]"],
+  [ENV_KEY_LABEL, "$<prefix>[redacted]"],
+  [SECRET_FLAG, "$<prefix>[redacted]"],
+  [COMMAND_PASSWORD_FLAG, "$<prefix>[redacted]"],
+  [CURL_USER_FLAG, "$<prefix>[redacted]"],
+  [
+    /\b(?<scheme>[a-z][\d+.a-z-]{0,31}:\/\/)[^\s/@]+@/giu,
+    "$<scheme>[redacted]@",
+  ],
+  [/\b[\w.%+-]{1,64}@[\w-]+(?:\.[\w-]+)+\b/gu, "[redacted:email]"],
   [/(?:\/Users|\/home)\/[^/\s"']+/gu, "~"],
   [/[A-Za-z]:\\Users\\[^\\\s"']+/gu, "~"],
 ];
@@ -49,8 +83,13 @@ const MIN_KEY_ENTROPY = 4.3;
 
 const MAX_KEY_SLASHES = 2;
 
+const MAX_KEY_WORD_SHARE = 0.7;
+
 const countOf = (text: string, pattern: RegExp): number =>
   text.match(pattern)?.length ?? 0;
+
+const wordShare = (text: string): number =>
+  (text.match(/[A-Z]?[a-z]{3,}/gu) ?? []).join("").length / text.length;
 
 const entropyBits = (text: string): number => {
   const counts = new Map<string, number>();
@@ -74,6 +113,7 @@ const looksLikeKey = (run: string): boolean =>
   countOf(run, /\d/gu) >= 2 &&
   countOf(run, /[A-Z]/gu) >= 2 &&
   countOf(run, /[a-z]/gu) >= 2 &&
+  wordShare(run) < MAX_KEY_WORD_SHARE &&
   entropyBits(run) >= MIN_KEY_ENTROPY;
 
 export const redactText = (input: string): RedactedText => {
