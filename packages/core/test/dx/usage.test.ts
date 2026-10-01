@@ -798,6 +798,124 @@ describe("usage facts", () => {
     expect(derived.unresolved).toBe(1);
   });
 
+  it("keeps a session's figure on its cumulative total when OpenTelemetry prices each request too", () => {
+    const priced = (id: string, requestId: string): DxEventEnvelope => {
+      const base = usageEvent(
+        id,
+        "claude-code",
+        "otel",
+        100,
+        "claude-opus-5",
+        "main",
+        requestId
+      );
+
+      return {
+        ...base,
+        usage:
+          base.usage === null
+            ? null
+            : {
+                ...base.usage,
+                toolFigure: {
+                  amount: 0.4,
+                  currency: "USD",
+                  kind: "list-price",
+                },
+              },
+      };
+    };
+
+    const costState = usageEvent(
+      "cost-state",
+      "claude-code",
+      "session-file",
+      0,
+      "claude-opus-5",
+      "main"
+    );
+
+    const derived = deriveUsageFacts([
+      priced("otel-a", "req-a"),
+      priced("otel-b", "req-b"),
+      usageEvent(
+        "file-a",
+        "claude-code",
+        "session-file",
+        100,
+        "claude-opus-5",
+        "main",
+        "req-a"
+      ),
+      usageEvent(
+        "file-b",
+        "claude-code",
+        "session-file",
+        100,
+        "claude-opus-5",
+        "main",
+        "req-b"
+      ),
+      {
+        ...costState,
+        identity: { ...emptyEventIdentity, sessionId: "session-1" },
+        kind: "ai.session",
+        usage: {
+          premiumRequests: null,
+          requestKey: null,
+          serviceTier: null,
+          speed: null,
+          tokens: unknownTokens,
+          toolFigure: { amount: 0.8, currency: "USD", kind: "api-equivalent" },
+        },
+      },
+    ]);
+
+    expect(run(derived.facts, {}).total.values).toMatchObject({
+      requests: 2,
+      tokens: 2200,
+      toolFigure: 0.8,
+    });
+  });
+
+  it("counts a Codex session once when a 0.1 import and the Codex harness both read it", () => {
+    const keyed = usageEvent(
+      "harness-row",
+      "codex",
+      "session-file",
+      50,
+      "gpt-5.6-luna",
+      "main",
+      "source:codex-session:session:session-1:turn:tc-1100-1000-50"
+    );
+
+    const legacy = usageEvent(
+      "imported-row",
+      "codex",
+      "session-file",
+      50,
+      "gpt-5.6-luna",
+      "main"
+    );
+
+    const derived = deriveUsageFacts([
+      keyed,
+      {
+        ...legacy,
+        adapterId: "codex-session",
+        identity: { ...legacy.identity, requestId: null },
+        usage:
+          legacy.usage === null ? null : { ...legacy.usage, requestKey: null },
+      },
+    ]);
+
+    expect(run(derived.facts, {}).total.values).toMatchObject({
+      requests: 1,
+      tokens: 1050,
+    });
+    expect(derived.unresolved).toBe(1);
+  });
+
   it("counts a request once when a later reading replaces its usage", () => {
     const first = usageEvent(
       "first-reading",

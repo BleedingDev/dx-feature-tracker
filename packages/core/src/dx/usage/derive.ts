@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { DateTime, Option, Schema } from "effect";
 
 import type { BranchSource } from "../harness/ids.js";
+import { harnessAdapterId } from "../harness/pending.js";
 import { inferProvider, normalizeModel, viaFor } from "../harness/provider.js";
 import {
   UNKNOWN_SOURCE_RANK,
@@ -607,6 +608,79 @@ const isSuperseded = (
   );
 };
 
+interface Readings {
+  readonly adapters: Set<string>;
+  readonly channels: Set<string>;
+}
+
+const keyedReadings = (
+  groups: readonly (readonly DxEventEnvelope[])[]
+): ReadonlyMap<string, Readings> => {
+  const readings = new Map<string, Readings>();
+
+  for (const member of groups.flat()) {
+    const key = harnessSessionKey(member);
+
+    if (key !== null && member.ai !== null) {
+      const seen = readings.get(key) ?? {
+        adapters: new Set<string>(),
+        channels: new Set<string>(),
+      };
+
+      seen.adapters.add(member.adapterId);
+      seen.channels.add(member.ai.channel);
+      readings.set(key, seen);
+    }
+  }
+
+  return readings;
+};
+
+const overlapsKeyed = (
+  event: DxEventEnvelope,
+  readings: ReadonlyMap<string, Readings>
+): boolean => {
+  const key = harnessSessionKey(event);
+  const seen = key === null ? undefined : readings.get(key);
+
+  if (event.ai === null || seen === undefined || isAccountBucket(event)) {
+    return false;
+  }
+
+  const { channel, harness } = event.ai;
+  const harnessReading = harnessAdapterId(harness);
+
+  return (
+    [...seen.channels].some((other) => other !== channel) ||
+    (event.adapterId !== harnessReading && seen.adapters.has(harnessReading))
+  );
+};
+
+const factSessionKey = (fact: UsageFact): string | null =>
+  fact.harness === null || fact.session === null
+    ? null
+    : `${fact.harness}|${fact.session}`;
+
+const sessionLedger = (
+  sessionRows: readonly DerivedRow[]
+): ((fact: UsageFact) => UsageFact) => {
+  const ledgered = new Set(
+    sessionRows.flatMap((row) => {
+      const key = factSessionKey(row.fact);
+
+      return key === null ? [] : [key];
+    })
+  );
+
+  return (fact) => {
+    const key = factSessionKey(fact);
+
+    return fact.toolFigure !== null && key !== null && ledgered.has(key)
+      ? { ...fact, toolFigure: null }
+      : fact;
+  };
+};
+
 export const deriveUsageRows = (
   events: readonly DxEventEnvelope[]
 ): DerivedRows => {
@@ -630,46 +704,29 @@ export const deriveUsageRows = (
   );
 
   const { groups, unkeyed } = groupRequests(unique);
-  const keyedChannels = new Map<string, Set<string>>();
-
-  for (const group of groups) {
-    for (const member of group) {
-      const key = harnessSessionKey(member);
-
-      if (key !== null && member.ai !== null) {
-        keyedChannels.set(
-          key,
-          (keyedChannels.get(key) ?? new Set<string>()).add(member.ai.channel)
-        );
-      }
-    }
-  }
-
+  const readings = keyedReadings(groups);
+  const sessionRows = sessionFigureFacts(events);
+  const onSessionLedger = sessionLedger(sessionRows);
   const rows: DerivedRow[] = [];
   const disagreements: UsageDisagreement[] = [];
   const unresolved: string[] = [];
 
   for (const group of groups) {
-    const fact = factOf(group);
+    const fact = onSessionLedger(factOf(group));
     rows.push({ fact, sources: group.map((member) => member.eventId) });
     disagreements.push(...disagreementsOf(fact, group));
   }
 
-  rows.push(...sessionFigureFacts(events));
+  rows.push(...sessionRows);
 
   for (const event of unkeyed) {
-    const key = harnessSessionKey(event);
-    const channels = key === null ? undefined : keyedChannels.get(key);
-
-    const overlaps =
-      !isAccountBucket(event) &&
-      channels !== undefined &&
-      [...channels].some((channel) => channel !== event.ai?.channel);
-
-    if (overlaps) {
+    if (overlapsKeyed(event, readings)) {
       unresolved.push(event.eventId);
     } else {
-      rows.push({ fact: factOf([event]), sources: [event.eventId] });
+      rows.push({
+        fact: onSessionLedger(factOf([event])),
+        sources: [event.eventId],
+      });
     }
   }
 
