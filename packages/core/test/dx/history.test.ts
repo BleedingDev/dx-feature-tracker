@@ -360,6 +360,14 @@ describe("dx_history", () => {
     const { rows } = computeHistory(snapshot, options({ sinceMs }));
 
     expect(rows.map((row) => row.branch)).toEqual(["feat/a"]);
+
+    const clipped = computeHistory(
+      snapshot,
+      options({ sinceMs: Date.parse("2026-09-29T00:00:00Z") })
+    );
+
+    expect(rowOf(rows, "feat/a").events).toBe(4);
+    expect(rowOf(clipped.rows, "feat/a").events).toBe(2);
     expect(parseSince("2026-09-01T00:00:00Z", NOW_MS)).toEqual({
       ms: Date.parse("2026-09-01T00:00:00Z"),
       ok: true,

@@ -235,6 +235,16 @@ const latestWorktree = (events: readonly DxEventEnvelope[]): string | null => {
 
 const repoKey = (repo: string | null): string => repo ?? "";
 
+const inWindow = (event: DxEventEnvelope, sinceMs: number | null): boolean => {
+  if (sinceMs === null) {
+    return true;
+  }
+
+  const at = timeMs(event.occurredAt) ?? timeMs(event.observedAt);
+
+  return at !== null && at >= sinceMs;
+};
+
 interface FlightGroup {
   readonly branch: string | null;
   readonly events: DxEventEnvelope[];
@@ -382,12 +392,16 @@ export const computeHistory = (
   const repos = groupByRepo(snapshot.events);
   const rows: FlightHistoryRow[] = [];
 
-  for (const [key, events] of repos) {
+  for (const [key, repoEvents] of repos) {
     const repo = key === "" ? null : key;
 
     if (!options.allRepos && repo !== options.repoCommonDir) {
       continue;
     }
+
+    const events = repoEvents.filter((event) =>
+      inWindow(event, options.sinceMs)
+    );
 
     const repoSnapshot: StoreSnapshot = { ...snapshot, events };
 
