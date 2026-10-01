@@ -59,6 +59,7 @@ const MAKER: PriceSheet = {
       input: 3,
       output: 15,
     }),
+    "gemini-3.8-flash": once({ input: 0.75, output: 3.75 }),
     "gpt-5": once({ "cached-input": 0.125, input: 1.25, output: 10 }),
     "gpt-5.6-luna": once({
       "cache-write": 0.25,
@@ -390,7 +391,7 @@ it.layer(PriceBook.memory([MAKER]))("PriceBook estimate", (test) => {
     })
   );
 
-  test.effect("prices Claude web searches per request", () =>
+  test.effect("prices Claude and Codex web searches per request", () =>
     Effect.gen(function* webSearch() {
       const book = yield* PriceBook;
 
@@ -426,9 +427,41 @@ it.layer(PriceBook.memory([MAKER]))("PriceBook estimate", (test) => {
           usdPerUnit: 0.01,
         },
       ]);
-      expect(codex.usd).toBe(0);
-      expect(codex.notes.join(" ")).toContain("no public price for openai");
+      expect(codex.lines).toEqual([
+        {
+          part: "web-search",
+          quantity: 2,
+          unit: "requests",
+          usd: 0.02,
+          usdPerUnit: 0.01,
+        },
+      ]);
+      expect(codex.complete).toBe(true);
     })
+  );
+
+  test.effect(
+    "marks an estimate incomplete when its web searches have no price",
+    () =>
+      Effect.gen(function* unpricedSearch() {
+        const book = yield* PriceBook;
+
+        const gemini = priced(
+          book.estimate(
+            request({
+              harness: "opencode",
+              model: "gemini-3.8-flash",
+              provider: "google",
+              tokens: { inputFresh: 0, output: 0 },
+              webSearchRequests: 4,
+            })
+          )
+        );
+
+        expect(gemini.usd).toBe(0);
+        expect(gemini.complete).toBe(false);
+        expect(gemini.notes.join(" ")).toContain("no public price for google");
+      })
   );
 
   test.effect(

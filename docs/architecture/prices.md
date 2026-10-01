@@ -22,7 +22,7 @@ Every tool gets one estimate (D26, D30, D40): its tokens times the public price 
 | Cache write 1 hour | Anthropic 2x input; others use the 5 minute rate |
 | Long context | when the prompt (input, cache read and writes) is above a catalog tier, the whole request uses that tier |
 | Fast and priority | Claude `speed: fast` (or a `-fast` model suffix) uses the published multiplier per model; Codex `service_tier` priority or fast is 2x, flex and batch 0.5x; an unpublished tier is priced at standard and marked incomplete |
-| Claude web search | USD 10 per 1,000 searches (`usage.webSearchRequests`) |
+| Web search | Claude and Codex (OpenAI): USD 10 per 1,000 searches (`usage.webSearchRequests`); search content tokens are already in the request's tokens; searches on a model whose maker has no published search price are noted and mark the estimate incomplete |
 | Copilot premium requests | USD 0.04 each, shown beside the estimate; used as the estimate only when no tokens can be priced |
 | Local runtime | `provider: local` or a local `via` (Ollama, LM Studio, ...) costs 0, method `local` |
 | Cursor Auto | no fixed model, so Cursor's per-request list price is used (method `cursor-list-price`) |

@@ -3,7 +3,7 @@ import { DateTime, Option } from "effect";
 import type { ModelProvider } from "../../../harness/ids.js";
 
 export const PRICING_RULES_SOURCE =
-  "Maker pricing pages read 2026-10-01: Anthropic prompt caching (5 minute write 1.25x input, 1 hour write 2x input), Anthropic fast mode (Claude Opus 5.5, Opus 5 and Opus 4.8 at 2x; Opus 4.6 runs and bills at standard), Anthropic web search (USD 10 per 1,000 searches), OpenAI Fast, formerly Priority (2x, except gpt-5.5 2.5x, gpt-5-mini 1.8x, gpt-4.1 and o3 1.75x, gpt-4o 1.7x, o4-mini 20/11x), OpenAI Ultrafast (gpt-6-astra 6x), OpenAI Flex and Batch (0.5x), DeepSeek peak hours (2x, 01:00-04:00 and 06:00-10:00 UTC on weekdays; Chinese public holidays are not modelled), GitHub Copilot premium requests (USD 0.04 each).";
+  "Maker pricing pages read 2026-10-01: Anthropic prompt caching (5 minute write 1.25x input, 1 hour write 2x input), Anthropic fast mode (Claude Opus 5.5, Opus 5 and Opus 4.8 at 2x; Opus 4.6 runs and bills at standard), Anthropic web search (USD 10 per 1,000 searches), OpenAI web search tool (USD 10 per 1,000 calls; search content tokens are already in the request's tokens), OpenAI Fast, formerly Priority (2x, except gpt-5.5 2.5x, gpt-5-mini 1.8x, gpt-4.1 and o3 1.75x, gpt-4o 1.7x, o4-mini 20/11x), OpenAI Ultrafast (gpt-6-astra 6x), OpenAI Flex and Batch (0.5x), DeepSeek peak hours (2x, 01:00-04:00 and 06:00-10:00 UTC on weekdays; Chinese public holidays are not modelled), GitHub Copilot premium requests (USD 0.04 each).";
 
 export const ANTHROPIC_CACHE_WRITE_5M_MULTIPLIER = 1.25;
 
@@ -12,7 +12,10 @@ export const ANTHROPIC_CACHE_WRITE_1H_MULTIPLIER = 2;
 export const COPILOT_PREMIUM_REQUEST_USD = 0.04;
 
 export const WEB_SEARCH_USD_PER_REQUEST: ReadonlyMap<ModelProvider, number> =
-  new Map([["anthropic", 0.01]]);
+  new Map([
+    ["anthropic", 0.01],
+    ["openai", 0.01],
+  ]);
 
 export const FAST_MODE_MULTIPLIERS: ReadonlyMap<string, number> = new Map([
   ["claude-opus-5-5", 2],

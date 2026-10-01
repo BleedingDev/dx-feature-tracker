@@ -241,6 +241,9 @@ const tokenLine = (
         },
       ];
 
+const hasUnpricedSearches = (usage: AiUsage, maker: ModelProvider): boolean =>
+  (usage.webSearchRequests ?? 0) > 0 && !WEB_SEARCH_USD_PER_REQUEST.has(maker);
+
 const webSearchLine = (
   usage: AiUsage,
   maker: ModelProvider,
@@ -476,7 +479,8 @@ const priceTokens = (
     complete:
       tokens.inputFresh !== null &&
       tokens.output !== null &&
-      service.unpricedTier === null,
+      service.unpricedTier === null &&
+      !hasUnpricedSearches(usage, maker),
     contextTier: tier?.aboveInputTokens ?? null,
     currency: "USD",
     kind: "priced",
