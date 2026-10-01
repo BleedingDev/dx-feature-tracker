@@ -45,4 +45,14 @@ Research: [multi-harness-research.md](multi-harness-research.md).
 | D32 | Dashboard | Filter chips, one group-by select, metric toggle, chart over time stacked by tool, table with drilldown, all state in the URL. CLI: `dft usage --by <dim> --tool <t> --since 30d`. |
 | D33 | Tests | Each tool is an Effect Store service (live and in-memory layers) plus a Harness service. One conformance suite runs mock and fixture tiers always, and a read-only live tier only when opted in with `DFT_LIVE_HARNESSES`. |
 | D34 | Event model | No backwards compatibility: go straight to a typed `dx.event.v2` envelope with an `ai` attribution block. |
-| D35 | DeepSeek Harness | Install it on the maintainer's machine for a live test tier. |
+| D35 | DeepSeek Harness | Install it on the maintainer's machine for a live test tier. Live tests run through the local model router (Luna model) and are skipped when the router is down. |
+| D36 | Orchestrator outside a repo | Per turn, use the repo its own tool calls touched when that is exactly one; otherwise split across its subagents' repos by their tokens, marked inferred; "(no repo)" only when nothing points anywhere. |
+| D37 | Reconciling sources | Each field takes its most precise source (tokens: session file's final record; branch: D28; model: what the server reported). Other sources cross-check; disagreements are stored and shown per tool in a Sources panel. |
+| D38 | User-level settings | Only with `dft install --telemetry`: shows the change, keeps a backup, only adds, reversible with `dft uninstall --telemetry`. Enables Claude Code and Codex OpenTelemetry to 127.0.0.1. |
+| D39 | Project hooks | Written to untracked local files (`.claude/settings.local.json` and the local equivalents for Codex, Pi, OMP); teammates never affected. |
+| D40 | Prices | Cover cache tiers, fast/priority tiers, Copilot premium requests; local models cost $0 marked local; unknown models show tokens with "no price". User-supplied prices later. |
+| D41 | Retention | Keep extracted usage facts forever in `~/.dft`, never prompt text, even after a tool deletes its transcripts. |
+| D42 | Chats | One sessions list across all tools with titles, per-turn model and effort, subagent tree, same filters. |
+| D43 | Naming | "Tool" in UI and CLI flags (`--tool`), "harness" in code. |
+| D44 | README | Edit it directly to cover all tools; approved. |
+| D45 | Release | One fully tested and validated release, 0.2.0, containing all of the above. |
