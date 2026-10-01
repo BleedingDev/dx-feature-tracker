@@ -59,6 +59,19 @@ export const isGitRepo = (worktree: string): boolean => {
   }
 };
 
+const gitTracks = (worktree: string, rel: string): boolean => {
+  try {
+    execFileSync("git", ["ls-files", "--error-unmatch", "--", rel], {
+      cwd: worktree,
+      stdio: "ignore",
+    });
+
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 export const dftInvocation = (nodePath: string, entry: string): string =>
   `${quote(nodePath)} ${quote(path.resolve(entry))}`;
 
@@ -95,10 +108,15 @@ export const isDftHookCommand = (command: string): boolean =>
   /\bdft(?:-main)?(?:\.js)?['"]?\s+hook\b/u.test(command) ||
   /\bdx\s+hook\b/u.test(command);
 
-export const mergeCursorHooks = (existing: HooksFile, command: string) => {
+export const mergeCursorHooks = (
+  existing: HooksFile,
+  command: string,
+  refresh = true
+) => {
   const merged = { ...existing.hooks };
 
   const added: string[] = [];
+  const refreshed: string[] = [];
 
   for (const event of CURSOR_HOOK_EVENTS) {
     const current = merged[event] ?? [];
@@ -106,6 +124,16 @@ export const mergeCursorHooks = (existing: HooksFile, command: string) => {
     if (!current.some((entry) => isDftHookCommand(entry.command))) {
       merged[event] = [...current, { command }];
       added.push(event);
+    } else if (
+      refresh &&
+      current.some(
+        (entry) => isDftHookCommand(entry.command) && entry.command !== command
+      )
+    ) {
+      merged[event] = current.map((entry) =>
+        isDftHookCommand(entry.command) ? { ...entry, command } : entry
+      );
+      refreshed.push(event);
     }
   }
 
@@ -115,7 +143,7 @@ export const mergeCursorHooks = (existing: HooksFile, command: string) => {
     version: existing.version ?? 1,
   };
 
-  return { added, file };
+  return { added, file, refreshed };
 };
 
 export interface InstallStep {
@@ -144,9 +172,13 @@ export const installCursorHooks = (
     };
   }
 
-  const merged = mergeCursorHooks(parsed, command);
+  const merged = mergeCursorHooks(
+    parsed,
+    command,
+    !gitTracks(worktree, path.join(".cursor", "hooks.json"))
+  );
 
-  if (merged.added.length === 0) {
+  if (merged.added.length === 0 && merged.refreshed.length === 0) {
     return {
       action: "unchanged",
       detail: "every Cursor hook event already calls dft hook",
@@ -159,7 +191,16 @@ export const installCursorHooks = (
 
   return {
     action: exists ? "updated" : "created",
-    detail: `added dft hook to ${merged.added.join(", ")}`,
+    detail: [
+      ...(merged.added.length === 0
+        ? []
+        : [`added dft hook to ${merged.added.join(", ")}`]),
+      ...(merged.refreshed.length === 0
+        ? []
+        : [
+            `pointed the dft hook in ${String(merged.refreshed.length)} events at this node and dft`,
+          ]),
+    ].join("; "),
     path: file,
   };
 };

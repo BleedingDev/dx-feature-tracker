@@ -31,7 +31,7 @@ dft install
 - `.cursor/skills/`: copies the `dx-*` Cursor skills.
 - Local capture for every other tool it finds on this machine: Claude Code hooks in `.claude/settings.local.json`, Codex hooks in `.codex/hooks.json`, the Pi and OMP extensions, the OpenCode plugin and the DeepSeek Harness hook bridge. These files are listed in this clone's `.git/info/exclude`, so teammates never see them. [Capture install](architecture/capture.md) lists each file.
 
-It never writes your user settings (`~/.cursor`, `~/.claude`, `~/.codex` and so on) unless you add `--telemetry`, which shows the change, keeps a backup and is undone with `dft uninstall --telemetry`. Run it once per repository. Running it again is safe: it adds nothing that is already there. Even without hooks, every tool's session files are read on each sync.
+It never writes your user settings (`~/.cursor`, `~/.claude`, `~/.codex` and so on) unless you add `--telemetry`, which shows the change, keeps a backup and is undone with `dft uninstall --telemetry`. Run it once per repository. Running it again is safe: it adds nothing that is already there, and it points existing dft hooks at the Node and `dft` that ran it. Even without hooks, every tool's session files are read on each sync.
 
 To also record a snapshot on every commit and push:
 
@@ -205,7 +205,7 @@ dft snapshot --max-cost 5
 
 ## Troubleshooting
 
-- **Hooks stopped working after switching Node versions**: the hooks call the Node binary and `dft` path that ran `dft install`. Delete the old `dft hook` entries from `.cursor/hooks.json`, then run `dft install` again.
+- **Hooks stopped working after switching Node versions**: the hooks call the Node binary and `dft` path that ran `dft install`, and `dft status` shows `project capture broken` when that path is gone. Run `dft install` again: it points every dft hook at the current Node and `dft`. A `.cursor/hooks.json` tracked by git is left alone, so fix its `dft hook` entries by hand.
 - **Nothing shows up**: run `dft status`. It lists the store, which sources are enabled and which are unavailable, with reasons. Check that you are in the repository you worked on and on the right branch, or pass `--branch`.
 - **Git hook does not run `dft snapshot`**: an appended hook does not run if the existing hook ends with `exit` or `exec`. Move the `dft snapshot` line above it.
 - **Transcripts not found**: transcripts are matched to a repository by path. Very long or temporary paths may not match, and `dft` reports them as unavailable.

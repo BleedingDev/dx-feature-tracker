@@ -164,7 +164,23 @@ const newGroup = (
 export interface HookMerge {
   readonly added: readonly string[];
   readonly file: HookConfig;
+  readonly refreshed: readonly string[];
 }
+
+const staleDft =
+  (command: string) =>
+  (entry: CommandHook): boolean =>
+    isDftEntry(entry) && entry.command !== command;
+
+const withCommand = (group: MatcherGroup, command: string): MatcherGroup =>
+  group.hooks === undefined
+    ? group
+    : {
+        ...group,
+        hooks: group.hooks.map((entry) =>
+          isDftEntry(entry) ? { ...entry, command } : entry
+        ),
+      };
 
 export const mergeHookConfig = (
   existing: HookConfig,
@@ -174,20 +190,24 @@ export const mergeHookConfig = (
 ): HookMerge => {
   const hooks = { ...existing.hooks };
   const added: string[] = [];
+  const refreshed: string[] = [];
 
   for (const spec of specs) {
     const groups = hooks[spec.event] ?? [];
+    const command = commandFor(spec.event);
 
     if (!groups.some(groupHasDft)) {
-      hooks[spec.event] = [
-        ...groups,
-        newGroup(spec, commandFor(spec.event), style),
-      ];
+      hooks[spec.event] = [...groups, newGroup(spec, command, style)];
       added.push(spec.event);
+    } else if (
+      groups.some((group) => (group.hooks ?? []).some(staleDft(command)))
+    ) {
+      hooks[spec.event] = groups.map((group) => withCommand(group, command));
+      refreshed.push(spec.event);
     }
   }
 
-  return { added, file: { ...existing, hooks } };
+  return { added, file: { ...existing, hooks }, refreshed };
 };
 
 export interface HookRemoval {
@@ -531,6 +551,21 @@ const trackedStep = (tool: CaptureTool, file: string): CaptureStep =>
     "this file is tracked by git, so changing it would affect teammates; dft left it alone"
   );
 
+const hookChangeText = (change: {
+  readonly added: readonly string[];
+  readonly refreshed: readonly string[];
+}): string =>
+  [
+    ...(change.added.length === 0
+      ? []
+      : [`added dft hook to ${change.added.join(", ")}`]),
+    ...(change.refreshed.length === 0
+      ? []
+      : [
+          `pointed the dft hook in ${change.refreshed.join(", ")} at this node and dft`,
+        ]),
+  ].join("; ");
+
 const writeHooks = (
   tool: CaptureTool,
   worktree: string,
@@ -557,7 +592,7 @@ const writeHooks = (
     target.style
   );
 
-  if (merged.added.length === 0) {
+  if (merged.added.length === 0 && merged.refreshed.length === 0) {
     return step(tool, "unchanged", file, "dft hooks already there");
   }
 
@@ -568,7 +603,7 @@ const writeHooks = (
     tool,
     exists ? "updated" : "created",
     file,
-    `added dft hook to ${merged.added.join(", ")}`
+    hookChangeText(merged)
   );
 };
 
@@ -767,6 +802,57 @@ export const hasCapture = (tool: CaptureTool, worktree: string): boolean =>
   targetsFor(tool, worktree, NO_COMMAND).every((target) =>
     holdsDftFile(worktree, target.rel)
   );
+
+export const hasSomeCapture = (tool: CaptureTool, worktree: string): boolean =>
+  targetsFor(tool, worktree, NO_COMMAND).some((target) =>
+    holdsDftFile(worktree, target.rel)
+  );
+
+const SHELL_WORD = /(?:'[^']*'|\\.|[^\s'\\])+/gu;
+
+const SHELL_PART = /'(?<quoted>[^']*)'|\\(?<escaped>.)|(?<plain>[^'\\]+)/gu;
+
+const unquote = (word: string): string =>
+  Array.from(
+    word.matchAll(SHELL_PART),
+    (part) =>
+      part.groups?.quoted ?? part.groups?.escaped ?? part.groups?.plain ?? ""
+  ).join("");
+
+export const shellWords = (line: string): readonly string[] =>
+  Array.from(line.matchAll(SHELL_WORD), (match) => unquote(match[0]));
+
+const dftCommands = (text: string): readonly string[] =>
+  Object.values(parseHookConfig(text)?.hooks ?? {}).flatMap((groups) =>
+    groups.flatMap((group) =>
+      (group.hooks ?? []).flatMap((entry) =>
+        entry.command !== undefined && isDftHookCommand(entry.command)
+          ? [entry.command]
+          : []
+      )
+    )
+  );
+
+export const missingHookPaths = (
+  tool: CaptureTool,
+  worktree: string
+): readonly string[] => {
+  const missing = targetsFor(tool, worktree, NO_COMMAND).flatMap((target) => {
+    const file = path.join(worktree, target.rel);
+
+    if (target.kind !== "hooks" || !existsSync(file)) {
+      return [];
+    }
+
+    return dftCommands(readFileSync(file, "utf-8")).flatMap((command) =>
+      shellWords(command)
+        .slice(0, 2)
+        .filter((word) => path.isAbsolute(word) && !existsSync(word))
+    );
+  });
+
+  return [...new Set(missing)];
+};
 
 const ruleRel = (line: string): string =>
   line.replace(/^\//u, "").split("/").join(path.sep);

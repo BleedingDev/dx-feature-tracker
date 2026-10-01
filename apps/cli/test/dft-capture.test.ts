@@ -26,9 +26,11 @@ import {
   OPENCODE_PLUGIN_PATH,
   PI_EXTENSION_PATH,
   captureFiles,
+  dftCommandFor,
   hasCapture,
   installCapture,
   mergeHookConfig,
+  missingHookPaths,
   parseHookConfig,
   removeDftHooks,
   uninstallCapture,
@@ -255,6 +257,40 @@ describe("dft install project capture (D39)", () => {
       again.tools.flatMap((tool) => tool.steps.map((step) => step.action))
     ).toEqual(["unchanged", "unchanged"]);
     expect(again.ignore).toEqual([]);
+  });
+
+  it("points dft hooks that call an old node or dft at this build on a re-run", () => {
+    const repo = scratchRepo();
+
+    const old: DftCommand = {
+      argv: ["/old/node/24.18.0/bin/node", "/old/dft/dft-main.js"],
+      line: "/old/node/24.18.0/bin/node /old/dft/dft-main.js",
+    };
+
+    const dftMain = path.join(scratch("dft-build-"), "dft main.js");
+    write(path.dirname(dftMain), path.basename(dftMain), "");
+
+    const current = dftCommandFor(process.execPath, dftMain);
+
+    write(repo, CLAUDE_SETTINGS_LOCAL, teammateSettings);
+    installCapture(["claude-code", "codex"], repo, old);
+
+    expect(missingHookPaths("claude-code", repo)).toEqual(old.argv);
+
+    const again = installCapture(["claude-code", "codex"], repo, current);
+
+    expect(
+      again.tools.flatMap((tool) => tool.steps.map((step) => step.action))
+    ).toEqual(["updated", "updated"]);
+
+    for (const rel of [CLAUDE_SETTINGS_LOCAL, CODEX_PROJECT_HOOKS]) {
+      expect(read(repo, rel)).not.toContain("/old/");
+      expect(read(repo, rel).split(current.line).length - 1).toBe(5);
+    }
+
+    expect(read(repo, CLAUDE_SETTINGS_LOCAL)).toContain('"notify-done"');
+    expect(missingHookPaths("claude-code", repo)).toEqual([]);
+    expect(missingHookPaths("codex", repo)).toEqual([]);
   });
 
   it("skips a tracked hooks file and a foreign file with the same name", () => {

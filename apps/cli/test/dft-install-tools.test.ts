@@ -252,4 +252,39 @@ describe("dft install for every tool", () => {
 
     expect(actions(result.stdout)).toEqual([["pi", ["created"]]]);
   });
+
+  it("a plain re-run repairs hooks that call a node that is gone, and status says so first", () => {
+    const stale = path.join(root, "stale-repo");
+    const emptyHome = path.join(root, "stale-home");
+    execFileSync("git", ["init", "-q", "-b", "main", stale]);
+
+    const run = (...args: readonly string[]) =>
+      spawnSync(process.execPath, [dftMain, ...args], {
+        cwd: stale,
+        encoding: "utf-8",
+        env: { ...env, HOME: emptyHome },
+      });
+
+    expect(run("install", "--json", "--tool", "codex,deepseek").status).toBe(0);
+
+    const hooks = path.join(stale, ".codex", "hooks.json");
+
+    writeFileSync(
+      hooks,
+      readFileSync(hooks, "utf-8").replaceAll(
+        JSON.stringify(process.execPath).slice(1, -1),
+        "/old/node/24.18.0/bin/node"
+      )
+    );
+
+    expect(run("status", "--no-sync").stdout).toContain(
+      "project capture broken (its hooks call missing /old/node/24.18.0/bin/node"
+    );
+
+    expect(actions(run("install", "--json").stdout)).toEqual([
+      ["codex", ["updated"]],
+      ["deepseek", ["unchanged", "unchanged"]],
+    ]);
+    expect(readFileSync(hooks, "utf-8")).not.toContain("/old/node");
+  });
 });

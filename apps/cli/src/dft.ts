@@ -33,6 +33,7 @@ import { Argument, Command, Flag } from "effect/unstable/cli";
 import {
   CAPTURE_TOOLS,
   dftCommandFor,
+  hasSomeCapture,
   installCapture,
   isCaptureTool,
   uninstallCapture,
@@ -1247,7 +1248,8 @@ const installCommand = Command.make(
       const tools = CAPTURE_TOOLS.filter(
         (tool) =>
           forced.includes(tool) ||
-          detected.some((item) => item.tool === tool && item.installed)
+          detected.some((item) => item.tool === tool && item.installed) ||
+          hasSomeCapture(tool, worktree)
       );
 
       const now = DateTime.toDate(yield* DateTime.now);
@@ -1359,7 +1361,7 @@ const installCommand = Command.make(
     })
 ).pipe(
   Command.withDescription(
-    "Set up dft in this repo: add Cursor hooks to .cursor/hooks.json and the Cursor skills (/dx-line, /dx-analyze, /dx-history, /dx-chats, /dx-explain, /dx-dashboard), plus local capture for every other tool found on this machine: Claude Code hooks in .claude/settings.local.json, Codex hooks in .codex/hooks.json, the Pi and OMP extensions in .pi/extensions and .omp/extensions, the OpenCode plugin in .opencode/plugins and the DeepSeek Harness hook bridge in .dsh. These files stay out of git (listed in this clone's .git/info/exclude), so teammates are never affected. Existing entries are kept and running it again changes nothing. Add --telemetry to also send Claude Code and Codex OpenTelemetry to dft dashboard (user settings, with a backup). Add --all-worktrees to also set up every other worktree of the repo for Cursor."
+    "Set up dft in this repo: add Cursor hooks to .cursor/hooks.json and the Cursor skills (/dx-line, /dx-analyze, /dx-history, /dx-chats, /dx-explain, /dx-dashboard), plus local capture for every other tool found on this machine: Claude Code hooks in .claude/settings.local.json, Codex hooks in .codex/hooks.json, the Pi and OMP extensions in .pi/extensions and .omp/extensions, the OpenCode plugin in .opencode/plugins and the DeepSeek Harness hook bridge in .dsh. These files stay out of git (listed in this clone's .git/info/exclude), so teammates are never affected. Existing entries are kept, and running it again only points dft's own entries at the Node and dft that ran it. Add --telemetry to also send Claude Code and Codex OpenTelemetry to dft dashboard (user settings, with a backup). Add --all-worktrees to also set up every other worktree of the repo for Cursor."
   ),
   Command.withShortDescription(
     "Set up hooks and capture for every tool in this repo"

@@ -11,6 +11,7 @@ import {
   CAPTURE_TOOL_NAMES,
   hasCapture,
   isCaptureTool,
+  missingHookPaths,
 } from "./dft-capture.js";
 import type {
   CaptureInstall,
@@ -139,6 +140,7 @@ export const lastEventTimes = (
 export interface ToolStatus {
   readonly installed: boolean;
   readonly lastEvent: string | null;
+  readonly missingHookPaths: readonly string[];
   readonly name: string;
   readonly projectCapture: boolean;
   readonly sessions: number;
@@ -181,6 +183,7 @@ export const toolStatuses = (
   detected.map((item) => ({
     installed: item.installed,
     lastEvent: lastEvents.get(item.tool) ?? null,
+    missingHookPaths: missingHookPaths(item.tool, worktree),
     name: item.name,
     projectCapture: hasCapture(item.tool, worktree),
     sessions: item.sessions,
@@ -197,7 +200,9 @@ export const toolsText = (statuses: readonly ToolStatus[]): string => {
     const parts = [
       status.installed ? "installed" : "not found",
       `${String(status.sessions)} sessions`,
-      `project capture ${yesNo(status.projectCapture)}`,
+      status.missingHookPaths.length === 0
+        ? `project capture ${yesNo(status.projectCapture)}`
+        : `project capture broken (its hooks call missing ${status.missingHookPaths.join(", ")}; run dft install again)`,
       ...(status.userTelemetry === null
         ? []
         : [`telemetry ${yesNo(status.userTelemetry)}`]),

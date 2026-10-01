@@ -89,6 +89,29 @@ describe("dft install cursor hooks", () => {
     ).toEqual([]);
   });
 
+  it("points dft hooks that call an old node or dft at this build", () => {
+    const existing = {
+      hooks: {
+        stop: [
+          { command: "./audit.sh", timeout: 5 },
+          { command: "/old/node/bin/node /old/dft-main.js hook" },
+        ],
+      },
+      version: 1,
+    };
+
+    const merged = mergeCursorHooks(existing, "/n/node /r/dft-main.js hook");
+
+    expect(merged.refreshed).toEqual(["stop"]);
+    expect(merged.file.hooks?.stop).toEqual([
+      { command: "./audit.sh", timeout: 5 },
+      { command: "/n/node /r/dft-main.js hook" },
+    ]);
+    expect(
+      mergeCursorHooks(existing, "/n/node /r/dft-main.js hook", false).refreshed
+    ).toEqual([]);
+  });
+
   it("writes only the project .cursor/hooks.json and leaves invalid JSON alone", () => {
     const repo = scratchRepo();
 
