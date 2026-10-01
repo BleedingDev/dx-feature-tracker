@@ -126,6 +126,20 @@ const contextCovers = (located: Located): boolean => {
   return worktreePath !== null && isContained(worktreePath, located.cwd);
 };
 
+const leavesStoredWorktree = (
+  located: Located,
+  worktreePath: string
+): boolean => {
+  const stored = located.event.context.worktreePath;
+
+  return (
+    stored !== null &&
+    contextCovers(located) &&
+    !sameDir(stored, worktreePath) &&
+    isContained(worktreePath, stored)
+  );
+};
+
 const placedByToolCalls = (located: Located): boolean =>
   located.ai.branchSource === "tool-calls" &&
   located.event.context.repoCommonDir !== null &&
@@ -521,7 +535,10 @@ export const attributeRepos = (
     for (const located of candidates) {
       const at = yield* locator.locate(located.cwd);
 
-      if (at.kind === "repo") {
+      if (
+        at.kind === "repo" &&
+        !leavesStoredWorktree(located, at.location.worktreePath)
+      ) {
         placements.set(located.event.eventId, {
           method: "cwd",
           place: {

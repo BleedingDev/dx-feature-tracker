@@ -356,6 +356,53 @@ describe("worktree resolution from cwd", () => {
     })
   );
 
+  it.effect(
+    "keeps a removed nested worktree's request on its stored worktree and branch",
+    () =>
+      Effect.gen(function* scenario() {
+        const nested = `${APP}/.claude/worktrees/a`;
+
+        const kindOf = (path: string): Effect.Effect<PathKind> =>
+          Effect.succeed(path.startsWith(nested) ? "missing" : "directory");
+
+        const git: GitQueries = {
+          at: (path) =>
+            Effect.succeed(
+              path.startsWith(nested)
+                ? memoryGitAt([], path)
+                : memoryGitAt(REPOS, path)
+            ),
+          worktrees: () => Effect.succeed([]),
+        };
+
+        const stored = event({
+          branch: "feat/a",
+          branchSource: "session-recorded",
+          context: { repoCommonDir: APP_GIT, worktreePath: nested },
+          cwd: `${nested}/src`,
+          id: "nested",
+        });
+
+        const placed = yield* attributeRepos(makeRepoLocator(git, kindOf), [
+          stored,
+        ]);
+
+        expect(placed.events).toStrictEqual([stored]);
+
+        const result = attributeHistoricalBranches(placed.events, {
+          commitBranches: new Map(),
+          timelines: [timeline(APP, "main")],
+        });
+
+        expect(result.events[0]?.context.branch).toBe("feat/a");
+        expect(placeOf(result.events[0])).toStrictEqual({
+          branchSource: "session-recorded",
+          repo: APP_GIT,
+          worktree: nested,
+        });
+      })
+  );
+
   it.effect("files a session outside every repo under (no repo)", () =>
     Effect.gen(function* scenario() {
       const result = yield* attribute([

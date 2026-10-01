@@ -105,22 +105,21 @@ const within = (path: string, root: string): boolean => {
   return p === r || p.startsWith(`${r}/`);
 };
 
-const pathsOf = (event: DxEventEnvelope): readonly string[] => {
-  const fromPayload = payloadPaths(event);
-
-  return [
-    ...(event.context.worktreePath === null
-      ? []
-      : [event.context.worktreePath]),
-    ...fromPayload,
-  ];
-};
-
 const timelineFor = (
   event: DxEventEnvelope,
   timelines: readonly WorktreeTimeline[]
 ): WorktreeTimeline | null => {
-  const matches = pathsOf(event).flatMap((path) =>
+  const stored = event.context.worktreePath;
+
+  if (stored !== null) {
+    return (
+      timelines.find(
+        (t) => normalizePath(t.worktree) === normalizePath(stored)
+      ) ?? null
+    );
+  }
+
+  const matches = payloadPaths(event).flatMap((path) =>
     timelines.filter((t) => within(path, t.worktree))
   );
 
