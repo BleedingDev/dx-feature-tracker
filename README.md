@@ -12,7 +12,7 @@ This tool connects AI usage with Git branches, commits, code changes, tests, and
 
 ## Install and use
 
-Requires macOS (Apple Silicon) or Linux (arm64 or x86_64), Node.js 24.18.0 or newer, and at least one supported tool: Cursor, Claude Code, Codex, OpenCode, Pi, OMP or DeepSeek Harness. Older Node versions are refused at install with upgrade steps.
+Requires macOS (Apple Silicon) or Linux (arm64 or x86_64), Node.js 24.18.0 or newer, and at least one supported tool: Cursor, Claude Code, Codex, OpenCode, Pi, OMP or DeepSeek Harness. On older Node versions dft refuses to run and shows upgrade steps.
 
 ```sh
 npm i -g https://github.com/BleedingDev/dx-feature-tracker/releases/latest/download/dx-feature-tracker.tgz

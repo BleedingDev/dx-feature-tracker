@@ -6,7 +6,7 @@ Full guide: [docs/USAGE.md](https://github.com/BleedingDev/dx-feature-tracker/bl
 
 ## Install
 
-Requires macOS (Apple Silicon) or Linux (arm64 or x86_64) and Node.js **24.18.0 or newer** (`node --version`). Older Node versions are refused at install with upgrade steps.
+Requires macOS (Apple Silicon) or Linux (arm64 or x86_64) and Node.js **24.18.0 or newer** (`node --version`). On older Node versions dft refuses to run and shows upgrade steps.
 
 ```sh
 npm i -g https://github.com/BleedingDev/dx-feature-tracker/releases/latest/download/dx-feature-tracker.tgz

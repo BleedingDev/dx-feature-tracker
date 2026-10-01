@@ -7,7 +7,7 @@ Run `dft --help` or `dft <command> --help` for the full flag list.
 ## Requirements
 
 - macOS (Apple Silicon) or Linux (Ubuntu, arm64 or x86_64)
-- Node.js 24.18.0 or newer (`node --version`). Older versions are refused at install with upgrade instructions.
+- Node.js 24.18.0 or newer (`node --version`). On older versions dft refuses to run and shows upgrade instructions.
 - At least one supported tool. Cursor, logged in, if you want its billed usage imported
 - git
 
