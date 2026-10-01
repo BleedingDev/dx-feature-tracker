@@ -960,9 +960,7 @@ export const startLiveEngine = (
     const sessionRoots = yield* HarnessRegistry.pipe(
       Effect.flatMap((registry) => registry.discover),
       Effect.map((found) => [
-        ...new Set(
-          found.flatMap((discovery) => discovery.roots).filter(existsSync)
-        ),
+        ...new Set(found.flatMap((discovery) => discovery.roots)),
       ]),
       Effect.provide(harnessRegistryFor(options.home))
     );
@@ -975,15 +973,28 @@ export const startLiveEngine = (
         : Effect.void
     );
 
-    for (const root of sessionRoots) {
-      yield* Effect.forkIn(
-        fs.watch(root, { recursive: true }).pipe(
-          Stream.runForEach(() => onSessionEvent),
-          Effect.ignore
-        ),
-        scope
+    const watchedRoots = new Set<string>();
+
+    const watchNewRoots = Effect.gen(function* watchRoots() {
+      const appeared = sessionRoots.filter(
+        (root) => !watchedRoots.has(root) && existsSync(root)
       );
-    }
+
+      for (const root of appeared) {
+        watchedRoots.add(root);
+        yield* Effect.forkIn(
+          fs.watch(root, { recursive: true }).pipe(
+            Stream.runForEach(() => onSessionEvent),
+            Effect.ignore
+          ),
+          scope
+        );
+      }
+
+      return appeared.length > 0;
+    });
+
+    yield* watchNewRoots;
 
     yield* scanChanges;
 
@@ -1000,6 +1011,8 @@ export const startLiveEngine = (
             ? Effect.forEach(hits, trigger, { discard: true })
             : Effect.void
         ),
+        Effect.andThen(watchNewRoots),
+        Effect.flatMap((appeared) => (appeared ? onSessionEvent : Effect.void)),
         Effect.catchCause(() => Effect.void),
         Effect.forever
       ),

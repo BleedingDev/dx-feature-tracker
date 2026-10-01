@@ -288,6 +288,52 @@ describe("live engine", () => {
     );
   });
 
+  it.live(
+    "a tool session folder created after start is watched within seconds",
+    () => {
+      const sessions = path.join(scratch, ".codex", "sessions");
+
+      expect(fs.existsSync(sessions)).toBe(false);
+
+      return withEngine(
+        (engine) =>
+          Effect.gen(function* lateRoot() {
+            const syncs = engine.status.pipe(
+              Effect.map(
+                (status) =>
+                  status.repos.find((repo) => repo.repo === app)?.syncs ?? 0
+              )
+            );
+
+            yield* Effect.sleep(300);
+
+            const before = yield* syncs;
+            const day = path.join(sessions, "2026", "09", "30");
+
+            fs.mkdirSync(day, { recursive: true });
+
+            const appeared = yield* eventuallyEffect(
+              syncs.pipe(Effect.map((after) => after > before)),
+              5000
+            );
+
+            const watched = yield* syncs;
+
+            yield* Effect.sleep(300);
+            fs.writeFileSync(path.join(day, "rollout-late.jsonl"), "{}\n");
+
+            const written = yield* eventuallyEffect(
+              syncs.pipe(Effect.map((after) => after > watched)),
+              5000
+            );
+
+            expect([appeared, written]).toEqual([true, true]);
+          }),
+        { pollMs: 600_000, scanMs: 100, sessionDebounceMs: 100 }
+      );
+    }
+  );
+
   it.live("a sync that finds nothing new sends no change event", () =>
     withEngine((engine, changes) =>
       Effect.gen(function* quietSync() {
