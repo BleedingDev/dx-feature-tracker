@@ -21,8 +21,14 @@ export interface SessionRef {
   readonly worktree: string | null;
 }
 
+export interface RemovedWorktrees {
+  readonly gone: (path: string) => boolean;
+  readonly knowsCommit: (sha: string) => boolean;
+}
+
 export interface HarnessScope {
   readonly dftHome: string | null;
+  readonly removed?: RemovedWorktrees;
   readonly repoCommonDir: string | null;
   readonly since: string | null;
   readonly worktrees: readonly string[];

@@ -1,5 +1,6 @@
 // @effect-diagnostics nodeBuiltinImport:off -- Auto-sync lists local branches with a synchronous git call at the process boundary.
 import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
 import path from "node:path";
 
 import { Console, Effect, Option } from "effect";
@@ -15,7 +16,12 @@ import {
 } from "../composition.js";
 import type { AutoSource } from "../composition.js";
 import type { EventStoreService } from "../contracts/services.js";
-import type { Harness, HarnessScope, SessionRef } from "../harness/contract.js";
+import type {
+  Harness,
+  HarnessScope,
+  RemovedWorktrees,
+  SessionRef,
+} from "../harness/contract.js";
 import type { HarnessId } from "../harness/ids.js";
 import { harnessAdapterId } from "../harness/pending.js";
 import { HarnessRegistry, harnessRegistryFor } from "../harness/registry.js";
@@ -98,6 +104,73 @@ export const planGitSources = (
   ];
 };
 
+const COMMIT_CHECK_TIMEOUT_MS = 3000;
+
+const hasCommit = (repoCommonDir: string, sha: string): boolean => {
+  try {
+    execFileSync(
+      "git",
+      [`--git-dir=${repoCommonDir}`, "cat-file", "-e", `${sha}^{commit}`],
+      { stdio: "ignore", timeout: COMMIT_CHECK_TIMEOUT_MS }
+    );
+
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const isUnder = (folder: string, root: string): boolean => {
+  const relative = path.relative(root, folder);
+
+  return (
+    relative !== "" && !relative.startsWith("..") && !path.isAbsolute(relative)
+  );
+};
+
+export const removedWorktreesOf = (
+  repoCommonDir: string,
+  worktrees: readonly string[]
+): RemovedWorktrees => {
+  const known = new Map<string, boolean>();
+
+  const roots = [
+    ...new Set(worktrees.map((worktree) => path.dirname(worktree))),
+  ];
+
+  return {
+    gone: (folder) =>
+      roots.some((root) => isUnder(folder, root)) && !existsSync(folder),
+    knowsCommit: (sha) => {
+      const found = known.get(sha) ?? hasCommit(repoCommonDir, sha);
+
+      known.set(sha, found);
+
+      return found;
+    },
+  };
+};
+
+const removedContext = (
+  context: FlightContext,
+  worktree: string
+): FlightContext => ({
+  branch: null,
+  flightId: null,
+  headSha: null,
+  repoCommonDir: context.repoCommonDir,
+  worktreePath: worktree,
+});
+
+const contextForRef = (
+  context: FlightContext,
+  scope: HarnessScope,
+  worktree: string
+): FlightContext =>
+  scope.removed?.gone(worktree) === true
+    ? removedContext(context, worktree)
+    : contextForRepo(worktree);
+
 export const harnessScopeFor = (
   context: FlightContext,
   options: AutoSyncOptions,
@@ -105,7 +178,7 @@ export const harnessScopeFor = (
 ): HarnessScope => {
   const worktree = context.worktreePath ?? options.cwd;
 
-  return {
+  const scope: HarnessScope = {
     dftHome: options.dftHome ?? defaultDftHome(),
     repoCommonDir: context.repoCommonDir,
     since: null,
@@ -114,6 +187,13 @@ export const harnessScopeFor = (
       ...worktrees.filter((other) => !samePath(other, worktree)),
     ],
   };
+
+  return context.repoCommonDir === null
+    ? scope
+    : {
+        ...scope,
+        removed: removedWorktreesOf(context.repoCommonDir, scope.worktrees),
+      };
 };
 
 export const planHarnessSources = (
@@ -142,7 +222,7 @@ export const planHarnessSources = (
         primary === null ||
         samePath(ref.worktree, primary)
           ? context
-          : contextForRepo(ref.worktree),
+          : contextForRef(context, scope, ref.worktree),
       harness: ref.harness,
       input: ref.path,
       ref,

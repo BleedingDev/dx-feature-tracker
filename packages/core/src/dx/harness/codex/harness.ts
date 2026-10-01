@@ -191,6 +191,20 @@ const placeInScope = (
   return worktree === null ? [] : [refOf(located, worktree)];
 };
 
+const removedWorktreeOf = (
+  scope: HarnessScope,
+  located: LocatedSession
+): string | null => {
+  const cwd = located.location?.cwd ?? null;
+
+  return scope.removed !== undefined &&
+    scope.worktrees.length > 0 &&
+    cwd !== null &&
+    scope.removed.gone(cwd)
+    ? cwd
+    : null;
+};
+
 const makeCodexHarness = Effect.gen(function* makeCodexHarness() {
   const store = yield* CodexStore;
   const heads = codexHeads(store);
@@ -257,11 +271,29 @@ const makeCodexHarness = Effect.gen(function* makeCodexHarness() {
           session.session.mtimeMs >= since
       );
 
-      const sessions = canonicalCopies(recent).flatMap((session) =>
-        placeInScope(scope, session)
+      const sessions = yield* Effect.forEach(
+        canonicalCopies(recent),
+        (session) => {
+          const placed = placeInScope(scope, session);
+          const removed = removedWorktreeOf(scope, session);
+
+          return placed.length > 0 || removed === null
+            ? Effect.succeed(placed)
+            : Effect.map(
+                heads
+                  .readHead(session.session.path)
+                  .pipe(Effect.orElseSucceed(() => null)),
+                (head) =>
+                  head?.commit !== null &&
+                  head?.commit !== undefined &&
+                  scope.removed?.knowsCommit(head.commit) === true
+                    ? [refOf(session, removed)]
+                    : []
+              );
+        }
       );
 
-      return [...sessions, ...hookSpoolRefs(scope, "codex")];
+      return [...sessions.flat(), ...hookSpoolRefs(scope, "codex")];
     });
 
   const parentOf = (head: CodexHead) =>

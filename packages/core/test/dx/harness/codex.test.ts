@@ -276,6 +276,71 @@ describe("Codex harness over real session structure", () => {
   );
 
   it.effect(
+    "keeps a session from a worktree removed before the first sync when the repo knows its commit",
+    () =>
+      Effect.gen(function* removedWorktree() {
+        const harness = yield* CodexHarness;
+
+        const removed = (commit: string) => ({
+          gone: (folder: string) => folder === DEMO_TWO,
+          knowsCommit: (sha: string) => sha === commit,
+        });
+
+        const known = yield* harness.locate({
+          ...everywhere,
+          removed: removed("14e42b7fce2a277dfddb2fa4ba1e5fa2fadb2310"),
+          repoCommonDir: `${DEMO}/.git`,
+          worktrees: [DEMO],
+        });
+
+        const foreign = yield* harness.locate({
+          ...everywhere,
+          removed: removed("0000000000000000000000000000000000000000"),
+          repoCommonDir: `${DEMO}/.git`,
+          worktrees: [DEMO],
+        });
+
+        const twoOf = (refs: readonly { readonly worktree: string | null }[]) =>
+          refs.filter((ref) => ref.worktree === DEMO_TWO).length;
+
+        expect([twoOf(known), twoOf(foreign)]).toStrictEqual([1, 0]);
+
+        const ref = known.find((found) => found.worktree === DEMO_TWO);
+
+        expect(ref).toBeDefined();
+
+        if (ref === undefined) {
+          return;
+        }
+
+        const batch = yield* harness.read(ref, {
+          ...readInput(),
+          context: {
+            ...emptyFlightContext,
+            repoCommonDir: `${DEMO}/.git`,
+            worktreePath: DEMO_TWO,
+          },
+        });
+
+        expect(
+          batch.events
+            .filter((event) => event.kind === "ai.usage")
+            .map((event) => [
+              event.context.repoCommonDir,
+              event.context.branch,
+              event.ai?.branchSource,
+            ])
+        ).toStrictEqual(
+          Array.from({ length: 3 }, () => [
+            `${DEMO}/.git`,
+            "feat/codex-two",
+            "session-recorded",
+          ])
+        );
+      }).pipe(Effect.provide(codexAt))
+  );
+
+  it.effect(
     "locates sessions by worktree, including the second worktree and the -C orchestrator",
     () =>
       Effect.gen(function* worktrees() {
