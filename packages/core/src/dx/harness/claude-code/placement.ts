@@ -4,7 +4,12 @@ import { touchedPaths } from "../../correlation/attribution/touched-paths.js";
 import type { FlightContext } from "../../model/event.js";
 import type { BranchSource } from "../ids.js";
 import type { Placement } from "./events.js";
-import { dirsBetween, isInside, isStrictAncestor } from "./paths.js";
+import {
+  dirsBetween,
+  isInside,
+  isStrictAncestor,
+  sameFolder,
+} from "./paths.js";
 import { recordedBranch } from "./rows.js";
 import type { RequestPick } from "./scan.js";
 
@@ -136,4 +141,37 @@ export const placePicks = (
         : { pick, placement: outsideWorktree(pick) };
     });
   });
+};
+
+const ownerOf = (
+  cwd: string | null,
+  splitAcross: readonly string[]
+): string | null => {
+  let owner: string | null = null;
+
+  for (const worktree of splitAcross) {
+    if (
+      isInside(cwd, worktree) &&
+      (owner === null || worktree.length > owner.length)
+    ) {
+      owner = worktree;
+    }
+  }
+
+  return owner ?? splitAcross[0] ?? null;
+};
+
+export const ownedBy = (
+  worktree: string | null,
+  splitAcross: readonly string[] | undefined
+): ((pick: RequestPick) => boolean) => {
+  if (worktree === null || splitAcross === undefined) {
+    return () => true;
+  }
+
+  return (pick) => {
+    const owner = ownerOf(pick.row.cwd, splitAcross);
+
+    return owner !== null && sameFolder(owner, worktree);
+  };
 };

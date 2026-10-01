@@ -40,15 +40,17 @@ import {
   slugMayHold,
 } from "./paths.js";
 import type { SessionFamily } from "./paths.js";
-import { anyPointsIntoWorktree, placePicks } from "./placement.js";
+import { anyPointsIntoWorktree, ownedBy, placePicks } from "./placement.js";
 import type { PlacedPick } from "./placement.js";
 import { removedWorktreeFamilies } from "./removed.js";
+import type { RemovedFamily } from "./removed.js";
 import { decodeClaudeLine } from "./rows.js";
 import { scanChunks } from "./scan.js";
 import type {
   ChatInfo,
   FileChunk,
   FileState,
+  RequestPick,
   ScanTally,
   SubagentMeta,
 } from "./scan.js";
@@ -126,6 +128,20 @@ const refOf = (family: SessionFamily, worktree: string | null): SessionRef => ({
   worktree,
 });
 
+const removedRefs = (
+  family: SessionFamily,
+  { gone, movesInto }: RemovedFamily
+): readonly SessionRef[] => {
+  const splitAcross = [gone, ...movesInto];
+
+  return movesInto.length === 0
+    ? [refOf(family, gone)]
+    : splitAcross.map((worktree) => ({
+        ...refOf(family, worktree),
+        splitAcross,
+      }));
+};
+
 const sinceMillis = (since: string | null): number | null =>
   since === null
     ? null
@@ -199,17 +215,17 @@ interface Emitted {
   readonly zeroUsage: number;
 }
 
+interface ChatAnchor {
+  readonly anchor: RequestPick;
+  readonly facts: SessionFacts;
+  readonly placement: Placement;
+}
+
 const chatFacts = (
   placed: readonly PlacedPick[],
   titles: ReadonlyMap<string, string>
-): ReadonlyMap<
-  string,
-  { readonly facts: SessionFacts; readonly placement: Placement }
-> => {
-  const chats = new Map<
-    string,
-    { readonly facts: SessionFacts; readonly placement: Placement }
-  >();
+): ReadonlyMap<string, ChatAnchor> => {
+  const chats = new Map<string, ChatAnchor>();
 
   for (const { pick, placement } of placed) {
     const seen = chats.get(pick.chat.chatId);
@@ -217,6 +233,7 @@ const chatFacts = (
 
     if (seen === undefined) {
       chats.set(pick.chat.chatId, {
+        anchor: pick,
         facts: {
           chat: pick.chat,
           cwd: pick.row.cwd,
@@ -249,11 +266,10 @@ const mainChat = (chatId: string): ChatInfo => ({
   sessionId: chatId,
 });
 
-const emit = (
+const requestEvents = (
   placed: readonly PlacedPick[],
-  scan: ReturnType<typeof scanChunks>,
   input: EventInput,
-  fallback: Placement | null
+  owned: (pick: RequestPick) => boolean
 ): Emitted => {
   const events: DxEventEnvelope[] = [];
   const turns = new Set<string>();
@@ -261,44 +277,60 @@ const emit = (
   let incompleteUsage = 0;
 
   for (const { pick, placement } of placed) {
-    const usage = usageEvent(pick, placement, input);
-
-    if (usage === null) {
-      zeroUsage += 1;
-    } else {
-      events.push(usage);
-      incompleteUsage += isStreamStart(pick.row) ? 1 : 0;
-    }
-
     const turnKey = turnKeyOf(pick);
+    const firstOfTurn = !turns.has(turnKey);
 
-    if (!turns.has(turnKey)) {
-      turns.add(turnKey);
-      events.push(turnEvent(pick, placement, input));
+    turns.add(turnKey);
+
+    if (owned(pick)) {
+      const usage = usageEvent(pick, placement, input);
+
+      if (usage === null) {
+        zeroUsage += 1;
+      } else {
+        events.push(usage);
+        incompleteUsage += isStreamStart(pick.row) ? 1 : 0;
+      }
+
+      if (firstOfTurn) {
+        events.push(turnEvent(pick, placement, input));
+      }
     }
   }
 
+  return { events, incompleteUsage, zeroUsage };
+};
+
+const untitledFacts = (chatId: string, title: string | null): SessionFacts => ({
+  chat: mainChat(chatId),
+  cwd: null,
+  startedAt: null,
+  title,
+  version: null,
+});
+
+const emit = (
+  placed: readonly PlacedPick[],
+  scan: ReturnType<typeof scanChunks>,
+  input: EventInput,
+  fallback: Placement | null,
+  owned: (pick: RequestPick) => boolean
+): Emitted => {
+  const requests = requestEvents(placed, input, owned);
+  const events = [...requests.events];
   const chats = chatFacts(placed, scan.titles);
 
-  for (const { facts, placement } of chats.values()) {
-    events.push(sessionEvent(facts, placement, input));
+  for (const { anchor, facts, placement } of chats.values()) {
+    if (owned(anchor)) {
+      events.push(sessionEvent(facts, placement, input));
+    }
   }
 
   if (fallback !== null) {
     for (const [chatId, title] of scan.titles) {
       if (!chats.has(chatId)) {
         events.push(
-          sessionEvent(
-            {
-              chat: mainChat(chatId),
-              cwd: null,
-              startedAt: null,
-              title,
-              version: null,
-            },
-            fallback,
-            input
-          )
+          sessionEvent(untitledFacts(chatId, title), fallback, input)
         );
       }
     }
@@ -308,16 +340,14 @@ const emit = (
     const known = chats.get(cost.sessionId);
     const placement = known?.placement ?? fallback;
 
-    if (placement !== null) {
+    if (placement !== null && (known === undefined || owned(known.anchor))) {
       events.push(
         costEvent(
-          known?.facts ?? {
-            chat: mainChat(cost.sessionId),
-            cwd: null,
-            startedAt: null,
-            title: scan.titles.get(cost.sessionId) ?? null,
-            version: null,
-          },
+          known?.facts ??
+            untitledFacts(
+              cost.sessionId,
+              scan.titles.get(cost.sessionId) ?? null
+            ),
           cost.row,
           placement,
           input
@@ -326,7 +356,7 @@ const emit = (
     }
   }
 
-  return { events, incompleteUsage, zeroUsage };
+  return { ...requests, events };
 };
 
 const batchOf = (
@@ -453,7 +483,7 @@ export class ClaudeCodeHarness extends Context.Service<
                         slugMayHold(family.project, worktree)
                       )
                       .map((worktree) => refOf(family, worktree))
-                  : [refOf(family, gone)];
+                  : removedRefs(family, gone);
               });
 
         return [...sessions, ...hookSpoolRefs(scope, "claude-code")];
@@ -553,6 +583,7 @@ export class ClaudeCodeHarness extends Context.Service<
             ? yield* readFamily(ref, input, files, new Map())
             : first;
 
+        const owned = ownedBy(ref.worktree, ref.splitAcross);
         const placed = pointsIn ? picked : [];
 
         const observedAt = DateTime.formatIso(yield* DateTime.now);
@@ -566,7 +597,8 @@ export class ClaudeCodeHarness extends Context.Service<
           placed,
           scan,
           { home: store.home, observedAt, origin: input.origin },
-          fallback
+          fallback,
+          owned
         );
 
         return {

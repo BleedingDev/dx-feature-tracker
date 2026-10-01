@@ -154,6 +154,46 @@ const writeSession = (cwd: string, toolOutput: string): void => {
   utimesSync(file, FIXTURE_TIME, FIXTURE_TIME);
 };
 
+const MOVE_AT_LINE = 30;
+
+const movedAfter = (text: string, cwd: string, branch: string): string =>
+  text
+    .split("\n")
+    .map((line, index) =>
+      index < MOVE_AT_LINE
+        ? line
+        : line
+            .replaceAll(
+              `"cwd":${JSON.stringify(FIXTURE_CWD)}`,
+              `"cwd":${JSON.stringify(cwd)}`
+            )
+            .replaceAll(
+              `"gitBranch":${JSON.stringify(BRANCH)}`,
+              `"gitBranch":${JSON.stringify(branch)}`
+            )
+    )
+    .join("\n");
+
+const writeMovingSession = (
+  start: string,
+  later: string,
+  laterBranch: string,
+  toolOutput: string
+): void => {
+  const dir = path.join(home, ".claude", "projects", projectSlug(start));
+  const file = path.join(dir, `${SESSION}.jsonl`);
+
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(
+    file,
+    withLastToolResult(
+      movedAfter(fixture, later, laterBranch).replaceAll(FIXTURE_CWD, start),
+      toolOutput
+    )
+  );
+  utimesSync(file, FIXTURE_TIME, FIXTURE_TIME);
+};
+
 const setUpRepo = (): void => {
   rmSync(REPO, { force: true, recursive: true });
   rmSync(home, { force: true, recursive: true });
@@ -198,12 +238,10 @@ const placedOf = (context: FlightContext) =>
               cursor: null,
               origin: "fixture",
             })
-            .pipe(
-              Effect.map((batch) =>
-                batch.events.filter((event) => event.kind === "ai.usage")
-              )
-            )
+            .pipe(Effect.map((batch) => batch.events))
     )(planned);
+
+    const ids = usage.flat().map((event) => event.eventId);
 
     return {
       planned: planned.map((source) => ({
@@ -211,10 +249,12 @@ const placedOf = (context: FlightContext) =>
         session: source.ref?.sessionId ?? null,
         worktreePath: source.context.worktreePath,
       })),
+      repeated: ids.length - new Set(ids).size,
       usage: [
         ...new Set(
           usage
             .flat()
+            .filter((event) => event.kind === "ai.usage")
             .map(
               (event) =>
                 `${event.context.worktreePath ?? "-"}|${event.context.branch ?? "-"}|${event.ai?.branchSource ?? "-"}|${event.context.repoCommonDir === null ? "no-repo" : "repo"}`
@@ -329,6 +369,111 @@ describe("Claude Code sessions from a worktree removed before the first sync", (
 
       expect(planned).toStrictEqual([]);
     }).pipe(Effect.provide(registryWith(claudeAt)))
+  );
+
+  it.effect(
+    "store requests that move into the live main worktree under the repo when the removed folder name extends the repo's",
+    () =>
+      Effect.gen(function* movesIntoRepo() {
+        setUpRepo();
+
+        const gone = path.join(scratch, "repo-two");
+        const sha = commitInWorktree(gone, BRANCH, false);
+
+        writeMovingSession(
+          gone,
+          REPO,
+          "main",
+          `[${BRANCH} ${sha.slice(0, 7)}] Document greet`
+        );
+
+        const context = contextForRepo(REPO);
+        const { planned, repeated, usage } = yield* placedOf(context);
+
+        expect(planned).toStrictEqual([
+          ...keptUnder(gone, context),
+          {
+            repoCommonDir: context.repoCommonDir,
+            session: SESSION,
+            worktreePath: REPO,
+          },
+        ]);
+        expect(usage.toSorted()).toStrictEqual(
+          [
+            `${gone}|${BRANCH}|harness-recorded|repo`,
+            `${REPO}|main|harness-recorded|repo`,
+          ].toSorted()
+        );
+        expect(repeated).toBe(0);
+      }).pipe(Effect.provide(registryWith(claudeAt)))
+  );
+
+  it.effect(
+    "store requests that move into the live main worktree under the repo when the removed folder name does not extend the repo's",
+    () =>
+      Effect.gen(function* unrelatedName() {
+        setUpRepo();
+
+        const gone = path.join(scratch, "wt-six");
+        const sha = commitInWorktree(gone, BRANCH, false);
+
+        writeMovingSession(
+          gone,
+          REPO,
+          "main",
+          `[${BRANCH} ${sha.slice(0, 7)}] Document greet`
+        );
+
+        const context = contextForRepo(REPO);
+        const { planned, repeated, usage } = yield* placedOf(context);
+
+        expect(planned).toStrictEqual([
+          ...keptUnder(gone, context),
+          {
+            repoCommonDir: context.repoCommonDir,
+            session: SESSION,
+            worktreePath: REPO,
+          },
+        ]);
+        expect(usage.toSorted()).toStrictEqual(
+          [
+            `${gone}|${BRANCH}|harness-recorded|repo`,
+            `${REPO}|main|harness-recorded|repo`,
+          ].toSorted()
+        );
+        expect(repeated).toBe(0);
+      }).pipe(Effect.provide(registryWith(claudeAt)))
+  );
+
+  it.effect(
+    "store requests that move outside every worktree once, as (no repo), from the removed folder",
+    () =>
+      Effect.gen(function* movesNowhere() {
+        setUpRepo();
+
+        const gone = path.join(scratch, "wt-seven");
+        const nowhere = path.join(scratch, "elsewhere");
+        const sha = commitInWorktree(gone, BRANCH, false);
+
+        writeMovingSession(
+          gone,
+          nowhere,
+          "main",
+          `[${BRANCH} ${sha.slice(0, 7)}] Document greet`
+        );
+
+        const context = contextForRepo(REPO);
+        const { planned, repeated, usage } = yield* placedOf(context);
+
+        expect(planned).toStrictEqual(keptUnder(gone, context));
+        expect(usage.toSorted()).toStrictEqual(
+          [
+            `${gone}|${BRANCH}|harness-recorded|repo`,
+            "-|main|harness-recorded|no-repo",
+          ].toSorted()
+        );
+        expect(repeated).toBe(0);
+      }).pipe(Effect.provide(registryWith(claudeAt)))
   );
 
   it.effect("leave a sibling folder that still exists to its own sync", () =>

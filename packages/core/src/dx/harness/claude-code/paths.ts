@@ -28,6 +28,9 @@ export const isInside = (path: string | null, dir: string): boolean => {
   return child === parent || child.startsWith(`${parent}/`);
 };
 
+export const sameFolder = (a: string, b: string): boolean =>
+  trimSlashes(a) === trimSlashes(b);
+
 export const isStrictAncestor = (path: string | null, dir: string): boolean => {
   if (path === null) {
     return false;

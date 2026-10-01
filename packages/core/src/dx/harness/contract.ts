@@ -18,6 +18,7 @@ export interface SessionRef {
   readonly sessionId: string | null;
   readonly size: number | null;
   readonly source: string;
+  readonly splitAcross?: readonly string[];
   readonly worktree: string | null;
 }
 
