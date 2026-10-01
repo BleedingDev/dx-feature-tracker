@@ -25,6 +25,7 @@ import {
   emptyFlightContext,
 } from "../../src/dx/model/event.js";
 import { EventIdSchema } from "../../src/dx/model/ids.js";
+import { deriveUsageFacts } from "../../src/dx/usage/derive.js";
 
 const HOME = "/home/user";
 
@@ -530,6 +531,77 @@ describe("orchestrator outside a repo (D36)", () => {
         expect(split?.payload.historicalBranch).toMatchObject({
           attribution: "provisional",
         });
+      }).pipe(Effect.provide(memory))
+  );
+
+  it.effect(
+    "keeps every share of a split request as its own usage fact, once",
+    () =>
+      Effect.gen(function* scenario() {
+        const orchestrate = event({
+          cwd: ORCHESTRATOR,
+          id: "orchestrate",
+          tokens: 1000,
+          touched: [APP, LIB],
+          turnId: "turn-1",
+        });
+
+        const telemetry: DxEventEnvelope = {
+          ...orchestrate,
+          ai:
+            orchestrate.ai === null
+              ? null
+              : { ...orchestrate.ai, channel: "otel", cwd: null },
+          eventId: EventIdSchema.make("orchestrate-otel"),
+          upstreamKey: "otel:orchestrate",
+          usage:
+            orchestrate.usage === null
+              ? null
+              : { ...orchestrate.usage, requestKey: "req-orchestrate" },
+        };
+
+        const placed = yield* attribute([
+          orchestrate,
+          telemetry,
+          event({
+            agentId: "agent-app",
+            at: "2026-10-01T10:00:01.000Z",
+            cwd: APP,
+            id: "app-work",
+            tokens: 300,
+          }),
+          event({
+            agentId: "agent-lib",
+            at: "2026-10-01T10:00:02.000Z",
+            cwd: LIB,
+            id: "lib-work",
+            tokens: 100,
+          }),
+        ]);
+
+        const history = attributeHistoricalBranches(placed.events, {
+          commitBranches: new Map(),
+          timelines: [timeline(APP, "main"), timeline(LIB, "main")],
+        });
+
+        const { facts } = deriveUsageFacts(history.events);
+
+        expect(
+          facts
+            .filter((fact) => fact.agent === null)
+            .map((fact) => ({
+              attribution: fact.attribution,
+              repo: fact.repo,
+              total: fact.tokens.total,
+            }))
+            .toSorted((a, b) => a.repo.localeCompare(b.repo))
+        ).toStrictEqual([
+          { attribution: "subagent-split", repo: APP_GIT, total: 750 },
+          { attribution: "subagent-split", repo: LIB_GIT, total: 250 },
+        ]);
+        expect(
+          facts.reduce((sum, fact) => sum + (fact.tokens.total ?? 0), 0)
+        ).toBe(1400);
       }).pipe(Effect.provide(memory))
   );
 

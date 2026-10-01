@@ -74,7 +74,14 @@ const isAccountBucket = (event: DxEventEnvelope): boolean => {
   );
 };
 
-const matchKeys = (event: DxEventEnvelope): string[] => {
+const SplitShareSchema = Schema.Struct({ splitOf: Schema.NonEmptyString });
+
+const decodeSplitShare = Schema.decodeUnknownOption(SplitShareSchema);
+
+const isSplitShare = (event: DxEventEnvelope): boolean =>
+  Option.isSome(decodeSplitShare(event.payload.repoAttribution));
+
+const requestKeys = (event: DxEventEnvelope): string[] => {
   const { generationId, requestId } = event.identity;
   const session = sessionOf(event);
   const requestKey = event.usage?.requestKey ?? null;
@@ -98,6 +105,14 @@ const matchKeys = (event: DxEventEnvelope): string[] => {
 
   return keys;
 };
+
+const matchKeys = (event: DxEventEnvelope): string[] =>
+  isSplitShare(event)
+    ? [`share:${event.usage?.requestKey ?? event.eventId}`]
+    : requestKeys(event);
+
+const splitRequestKeys = (events: readonly DxEventEnvelope[]): Set<string> =>
+  new Set(events.filter(isSplitShare).flatMap(requestKeys));
 
 const sessionlessIds = (event: DxEventEnvelope): string[] =>
   sessionOf(event) === null && present(event.identity.requestId)
@@ -484,7 +499,7 @@ export const deriveUsageFacts = (
 ): DerivedUsage => {
   const replaced = replacedKeys(events);
 
-  const unique = [
+  const bearing = [
     ...new Map(
       events.flatMap((event) =>
         usageBearing(event) && !replaced.has(event.usage?.requestKey ?? "")
@@ -493,6 +508,13 @@ export const deriveUsageFacts = (
       )
     ).values(),
   ];
+
+  const split = splitRequestKeys(bearing);
+
+  const unique = bearing.filter(
+    (event) =>
+      isSplitShare(event) || !requestKeys(event).some((key) => split.has(key))
+  );
 
   const { groups, unkeyed } = groupRequests(unique);
   const keyedChannels = new Map<string, Set<string>>();
