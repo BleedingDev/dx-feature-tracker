@@ -18,10 +18,6 @@ import {
 } from "effect";
 
 import { runCollect } from "../cli/commands/collect.js";
-import {
-  HOOK_SPOOL_FOLDER,
-  latestSpoolRecord,
-} from "../collectors/cursor-hooks/spool.js";
 import type { EventStoreService } from "../contracts/services.js";
 import { harnessRegistryFor } from "../harness/registry.js";
 import { emptyFlightContext } from "../model/event.js";
@@ -31,11 +27,7 @@ import type {
   DxCollectorServices,
   RegisteredCollector,
 } from "../registry/registry.js";
-import {
-  contextForRepo,
-  repoWorktrees,
-  worktreeSpoolId,
-} from "../registry/runtime.js";
+import { contextForRepo, repoWorktrees } from "../registry/runtime.js";
 import {
   planSources,
   runPlannedStep,
@@ -43,6 +35,8 @@ import {
 } from "../registry/sync.js";
 import type { SyncStep } from "../registry/sync.js";
 import { openSqliteEventStore } from "../storage/sqlite-event-store.js";
+import { ACCOUNT_POLLS, LIVE_CAPTURES } from "./capture.js";
+import type { SpoolWatch } from "./capture.js";
 import {
   addRepo as addRepoToConfig,
   readLiveConfig,
@@ -56,7 +50,7 @@ import type {
   TrackResult,
   UntrackResult,
 } from "./config.js";
-import { liveHome, LiveActionError, spoolRoot } from "./home.js";
+import { liveHome, LiveActionError } from "./home.js";
 import type { LiveHome } from "./home.js";
 import {
   deleteRepoData as deleteRepoDataIn,
@@ -75,10 +69,18 @@ import type {
   RestoreResult,
 } from "./store-admin.js";
 
-export const USAGE_SOURCE = "collector.cursor-usage-api" as const;
+export {
+  CURSOR_USAGE_INPUT as USAGE_INPUT,
+  CURSOR_USAGE_SOURCE as USAGE_SOURCE,
+} from "../harness/cursor/capture.js";
 
-export const USAGE_INPUT =
-  "https://cursor.com/api/dashboard/get-filtered-usage-events" as const;
+const POLLED_SOURCES: ReadonlySet<string> = new Set(
+  ACCOUNT_POLLS.map((poll) => poll.source)
+);
+
+const [ACCOUNT_POLL] = ACCOUNT_POLLS;
+
+const indexKey = (watch: SpoolWatch, key: string) => `${watch.id}|${key}`;
 
 export const LIVE_DEFAULTS = {
   debounceMs: 500,
@@ -512,9 +514,20 @@ export const startLiveEngine = (
         .all(before, commonDir)
         .map((row) => decodeBranchRow(row));
 
+    const watches: readonly SpoolWatch[] = LIVE_CAPTURES.flatMap((capture) =>
+      capture.watches(home.dftHome)
+    );
+
     const indexSpool = (state: RepoState) => {
       for (const worktree of repoWorktrees(state.repo.root)) {
-        spoolIndex.set(worktreeSpoolId(worktree), state.repo.root);
+        for (const watch of watches) {
+          if (watch.keyForWorktree !== null) {
+            spoolIndex.set(
+              indexKey(watch, watch.keyForWorktree(worktree)),
+              state.repo.root
+            );
+          }
+        }
       }
     };
 
@@ -578,7 +591,7 @@ export const startLiveEngine = (
               storePath: home.storePath,
             },
             repoWorktrees(root)
-          )).filter((step) => step.source !== USAGE_SOURCE);
+          )).filter((step) => !POLLED_SOURCES.has(step.source));
 
           const done: SyncStep[] = [];
 
@@ -639,14 +652,18 @@ export const startLiveEngine = (
 
     const usageWork = exclusive(
       Effect.gen(function* syncUsage() {
-        if (!config.cursorUsageImport || !running) {
+        if (
+          ACCOUNT_POLL === undefined ||
+          !ACCOUNT_POLL.enabled(config) ||
+          !running
+        ) {
           return;
         }
 
         const step = yield* collectStep(
           emptyFlightContext,
-          USAGE_SOURCE,
-          USAGE_INPUT
+          ACCOUNT_POLL.source,
+          ACCOUNT_POLL.input
         );
 
         usage.runs += 1;
@@ -735,16 +752,15 @@ export const startLiveEngine = (
         Effect.asVoid
       );
 
-    const repoForSpool = (id: string): string | null => {
-      const known = spoolIndex.get(id);
+    const repoForSpool = (watch: SpoolWatch, key: string): string | null => {
+      const cacheKey = indexKey(watch, key);
+      const known = spoolIndex.get(cacheKey);
 
       if (known !== undefined) {
         return known;
       }
 
-      const commonDir = latestSpoolRecord(
-        path.join(spoolRoot(home), id, HOOK_SPOOL_FOLDER)
-      )?.git.repoCommonDir;
+      const commonDir = watch.commonDirOf(key);
 
       const owner = [...repos.values()].find(
         (state) => state.repo.commonDir === commonDir
@@ -754,17 +770,17 @@ export const startLiveEngine = (
         return null;
       }
 
-      spoolIndex.set(id, owner.repo.root);
+      if (watch.keyForWorktree !== null) {
+        spoolIndex.set(cacheKey, owner.repo.root);
+      }
 
       return owner.repo.root;
     };
 
-    const onSpoolEvent = (file: string) =>
+    const onSpoolEvent = (watch: SpoolWatch, file: string) =>
       Effect.suspend(() => {
-        const [id, ...rest] = file.split(path.sep);
-
-        const root =
-          rest.length === 0 || id === undefined ? null : repoForSpool(id);
+        const key = watch.keyOf(file);
+        const root = key === null ? null : repoForSpool(watch, key);
 
         return root === null ? Effect.void : trigger(root);
       });
@@ -790,26 +806,26 @@ export const startLiveEngine = (
         }
       }
 
-      const ids = listDir(spoolRoot(home))
-        .filter((entry) => entry.isDirectory())
-        .map((entry) => entry.name);
+      for (const watch of watches) {
+        const prefix = `spool:${watch.id}|`;
+        const keys = watch.keys();
+        const live = new Set(keys.map((key) => `${prefix}${key}`));
 
-      const live = new Set(ids.map((id) => `spool:${id}`));
-
-      for (const key of scanned.keys()) {
-        if (key.startsWith("spool:") && !live.has(key)) {
-          scanned.delete(key);
+        for (const key of scanned.keys()) {
+          if (key.startsWith(prefix) && !live.has(key)) {
+            scanned.delete(key);
+          }
         }
-      }
 
-      for (const id of ids) {
-        const next = fingerprint([[path.join(spoolRoot(home), id), everyFile]]);
+        for (const key of keys) {
+          const next = fingerprint([[watch.pathOf(key), everyFile]]);
 
-        if (changedSinceScan(`spool:${id}`, next)) {
-          const root = repoForSpool(id);
+          if (changedSinceScan(`${prefix}${key}`, next)) {
+            const root = repoForSpool(watch, key);
 
-          if (root !== null) {
-            hits.add(root);
+            if (root !== null) {
+              hits.add(root);
+            }
           }
         }
       }
@@ -881,17 +897,19 @@ export const startLiveEngine = (
 
     yield* trackConfigured;
 
-    yield* fs
-      .makeDirectory(spoolRoot(home), { recursive: true })
-      .pipe(Effect.ignore);
+    for (const watch of watches) {
+      yield* fs
+        .makeDirectory(watch.root, { mode: 0o700, recursive: true })
+        .pipe(Effect.ignore);
 
-    yield* Effect.forkIn(
-      fs.watch(spoolRoot(home), { recursive: true }).pipe(
-        Stream.runForEach((event) => onSpoolEvent(event.path)),
-        Effect.ignore
-      ),
-      scope
-    );
+      yield* Effect.forkIn(
+        fs.watch(watch.root, { recursive: true }).pipe(
+          Stream.runForEach((event) => onSpoolEvent(watch, event.path)),
+          Effect.ignore
+        ),
+        scope
+      );
+    }
 
     const afterSyncCheck = Effect.gen(function* rewatch() {
       for (const state of repos.values()) {
@@ -1127,7 +1145,10 @@ export const startLiveEngine = (
           syncs: state.syncs,
         })),
         running,
-        usage: { ...usage, enabled: config.cursorUsageImport },
+        usage: {
+          ...usage,
+          enabled: ACCOUNT_POLL?.enabled(config) ?? false,
+        },
       })),
       stop,
       stopped: Effect.asVoid(Deferred.await(stoppedSignal)),

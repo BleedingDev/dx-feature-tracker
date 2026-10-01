@@ -7,15 +7,16 @@ import {
   chatStoreSources,
 } from "../../collectors/cursor-chats-store/sources.js";
 import {
+  cursorSpoolDirFor,
+  cursorSpoolRoot,
+  legacyHookSpoolDirFor,
+} from "../../collectors/cursor-hooks/spool-dirs.js";
+import {
   HOOK_SPOOL_FOLDER,
   latestSpoolRecord,
 } from "../../collectors/cursor-hooks/spool.js";
 import { CURSOR_LOCAL_DB_ADAPTER_ID } from "../../collectors/cursor-local-db/descriptor.js";
 import { localDbSources } from "../../collectors/cursor-local-db/sources.js";
-import {
-  hookSpoolDirFor,
-  legacyHookSpoolDirFor,
-} from "../../registry/runtime.js";
 import type { Channel } from "../ids.js";
 
 export const CURSOR_HOOKS_SOURCE = "collector.cursor-hooks" as const;
@@ -95,9 +96,11 @@ export const hookSpoolSources = (
   worktree: string,
   dftHome: string
 ): readonly { readonly input: string; readonly source: string }[] =>
-  [hookSpoolDirFor(worktree, dftHome), legacyHookSpoolDirFor(worktree)].flatMap(
-    (input) =>
-      existsSync(input) ? [{ input, source: CURSOR_HOOKS_SOURCE }] : []
+  [
+    cursorSpoolDirFor(worktree, dftHome),
+    legacyHookSpoolDirFor(worktree),
+  ].flatMap((input) =>
+    existsSync(input) ? [{ input, source: CURSOR_HOOKS_SOURCE }] : []
   );
 
 export const leftoverSpoolSources = (
@@ -107,7 +110,7 @@ export const leftoverSpoolSources = (
 ): readonly { readonly input: string; readonly source: string }[] =>
   repoCommonDir === null
     ? []
-    : listDirs(path.join(dftHome, "spool"))
+    : listDirs(cursorSpoolRoot(dftHome))
         .map((dir) => path.join(dir, HOOK_SPOOL_FOLDER))
         .filter(
           (dir) =>

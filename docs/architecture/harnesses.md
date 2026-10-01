@@ -62,11 +62,28 @@ Channel precedence is per harness (`harness/precedence.ts` reads every `meta.ts`
 
 ## Branch precedence
 
-Correlation (`correlation/branch-at-time/attribute.ts`) applies D28 to every harness. A branch the tool recorded on the request (`ai.branchSource: "harness-recorded"`) is kept. Otherwise a hook turn of the same session within five minutes gives its branch (`hook`). Then checkout history at that time (`git-at-time`), then the folder, then unassigned. A branch the tool records once per session (Codex `session_meta.git`, the Cursor chat store) is `session-recorded`: it is kept on the event but checkout history overrides it. Cursor events keep their phase 1 rule: only account rows joined to a session take hook turns.
+Correlation (`correlation/branch-at-time/attribute.ts`) applies D28 to every harness. A branch the tool recorded on the request (`ai.branchSource: "harness-recorded"`) is kept. Otherwise a hook turn of the same session within five minutes gives its branch (`hook`). Then checkout history at that time (`git-at-time`), then the folder, then unassigned. A branch the tool records once per session (Codex `session_meta.git`, the Cursor chat store) is `session-recorded`: it is kept on the event but checkout history overrides it. Whether a request takes a hook turn is the harness rule `takesHookTurn`. Cursor keeps its phase 1 rule (only account rows joined to a session take hook turns): lifting it moves a parent agent's edits in other worktrees onto the parent's branch, which `parallel-worktrees-replay.test.ts` rejects.
+
+## Harness rules
+
+Generic code never checks a tool's adapter ids. It asks `rulesForEvent(event)` (`harness/rules.ts`), which finds the event's harness from `ai.harness` or, for events without an `ai` block, from the first harness whose `claims` accepts it. Each tool may supply, in `harness/<tool>/rules.ts`:
+
+| Rule | Used by | Cursor |
+| --- | --- | --- |
+| `effort(rawModel, recorded)` | chat model timeline, collector blocks | model id suffix (`gpt-5-high`), `auto` explained |
+| `rawUsage` | `metrics/ai-usage/normalize.ts`, collector blocks | stop-hook token fields while their semantics are unverified |
+| `listPrice.field` | `metrics/cost/readings.ts` | `tokenUsage.totalCents`, the list price Cursor reports for Auto |
+| `sourceKindAliases` | `metrics/cost/readings.ts` ranking | `cursor-cli` ranks as `sdk` |
+| `chatRole(event)` | `chats/tree.ts` (requests, tool calls, agent time, session id kind) | hooks, local DB, CLI stream, transcripts |
+| `takesHookTurn(event)` | branch attribution | never (see above) |
+
+The defaults (`DEFAULT_RULES`) keep the model name, take effort only from a recorded field, and let every event with an `ai` block take hook turns.
 
 ## Live hooks
 
-Tool hooks call `dft hook <tool> <event>` (plain `dft hook` still means Cursor). It reads one JSON payload on stdin, keeps only session id, turn id, cwd, transcript path, model, effort, agent id and type, the event and the branch at that moment (from git), appends one `dft.hook.v1` line to `~/.dft/hooks/<tool>/<date>.jsonl`, never writes into the repo, exits 0 and prints only what the tool needs. Cursor keeps its existing spool.
+Tool hooks call `dft hook <tool> <event>` (plain `dft hook` still means Cursor). It reads one JSON payload on stdin, keeps only session id, turn id, cwd, transcript path, model, effort, agent id and type, the event and the branch at that moment (from git), appends one `dft.hook.v1` line to `~/.dft/hooks/<tool>/<date>.jsonl`, never writes into the repo, exits 0 and prints only what the tool needs. A decoder may bring its own `run`: Cursor's writes its per-worktree spool (`~/.dft/spool/<worktree id>/cursor-hooks/`), so `dft hook`, `dft hook cursor <event>` and `runCursorHook` are one path.
+
+The live engine (`live/engine.ts`) watches what each harness declares in `live/capture.ts`: every tool's `~/.dft/hooks/<tool>/` (a changed day file syncs the repo of its newest observation), Cursor's spool folders (`harness/cursor/capture.ts`, mapped to repos by worktree id) and Cursor's account usage poll, the only account poll today.
 
 A harness turns its observations into events in two calls. `locate` adds `hookSpoolRefs(scope, id)` (one `hooks` ref per spool day and worktree; pass `"extension"` as the third argument when an extension or plugin calls `dft hook`), and `read` hands every ref it got from there to `readHookSpool(ref, <tool>HookDecoder, input.origin)`. Each observation becomes one event with `acquisition: "hook"`, the branch the hook saw, and an `ai` block on the ref's channel, so correlation can give the session's requests that branch. `readHookObservations(dftHome, tool)` still returns the raw observations.
 

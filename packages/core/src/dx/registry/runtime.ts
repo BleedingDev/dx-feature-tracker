@@ -1,6 +1,5 @@
 // @effect-diagnostics nodeBuiltinImport:off -- Runtime wiring resolves the selected repo path and the store path once per invocation at the process boundary.
 import { execFileSync } from "node:child_process";
-import { createHash } from "node:crypto";
 import { realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import path from "node:path";
@@ -8,28 +7,24 @@ import path from "node:path";
 import { Effect } from "effect";
 import type { Layer } from "effect";
 
-import {
-  handleCursorHook,
-  resolveGitContext,
-} from "../collectors/cursor-hooks/handler.js";
+import { resolveGitContext } from "../collectors/cursor-hooks/handler.js";
 import type {
   GitResolver,
-  HookOutcome,
-  HookResult,
   HookWorktree,
 } from "../collectors/cursor-hooks/handler.js";
-import {
-  HOOK_SPOOL_FOLDER,
-  LEGACY_SPOOL_RELATIVE,
-} from "../collectors/cursor-hooks/spool.js";
+import { cursorSpoolDirFor } from "../collectors/cursor-hooks/spool-dirs.js";
 import type { EventStore } from "../contracts/event-store.js";
 import type { StoreFailure } from "../contracts/services.js";
 import { parseWorktreePorcelain } from "../correlation/repo/worktree-map.js";
 import { HOOK_DECODERS } from "../harness/hook-decoders.js";
 import { hookEventNameOf, hookToolOf } from "../harness/hook-observation.js";
-import type { HookGit } from "../harness/hook-observation.js";
+import type {
+  HookGit,
+  HookRunReply,
+  HookRunRequest,
+} from "../harness/hook-observation.js";
 import { recordHook } from "../harness/hook-spool.js";
-import type { HookRunOutcome } from "../harness/hook-spool.js";
+import type { HarnessId } from "../harness/ids.js";
 import type { SelectorResolver } from "../mcp/handlers/deps.js";
 import type { FlightContext } from "../model/event.js";
 import { FlightIdSchema } from "../model/ids.js";
@@ -197,22 +192,15 @@ export const gitSelectorResolver =
 export const defaultDftHome = (): string =>
   resolveDftHome(process.env, homedir());
 
-export const worktreeSpoolId = (worktreePath: string): string => {
-  const real = canonical(worktreePath);
-  const hash = createHash("sha256").update(real).digest("hex").slice(0, 8);
-  const name = path.basename(real).replaceAll(/[^A-Za-z0-9._-]+/gu, "-");
-
-  return name === "" || name === "-" ? hash : `${name}-${hash}`;
-};
+export {
+  legacyHookSpoolDirFor,
+  worktreeSpoolId,
+} from "../collectors/cursor-hooks/spool-dirs.js";
 
 export const hookSpoolDirFor = (
   worktreePath: string,
   dftHome: string = defaultDftHome()
-): string =>
-  path.join(dftHome, "spool", worktreeSpoolId(worktreePath), HOOK_SPOOL_FOLDER);
-
-export const legacyHookSpoolDirFor = (worktreePath: string): string =>
-  path.join(worktreePath, LEGACY_SPOOL_RELATIVE);
+): string => cursorSpoolDirFor(worktreePath, dftHome);
 
 export interface ToolHookRequest {
   readonly cwd: string;
@@ -222,24 +210,7 @@ export interface ToolHookRequest {
   readonly tool: string | null;
 }
 
-export const runCursorHook = (
-  stdinText: string,
-  cwd: string,
-  now: Date,
-  dftHome: string = defaultDftHome()
-): HookResult =>
-  handleCursorHook(stdinText, {
-    cwd,
-    listWorktrees: listRepoWorktrees,
-    now,
-    resolveGit: resolveCanonicalGit,
-    spoolDirFor: (worktreePath) => hookSpoolDirFor(worktreePath, dftHome),
-  });
-
-export interface ToolHookResult {
-  readonly outcome: HookOutcome | HookRunOutcome;
-  readonly stdout: string;
-}
+export type ToolHookResult = HookRunReply;
 
 const gitAtHook = (cwd: string): HookGit => {
   const git = resolveCanonicalGit(cwd);
@@ -251,6 +222,21 @@ const gitAtHook = (cwd: string): HookGit => {
     worktreePath: git.worktreePath,
   };
 };
+
+const spoolObservation = (
+  tool: HarnessId,
+  request: HookRunRequest
+): HookRunReply =>
+  recordHook({
+    cwd: request.cwd,
+    decoder: HOOK_DECODERS[tool],
+    dftHome: request.dftHome,
+    event: request.event ?? hookEventNameOf(request.stdinText) ?? "unknown",
+    now: request.now,
+    resolveGit: gitAtHook,
+    stdinText: request.stdinText,
+    tool,
+  });
 
 export const runToolHook = (
   request: ToolHookRequest,
@@ -268,18 +254,25 @@ export const runToolHook = (
     };
   }
 
-  if (tool === "cursor") {
-    return runCursorHook(request.stdinText, request.cwd, request.now, dftHome);
-  }
-
-  return recordHook({
+  const run: HookRunRequest = {
     cwd: request.cwd,
-    decoder: HOOK_DECODERS[tool],
     dftHome,
-    event: request.event ?? hookEventNameOf(request.stdinText) ?? "unknown",
+    event: request.event,
+    listWorktrees: listRepoWorktrees,
     now: request.now,
-    resolveGit: gitAtHook,
+    resolveGit: resolveCanonicalGit,
     stdinText: request.stdinText,
-    tool,
-  });
+  };
+
+  const custom = HOOK_DECODERS[tool].run;
+
+  return custom === undefined ? spoolObservation(tool, run) : custom(run);
 };
+
+export const runCursorHook = (
+  stdinText: string,
+  cwd: string,
+  now: Date,
+  dftHome: string = defaultDftHome()
+): ToolHookResult =>
+  runToolHook({ cwd, event: null, now, stdinText, tool: "cursor" }, dftHome);

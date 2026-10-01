@@ -55,10 +55,36 @@ export const HookObservationSchema = Schema.Struct({
 
 export type HookObservation = typeof HookObservationSchema.Type;
 
+export interface HookWorktreeInfo {
+  readonly branch: string | null;
+  readonly headSha: string | null;
+  readonly path: string;
+}
+
+export interface HookRunRequest {
+  readonly cwd: string;
+  readonly dftHome: string;
+  readonly event: string | null;
+  readonly listWorktrees: (root: string) => readonly HookWorktreeInfo[];
+  readonly now: Date;
+  readonly resolveGit: (cwd: string) => HookGit;
+  readonly stdinText: string;
+}
+
+export type HookRunState =
+  | { readonly path: string; readonly state: "recorded" | "spooled" }
+  | { readonly reason: string; readonly state: "skipped" };
+
+export interface HookRunReply {
+  readonly outcome: HookRunState;
+  readonly stdout: string;
+}
+
 export interface HookDecoder {
   readonly decode: (stdinText: string, event: string) => HookFields | null;
   readonly kind: (event: string) => EventKind;
   readonly respond: (event: string) => string;
+  readonly run?: (request: HookRunRequest) => HookRunReply;
 }
 
 const Text = Schema.optional(Schema.NullOr(Schema.String));
