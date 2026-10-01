@@ -8,7 +8,7 @@ import {
 } from "../harness/ids.js";
 import { AiTokensSchema, ToolFigureSchema } from "../model/attribution.js";
 
-export const USAGE_DERIVATION_VERSION = 6;
+export const USAGE_DERIVATION_VERSION = 7;
 
 export const NO_REPO = "(no repo)" as const;
 

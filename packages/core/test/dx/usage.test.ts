@@ -294,6 +294,32 @@ describe("usage query", () => {
     ).toEqual([["feature/one", 0.4]]);
   });
 
+  it("places an unsplit session figure under the provider and gateway of its requests", () => {
+    const facts = [
+      fact("req", { provider: "anthropic", via: "openrouter" }),
+      fact("figure", {
+        model: null,
+        modelRaw: null,
+        provider: "unknown",
+        requests: 0,
+        tokens: unknownTokens,
+        toolFigure: { amount: 0.4, currency: "USD", kind: "api-equivalent" },
+      }),
+    ];
+
+    const byProvider = run(facts, { groupBy: "provider" });
+    const byVia = run(facts, { groupBy: "via" });
+    const anthropic = run(facts, { filters: { provider: ["anthropic"] } });
+
+    expect(
+      byProvider.groups.map((group) => [group.key, group.values.toolFigure])
+    ).toEqual([["anthropic", 0.4]]);
+    expect(
+      byVia.groups.map((group) => [group.key, group.values.toolFigure])
+    ).toEqual([["openrouter", 0.4]]);
+    expect(anthropic.total.values.toolFigure).toBe(0.4);
+  });
+
   it("keeps every money ledger apart and never adds them", () => {
     const facts = [
       fact("billed", {
@@ -634,6 +660,76 @@ describe("usage facts", () => {
     ]);
     expect(byModel.unattributed).toBeNull();
     expect(byModel.total.values.toolFigure).toBe(0.75);
+  });
+
+  it("keeps a split session figure under the provider of each model", () => {
+    const base = usageEvent(
+      "cost",
+      "claude-code",
+      "session-file",
+      0,
+      "claude-opus-5",
+      "main"
+    );
+
+    const request = usageEvent(
+      "req",
+      "claude-code",
+      "session-file",
+      100,
+      "claude-opus-5",
+      "main"
+    );
+
+    const derived = deriveUsageFacts([
+      {
+        ...request,
+        identity: { ...emptyEventIdentity, sessionId: "session-1" },
+      },
+      {
+        ...base,
+        ai:
+          base.ai === null
+            ? null
+            : { ...base.ai, model: null, provider: "unknown" },
+        identity: { ...emptyEventIdentity, sessionId: "session-1" },
+        kind: "ai.session",
+        payload: {
+          costState: { models: { "claude-opus-5": { costUsd: 0.75 } } },
+        },
+        usage: {
+          premiumRequests: null,
+          requestKey: null,
+          serviceTier: null,
+          speed: null,
+          tokens: unknownTokens,
+          toolFigure: {
+            amount: 0.75,
+            currency: "USD",
+            kind: "api-equivalent",
+          },
+        },
+      },
+    ]);
+
+    const byProvider = run(derived.facts, { groupBy: "provider" });
+
+    const anthropic = run(derived.facts, {
+      filters: { provider: ["anthropic"] },
+    });
+
+    expect(
+      byProvider.groups.map((group) => [
+        group.key,
+        group.values.requests,
+        group.values.toolFigure,
+      ])
+    ).toEqual([["anthropic", 1, 0.75]]);
+    expect(byProvider.unattributed).toBeNull();
+    expect(anthropic.total.values).toMatchObject({
+      requests: 1,
+      toolFigure: 0.75,
+    });
   });
 
   it("leaves out an OpenTelemetry row without a request id when the session file has the session", () => {

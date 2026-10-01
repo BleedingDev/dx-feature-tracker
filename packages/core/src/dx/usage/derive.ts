@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { DateTime, Option, Schema } from "effect";
 
 import type { BranchSource } from "../harness/ids.js";
-import { normalizeModel } from "../harness/provider.js";
+import { inferProvider, normalizeModel, viaFor } from "../harness/provider.js";
 import {
   UNKNOWN_SOURCE_RANK,
   harnessChannelRank,
@@ -517,7 +517,12 @@ const byModel = (whole: UsageFact, event: DxEventEnvelope): UsageFact[] => {
     factId: digestId(`${whole.factId}\n${raw}`),
     model: normalizeModel(raw),
     modelRaw: raw,
+    provider:
+      whole.provider === null || whole.provider === "unknown"
+        ? inferProvider(raw)
+        : whole.provider,
     toolFigure: { ...figure, amount: cost },
+    via: whole.via ?? viaFor(raw, null),
   }));
 };
 

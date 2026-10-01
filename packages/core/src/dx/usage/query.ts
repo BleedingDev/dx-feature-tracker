@@ -494,7 +494,9 @@ const SPREAD_DIMENSIONS: ReadonlySet<UsageDimension> = new Set([
   "effort",
   "model",
   "month",
+  "provider",
   "repo",
+  "via",
   "week",
   "worktree",
 ]);
@@ -507,9 +509,15 @@ export const isSessionFigure = (fact: UsageFact): boolean =>
 const sessionKeyOf = (fact: UsageFact): string | null =>
   fact.session === null ? null : `${fact.harness ?? ""}|${fact.session}`;
 
+const ownsDimension = (fact: UsageFact, dimension: UsageDimension): boolean =>
+  (dimension === "model" && fact.model !== null) ||
+  (dimension === "provider" &&
+    fact.provider !== null &&
+    fact.provider !== "unknown") ||
+  (dimension === "via" && fact.via !== null);
+
 const spreads = (fact: UsageFact, dimension: UsageDimension): boolean =>
-  SPREAD_DIMENSIONS.has(dimension) &&
-  !(dimension === "model" && fact.model !== null);
+  SPREAD_DIMENSIONS.has(dimension) && !ownsDimension(fact, dimension);
 
 interface SessionSpan {
   from: number;
