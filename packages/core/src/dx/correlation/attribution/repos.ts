@@ -9,6 +9,7 @@ import type {
 import type { DxEventEnvelope } from "../../model/event.js";
 import { EventIdSchema } from "../../model/ids.js";
 import { isContained } from "../repo/path.js";
+import { branchNameOrNull } from "./branch-name.js";
 import type { RepoLocator } from "./locator.js";
 
 export const NO_REPO_PROJECT = "(no repo)";
@@ -258,8 +259,13 @@ const relocate = (
   const sameWorktree = sameRepo && sameDir(context.worktreePath, worktreePath);
   const recorded = event.ai?.branchSource === "harness-recorded";
   const keepsBranch = sameWorktree || (move.method === "cwd" && recorded);
-  const branch = keepsBranch ? context.branch : (move.place?.branch ?? null);
-  const label = METHOD_LABELS[move.method];
+
+  const branch = keepsBranch
+    ? branchNameOrNull(context.branch)
+    : (move.place?.branch ?? null);
+
+  const label =
+    METHOD_LABELS[move.method] ?? (keepsBranch ? null : "cwd-inferred");
 
   return {
     ...event,

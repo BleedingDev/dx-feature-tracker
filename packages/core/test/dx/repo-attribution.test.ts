@@ -635,4 +635,31 @@ describe("subagents (D29)", () => {
         });
       }).pipe(Effect.provide(memory))
   );
+
+  it.effect(
+    "does not pass a borrowed branch off as one the tool recorded",
+    () =>
+      Effect.gen(function* scenario() {
+        const placed = yield* attribute([
+          event({ cwd: LIB, id: "parent" }),
+          event({
+            agentId: "agent-x",
+            branch: "HEAD",
+            branchSource: "harness-recorded",
+            cwd: ORCHESTRATOR,
+            id: "child",
+          }),
+        ]);
+
+        const result = attributeHistoricalBranches(placed.events, {
+          commitBranches: new Map(),
+          timelines: [timeline(LIB, "feature/at-time")],
+        });
+
+        const child = result.events.find((e) => e.eventId === "child");
+
+        expect(child?.context.branch).toBe("feature/at-time");
+        expect(child?.ai?.branchSource).toBe("git-at-time");
+      }).pipe(Effect.provide(memory))
+  );
 });

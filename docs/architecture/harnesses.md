@@ -38,7 +38,7 @@ flowchart LR
 
 | Block | Fields |
 | --- | --- |
-| `ai: AiAttribution \| null` | `harness`, `harnessVersion`, `channel`, `provider` (model maker; `local` only when a local model's maker is unknown), `via` (gateway such as `openrouter`, local runtime such as `ollama` (`isLocalRuntime`), or null), `model` (normalized), `modelRaw`, `effort`, `effortSource`, `sessionId`, `parentSessionId`, `agentId`, `agentType`, `cwd`, `branchSource` |
+| `ai: AiAttribution \| null` | `harness`, `harnessVersion`, `channel`, `provider` (model maker; `local` only when a local model's maker is unknown), `via` (gateway such as `openrouter`, local runtime such as `ollama` (`isLocalRuntime`), or null), `model` (normalized), `modelRaw`, `effort`, `effortSource`, `sessionId`, `parentSessionId`, `agentId`, `agentType`, `cwd`, `branchSource`, optional `touchedPaths` (see [Repo attribution](#repo-attribution)) |
 | `usage: AiUsage \| null` | `requestKey`, `tokens` (`inputFresh`, `cacheRead`, `cacheWrite5m`, `cacheWrite1h`, `cacheWrite`, `output`, `reasoning` inside output, `total`; `null` means unknown, never `0`), `toolFigure` (`amount`, `currency`, `kind`: `charge`, `list-price` or `api-equivalent`), `serviceTier`, `speed`, `premiumRequests` |
 
 Every `ai.*` event from a harness carries `ai`; non-AI events carry `null` in both. Store migration 2 (`storage/migrations.ts`, `storage/upgrade-v1.ts`) rewrites v1 rows and pending spool batches forward. Collectors that predate harness folders fill the blocks through `withCollectorBlocks` (`harness/collector-blocks.ts`); a new harness builds them directly.
@@ -62,7 +62,28 @@ Channel precedence is per harness (`harness/precedence.ts` reads every `meta.ts`
 
 ## Branch precedence
 
-Correlation (`correlation/branch-at-time/attribute.ts`) applies D28 to every harness. A branch the tool recorded on the request (`ai.branchSource: "harness-recorded"`) is kept. Otherwise a hook turn of the same session within five minutes gives its branch (`hook`). Then checkout history at that time (`git-at-time`), then the folder, then unassigned. A branch the tool records once per session (Codex `session_meta.git`, the Cursor chat store) is `session-recorded`: it is kept on the event but checkout history overrides it. Whether a request takes a hook turn is the harness rule `takesHookTurn`. Cursor keeps its phase 1 rule (only account rows joined to a session take hook turns): lifting it moves a parent agent's edits in other worktrees onto the parent's branch, which `parallel-worktrees-replay.test.ts` rejects.
+Correlation (`correlation/branch-at-time/attribute.ts`) applies D28 to every harness. A branch the tool recorded on the request (`ai.branchSource: "harness-recorded"`) is kept. Otherwise a hook turn of the same session within five minutes gives its branch (`hook`). Then checkout history at that time (`git-at-time`), then the folder, then unassigned. A branch the tool records once per session (Codex `session_meta.git`, the Cursor chat store) is `session-recorded`: it is kept on the event but checkout history overrides it. `HEAD`, a full commit id, `(HEAD detached at ...)` and `(no branch)` are never branch names (`branchNameOrNull` in `correlation/attribution/branch-name.ts`): Claude Code writes `gitBranch: "HEAD"` when it has no branch, so such a row falls through to checkout history instead of winning as `harness-recorded`. Whether a request takes a hook turn is the harness rule `takesHookTurn`. Cursor keeps its phase 1 rule (only account rows joined to a session take hook turns): lifting it moves a parent agent's edits in other worktrees onto the parent's branch, which `parallel-worktrees-replay.test.ts` rejects.
+
+## Repo attribution
+
+Before branch precedence runs, `attributeRepos` (`correlation/attribution/repos.ts`) decides which repo and worktree each AI request belongs to. The read path runs it in `accountAwareEvents` (`correlation/branch-at-time/snapshot.ts`), so a repo's reports also pick up requests that were stored under no repo or under the wrong one.
+
+| Step | Rule | Label |
+| --- | --- | --- |
+| Own folder | `ai.cwd` is inside a worktree (git toplevel and common dir, asked once per path). A cwd that no longer exists keeps the stored worktree. | branch by D28 |
+| Own tool calls (D36) | `ai.cwd` is in no repo: the turn's `touchedPaths` (plus any request of the same turn whose cwd is in a repo) point to exactly one repo. | `tool-calls`, branch from checkout history at that time |
+| Parent (D29) | A subagent whose own folder and tool calls point nowhere takes its parent's place nearest in time. | branch by D28 |
+| Subagent split (D36) | An orchestrator turn that still points nowhere is split across its subagents' repos, weighted by their tokens. Each share is a copy of the request with scaled tokens, `#split:i/n` appended to its event id and request key, and `payload.repoAttribution.inferred: true`; its branch attribution is at most `provisional`. | `subagent-split` |
+| Nothing | Filed under the `(no repo)` project: no repo, worktree or branch. | `unassigned` |
+
+Each moved request records `payload.repoAttribution` (`method`, `project`, `weight`, `splitOf`, the worktree it came from). `parentSessionId` and `agentId` are never changed, so chats keep a subagent under its parent.
+
+What a harness fills so these rules work, without any prompt text:
+
+- `ai.cwd`: the folder the request ran in, as the tool recorded it on that row.
+- `ai.touchedPaths` (optional): absolute paths this request's tool calls touched, no content. Use `touchedPaths({ cwd, calls, home })` from `correlation/attribution/touched-paths.ts`: each call gives its `workdir`, its file `paths` and its shell `command` (only `cd`, `pushd` and `git -C` targets are read from commands); relative paths resolve against the workdir or cwd.
+- `identity.turnId`: the turn the request belongs to (Claude Code: the `promptId` of the user row that started it; Codex: `turn_id`). Without it every request is its own turn, so a planning request before the first tool call can land under `(no repo)`.
+- Subagents: `ai.agentId`, and `ai.parentSessionId` when the subagent has its own session id. A Claude Code subagent row keeps its parent's `sessionId` and sets `agentId`; a Codex child thread sets `sessionId` to its own id and `parentSessionId` to `parent_thread_id`.
 
 ## Harness rules
 
@@ -99,7 +120,7 @@ A harness turns its observations into events in two calls. `locate` adds `hookSp
 
 ## Adding a tool
 
-1. Fill `harness/<tool>/store.ts` (roots and session filter) and `harness/<tool>/harness.ts` (`locate` and `read`; build `ai` and `usage` with `providerFor`, `viaFor`, `normalizeModel`).
+1. Fill `harness/<tool>/store.ts` (roots and session filter) and `harness/<tool>/harness.ts` (`locate` and `read`; build `ai` and `usage` with `providerFor`, `viaFor`, `normalizeModel`; fill `cwd`, `touchedPaths`, `identity.turnId` and the subagent fields as [Repo attribution](#repo-attribution) describes).
 2. Put redacted fixtures (real field structure, synthetic text) under `packages/core/test/dx/fixtures/harness/<tool>/` and add `packages/core/test/dx/harness/<tool>.test.ts` running `harnessConformance` at the fixture tier plus the tool's own cases.
 3. Fill `hook.ts` if the tool has hooks (add `hookSpoolRefs` / `readHookSpool` to `locate` / `read`), list every branch source the tool can produce in `capabilities.branchSources`, and set readiness in `meta.ts`.
 4. Run the live tier on your machine before you ship.
