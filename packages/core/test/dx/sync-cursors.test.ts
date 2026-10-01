@@ -1,15 +1,25 @@
 import { NodeServices } from "@effect/platform-node";
 import { describe, expect, it } from "@effect/vitest";
 import { Effect, Layer, Ref } from "effect";
+import { TestClock } from "effect/testing";
 
 import { EventStore } from "../../src/dx/contracts/event-store.js";
 import { FakeEventStoreLayer } from "../../src/dx/contracts/fakes.js";
+import {
+  ClaudeCodeHarness,
+  ClaudeCodeStore,
+  QUIET_MS,
+} from "../../src/dx/harness/claude-code/index.js";
 import type {
   Harness,
   ReadInput,
   SessionRef,
 } from "../../src/dx/harness/contract.js";
-import { fileCursorOf, readFileCursor } from "../../src/dx/harness/contract.js";
+import {
+  everywhere,
+  fileCursorOf,
+  readFileCursor,
+} from "../../src/dx/harness/contract.js";
 import { emptyHarnessBatch } from "../../src/dx/harness/pending.js";
 import { HarnessRegistry } from "../../src/dx/harness/registry.js";
 import type { CollectCursor } from "../../src/dx/model/coverage.js";
@@ -111,6 +121,111 @@ describe("sync file cursors", () => {
       }).pipe(
         Effect.provide(
           Layer.mergeAll(
+            FakeEventStoreLayer,
+            HarnessCursors.memory,
+            NodeServices.layer
+          )
+        )
+      )
+  );
+});
+
+const CLAUDE_ROOT = "/home/user/.claude/projects";
+
+const claudeRow = (messageId: string, output: number): string =>
+  JSON.stringify({
+    cwd: "/home/user/app",
+    gitBranch: "feature/a",
+    message: {
+      content: [{ text: "synthetic", type: "text" }],
+      id: messageId,
+      model: "claude-sonnet-5",
+      role: "assistant",
+      stop_reason: "end_turn",
+      usage: {
+        cache_creation_input_tokens: 0,
+        cache_read_input_tokens: 0,
+        input_tokens: 2,
+        output_tokens: output,
+      },
+    },
+    requestId: `req-${messageId}`,
+    sessionId: "s1",
+    timestamp: "1970-01-01T00:00:00.000Z",
+    type: "assistant",
+    uuid: `u-${messageId}`,
+  });
+
+const claudeLayer = Layer.fresh(ClaudeCodeHarness.layer).pipe(
+  Layer.provide(
+    ClaudeCodeStore.memory({
+      files: [
+        {
+          mtimeMs: 0,
+          path: `${CLAUDE_ROOT}/-home-user-app/s1.jsonl`,
+          text: `${[claudeRow("m1", 40), claudeRow("m2", 8)].join("\n")}\n`,
+        },
+      ],
+      roots: [CLAUDE_ROOT],
+    })
+  )
+);
+
+describe("sync of a request held back until quiet", () => {
+  it.effect(
+    "reads an unchanged session again once its last request goes quiet",
+    () =>
+      Effect.gen(function* quiet() {
+        const harness = yield* ClaudeCodeHarness;
+        const [located] = yield* harness.locate(everywhere);
+        const session = yield* Effect.fromNullishOr(located);
+        const store = yield* EventStore;
+        const env = { store, storePath: "/home/user/.dft/dft.db" };
+
+        const read = yield* Ref.make<readonly (number | null)[]>([]);
+
+        const recording: Harness = {
+          ...harness,
+          read: (target, readInput) =>
+            harness
+              .read(target, readInput)
+              .pipe(
+                Effect.tap((batch) =>
+                  Ref.update(read, (seen) => [
+                    ...seen,
+                    ...batch.events.flatMap((event) =>
+                      event.kind === "ai.usage"
+                        ? [event.usage?.tokens.output ?? null]
+                        : []
+                    ),
+                  ])
+                )
+              ),
+        };
+
+        const sync = runPlannedStep(env, [], {
+          context: emptyFlightContext,
+          harness: "claude-code",
+          input: session.path,
+          ref: session,
+          source: session.source,
+          unavailable: null,
+        }).pipe(Effect.provide(HarnessRegistry.fromHarnesses([recording])));
+
+        yield* sync;
+        const fresh = yield* Ref.get(read);
+
+        yield* TestClock.adjust(QUIET_MS);
+        yield* sync;
+        yield* sync;
+        const settled = yield* Ref.get(read);
+
+        expect(fresh).toStrictEqual([40]);
+        expect(settled).toStrictEqual([40, 8]);
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(
+            claudeLayer,
             FakeEventStoreLayer,
             HarnessCursors.memory,
             NodeServices.layer

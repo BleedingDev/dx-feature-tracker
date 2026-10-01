@@ -518,11 +518,14 @@ export class ClaudeCodeHarness extends Context.Service<
           fallback
         );
 
-        return batchOf(
-          emitted,
-          scan.tally,
-          sessionCursorOf(ref.id, [...kept, ...scan.states])
-        );
+        return {
+          ...batchOf(
+            emitted,
+            scan.tally,
+            sessionCursorOf(ref.id, [...kept, ...scan.states])
+          ),
+          unsettled: scan.states.some((state) => state.pending),
+        };
       });
 
     const read = (ref: SessionRef, input: ReadInput) =>

@@ -139,6 +139,7 @@ export const EventBatchSchema = Schema.Struct({
       fromOccurredAt: IsoTimestampSchema,
     })
   ),
+  unsettled: Schema.optional(Schema.Boolean),
 });
 
 export type EventBatch = typeof EventBatchSchema.Type;

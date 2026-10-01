@@ -250,8 +250,8 @@ const readHarnessRef = (
         .put(ref, {
           cursor: result.cursor,
           lastEventId: result.lastEventId ?? stored?.lastEventId ?? null,
-          mtimeMs: ref.mtimeMs,
-          size: ref.size,
+          mtimeMs: result.unsettled ? null : ref.mtimeMs,
+          size: result.unsettled ? null : ref.size,
         })
         .pipe(Effect.ignore);
     }

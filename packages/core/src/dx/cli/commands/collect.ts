@@ -144,6 +144,7 @@ export interface HarnessReadRequest {
 export interface HarnessReadResult extends CollectResult {
   readonly cursor: CollectCursor | null;
   readonly lastEventId: string | null;
+  readonly unsettled: boolean;
 }
 
 export const runHarnessRead = (
@@ -163,6 +164,7 @@ export const runHarnessRead = (
           ...result,
           cursor: batch.cursor,
           lastEventId: batch.events.at(-1)?.eventId ?? null,
+          unsettled: batch.unsettled === true,
         })
       )
   );
