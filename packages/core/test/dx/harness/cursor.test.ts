@@ -7,6 +7,7 @@ import { NodeServices } from "@effect/platform-node";
 import { afterAll, describe, expect, it } from "@effect/vitest";
 import { Effect, Layer } from "effect";
 
+import { cursorSpoolDirFor } from "../../../src/dx/collectors/cursor-hooks/spool-dirs.js";
 import {
   CursorHarness,
   CursorStore,
@@ -30,6 +31,20 @@ mkdirSync(path.join(home, ".cursor", "projects"), { recursive: true });
 cpSync(
   path.join(import.meta.dirname, "..", "fixtures", "b07", "projects", "demo"),
   path.join(home, ".cursor", "projects", "demo"),
+  { recursive: true }
+);
+
+cpSync(
+  path.join(
+    import.meta.dirname,
+    "..",
+    "integration",
+    "fixtures",
+    "parallel-worktrees",
+    "spool",
+    "sub-a"
+  ),
+  cursorSpoolDirFor(worktree, dftHome),
   { recursive: true }
 );
 
@@ -58,7 +73,7 @@ harnessConformance("cursor", registryWith(cursorAt), {
 });
 
 describe("Cursor harness", () => {
-  it.effect("locates the transcripts of a worktree through the registry", () =>
+  it.effect("locates the hook spool and transcripts of a worktree", () =>
     Effect.gen(function* locateTranscripts() {
       const registry = yield* HarnessRegistry;
       const located = yield* registry.locate(scope);
@@ -70,6 +85,11 @@ describe("Cursor harness", () => {
           ref.source,
         ])
       ).toStrictEqual([
+        [
+          path.relative(home, cursorSpoolDirFor(worktree, dftHome)),
+          "hooks",
+          "collector.cursor-hooks",
+        ],
         [
           ".cursor/projects/demo/agent-transcripts/comp-T.txt",
           "transcript",
@@ -90,8 +110,8 @@ describe("Cursor harness", () => {
       const discovered = yield* registry.discover;
 
       expect(
-        discovered.find((entry) => entry.harness === "cursor")?.present
-      ).toBe(true);
+        discovered.find((entry) => entry.harness === "cursor")
+      ).toMatchObject({ present: true, sessions: 3 });
     }).pipe(Effect.provide(registryWith(cursorAt)))
   );
 });

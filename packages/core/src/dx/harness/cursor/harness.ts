@@ -70,12 +70,16 @@ export class CursorHarness extends Context.Service<CursorHarness, Harness>()(
           .exists(home.dirs.cursor)
           .pipe(Effect.orElseSucceed(() => false));
 
+        const transcripts = present
+          ? yield* store.listSessions.pipe(Effect.orElseSucceed(() => []))
+          : [];
+
         return {
           harness: "cursor" as const,
           present,
           reason: present ? null : `no Cursor folder at ${home.dirs.cursor}`,
           roots,
-          sessions: 0,
+          sessions: transcripts.length,
           version: null,
         };
       });
