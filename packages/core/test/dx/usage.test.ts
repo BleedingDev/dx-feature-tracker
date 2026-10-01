@@ -5,9 +5,12 @@ import { NodeServices } from "@effect/platform-node";
 import { describe, expect, it } from "@effect/vitest";
 import { Effect, FileSystem, Layer, Path } from "effect";
 
+import { accountUsageSummary } from "../../src/dx/account/summary.js";
 import { EventStore } from "../../src/dx/contracts/event-store.js";
 import { FakeEventStoreLayer } from "../../src/dx/contracts/fakes.js";
+import { toClaim } from "../../src/dx/correlation/ai/claim.js";
 import type { HarnessId } from "../../src/dx/harness/ids.js";
+import { accountAiUsage } from "../../src/dx/metrics/ai-usage/ledger.js";
 import type { AiTokens } from "../../src/dx/model/attribution.js";
 import { unknownTokens } from "../../src/dx/model/attribution.js";
 import type { DxEventEnvelope } from "../../src/dx/model/event.js";
@@ -440,6 +443,32 @@ describe("usage facts", () => {
         ],
       },
     ]);
+  });
+
+  it("counts a new tool's request in the ledger, the claims and nowhere twice", () => {
+    const account = accountAiUsage(sameRequestTwice);
+
+    expect(account.uncovered).toEqual([]);
+    expect(account.requestCount).toBe(1);
+    expect(
+      account.totals.map((total) => [total.category, total.value])
+    ).toEqual([
+      ["input", 1000],
+      ["output", 100],
+    ]);
+    expect(account.totals[0]?.sources).toEqual(["claude-code/session-file"]);
+
+    const [, fromFile] = sameRequestTwice;
+    const claim = fromFile === undefined ? null : toClaim(fromFile);
+
+    expect(claim?.sourceKind).toBe("claude-code/session-file");
+    expect(claim?.amounts).toEqual([
+      { category: "input", currency: null, ledger: "tokens", value: 1000 },
+      { category: "output", currency: null, ledger: "tokens", value: 100 },
+    ]);
+    expect(
+      accountUsageSummary(sameRequestTwice, { since: null }).linked.requests
+    ).toBe(0);
   });
 
   it("keeps only the latest cumulative session figure and counts it as no request", () => {
