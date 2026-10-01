@@ -833,6 +833,30 @@ const dftCommands = (text: string): readonly string[] =>
     )
   );
 
+const EMBEDDED_ARGV =
+  /^\s*const\s+(?:DFT_COMMAND\b[^=]*|\[\s*DFT\s*,[^\]]*\])\s*=\s*(?<argv>\[.*\]);\s*$/mu;
+
+const decodeArgv = Schema.decodeUnknownResult(
+  Schema.fromJsonString(Schema.Array(Schema.String))
+);
+
+const embeddedArgv = (text: string): readonly string[] => {
+  const argv = EMBEDDED_ARGV.exec(text)?.groups?.argv;
+
+  if (argv === undefined) {
+    return [];
+  }
+
+  const decoded = decodeArgv(argv);
+
+  return Result.isSuccess(decoded) ? decoded.success : [];
+};
+
+const commandWords = (target: CaptureTarget, text: string) =>
+  target.kind === "hooks"
+    ? dftCommands(text).map((command) => shellWords(command))
+    : [embeddedArgv(text)];
+
 export const missingHookPaths = (
   tool: CaptureTool,
   worktree: string
@@ -840,12 +864,12 @@ export const missingHookPaths = (
   const missing = targetsFor(tool, worktree, NO_COMMAND).flatMap((target) => {
     const file = path.join(worktree, target.rel);
 
-    if (target.kind !== "hooks" || !existsSync(file)) {
+    if (!existsSync(file)) {
       return [];
     }
 
-    return dftCommands(readFileSync(file, "utf-8")).flatMap((command) =>
-      shellWords(command)
+    return commandWords(target, readFileSync(file, "utf-8")).flatMap((words) =>
+      words
         .slice(0, 2)
         .filter((word) => path.isAbsolute(word) && !existsSync(word))
     );

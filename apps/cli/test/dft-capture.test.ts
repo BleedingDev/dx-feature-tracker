@@ -299,6 +299,28 @@ describe("dft install project capture (D39)", () => {
     expect(missingHookPaths("codex", repo)).toEqual([]);
   });
 
+  it("reports a plugin or extension that calls an old node or dft as broken", () => {
+    const repo = scratchRepo();
+    const tools = ["opencode", "pi", "omp"] as const;
+
+    const old: DftCommand = {
+      argv: ["/old/node/24.18.0/bin/node", "/old/dft/dft-main.js"],
+      line: "/old/node/24.18.0/bin/node /old/dft/dft-main.js",
+    };
+
+    installCapture(tools, repo, old);
+
+    for (const tool of tools) {
+      expect(missingHookPaths(tool, repo)).toEqual(old.argv);
+    }
+
+    installCapture(tools, repo, dftCommandFor(process.execPath, repo));
+
+    for (const tool of tools) {
+      expect(missingHookPaths(tool, repo)).toEqual([]);
+    }
+  });
+
   it("skips a tracked hooks file and a foreign file with the same name", () => {
     const repo = scratchRepo();
     write(repo, CODEX_PROJECT_HOOKS, '{"hooks": {}}\n');
