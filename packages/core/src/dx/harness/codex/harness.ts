@@ -325,6 +325,7 @@ const makeCodexHarness = Effect.gen(function* makeCodexHarness() {
       const eventInput: EventInput = {
         evidenceName: basename(ref.path),
         head,
+        home: store.home,
         observedAt: now,
         origin: input.origin,
         parent: yield* parentOf(head),

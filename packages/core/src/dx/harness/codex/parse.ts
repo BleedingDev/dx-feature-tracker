@@ -23,6 +23,8 @@ import {
   sniffLine,
 } from "./records.js";
 import type { CodexUsage, LineKind } from "./records.js";
+import { ToolTouchSchema, toolCallFacts } from "./tools.js";
+import type { ToolTouch } from "./tools.js";
 
 const Text = Schema.NullOr(Schema.String);
 
@@ -47,6 +49,7 @@ export const OpenTurnSchema = Schema.Struct({
 export type OpenTurn = typeof OpenTurnSchema.Type;
 
 export const ScanStateSchema = Schema.Struct({
+  calls: Schema.Array(ToolTouchSchema),
   current: Text,
   facts: TurnFactsSchema,
   head: Schema.NullOr(CodexHeadSchema),
@@ -55,6 +58,8 @@ export const ScanStateSchema = Schema.Struct({
   replaying: Schema.Boolean,
   sawRecord: Schema.Boolean,
   settings: TurnFactsSchema,
+  toolCalls: Schema.Int,
+  webSearches: Schema.Int,
 });
 
 export type ScanState = typeof ScanStateSchema.Type;
@@ -72,14 +77,17 @@ export interface EndedTurn extends OpenTurn {
 export type UsageSource = "token_usage_record" | "token_count";
 
 export interface CodexRequest {
+  readonly calls: readonly ToolTouch[];
   readonly facts: TurnFacts;
   readonly key: string;
   readonly occurredAt: string | null;
   readonly ordinal: number | null;
   readonly responseId: string | null;
   readonly source: UsageSource;
+  readonly toolCalls: number;
   readonly turnId: string | null;
   readonly usage: CodexUsage;
+  readonly webSearches: number;
 }
 
 export interface ScanCounts {
@@ -110,6 +118,7 @@ const noFacts: TurnFacts = {
 };
 
 export const initialScanState: ScanState = {
+  calls: [],
   current: null,
   facts: noFacts,
   head: null,
@@ -118,6 +127,8 @@ export const initialScanState: ScanState = {
   replaying: false,
   sawRecord: false,
   settings: noFacts,
+  toolCalls: 0,
+  webSearches: 0,
 };
 
 interface MutableTurn {
@@ -129,6 +140,7 @@ interface MutableTurn {
 }
 
 interface Scan {
+  calls: ToolTouch[];
   current: string | null;
   duplicateRecords: number;
   emptyRecords: number;
@@ -150,6 +162,8 @@ interface Scan {
   readonly seenEmissions: Set<string>;
   readonly seenResponses: Set<string>;
   settings: TurnFacts;
+  toolCalls: number;
+  webSearches: number;
 }
 
 interface LineRef {
@@ -373,6 +387,9 @@ const onTaskStarted = (scan: Scan, line: LineRef) => {
   }
 
   supersede(scan, turnId);
+  scan.calls = [];
+  scan.toolCalls = 0;
+  scan.webSearches = 0;
   openTurn(scan, turnId, secondsToIso(payload.started_at) ?? line.timestamp);
 };
 
@@ -440,7 +457,12 @@ const factsFor = (scan: Scan, turnId: string | null): TurnFacts => {
   return turn?.facts ?? scan.facts;
 };
 
-const pushRequest = (scan: Scan, request: Omit<CodexRequest, "facts">) => {
+type RequestFields = Omit<
+  CodexRequest,
+  "calls" | "facts" | "toolCalls" | "webSearches"
+>;
+
+const pushRequest = (scan: Scan, request: RequestFields) => {
   const turn =
     request.turnId === null ? undefined : scan.open.get(request.turnId);
 
@@ -448,7 +470,16 @@ const pushRequest = (scan: Scan, request: Omit<CodexRequest, "facts">) => {
     turn.requests += 1;
   }
 
-  scan.requests.push({ ...request, facts: factsFor(scan, request.turnId) });
+  scan.requests.push({
+    ...request,
+    calls: scan.calls,
+    facts: factsFor(scan, request.turnId),
+    toolCalls: scan.toolCalls,
+    webSearches: scan.webSearches,
+  });
+  scan.calls = [];
+  scan.toolCalls = 0;
+  scan.webSearches = 0;
 };
 
 const spent = (usage: CodexUsage): number =>
@@ -564,7 +595,7 @@ const onTokenCount = (scan: Scan, line: LineRef) => {
   });
 };
 
-const onToolCall = (scan: Scan) => {
+const onToolCall = (scan: Scan, lineOf: () => LineRef) => {
   if (scan.replaying || scan.current === null) {
     return;
   }
@@ -574,6 +605,12 @@ const onToolCall = (scan: Scan) => {
   if (turn !== undefined) {
     turn.toolCalls += 1;
   }
+
+  const facts = toolCallFacts(lineOf().text);
+
+  scan.calls.push(...facts.touches);
+  scan.toolCalls += 1;
+  scan.webSearches += facts.webSearch ? 1 : 0;
 };
 
 const EVENT_HANDLERS: ReadonlyMap<string, (scan: Scan, line: LineRef) => void> =
@@ -625,7 +662,7 @@ const NEWLINE = 10;
 const dispatch = (scan: Scan, kind: LineKind, lineOf: () => LineRef) => {
   if (kind.type === "response_item") {
     if (kind.payloadType !== null && TOOL_CALL_TYPES.has(kind.payloadType)) {
-      onToolCall(scan);
+      onToolCall(scan, lineOf);
     }
 
     return;
@@ -688,6 +725,7 @@ const isCompleteJson = (bytes: Uint8Array): boolean =>
   Option.isSome(decodeHeader(decoder.decode(bytes)));
 
 const startScan = (state: ScanState): Scan => ({
+  calls: [...state.calls],
   current: state.current,
   duplicateRecords: 0,
   emptyRecords: 0,
@@ -711,6 +749,8 @@ const startScan = (state: ScanState): Scan => ({
   seenEmissions: new Set(),
   seenResponses: new Set(),
   settings: state.settings,
+  toolCalls: state.toolCalls,
+  webSearches: state.webSearches,
 });
 
 const settledFacts = (scan: Scan): readonly CodexRequest[] => {
@@ -746,6 +786,7 @@ const finish = (scan: Scan, consumed: number): ScanResult => ({
   lastTimestamp: scan.lastTimestamp,
   requests: settledFacts(scan),
   state: {
+    calls: scan.calls,
     current: scan.current,
     facts: scan.facts,
     head: scan.head,
@@ -754,6 +795,8 @@ const finish = (scan: Scan, consumed: number): ScanResult => ({
     replaying: scan.replaying,
     sawRecord: scan.sawRecord,
     settings: scan.settings,
+    toolCalls: scan.toolCalls,
+    webSearches: scan.webSearches,
   },
 });
 

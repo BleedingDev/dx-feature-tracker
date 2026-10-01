@@ -7,6 +7,7 @@ import type { DxEventEnvelope } from "../../../src/dx/model/event.js";
 import {
   PARENT,
   THREAD,
+  line,
   memoryHarness,
   memoryRef,
   meta,
@@ -244,6 +245,71 @@ describe("codex request dedupe", () => {
         reasoning: 119,
         total: 112_970,
       });
+    })
+  );
+});
+
+describe("codex tool calls", () => {
+  it.effect("gives each request the paths its own tool calls touched", () =>
+    Effect.gen(function* touched() {
+      const events = yield* usageEvents(
+        sessionText(
+          meta(0),
+          turnStarted(1, OWN_TURN),
+          turnContext(2, OWN_TURN),
+          line(3, "response_item", {
+            call_id: "call_a",
+            input: "*** Begin Patch\n*** Update File: src/a.ts\n*** End Patch",
+            name: "apply_patch",
+            type: "custom_tool_call",
+          }),
+          line(4, "response_item", {
+            arguments: JSON.stringify({
+              cmd: "cd /home/user/work/other && git status",
+              workdir: "/home/user/work/demo",
+            }),
+            call_id: "call_b",
+            name: "exec_command",
+            type: "function_call",
+          }),
+          line(5, "response_item", {
+            call_id: "call_c",
+            type: "web_search_call",
+          }),
+          record(6, "resp_a", usage(100, 0, 10)),
+          line(7, "response_item", {
+            call_id: "call_d",
+            input:
+              'await tools.exec_command({cmd:"ls", workdir:"/home/user/work/third"});',
+            name: "exec",
+            type: "custom_tool_call",
+          }),
+          record(8, "resp_b", usage(120, 100, 10)),
+          record(9, "resp_c", usage(140, 120, 10))
+        )
+      );
+
+      expect(
+        events.map((event) => [
+          event.ai?.touchedPaths ?? [],
+          event.payload.toolCalls,
+          event.usage?.webSearchRequests,
+          event.identity.turnId,
+        ])
+      ).toStrictEqual([
+        [
+          [
+            "/home/user/work/demo/src/a.ts",
+            "/home/user/work/demo",
+            "/home/user/work/other",
+          ],
+          3,
+          1,
+          OWN_TURN,
+        ],
+        [["/home/user/work/third"], 1, undefined, OWN_TURN],
+        [[], 0, undefined, OWN_TURN],
+      ]);
     })
   );
 });

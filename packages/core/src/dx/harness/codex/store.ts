@@ -8,6 +8,7 @@ import { HarnessHome } from "../home.js";
 import { harnessAdapterId } from "../pending.js";
 
 export interface CodexStoreApi extends HarnessStore {
+  readonly home: string | null;
   readonly readFrom: (
     path: string,
     offset: number
@@ -20,6 +21,7 @@ export interface CodexStoreApi extends HarnessStore {
 }
 
 export interface CodexMemoryInput extends MemoryStoreInput {
+  readonly home?: string;
   readonly sessionIndex?: string;
 }
 
@@ -97,6 +99,7 @@ const makeLive = Effect.gen(function* makeCodexStore() {
 
   const store: CodexStoreApi = {
     ...base,
+    home: home.home,
     readFrom: (file, offset) => readRange(file, offset, null),
     readHead: (file, maxBytes) => readRange(file, 0, maxBytes),
     sessionIndex: fileSystem
@@ -112,6 +115,7 @@ const makeMemory = (input: CodexMemoryInput): CodexStoreApi => {
 
   return {
     ...base,
+    home: input.home ?? null,
     readFrom: (file, offset) =>
       Effect.map(base.readBytes(file), (bytes) => bytes.subarray(offset)),
     readHead: (file, maxBytes) =>

@@ -1,6 +1,7 @@
 // @effect-diagnostics-next-line nodeBuiltinImport:off -- Event ids are the contract's synchronous sha256 over adapter, upstream key and kind.
 import { createHash } from "node:crypto";
 
+import { touchedPaths } from "../../correlation/attribution/touched-paths.js";
 import { canonicalRequestKey, canonicalTurnKey } from "../../model/ai.js";
 import type {
   AiAttribution,
@@ -36,6 +37,7 @@ const DIRECT_PROVIDERS: ReadonlySet<string> = new Set(["openai"]);
 export interface EventInput {
   readonly evidenceName: string;
   readonly head: CodexHead;
+  readonly home: string | null;
   readonly observedAt: string;
   readonly origin: Origin;
   readonly parent: CodexHead | null;
@@ -209,6 +211,9 @@ export const requestKeyOf = (
     turnIndex: null,
   });
 
+const webSearchesOf = (count: number) =>
+  count === 0 ? {} : { webSearchRequests: count };
+
 export const usageEvent = (
   input: EventInput,
   request: CodexRequest
@@ -225,9 +230,16 @@ export const usageEvent = (
   const requestKey = requestKeyOf(head, request);
   const tokens = tokensOf(request.usage);
   const upstreamKey = `codex:${head.threadId}:request:${request.key}`;
+  const ai = attributionOf(head, request.facts, placement.branchSource);
+
+  const touched = touchedPaths({
+    calls: request.calls,
+    cwd: ai.cwd,
+    home: input.home,
+  });
 
   return envelope(input, {
-    ai: attributionOf(head, request.facts, placement.branchSource),
+    ai: touched.length === 0 ? ai : { ...ai, touchedPaths: touched },
     context: placement.context,
     eventId: eventIdOf(upstreamKey, "ai.usage"),
     fieldSemantics: USAGE_SEMANTICS,
@@ -254,8 +266,10 @@ export const usageEvent = (
         reasoning: tokens.reasoning,
         total: tokens.total,
       },
+      toolCalls: request.toolCalls,
       turnId: request.turnId,
       usageSource: request.source,
+      webSearchRequests: request.webSearches,
     },
     upstreamKey,
     usage: {
@@ -265,6 +279,7 @@ export const usageEvent = (
       speed: null,
       tokens,
       toolFigure: null,
+      ...webSearchesOf(request.webSearches),
     },
   });
 };

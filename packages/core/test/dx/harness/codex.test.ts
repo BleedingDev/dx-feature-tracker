@@ -318,6 +318,31 @@ describe("Codex harness over real session structure", () => {
       }).pipe(Effect.provide(codexAt))
   );
 
+  it.effect(
+    "fills the folder, turn and touched paths repo attribution needs",
+    () =>
+      Effect.gen(function* repoInputs() {
+        const { events } = yield* readAll();
+
+        const orchestrator = usageOf(
+          events,
+          "01a0f71f-0495-73b1-b110-adb811d9ab8f"
+        );
+
+        expect(orchestrator.every((event) => event.ai?.cwd === DEMO)).toBe(
+          true
+        );
+        expect(
+          orchestrator.every((event) => event.identity.turnId !== null)
+        ).toBe(true);
+        expect(
+          orchestrator.some(
+            (event) => event.ai?.touchedPaths?.includes(DEMO) === true
+          )
+        ).toBe(true);
+      }).pipe(Effect.provide(codexAt))
+  );
+
   it.effect("reports a failed request as a failed turn without usage", () =>
     Effect.gen(function* failed() {
       const { events } = yield* readAll();
