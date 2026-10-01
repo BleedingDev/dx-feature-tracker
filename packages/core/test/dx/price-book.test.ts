@@ -188,7 +188,7 @@ describe("price key aliases", () => {
     ["codex-auto-review", "OpenAI publishes no price"],
     ["auto", "no fixed model"],
     ["claude-luna", "router profile"],
-    ["deepseek-v4.1-flash", "not guessed"],
+    ["deepseek-v9-preview", "not guessed"],
     ["sonnet", "not guessed"],
   ])("%s stays unpriced", (raw, reason) => {
     const resolved = resolvePriceKey(raw, has);
@@ -580,13 +580,13 @@ it.layer(PriceBook.memory([MAKER]))("PriceBook estimate", (test) => {
           book.estimate(
             request({
               harness: "deepseek",
-              model: "deepseek-v4.1-flash",
+              model: "deepseek-v9-preview",
               provider: "deepseek",
               tokens: ONE_MILLION_IN_OUT,
             })
           )
         ).toEqual({
-          detail: "no public price for deepseek-v4.1-flash; not guessed",
+          detail: "no public price for deepseek-v9-preview; not guessed",
           kind: "no-price",
           premiumRequests: null,
           reason: "model-unpriced",

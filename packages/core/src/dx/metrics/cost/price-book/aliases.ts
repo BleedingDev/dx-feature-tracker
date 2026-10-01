@@ -25,6 +25,8 @@ export const MODEL_ALIASES: ReadonlyMap<string, ModelAlias> = new Map([
       "a model router profile name; the upstream model it dispatched to is the one to price"
     ),
   ],
+  ["deepseek-v4.1-flash", alias("deepseek-flash")],
+  ["deepseek-v4-1-flash", alias("deepseek-flash")],
   ["gpt-5-codex", alias("gpt-5")],
   ["gpt-5-codex-mini", alias("gpt-5-mini")],
   ["gpt-5.1-codex", alias("gpt-5.1")],
@@ -39,6 +41,9 @@ const EFFORT_SUFFIX =
 const FAST_SUFFIX = "-fast";
 
 const DATE_SUFFIX = /(?:-|@)20\d{2}-?\d{2}-?\d{2}$/u;
+
+const DEEPSEEK_SNAPSHOT_SUFFIX =
+  /^(?<name>deepseek-.+)-(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])$/u;
 
 const BEDROCK_PREFIX = /^(?:(?:us|eu|apac|global|jp|au)\.)?anthropic\./u;
 
@@ -105,7 +110,9 @@ const dottedForms = (name: string): readonly string[] =>
     : [];
 
 export const candidateKeys = (base: string): readonly string[] => {
-  const undated = base.replace(DATE_SUFFIX, "");
+  const undated = base
+    .replace(DATE_SUFFIX, "")
+    .replace(DEEPSEEK_SNAPSHOT_SUFFIX, "$<name>");
 
   return [
     ...new Set([

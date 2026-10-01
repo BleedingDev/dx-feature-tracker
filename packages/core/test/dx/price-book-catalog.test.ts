@@ -236,6 +236,77 @@ it.layer(
     })
   );
 
+  test.effect("prices DeepSeek at the card in force when the request ran", () =>
+    Effect.gen(function* deepseekCards() {
+      const book = yield* PriceBook;
+
+      const tokens = {
+        cacheRead: 1_000_000,
+        inputFresh: 1_000_000,
+        output: 1_000_000,
+      };
+
+      const at = (model: string, when: string) => {
+        const estimate = book.estimate(
+          tiered({ at: when, model, provider: "deepseek", tokens })
+        );
+
+        return estimate.kind === "priced"
+          ? [estimate.usd, estimate.serviceTier]
+          : null;
+      };
+
+      expect({
+        flashBeforeCard: at("deepseek-v4-flash", "2026-07-07T02:30:00.000Z"),
+        flashOffPeak: at("deepseek-v4-flash", "2026-09-02T12:00:00.000Z"),
+        flashPeak: at("deepseek-v4-flash", "2026-09-02T01:06:00.000Z"),
+        proAfterCard: at("deepseek-v4-pro", "2026-08-17T02:30:00.000Z"),
+        proBeforeCard: at("deepseek-v4-pro", "2026-07-07T02:30:00.000Z"),
+        proPeakHourBeforeCard: at(
+          "deepseek-v4-pro",
+          "2026-08-14T02:30:00.000Z"
+        ),
+        v41Flash: at("deepseek-v4.1-flash", "2026-09-20T02:30:00.000Z"),
+      }).toEqual({
+        flashBeforeCard: [0.4228, null],
+        flashOffPeak: [0.887, null],
+        flashPeak: [1.774, "peak"],
+        proAfterCard: [5.324, "peak"],
+        proBeforeCard: [1.308625, null],
+        proPeakHourBeforeCard: [1.308625, null],
+        v41Flash: [0.753, null],
+      });
+    })
+  );
+
+  test.effect("prices DeepSeek V4.1-Flash and snapshot model names", () =>
+    Effect.gen(function* deepseekNames() {
+      const book = yield* PriceBook;
+
+      const keyOf = (model: string) => {
+        const found = book.lookup(model, "2026-09-19T12:00:00.000Z");
+
+        return found.kind === "found" ? found.price.key : found.reason;
+      };
+
+      expect(
+        [
+          "deepseek-v4.1-flash",
+          "deepseek-v4-1-flash",
+          "opencode-go/deepseek-v4.1-flash",
+          "factory/deepseek-v4-flash-0731",
+          "deepseek-v4-pro-0813",
+        ].map(keyOf)
+      ).toEqual([
+        "deepseek-flash",
+        "deepseek-flash",
+        "deepseek-flash",
+        "deepseek-v4-flash",
+        "deepseek-v4-pro",
+      ]);
+    })
+  );
+
   test.effect("uses each model's published fast mode price", () =>
     Effect.gen(function* fastMode() {
       const book = yield* PriceBook;
@@ -303,8 +374,11 @@ it.layer(
         at("gpt-5.6-sol", "priority"),
         at("o4-mini", "fast"),
         at("gpt-4o", "fast"),
+        at("gpt-4o-mini", "fast"),
+        at("gpt-4.1-mini", "priority"),
+        at("gpt-4o-2024-05-13", "fast"),
         at("gpt-6-astra", "ultrafast"),
-      ]).toEqual([8.75, 8.75, 4.8, 1, 2.125, 36]);
+      ]).toEqual([8.75, 8.75, 4.8, 1, 2.125, 0.125, 0.35, 3.5, 36]);
       expect(
         book.estimate(
           tiered({

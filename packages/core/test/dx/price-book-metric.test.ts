@@ -191,7 +191,7 @@ describe("cost metric over the PriceBook", () => {
       usageEvent({
         harness: "deepseek",
         id: "unknown",
-        model: "deepseek-v4.1-flash",
+        model: "deepseek-v9-preview",
         provider: "deepseek",
         tokens: { inputFresh: 1_000_000, output: 0 },
       }),
