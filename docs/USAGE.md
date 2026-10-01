@@ -105,7 +105,7 @@ dft dashboard --one-time --all-repos --since 30d  # one static file instead
 - **Group by and measure.** One Group by select (the same dimensions plus day and week) and a measure: Estimate, Tool's figure, Billed, Tokens or Requests. On a phone, tap a tile to switch the measure.
 - **Tiles** show each money ledger on its own (Estimate, Tool's figure, Billed) with the tools that report it. They are never added together.
 - **Chart** over time, stacked by tool (or by the top 6 groups plus Other). Hover a bar for its numbers, click it to open that day.
-- **Table** with a share bar per group, Other and `(unattributed)` last. Click a row to drill down: tool, then model, then branch; project, then branch, then session. A branch name opens the branch screen with its cost, models by tokens, chats and timeline.
+- **Table** with a share bar per group, Other and `(unattributed)` last. Click a row to drill down: tool, then model, then branch; project, then branch, then session. A branch name opens the branch screen with the whole branch in the chosen time range (usage filters do not carry over): its cost, models by tokens, chats and timeline.
 - Everything lives in the address: copy it to share a view, use Back to undo a drilldown, and use the breadcrumbs to go up.
 - **Setup** lists every tool (installed, sessions, capture, telemetry, last event), a Sources panel with how often a tool's sources disagreed, and the tracked repos and actions.
 

@@ -54,10 +54,23 @@ export interface DashboardBranch {
   readonly row: FlightHistoryRow;
 }
 
+export interface DashboardLedger {
+  readonly billed: number | null;
+  readonly estimate: number | null;
+  readonly tokens: number | null;
+  readonly toolFigure: number | null;
+}
+
+export interface DashboardLedgers {
+  readonly branches: ReadonlyMap<string, DashboardLedger>;
+  readonly unlinked: DashboardLedger | null;
+}
+
 export interface DashboardData {
   readonly account: readonly FlightHistoryRow[];
   readonly branches: readonly DashboardBranch[];
   readonly generatedAt: number;
+  readonly ledgers?: DashboardLedgers | null;
   readonly repoLabel: string;
   readonly scope: DashboardScope;
   readonly since: string | null;
@@ -114,6 +127,34 @@ export const rowBilled = (row: FlightHistoryRow): number | null =>
 
 export const rowEstimate = (row: FlightHistoryRow): number | null =>
   measure(row.money.estimatedPriceTable) ?? measure(row.money.estimatedSource);
+
+export const ledgerKey = (
+  repoCommonDir: string | null,
+  branch: string | null
+): string => JSON.stringify([repoCommonDir, branch]);
+
+const legacyLedger = (row: FlightHistoryRow): DashboardLedger => ({
+  billed: rowBilled(row),
+  estimate: rowEstimate(row),
+  tokens: rowTokens(row),
+  toolFigure: rowToolFigure(row),
+});
+
+const EMPTY_LEDGER: DashboardLedger = {
+  billed: null,
+  estimate: null,
+  tokens: null,
+  toolFigure: null,
+};
+
+const ledgerOf = (
+  row: FlightHistoryRow,
+  ledgers: DashboardLedgers | null | undefined
+): DashboardLedger =>
+  ledgers === null || ledgers === undefined
+    ? legacyLedger(row)
+    : (ledgers.branches.get(ledgerKey(row.repoCommonDir, row.branch)) ??
+      EMPTY_LEDGER);
 
 const sumOrNull = (values: readonly (number | null)[]): number | null => {
   const present = values.filter((value): value is number => value !== null);
@@ -316,9 +357,8 @@ const percent = (value: number | null, max: number): string =>
     ? "0"
     : String(Math.max(1, Math.round((value / max) * 100)));
 
-const barCell = (row: FlightHistoryRow, max: number): Cell => {
-  const billed = rowBilled(row);
-  const estimate = rowEstimate(row);
+const barCell = (ledger: DashboardLedger, max: number): Cell => {
+  const { billed, estimate } = ledger;
 
   return {
     className: "bars",
@@ -410,6 +450,7 @@ const branchRows = (
 ): string => {
   const { row } = branch;
   const name = row.branch ?? "unassigned";
+  const ledger = ledgerOf(row, data.ledgers);
 
   const repo =
     labels.get(row.repoCommonDir ?? "") ?? repoName(row.repoCommonDir);
@@ -430,11 +471,11 @@ const branchRows = (
       sort: last === null || Number.isNaN(last) ? "-1" : String(last),
     },
     numberCell(measure(row.agentTime), formatDuration),
-    numberCell(rowTokens(row), formatCount),
-    numberCell(rowEstimate(row), formatUsd),
-    numberCell(rowToolFigure(row), formatUsd),
-    numberCell(rowBilled(row), formatUsd),
-    barCell(row, max),
+    numberCell(ledger.tokens, formatCount),
+    numberCell(ledger.estimate, formatUsd),
+    numberCell(ledger.toolFigure, formatUsd),
+    numberCell(ledger.billed, formatUsd),
+    barCell(ledger, max),
     numberCell(measure(row.chats), formatCount),
     numberCell(measure(row.commits), formatCount),
   ];
@@ -463,10 +504,11 @@ const branchTable = (data: DashboardData): string => {
 
   const max = Math.max(
     0,
-    ...data.branches.flatMap(({ row }) => [
-      rowBilled(row) ?? 0,
-      rowEstimate(row) ?? 0,
-    ])
+    ...data.branches.flatMap(({ row }) => {
+      const ledger = ledgerOf(row, data.ledgers);
+
+      return [ledger.billed ?? 0, ledger.estimate ?? 0];
+    })
   );
 
   const head = COLUMNS.map(
@@ -482,14 +524,29 @@ const branchTable = (data: DashboardData): string => {
   ].join("\n");
 };
 
+const accountLedger = (data: DashboardData): DashboardLedger | null => {
+  if (data.ledgers === null || data.ledgers === undefined) {
+    return data.account.length === 0
+      ? null
+      : {
+          billed: sumOrNull(data.account.map(rowBilled)),
+          estimate: sumOrNull(data.account.map(rowEstimate)),
+          tokens: sumOrNull(data.account.map(rowTokens)),
+          toolFigure: sumOrNull(data.account.map(rowToolFigure)),
+        };
+  }
+
+  return data.ledgers.unlinked;
+};
+
 const accountBlock = (data: DashboardData): string => {
-  if (data.account.length === 0) {
+  const ledger = accountLedger(data);
+
+  if (ledger === null) {
     return "";
   }
 
-  const billed = sumOrNull(data.account.map(rowBilled));
-  const estimate = sumOrNull(data.account.map(rowEstimate));
-  const tokens = sumOrNull(data.account.map(rowTokens));
+  const { billed, estimate, tokens, toolFigure } = ledger;
   const chats = sumOrNull(data.account.map((row) => measure(row.chats)));
 
   const last = data.account
@@ -500,11 +557,14 @@ const accountBlock = (data: DashboardData): string => {
   const parts = [
     ...(billed === null ? [] : [`${formatUsd(billed)} billed`]),
     ...(estimate === null ? [] : [`${formatUsd(estimate)} estimate`]),
+    ...(toolFigure === null ? [] : [`${formatUsd(toolFigure)} tool's figure`]),
     ...(tokens === null ? [] : [`${formatCount(tokens)} tokens`]),
     ...(chats === null
       ? []
       : [`${formatCount(chats)} chat${chats === 1 ? "" : "s"}`]),
-    `last active ${formatAgo(last ?? null, data.generatedAt)}`,
+    ...(last === undefined
+      ? []
+      : [`last active ${formatAgo(last, data.generatedAt)}`]),
   ];
 
   return `<p class="account"><strong>Not linked to a branch:</strong> ${escapeHtml(parts.join(" · "))}</p>`;
@@ -823,6 +883,77 @@ const loadUsage = <UE, UR>(
   );
 };
 
+type UsageValues = DxUsageOutputType["total"]["values"];
+
+const ledgerFrom = (values: UsageValues): DashboardLedger => ({
+  billed: values.billed ?? null,
+  estimate: values.estimate ?? null,
+  tokens: values.tokens ?? null,
+  toolFigure: values.toolFigure ?? null,
+});
+
+const branchLedgers = (
+  dir: string,
+  out: DxUsageOutputType
+): readonly (readonly [string, DashboardLedger])[] => [
+  ...out.groups.map(
+    (group) => [ledgerKey(dir, group.key), ledgerFrom(group.values)] as const
+  ),
+  ...(out.unattributed === null
+    ? []
+    : [[ledgerKey(dir, null), ledgerFrom(out.unattributed.values)] as const]),
+];
+
+const loadLedgers = <UE, UR>(
+  options: DashboardOptions,
+  dirs: readonly string[],
+  usage:
+    | ((input: DxUsageInputType) => Effect.Effect<DxUsageOutputType, UE, UR>)
+    | undefined
+): Effect.Effect<DashboardLedgers | null, never, UR> => {
+  if (usage === undefined) {
+    return Effect.succeed(null);
+  }
+
+  const query: DxUsageInputType = withSince(
+    {
+      groupBy: "branch",
+      limit: 500,
+      metrics: ["tokens", "estimate", "toolFigure", "billed"],
+      sortBy: "tokens",
+    },
+    options.since
+  );
+
+  return Effect.all({
+    perRepo: Effect.all(
+      dirs.map((dir) =>
+        Effect.map(usage({ ...query, repo: [dir] }), (out) =>
+          branchLedgers(dir, out)
+        )
+      )
+    ),
+    unlinked:
+      options.scope === "all"
+        ? Effect.map(usage(query), (out) =>
+            out.unattributed === null
+              ? null
+              : ledgerFrom(out.unattributed.values)
+          )
+        : Effect.succeed(null),
+  }).pipe(
+    Effect.option,
+    Effect.map((loaded) =>
+      Option.isSome(loaded)
+        ? {
+            branches: new Map(loaded.value.perRepo.flat()),
+            unlinked: loaded.value.unlinked,
+          }
+        : null
+    )
+  );
+};
+
 export const writeDashboard = <HE, HR, CE, CR, UE = never, UR = never>(
   options: DashboardOptions,
   sources: DashboardSources<HE, HR, CE, CR, UE, UR>
@@ -848,6 +979,13 @@ export const writeDashboard = <HE, HR, CE, CR, UE = never, UR = never>(
     );
 
     const usage = yield* loadUsage(options, sources.usage);
+
+    const ledgers = yield* loadLedgers(
+      options,
+      [...new Set(named.flatMap((row) => row.repoCommonDir ?? []))],
+      sources.usage
+    );
+
     const now = yield* DateTime.now;
     const generatedAt = DateTime.toEpochMillis(now);
 
@@ -858,6 +996,7 @@ export const writeDashboard = <HE, HR, CE, CR, UE = never, UR = never>(
           : [],
       branches,
       generatedAt,
+      ledgers,
       repoLabel:
         named[0]?.repoCommonDir === undefined
           ? baseName(options.repo)

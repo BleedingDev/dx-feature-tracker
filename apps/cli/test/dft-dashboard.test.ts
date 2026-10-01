@@ -5,6 +5,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "@effect/vitest";
 import type {
+  DxUsageInputType,
   DxUsageOutputType,
   FlightHistoryRow,
   HistoryMeasure,
@@ -191,7 +192,7 @@ const usageRow = (
 ): UsageRow => ({ facts: 1, key, values });
 
 const usageOutput = (
-  groupBy: "model" | "tool" | null,
+  groupBy: "branch" | "model" | "tool" | null,
   groups: readonly UsageRow[],
   extra: Partial<DxUsageOutputType> = {}
 ): DxUsageOutputType => ({
@@ -361,6 +362,81 @@ describe("dft dashboard", () => {
     expect(html).not.toContain(escapeHtml(EVIL_TITLE));
     expect(html).toContain("chat root-000");
   });
+
+  it.effect(
+    "takes branch and unlinked money from the usage ledger the tiles use",
+    () =>
+      Effect.gen(function* ledgers() {
+        const dir = mkdtempSync(path.join(tmpdir(), "dft-dashboard-"));
+        created.push(dir);
+
+        const queries: DxUsageInputType[] = [];
+
+        const result = yield* writeDashboard(
+          {
+            dftHome: dir,
+            open: false,
+            repo: "/work/app",
+            scope: "all",
+          },
+          {
+            chats: () => Effect.succeed(chatsReport),
+            history: () =>
+              Effect.succeed({
+                rows: [
+                  ...fixture.account,
+                  ...fixture.branches.map((b) => b.row),
+                ],
+                since: null,
+              }),
+            usage: (input) =>
+              Effect.sync(() => {
+                queries.push(input);
+
+                if (input.groupBy !== "branch") {
+                  return usageOutput(null, []);
+                }
+
+                return input.repo === undefined
+                  ? usageOutput("branch", [], {
+                      unattributed: usageRow("(unattributed)", {
+                        billed: null,
+                        estimate: 0.4613,
+                        tokens: 187_000,
+                        toolFigure: 0.44,
+                      }),
+                    })
+                  : usageOutput("branch", [
+                      usageRow(EVIL, {
+                        billed: null,
+                        estimate: 2.18,
+                        tokens: 900_000,
+                        toolFigure: 1.97,
+                      }),
+                    ]);
+              }),
+          }
+        );
+
+        const html = readFileSync(result.path, "utf-8");
+
+        const rows = html
+          .split("\n")
+          .filter((line) => line.startsWith('<tr class="row"'));
+
+        expect(
+          queries.flatMap((query) =>
+            query.groupBy === "branch" ? [query.repo ?? null] : []
+          )
+        ).toEqual([[REPO], null]);
+        expect(rows[0]).toContain('data-v="1.97">$1.97</td>');
+        expect(rows[0]).toContain('data-v="2.18">$2.18</td>');
+        expect(rows[1]).not.toContain("$0.80");
+        expect(html).toContain(
+          "Not linked to a branch:</strong> $0.46 estimate · $0.44 tool&#39;s figure · 187k tokens"
+        );
+      })
+  );
 
   it.effect("writes the file from history and chats without opening it", () =>
     Effect.gen(function* dashboardFile() {
