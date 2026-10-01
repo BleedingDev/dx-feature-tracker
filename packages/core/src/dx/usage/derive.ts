@@ -82,6 +82,37 @@ const decodeSplitShare = Schema.decodeUnknownOption(SplitShareSchema);
 const isSplitShare = (event: DxEventEnvelope): boolean =>
   Option.isSome(decodeSplitShare(event.payload.repoAttribution));
 
+const SHARE_INDEX = /#split:(?<index>\d+)\/\d+$/u;
+
+const PIECE_INDEX = /:split:(?<index>\d+)$/u;
+
+interface RequestShare {
+  readonly lead: boolean;
+  readonly splitOf: string;
+}
+
+const shareOf = (event: DxEventEnvelope): RequestShare | null => {
+  const share = decodeSplitShare(event.payload.repoAttribution);
+
+  if (Option.isSome(share)) {
+    return {
+      lead: SHARE_INDEX.exec(event.eventId)?.groups?.index === "1",
+      splitOf: share.value.splitOf,
+    };
+  }
+
+  const piece = decodeSplitShare(event.payload);
+
+  return Option.isSome(piece)
+    ? {
+        lead:
+          PIECE_INDEX.exec(event.identity.requestId ?? "")?.groups?.index ===
+          "0",
+        splitOf: piece.value.splitOf,
+      }
+    : null;
+};
+
 const requestKeys = (event: DxEventEnvelope): string[] => {
   const { generationId, requestId } = event.identity;
   const session = sessionOf(event);
@@ -378,6 +409,7 @@ const usageOf = (
 export const factOf = (group: readonly DxEventEnvelope[]): UsageFact => {
   const members = group.toSorted(byPrecedence);
   const time = utcOf(first(members, (member) => member.occurredAt));
+  const share = first(members, shareOf);
 
   return {
     ...placementOf(members),
@@ -389,8 +421,9 @@ export const factOf = (group: readonly DxEventEnvelope[]): UsageFact => {
     members: members.length,
     occurredAt: time?.at ?? null,
     occurredMs: time?.ms ?? null,
-    requests: 1,
+    requests: share === null || share.lead ? 1 : 0,
     scope: scopeOf(members),
+    splitOf: share?.splitOf ?? null,
   };
 };
 

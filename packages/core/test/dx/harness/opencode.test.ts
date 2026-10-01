@@ -929,6 +929,7 @@ describe("OpenCode dedupe rules", () => {
           "/home/user/projects/p1 25/2",
           `${REALDATA}/repo 76/8`,
         ]);
+        expect(orchestrator.reduce((n, fact) => n + fact.requests, 0)).toBe(1);
       })
   );
 

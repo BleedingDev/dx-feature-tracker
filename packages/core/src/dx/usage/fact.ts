@@ -8,7 +8,7 @@ import {
 } from "../harness/ids.js";
 import { AiTokensSchema, ToolFigureSchema } from "../model/attribution.js";
 
-export const USAGE_DERIVATION_VERSION = 7;
+export const USAGE_DERIVATION_VERSION = 8;
 
 export const NO_REPO = "(no repo)" as const;
 
@@ -45,6 +45,7 @@ export const UsageFactSchema = Schema.Struct({
   serviceTier: Text,
   session: Text,
   speed: Text,
+  splitOf: Text,
   tokens: AiTokensSchema,
   toolFigure: Schema.NullOr(ToolFigureSchema),
   via: Text,

@@ -504,7 +504,10 @@ const SPREAD_DIMENSIONS: ReadonlySet<UsageDimension> = new Set([
 const MIXED = "\u0000mixed";
 
 export const isSessionFigure = (fact: UsageFact): boolean =>
-  fact.requests === 0 && fact.toolFigure !== null;
+  fact.requests === 0 && fact.toolFigure !== null && fact.splitOf === null;
+
+const isRequestFact = (fact: UsageFact): boolean =>
+  fact.requests > 0 || fact.splitOf !== null;
 
 const sessionKeyOf = (fact: UsageFact): string | null =>
   fact.session === null ? null : `${fact.harness ?? ""}|${fact.session}`;
@@ -597,7 +600,7 @@ const sessionSpans = (
   );
 
   for (const fact of facts) {
-    const key = fact.requests > 0 ? sessionKeyOf(fact) : null;
+    const key = isRequestFact(fact) ? sessionKeyOf(fact) : null;
     const span = key === null ? undefined : spans.get(key);
 
     if (span !== undefined) {

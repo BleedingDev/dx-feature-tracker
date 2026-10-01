@@ -63,6 +63,7 @@ const fact = (id: string, overrides: Partial<UsageFact>): UsageFact => ({
   serviceTier: null,
   session: "s1",
   speed: null,
+  splitOf: null,
   tokens: tokens(100, 10),
   toolFigure: null,
   via: null,
@@ -292,6 +293,37 @@ describe("usage query", () => {
     expect(
       oneBranch.groups.map((group) => [group.key, group.values.toolFigure])
     ).toEqual([["feature/one", 0.4]]);
+  });
+
+  it("counts a split request once and keeps each share's figure on its own branch", () => {
+    const facts = [
+      fact("share-1", {
+        branch: "main",
+        splitOf: "orchestrate",
+        toolFigure: { amount: 0.3, currency: "USD", kind: "api-equivalent" },
+      }),
+      fact("share-2", {
+        branch: "feature/x",
+        requests: 0,
+        splitOf: "orchestrate",
+        toolFigure: { amount: 0.1, currency: "USD", kind: "api-equivalent" },
+      }),
+    ];
+
+    const result = run(facts, { groupBy: "branch", sortBy: "toolFigure" });
+
+    expect(
+      result.groups.map((group) => [
+        group.key,
+        group.values.requests,
+        group.values.toolFigure,
+      ])
+    ).toEqual([
+      ["main", 1, 0.3],
+      ["feature/x", 0, 0.1],
+    ]);
+    expect(result.total.values.requests).toBe(1);
+    expect(result.notes).toEqual([]);
   });
 
   it("places an unsplit session figure under the provider and gateway of its requests", () => {

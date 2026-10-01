@@ -661,6 +661,7 @@ describe("orchestrator outside a repo (D36)", () => {
         expect(
           facts.reduce((sum, fact) => sum + (fact.tokens.total ?? 0), 0)
         ).toBe(1400);
+        expect(facts.reduce((sum, fact) => sum + fact.requests, 0)).toBe(3);
       }).pipe(Effect.provide(memory))
   );
 
