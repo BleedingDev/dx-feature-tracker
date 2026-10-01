@@ -37,7 +37,9 @@ import {
 } from "../src/dft-capture.js";
 import type { DftCommand } from "../src/dft-capture.js";
 import {
+  CODEX_BLOCK_END,
   CODEX_BLOCK_START,
+  codexTelemetryBlock,
   installTelemetry,
   telemetryState,
   uninstallTelemetry,
@@ -612,5 +614,58 @@ describe("dft install --telemetry (D38)", () => {
 
     expect(read(home, ".claude/settings.json")).toBe(claudeSettings);
     expect(read(home, ".codex/config.toml")).toBe(codexConfig);
+  });
+
+  it("keeps tables Codex appended inside its markers on refresh and uninstall", () => {
+    const { home, options } = telemetryHome();
+    write(home, ".codex/config.toml", 'model = "gpt-5"\n');
+    mkdirSync(path.join(home, ".claude"));
+
+    installTelemetry(options());
+
+    const codexTables = [
+      "[mcp_servers.foo]",
+      'command = "echo"',
+      'args = ["hi"]',
+      "",
+      '[hooks.state."/repo/.codex/hooks.json:stop:0:0"]',
+      'trusted_hash = "sha256:abc"',
+    ].join("\n");
+
+    const codexWrote = read(home, ".codex/config.toml").replace(
+      `${CODEX_BLOCK_END}\n`,
+      `\n${codexTables}\n${CODEX_BLOCK_END}\n`
+    );
+
+    write(home, ".codex/config.toml", codexWrote);
+
+    const [, same] = installTelemetry(options());
+
+    expect(same?.action).toBe("unchanged");
+    expect(read(home, ".codex/config.toml")).toBe(codexWrote);
+
+    const [, moved] = installTelemetry(options({ port: 7500 }));
+
+    expect(moved?.action).toBe("updated");
+    expect(moved?.message).toContain("kept 6 lines");
+    expect(moved?.lines.join("\n")).not.toContain("mcp_servers");
+    expect(read(home, ".codex/config.toml")).toBe(
+      `model = "gpt-5"\n\n${codexTelemetryBlock(7500)}\n\n${codexTables}\n`
+    );
+
+    const [, removed] = uninstallTelemetry(options({ port: 7500 }));
+
+    expect(removed?.action).toBe("removed");
+    expect(removed?.lines.join("\n")).not.toContain("hooks.state");
+    expect(read(home, ".codex/config.toml")).toBe(
+      `model = "gpt-5"\n\n${codexTables}\n`
+    );
+
+    write(home, ".codex/config.toml", codexWrote);
+    uninstallTelemetry(options());
+
+    expect(read(home, ".codex/config.toml")).toBe(
+      `model = "gpt-5"\n\n${codexTables}\n`
+    );
   });
 });

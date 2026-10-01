@@ -450,25 +450,63 @@ const OTEL_TABLE = /^\s*\[\s*otel\s*[\].]/mu;
 
 const OTEL_DOTTED = /^\s*otel\s*[.=]/mu;
 
+const TABLE_HEADER = /^\s*\[/u;
+
 interface CodexParts {
   readonly after: string;
   readonly before: string;
   readonly found: boolean;
+  readonly kept: string;
+  readonly owned: string;
 }
+
+const trimBlankLines = (lines: readonly string[]): readonly string[] => {
+  const first = lines.findIndex((line) => line.trim() !== "");
+
+  if (first === -1) {
+    return [];
+  }
+
+  const last = lines.findLastIndex((line) => line.trim() !== "");
+
+  return lines.slice(first, last + 1);
+};
 
 const codexParts = (text: string): CodexParts => {
   const start = text.indexOf(CODEX_BLOCK_START);
-  const end = text.indexOf(CODEX_BLOCK_END);
+  const end = start === -1 ? -1 : text.indexOf(CODEX_BLOCK_END, start);
 
-  if (start === -1 || end < start) {
-    return { after: "", before: text, found: false };
+  if (start === -1 || end === -1) {
+    return { after: "", before: text, found: false, kept: "", owned: "" };
   }
+
+  const inside = text.slice(start, end).replace(/\n$/u, "").split("\n");
+
+  const foreign = inside.findIndex(
+    (line) => TABLE_HEADER.test(line) && !OTEL_TABLE.test(line)
+  );
+
+  const split = foreign === -1 ? inside.length : foreign;
 
   return {
     after: text.slice(end + CODEX_BLOCK_END.length).replace(/^\n/u, ""),
     before: text.slice(0, start),
     found: true,
+    kept: trimBlankLines(inside.slice(split)).join("\n"),
+    owned: [...trimBlankLines(inside.slice(0, split)), CODEX_BLOCK_END].join(
+      "\n"
+    ),
   };
+};
+
+const keptNote = (kept: string): string => {
+  if (kept === "") {
+    return "";
+  }
+
+  const count = kept.split("\n").length;
+
+  return `; kept ${count} ${count === 1 ? "line" : "lines"} that Codex added inside it`;
 };
 
 const separatorAfter = (text: string): string => {
@@ -486,18 +524,12 @@ export const userToolDirs = (home: string, env: ShellEnv) => ({
 
 const refreshCodexBlock = (
   options: TelemetryOptions,
-  text: string,
   parts: CodexParts,
   base: Pick<TelemetryChange, "backup" | "path" | "tool">
 ): TelemetryChange => {
-  const current = text.slice(
-    parts.before.length,
-    text.length - parts.after.length
-  );
-
   const block = codexTelemetryBlock(options.port);
 
-  if (current.replace(/\n$/u, "") === block) {
+  if (parts.owned === block) {
     return {
       ...base,
       action: "unchanged",
@@ -507,10 +539,7 @@ const refreshCodexBlock = (
   }
 
   const lines = [
-    ...current
-      .replace(/\n$/u, "")
-      .split("\n")
-      .map((line) => `- ${line}`),
+    ...parts.owned.split("\n").map((line) => `- ${line}`),
     ...block.split("\n").map((line) => `+ ${line}`),
   ];
 
@@ -519,7 +548,7 @@ const refreshCodexBlock = (
       ...base,
       action: "updated",
       lines,
-      message: "would replace the dft block (dry run)",
+      message: `would replace the dft block (dry run)${keptNote(parts.kept)}`,
     };
   }
 
@@ -529,14 +558,16 @@ const refreshCodexBlock = (
     "codex-config.toml"
   );
 
-  writeFileSync(base.path, `${parts.before}${block}\n${parts.after}`);
+  const kept = parts.kept === "" ? "" : `\n${parts.kept}\n`;
+
+  writeFileSync(base.path, `${parts.before}${block}\n${kept}${parts.after}`);
 
   return {
     ...base,
     action: "updated",
     backup,
     lines,
-    message: "pointed the dft block at this port",
+    message: `pointed the dft block at this port${keptNote(parts.kept)}`,
   };
 };
 
@@ -565,7 +596,7 @@ export const installCodexTelemetry = (
   const parts = codexParts(text);
 
   if (parts.found) {
-    return refreshCodexBlock(options, text, parts, base);
+    return refreshCodexBlock(options, parts, base);
   }
 
   if (OTEL_TABLE.test(text) || OTEL_DOTTED.test(text)) {
@@ -640,28 +671,24 @@ export const uninstallCodexTelemetry = (
     };
   }
 
-  const removed = text.slice(
-    parts.before.length,
-    text.length - parts.after.length
-  );
-
-  const lines = removed
-    .replace(/\n$/u, "")
-    .split("\n")
-    .map((line) => `- ${line}`);
+  const lines = parts.owned.split("\n").map((line) => `- ${line}`);
 
   if (options.dryRun) {
     return {
       ...base,
       action: "removed",
       lines,
-      message: "would remove (dry run)",
+      message: `would remove (dry run)${keptNote(parts.kept)}`,
     };
   }
 
   const backup = backupFile(file, backupDirOf(options), "codex-config.toml");
-  const before = parts.before.replace(/\n\n$/u, "\n");
-  const rest = `${before}${parts.after}`;
+
+  const rest =
+    parts.kept === ""
+      ? `${parts.before.replace(/\n\n$/u, "\n")}${parts.after}`
+      : `${parts.before}${parts.kept}\n${parts.after}`;
+
   const record = readRecord(options.stateFile);
 
   if (rest === "" && record.created.includes(file)) {
@@ -680,7 +707,7 @@ export const uninstallCodexTelemetry = (
     action: "removed",
     backup,
     lines,
-    message: "removed what dft added",
+    message: `removed what dft added${keptNote(parts.kept)}`,
   };
 };
 
