@@ -240,17 +240,27 @@ describe("dft install for every tool", () => {
     const bare = path.join(root, "bare-repo");
     execFileSync("git", ["init", "-q", "-b", "main", bare]);
 
-    const result = spawnSync(
-      process.execPath,
-      [dftMain, "install", "--json", "--tool", "pi,nope"],
-      {
-        cwd: bare,
-        encoding: "utf-8",
-        env: { ...env, HOME: path.join(root, "empty-home") },
-      }
-    );
+    const install = (tools: string) =>
+      spawnSync(
+        process.execPath,
+        [dftMain, "install", "--json", "--tool", tools],
+        {
+          cwd: bare,
+          encoding: "utf-8",
+          env: { ...env, HOME: path.join(root, "empty-home") },
+        }
+      );
 
-    expect(actions(result.stdout)).toEqual([["pi", ["created"]]]);
+    const misspelled = install("pi,codx");
+
+    expect(misspelled.status).not.toBe(0);
+    expect(misspelled.stderr).toContain("(unknown: codx)");
+    expect(misspelled.stderr).toContain(
+      "claude-code, codex, opencode, pi, omp, deepseek"
+    );
+    expect(existsSync(path.join(bare, ".pi"))).toBe(false);
+
+    expect(actions(install("pi").stdout)).toEqual([["pi", ["created"]]]);
   });
 
   it("dft install --dry-run writes nothing in the repo or HOME", () => {

@@ -4,7 +4,7 @@ How `dft install`, `dft install --telemetry`, `dft uninstall` and the OTLP recei
 
 ## Project capture (`dft install`)
 
-`dft install` asks `HarnessRegistry.discover` which tools exist (sessions found, or the tool's folder exists) and writes local capture for each. `--tool a,b` adds tools that were not found. Cursor keeps its phase 1 files (`.cursor/hooks.json`, skills, optional git hooks).
+`dft install` asks `HarnessRegistry.discover` which tools exist (sessions found, or the tool's folder exists) and writes local capture for each. `--tool a,b` adds tools that were not found; an unknown id stops the install and lists the valid ones. Cursor keeps its phase 1 files (`.cursor/hooks.json`, skills, optional git hooks).
 
 | Tool | File written in the project | Calls |
 | --- | --- | --- |

@@ -1208,11 +1208,31 @@ const telemetryOptions = (
   stateFile: path.join(paths.dftHome, "telemetry.json"),
 });
 
-const toolList = (value: string | undefined): readonly CaptureTool[] =>
-  (value ?? "")
+const toolIds = (value: string): readonly string[] =>
+  value
     .split(",")
     .map((item) => item.trim())
-    .filter(isCaptureTool);
+    .filter((item) => item !== "");
+
+const toolFlag = Flag.String("tool").pipe(
+  Flag.withDescription(
+    `Also set up these tools even when dft did not find them, comma-separated: ${CAPTURE_TOOLS.join(", ")}`
+  ),
+  Flag.filterMap(
+    (value) => {
+      const ids = toolIds(value);
+      const tools = ids.filter(isCaptureTool);
+
+      return tools.length === ids.length ? Option.some(tools) : Option.none();
+    },
+    (value) =>
+      `one or more of ${CAPTURE_TOOLS.join(", ")} (unknown: ${toolIds(value)
+        .filter((id) => !isCaptureTool(id))
+        .join(", ")})`
+  ),
+  Flag.optional,
+  Flag.map(Option.getOrElse((): readonly CaptureTool[] => []))
+);
 
 const captureFlags = {
   dryRun: booleanFlag(
@@ -1264,10 +1284,7 @@ const installCommand = Command.make(
       "git-hooks",
       "Also record cost on every commit and push (adds to your git hooks, keeps what is there)"
     ),
-    tool: optionalString(
-      "tool",
-      "Also set up these tools even when dft did not find them, comma-separated: claude-code, codex, opencode, pi, omp, deepseek"
-    ),
+    tool: toolFlag,
   },
   (flags) =>
     Effect.gen(function* install() {
@@ -1277,7 +1294,7 @@ const installCommand = Command.make(
       const command = dftInvocation(process.execPath, entryScript());
       const capture = dftCommandFor(process.execPath, entryScript());
       const detected = yield* detectTools(paths.home);
-      const forced = toolList(flags.tool);
+      const forced = flags.tool;
 
       const tools = CAPTURE_TOOLS.filter(
         (tool) =>
