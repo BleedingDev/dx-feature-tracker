@@ -150,8 +150,8 @@ flowchart LR
 +│       ├── dx-analyze/        # /dx-analyze in Cursor chat
 +│       └── dx-explain/        # /dx-explain in Cursor chat
  └── .git/hooks/                # only with --git-hooks
-+    ├── pre-commit             # + one line: dft snapshot || true
-+    └── pre-push               # + one line: dft snapshot || true
++    ├── pre-commit             # + one line at the top: dft snapshot </dev/null || true
++    └── pre-push               # + one line at the top: dft snapshot </dev/null || true
 ```
 
 Only files inside the repo change, never `~/.cursor`. Existing hooks are kept: `dft` adds one line at the end. If the repo uses lefthook, `dft` prints a snippet for you to add instead.

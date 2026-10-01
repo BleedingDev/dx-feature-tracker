@@ -1,5 +1,5 @@
 // @effect-diagnostics nodeBuiltinImport:off -- Install wiring edits real files in a throwaway git repository, so the test drives node:fs and git directly.
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import {
   mkdtempSync,
   readFileSync,
@@ -26,6 +26,7 @@ import {
   mergeCursorHooks,
   otherWorktrees,
   parseWorktreeList,
+  uninstallGitHooks,
 } from "../src/dft-install.js";
 import { enterpriseLine } from "../src/dft-render.js";
 
@@ -38,6 +39,10 @@ const scratchRepo = (): string => {
 
   return dir;
 };
+
+const runHook = (file: string, input: string): number | null =>
+  spawnSync("sh", [file], { input, stdio: ["pipe", "ignore", "ignore"] })
+    .status;
 
 afterEach(() => {
   for (const dir of created.splice(0)) {
@@ -148,7 +153,7 @@ describe("dft install cursor hooks", () => {
 });
 
 describe("dft install --git-hooks", () => {
-  it("chains after an existing hook instead of replacing it", () => {
+  it("keeps an existing hook and adds its line right after the shebang", () => {
     const repo = scratchRepo();
     const preCommit = path.join(repo, ".git", "hooks", "pre-commit");
     writeFileSync(preCommit, "#!/bin/sh\necho mine\n");
@@ -157,12 +162,64 @@ describe("dft install --git-hooks", () => {
 
     expect(steps.map((step) => step.action)).toEqual(["updated", "created"]);
     expect(readFileSync(preCommit, "utf-8")).toBe(
-      "#!/bin/sh\necho mine\n/r/bin/dft snapshot || true\n"
+      "#!/bin/sh\n/r/bin/dft snapshot </dev/null || true\necho mine\n"
     );
     expect(statSync(preCommit).mode.toString(8).endsWith("755")).toBe(true);
     expect(
       installGitHooks(repo, "/r/bin/dft").map((step) => step.action)
     ).toEqual(["unchanged", "unchanged"]);
+  });
+
+  it("leaves a failing hook failing so the user's own checks still block git", () => {
+    const repo = scratchRepo();
+    const hooks = path.join(repo, ".git", "hooks");
+    const preCommit = path.join(hooks, "pre-commit");
+    const prePush = path.join(hooks, "pre-push");
+    const lint = '#!/bin/sh\necho "lint failed"; false\n';
+
+    const refCheck =
+      '#!/bin/sh\nread local_ref rest\ntest "$local_ref" = refs/heads/main\n';
+
+    writeFileSync(preCommit, lint);
+    writeFileSync(prePush, refCheck);
+
+    installGitHooks(repo, 'sh -c "cat >/dev/null" dft');
+
+    expect(runHook(preCommit, "")).toBe(1);
+    expect(runHook(prePush, "refs/heads/main abc refs/heads/main def\n")).toBe(
+      0
+    );
+    expect(runHook(prePush, "refs/heads/wip abc refs/heads/wip def\n")).toBe(1);
+
+    uninstallGitHooks(repo);
+
+    expect(readFileSync(preCommit, "utf-8")).toBe(lint);
+    expect(readFileSync(prePush, "utf-8")).toBe(refCheck);
+  });
+
+  it("moves a line an older dft appended at the end up to the top", () => {
+    const repo = scratchRepo();
+    const preCommit = path.join(repo, ".git", "hooks", "pre-commit");
+    writeFileSync(preCommit, "#!/bin/sh\nfalse\n/r/bin/dft snapshot || true\n");
+
+    const [step] = installGitHooks(repo, "/r/bin/dft");
+
+    expect(step?.action).toBe("updated");
+    expect(readFileSync(preCommit, "utf-8")).toBe(
+      "#!/bin/sh\n/r/bin/dft snapshot </dev/null || true\nfalse\n"
+    );
+  });
+
+  it("leaves a hook written in another language alone", () => {
+    const repo = scratchRepo();
+    const preCommit = path.join(repo, ".git", "hooks", "pre-commit");
+    const python = "#!/usr/bin/env python3\nraise SystemExit(1)\n";
+    writeFileSync(preCommit, python);
+
+    const [step] = installGitHooks(repo, "/r/bin/dft");
+
+    expect(step?.action).toBe("skipped");
+    expect(readFileSync(preCommit, "utf-8")).toBe(python);
   });
 
   it("prints a snippet instead of editing when lefthook manages hooks", () => {

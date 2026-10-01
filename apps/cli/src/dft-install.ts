@@ -341,6 +341,15 @@ export const lefthookConfig = (worktree: string): string | null =>
 export const hookLine = (command: string): string =>
   `${command} snapshot || true`;
 
+export const gitHookLine = (command: string): string =>
+  `${command} snapshot </dev/null || true`;
+
+const POSIX_SHELL_SHEBANG = /^#!\s*\S*\/(?:env\s+)?(?:ba|da|k|z)?sh(?:\s|$)/u;
+
+const isSnapshotLine = (line: string): boolean =>
+  line.includes("dft") &&
+  /\ssnapshot(?:\s+<\s*\/dev\/null)?\s+\|\|\s+true$/u.test(line.trimEnd());
+
 export const lefthookSnippet = (command: string): string =>
   GIT_HOOKS.map(
     (hook) =>
@@ -374,9 +383,9 @@ export const installGitHooks = (
   }
 
   const dir = gitHooksDir(worktree);
-  const line = hookLine(command);
+  const line = gitHookLine(command);
 
-  return GIT_HOOKS.map((hook) => {
+  return GIT_HOOKS.map((hook): InstallStep => {
     const file = path.join(dir, hook);
 
     if (!existsSync(file)) {
@@ -388,18 +397,43 @@ export const installGitHooks = (
     }
 
     const current = readFileSync(file, "utf-8");
+    const lines = current.split("\n");
+    const userLines = lines.filter((entry) => !isSnapshotLine(entry));
+    const [first] = userLines;
+    const shebang = first?.startsWith("#!") === true ? first : null;
 
-    if (current.includes(" snapshot") && current.includes("dft")) {
+    if (
+      userLines.length === lines.length &&
+      current.includes(" snapshot") &&
+      current.includes("dft")
+    ) {
       return { action: "unchanged", detail: hook, path: file };
     }
 
-    const separator = current.endsWith("\n") ? "" : "\n";
-    writeFileSync(file, `${current}${separator}${line}\n`);
+    if (shebang !== null && !POSIX_SHELL_SHEBANG.test(shebang)) {
+      return {
+        action: "skipped",
+        detail: `${hook} is not a shell script, so dft left it alone. Add this line yourself: ${line}`,
+        path: file,
+      };
+    }
+
+    const at = shebang === null ? 0 : 1;
+
+    const next = [...userLines.slice(0, at), line, ...userLines.slice(at)].join(
+      "\n"
+    );
+
+    if (next === current) {
+      return { action: "unchanged", detail: hook, path: file };
+    }
+
+    writeFileSync(file, next);
     chmodSync(file, 0o755);
 
     return {
       action: "updated",
-      detail: `${hook}: appended after the existing hook body`,
+      detail: `${hook}: added before the existing hook body`,
       path: file,
     };
   });
@@ -627,23 +661,29 @@ const gitLines = (result: InstallResult): GitLines => {
     };
   }
 
-  if (first?.action === "skipped") {
-    return { done: null, notes: [], skipped: [`Git hooks: ${first.detail}`] };
+  const hooks = result.git.filter((step) => step.action !== "skipped");
+
+  const skipped = result.git
+    .filter((step) => step.action === "skipped")
+    .map((step) => `Git hooks: ${step.detail}`);
+
+  if (hooks.length === 0) {
+    return { done: null, notes: [], skipped };
   }
 
-  const names = result.git.map((step) => step.detail.split(":")[0]).join(", ");
+  const names = hooks.map((step) => step.detail.split(":")[0]).join(", ");
 
-  const appended = result.git
+  const appended = hooks
     .filter((step) => step.action === "updated")
     .map(
       (step) =>
-        `Git hook ${step.detail.split(":")[0]} already existed. dft kept it and added one line at the end.`
+        `Git hook ${step.detail.split(":")[0]} already existed. dft kept it and added one line at the top, so the hook's own checks still decide whether git goes ahead.`
     );
 
   return {
     done: { label: "Git hooks", text: `${names} (record cost on each commit)` },
     notes: appended,
-    skipped: [],
+    skipped,
   };
 };
 
@@ -921,9 +961,6 @@ export const uninstallSkills = (
 
   return steps;
 };
-
-const isSnapshotLine = (line: string): boolean =>
-  line.includes("dft") && line.trimEnd().endsWith(" snapshot || true");
 
 export const uninstallGitHooks = (worktree: string): readonly RemovalStep[] => {
   if (!isGitRepo(worktree) || lefthookConfig(worktree) !== null) {

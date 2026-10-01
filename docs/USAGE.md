@@ -39,7 +39,7 @@ To also record a snapshot on every commit and push:
 dft install --git-hooks
 ```
 
-This appends `dft snapshot` to the `pre-commit` and `pre-push` hooks. Existing hooks are kept, not replaced. If the repo uses lefthook, `dft` prints a snippet to add yourself instead of editing hooks.
+This adds `dft snapshot` to the `pre-commit` and `pre-push` hooks. Existing hooks are kept, not replaced: the dft line goes right after the `#!` line, so your own checks still run last and still decide whether the commit or push goes ahead. A hook written in another language, such as Python, is left alone and `dft` prints the line to add yourself. If the repo uses lefthook, `dft` prints a snippet to add yourself instead of editing hooks.
 
 Other flags: `--all-worktrees` to also set up every other git worktree of the repository (see [Many worktrees and subagents](#many-worktrees-and-subagents)), `--repo <path>` to install into another repository, `--json` for machine output.
 

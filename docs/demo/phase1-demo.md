@@ -26,7 +26,7 @@ created   <demo>/.git/hooks/pre-commit: pre-commit
 created   <demo>/.git/hooks/pre-push: pre-push
 ```
 
-`~/.cursor` is never touched. The pre-commit hook is `<node> <dft-checkout>/apps/cli/bin/dft snapshot || true`.
+`~/.cursor` is never touched. The pre-commit hook is `<node> <dft-checkout>/apps/cli/bin/dft snapshot </dev/null || true`.
 
 ## 2. A real Cursor agent run
 
