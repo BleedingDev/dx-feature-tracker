@@ -249,7 +249,14 @@ const fromCostLedger = (
     return true;
   }
 
-  out.money.push({ ...base, ledger, rawField: "costUsd", usd: amount });
+  const charged =
+    ledger === "charge" ? orNull(decodeNumber(payload.charge)) : null;
+
+  out.money.push(
+    charged === null
+      ? { ...base, ledger, rawField: "costUsd", usd: amount }
+      : { ...base, ledger, rawField: "charge", usd: charged }
+  );
 
   return true;
 };
@@ -339,7 +346,11 @@ const listPriceOf = (event: DxEventEnvelope): number | null => {
     return null;
   }
 
-  return orNull(decodeNumber(payload.costUsd));
+  const figure = event.usage?.toolFigure ?? null;
+
+  return figure === null || figure.kind === "list-price"
+    ? orNull(decodeNumber(payload.costUsd))
+    : null;
 };
 
 const writesOf = (usage: AiUsage): number | null => {

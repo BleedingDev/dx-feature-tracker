@@ -7,6 +7,7 @@ import { describe, expect, it } from "@effect/vitest";
 import { Effect, Schema } from "effect";
 
 import { cursorDashboardResponseCollector } from "../../../src/dx/collectors/cursor-dashboard-response/collector.js";
+import { toApiEvent } from "../../../src/dx/collectors/cursor-usage-api/collector.js";
 import { fakeManifest } from "../../../src/dx/contracts/fakes.js";
 import type { StoreSnapshot } from "../../../src/dx/contracts/services.js";
 import { withCollectorBlocks } from "../../../src/dx/harness/collector-blocks.js";
@@ -514,7 +515,6 @@ describe("Cursor money ledgers stay pinned", () => {
             ],
             "listPrices": [
               "req-a=0.0425",
-              "req-b=0.125",
               "auto-priced=0.42",
             ],
             "requests": 2,
@@ -530,6 +530,65 @@ describe("Cursor money ledgers stay pinned", () => {
             ],
           }
         `);
+      }).pipe(Effect.provide(NodeServices.layer))
+  );
+
+  it.effect(
+    "bills what Cursor charged and keeps its list price out of billed and the estimate",
+    () =>
+      Effect.gen(function* chargedAuto() {
+        const batch = yield* cursorDashboardResponseCollector.collect({
+          adapterId: "cursor-dashboard-response",
+          context: { ...emptyFlightContext, branch: "feature/charged" },
+          cursor: null,
+          origin: "fixture",
+          scratchDir: null,
+          selectedInput: fixturePath("b43/dashboard-complete-paged.json"),
+        });
+
+        const [template] = batch.events;
+
+        expect(template).toBeDefined();
+
+        if (template === undefined) {
+          return;
+        }
+
+        const listed = withCollectorBlocks({
+          ...template,
+          eventId: EventIdSchema.make("auto-charged"),
+          identity: { ...template.identity, requestId: "auto-charged" },
+          payload: {
+            charge: 0.08,
+            costLedger: "charge",
+            costRawField: "tokenUsage.totalCents",
+            costUsd: 0.08,
+            currency: "USD",
+            model: "default",
+            requestKey: "auto-charged",
+            sourceKind: "dashboard-response",
+            tokens: { input: 1000, output: 100 },
+          },
+        });
+
+        const imported = toApiEvent(
+          listed,
+          new Map([["request:auto-charged", 4]])
+        );
+
+        const { results } = computeCost(snapshotOf([imported]), options);
+
+        expect(imported.usage?.toolFigure).toStrictEqual({
+          amount: 0.04,
+          currency: "USD",
+          kind: "charge",
+        });
+        expect(resultLines(results)).toContain(
+          "dx.cost.charge.usd=0.04 measured"
+        );
+        expect(resultLines(results)).toContain(
+          "dx.cost.list-price-estimate.price-table.usd=null unavailable"
+        );
       }).pipe(Effect.provide(NodeServices.layer))
   );
 });

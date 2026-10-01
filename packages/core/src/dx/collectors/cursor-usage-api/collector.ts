@@ -3,6 +3,7 @@ import { DateTime, Effect, FileSystem, Option, Schema } from "effect";
 
 import { SourceUnavailable } from "../../contracts/error-source-unavailable.js";
 import type { DxCollector } from "../../contracts/services.js";
+import { withCollectorBlocks } from "../../harness/collector-blocks.js";
 import type { DxEventEnvelope } from "../../model/event.js";
 import { emptyFlightContext } from "../../model/event.js";
 import {
@@ -149,7 +150,7 @@ export const toApiEvent = (
   const chargedUsd =
     cents === undefined ? null : Math.round(cents * 10_000) / 1_000_000;
 
-  return {
+  return withCollectorBlocks({
     ...event,
     acquisition: "api",
     adapterId: CURSOR_USAGE_API_ADAPTER_ID,
@@ -164,7 +165,7 @@ export const toApiEvent = (
       chargedUsd,
       sourceKind: "dashboard-json",
     },
-  };
+  });
 };
 
 export const makeCursorUsageApiCollector = (
