@@ -377,14 +377,42 @@ const chatsNote = (
   return chatList(branch.chats, branch.row.branch, titles, now);
 };
 
+const repoLabels = (
+  rows: readonly FlightHistoryRow[]
+): ReadonlyMap<string, string> => {
+  const dirs = [...new Set(rows.flatMap((row) => row.repoCommonDir ?? []))];
+
+  const names = dirs.map((dir) => repoName(dir));
+
+  return new Map(
+    dirs.map((dir, index) => {
+      const name = names[index] ?? dir;
+
+      return [
+        dir,
+        names.indexOf(name) === names.lastIndexOf(name)
+          ? name
+          : dir
+              .replace(/[/\\]\.git$/u, "")
+              .split(/[/\\]/u)
+              .slice(-2)
+              .join("/"),
+      ] as const;
+    })
+  );
+};
+
 const branchRows = (
   branch: DashboardBranch,
   data: DashboardData,
-  max: number
+  max: number,
+  labels: ReadonlyMap<string, string>
 ): string => {
   const { row } = branch;
   const name = row.branch ?? "unassigned";
-  const repo = repoName(row.repoCommonDir);
+
+  const repo =
+    labels.get(row.repoCommonDir ?? "") ?? repoName(row.repoCommonDir);
 
   const last =
     row.lastActivityAt === null ? null : Date.parse(row.lastActivityAt);
@@ -427,6 +455,8 @@ const branchRows = (
 };
 
 const branchTable = (data: DashboardData): string => {
+  const labels = repoLabels(data.branches.map((item) => item.row));
+
   if (data.branches.length === 0) {
     return `<p class="empty">No branches with activity in this window.</p>`;
   }
@@ -447,7 +477,7 @@ const branchTable = (data: DashboardData): string => {
   return [
     `<div class="tools"><input id="filter" type="search" placeholder="Filter by repo, branch or worktree" aria-label="Filter branches"><span class="muted">Click a branch to see its chats.</span></div>`,
     `<div class="scroll"><table id="branches"><thead><tr>${head}</tr></thead><tbody>`,
-    ...data.branches.map((branch) => branchRows(branch, data, max)),
+    ...data.branches.map((branch) => branchRows(branch, data, max, labels)),
     "</tbody></table></div>",
   ].join("\n");
 };

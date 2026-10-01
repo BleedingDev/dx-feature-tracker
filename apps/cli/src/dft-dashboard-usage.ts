@@ -1,5 +1,6 @@
 import type { DxUsageOutputType } from "@rat-stack/core/dx";
 
+import { dashboardStateKit } from "./dft-dashboard-state.js";
 import { formatCount, formatUsd } from "./dft-render.js";
 
 export interface StaticUsage {
@@ -212,10 +213,45 @@ const BOTTOM = 24;
 
 const stackValue = (stack: Row): number => stack.values.estimate ?? 0;
 
-export const usageChart = (series: DxUsageOutputType): string => {
-  if (series.series.length === 0) {
+const dayRun = (first: string, last: string): readonly string[] => {
+  const { addDays } = dashboardStateKit();
+  const days: string[] = [];
+
+  for (
+    let day: string | null = first;
+    day !== null && day <= last && days.length < 400;
+    day = addDays(day, 1)
+  ) {
+    days.push(day);
+  }
+
+  return days;
+};
+
+const withEmptyDays = (series: DxUsageOutputType): DxUsageOutputType => {
+  const first = series.series.at(0)?.bucket;
+  const last = series.series.at(-1)?.bucket;
+
+  if (series.bucket !== "day" || first === undefined || last === undefined) {
+    return series;
+  }
+
+  const have = new Map(series.series.map((point) => [point.bucket, point]));
+
+  return {
+    ...series,
+    series: dayRun(first, last).map(
+      (bucket) => have.get(bucket) ?? { bucket, stacks: [], values: {} }
+    ),
+  };
+};
+
+export const usageChart = (output: DxUsageOutputType): string => {
+  if (output.series.length === 0) {
     return `<p class="empty">No AI requests in this window.</p>`;
   }
+
+  const series = withEmptyDays(output);
 
   const plotWidth = WIDTH - LEFT - RIGHT;
   const plotHeight = HEIGHT - TOP - BOTTOM;
@@ -279,7 +315,7 @@ export const usageChart = (series: DxUsageOutputType): string => {
     )
     .join("");
 
-  return `<svg class="chart" viewBox="0 0 ${String(WIDTH)} ${String(HEIGHT)}" role="img" aria-label="Estimate per ${escape(series.bucket)}, by tool">${grid.join("")}${bars.join("")}</svg><div class="ulegend">${legend}</div>`;
+  return `<div class="chart-scroll"><svg class="chart" viewBox="0 0 ${String(WIDTH)} ${String(HEIGHT)}" role="img" aria-label="Estimate per ${escape(series.bucket)}, by tool">${grid.join("")}${bars.join("")}</svg></div><div class="ulegend">${legend}</div>`;
 };
 
 export const USAGE_STYLE = `
@@ -287,7 +323,8 @@ export const USAGE_STYLE = `
 @media (prefers-color-scheme:dark){:root{--s1:#3987e5;--s2:#d95926;--s3:#199e70;--s4:#c98500;--s5:#d55181;--s6:#008300;--s7:#9085e9;--s-other:#6b6b72;--s-none:#3a3a40;--grid:#2d2d2a}}
 h2{font-size:12px;font-weight:600;color:var(--muted);margin:22px 0 8px;text-transform:uppercase;letter-spacing:.05em}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:12px}
-svg.chart{display:block;width:100%;height:auto}
+.chart-scroll{overflow-x:auto}
+svg.chart{display:block;width:100%;min-width:620px;height:auto}
 svg.chart text{fill:var(--muted);font:11px system-ui,sans-serif}
 svg.chart .grid{stroke:var(--grid)}
 svg.chart .base{stroke:var(--muted)}

@@ -1,5 +1,5 @@
 // @effect-diagnostics nodeBuiltinImport:off -- The page runs the serialized state kit in the browser, so the test evaluates the same script text in a node:vm context.
-import { runInNewContext } from "node:vm";
+import { Script, runInNewContext } from "node:vm";
 
 import { describe, expect, it } from "@effect/vitest";
 
@@ -11,6 +11,7 @@ import type {
   DashboardStateKit,
   UsageViewState,
 } from "../src/dft-dashboard-state.js";
+import { liveDashboardPage } from "../src/dft-live-page.js";
 
 const kit = dashboardStateKit();
 
@@ -361,5 +362,21 @@ describe("dashboard state script", () => {
     expect(page?.tableQuery(state, "UTC")).toBe(kit.tableQuery(state, "UTC"));
     expect(page?.drill(state, "main")).toEqual(kit.drill(state, "main"));
     expect(page?.addDays("2026-12-31", 1)).toBe("2027-01-01");
+  });
+});
+
+describe("dashboard page scripts", () => {
+  it("compiles every inline script of the live page", () => {
+    const page = liveDashboardPage("token", { intro: true });
+
+    const scripts = [...page.matchAll(/<script>(?<code>.*?)<\/script>/gsu)].map(
+      (match) => match.groups?.code ?? ""
+    );
+
+    expect(scripts).toHaveLength(2);
+
+    for (const code of scripts) {
+      expect(() => new Script(code)).not.toThrow();
+    }
   });
 });

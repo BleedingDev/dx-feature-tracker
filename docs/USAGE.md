@@ -92,17 +92,25 @@ The git hook line from `dft snapshot` uses the same format.
 ## Dashboard
 
 ```sh
-dft dashboard                          # this repository
-dft dashboard --all-repos --since 30d  # every repository, last 30 days
-dft dashboard --out costs.html --no-open
+dft dashboard                                   # live page on http://127.0.0.1:7420
+dft dashboard --port 8080 --no-open
+dft dashboard --one-time --all-repos --since 30d  # one static file instead
 ```
 
-`dft dashboard` saves one HTML page and opens it in your browser (`open` on macOS, `xdg-open` on Linux). The page shows totals at the top and one row per branch: worktree, status, last active, agent time, tokens, billed, estimate and a cost bar. Click a column to sort, type to filter, and click a branch to see its chats, the models they used and their subagents.
+`dft dashboard` runs a local page that keeps syncing and updates in place. It opens on AI usage across every tool:
 
-- The page is saved to `~/.dft/dashboard.html` (or `$DFT_HOME/dashboard.html`). `--out <file>` saves it somewhere else.
-- `--no-open` saves it without opening the browser. `--json` prints where it was saved.
-- It is one local file. It loads nothing from the internet and never contains your prompts. Chat titles are included, so treat the file like your chat history before you share it.
-- Run it again to refresh it. It does not update by itself.
+- **Filters.** A time range (7 days, 30 days, all time, or custom dates) and `+ Filter` chips for Tool, Model provider, Via, Model, Effort, Project, Branch, Worktree and Session. Each chip lists its values with their tokens and cost in the current window.
+- **Group by and measure.** One Group by select (the same dimensions plus day and week) and a measure: Estimate, Tool's figure, Billed, Tokens or Requests. On a phone, tap a tile to switch the measure.
+- **Tiles** show each money ledger on its own (Estimate, Tool's figure, Billed) with the tools that report it. They are never added together.
+- **Chart** over time, stacked by tool (or by the top 6 groups plus Other). Hover a bar for its numbers, click it to open that day.
+- **Table** with a share bar per group, Other and `(unattributed)` last. Click a row to drill down: tool, then model, then branch; project, then branch, then session. A branch name opens the branch screen with its cost, models by tokens, chats and timeline.
+- Everything lives in the address: copy it to share a view, use Back to undo a drilldown, and use the breadcrumbs to go up.
+- **Setup** lists every tool (installed, sessions, capture, telemetry, last event), a Sources panel with how often a tool's sources disagreed, and the tracked repos and actions.
+
+`--one-time` writes one HTML file instead and exits: the same ledgers, a chart by tool, tables by tool and by model, and one row per branch with its chats.
+
+- The file is saved to `~/.dft/dashboard.html` (or `$DFT_HOME/dashboard.html`). `--out <file>` saves it somewhere else, `--no-open` skips the browser and `--json` prints where it was saved.
+- Both pages load nothing from the internet and never contain your prompts. Chat titles are included, so treat a saved file like your chat history before you share it.
 
 ## Many worktrees and subagents
 

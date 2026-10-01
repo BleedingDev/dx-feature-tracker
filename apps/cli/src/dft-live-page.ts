@@ -121,7 +121,8 @@ label.inline{display:inline-flex;gap:6px;align-items:center;color:var(--muted)}
 #u-chart .base{stroke:var(--faint);stroke-width:1}
 #u-chart rect.seg{stroke:var(--surface);stroke-width:1.5}
 #u-chart rect.hit{fill:transparent;cursor:pointer}
-#u-chart rect.hit:hover{fill:var(--raised);fill-opacity:.6}
+#u-chart rect.band{fill:transparent}
+#u-chart rect.band.on{fill:var(--raised)}
 .legend{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;font-size:12px;color:var(--muted)}
 .legend span{display:inline-flex;gap:6px;align-items:center;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sw{flex:none;display:inline-block;width:10px;height:10px;border-radius:3px}
@@ -149,7 +150,7 @@ tr.drill{cursor:pointer}
 tr.drill:hover{background:var(--raised)}
 tr.pinned td{color:var(--muted);font-style:italic}
 tr.pinned td.num{font-style:normal}
-@media (max-width:640px){.opt{display:none}#u-metric{display:none}td.share{width:auto;min-width:90px}td.label{max-width:150px}th,td{padding:7px 8px}}
+@media (max-width:640px){.opt{display:none}#u-metric{display:none}.panel{padding:12px}#s-tools td,#s-tools th,#s-sources td,#s-sources th{white-space:normal}td.share{width:auto;min-width:90px}td.label{max-width:150px}th,td{padding:7px 8px}}
 .flash{animation:flash 1.6s ease-out}
 @keyframes flash{from{color:var(--accent)}to{color:inherit}}
 .empty{padding:28px;text-align:center;color:var(--muted)}
@@ -266,9 +267,9 @@ const body = (intro: boolean) => `
 </section>
 <section id="v-setup" hidden>
 <div class="stack">
-<div class="panel"><h2>Tools</h2><div class="scroll"><table id="s-tools"><thead><tr><th scope="col">Tool</th><th scope="col">Installed</th><th scope="col" class="num">Sessions</th><th scope="col">Capture</th><th scope="col">Telemetry</th><th scope="col">Last event</th></tr></thead><tbody></tbody></table></div>
+<div class="panel"><h2>Tools</h2><div class="scroll"><table id="s-tools"><thead><tr><th scope="col">Tool</th><th scope="col" class="opt">Installed</th><th scope="col" class="num">Sessions</th><th scope="col">Capture</th><th scope="col" class="opt">Telemetry</th><th scope="col">Last event</th></tr></thead><tbody></tbody></table></div>
 <p class="quiet">Capture is the project hooks or extension that <code>dft install</code> writes into a tracked repo. Telemetry is the opt-in OpenTelemetry export from <code>dft install --telemetry</code>.</p></div>
-<div class="panel"><h2>Sources</h2><div class="facts" id="s-facts"></div><div class="scroll"><table id="s-sources"><thead><tr><th scope="col">Tool</th><th scope="col" class="num">Requests</th><th scope="col" class="num">Disagreements</th><th scope="col">Fields</th></tr></thead><tbody></tbody></table></div>
+<div class="panel"><h2>Sources</h2><div class="facts" id="s-facts"></div><div class="scroll"><table id="s-sources"><thead><tr><th scope="col">Tool</th><th scope="col" class="num opt">Requests</th><th scope="col" class="num">Disagreements</th><th scope="col">Fields</th></tr></thead><tbody></tbody></table></div>
 <p class="quiet">When a tool's session file, hooks and telemetry disagree on a request, dft keeps the most precise source and counts the disagreement here.</p></div>
 <div class="panel"><h2>Tracked repos</h2><div id="s-repos"></div>
 <div class="row" style="margin-top:12px"><input type="text" id="s-add" placeholder="/path/to/repo" aria-label="Repo folder to track"><button type="button" class="btn" id="s-add-btn">Track</button></div>
@@ -431,20 +432,22 @@ const sums=buckets.map((b)=>{const p=byBucket.get(b);return p?p.stacks.reduce((a
 const top=Math.max(0,...sums);const step=niceStep(top/4);const ticks=Math.max(1,Math.ceil(top/step));const max=step*ticks;const band=pw/Math.max(1,buckets.length);const bw=Math.max(2,Math.min(32,band*0.7));
 const parts=[];for(let i=0;i<=ticks;i++){const v=step*i;const y=T+ph-ph*i/ticks;parts.push('<line class="'+(i===0?"base":"grid")+'" x1="'+L+'" x2="'+(W-R)+'" y1="'+y+'" y2="'+y+'"/>');parts.push('<text x="'+(L-6)+'" y="'+(y+4)+'" text-anchor="end">'+esc(axisFmt(metric,v))+"</text>");}
 const every=Math.max(1,Math.ceil(buckets.length/Math.max(1,Math.floor(pw/64))));
+buckets.forEach((b,i)=>{parts.push('<rect class="band" data-band="'+i+'" x="'+(L+band*i).toFixed(1)+'" y="'+T+'" width="'+band.toFixed(1)+'" height="'+ph+'"/>');});
 buckets.forEach((b,i)=>{const p=byBucket.get(b);const x=L+band*i+(band-bw)/2;let y=T+ph;if(p){const ordered=keys.map((k)=>p.stacks.find((x2)=>x2.key===k)).filter(Boolean);ordered.forEach((k)=>{const v=k.values[metric]||0;if(v<=0)return;const h=ph*v/max;y-=h;parts.push('<rect class="seg" x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+Math.max(0.5,h).toFixed(1)+'" rx="2" style="fill:'+colors.get(k.key)+'"/>');});}
-if(i%every===0||buckets.length<=8)parts.push('<text x="'+(L+band*i+band/2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle">'+esc(keyLabel(bucket,b).replace("week of ",""))+"</text>");
+if(i%every===0)parts.push('<text x="'+(L+band*i+band/2).toFixed(1)+'" y="'+(H-6)+'" text-anchor="middle">'+esc(keyLabel(bucket,b).replace("week of ",""))+"</text>");
 parts.push('<rect class="hit" data-i="'+i+'" x="'+(L+band*i).toFixed(1)+'" y="'+T+'" width="'+band.toFixed(1)+'" height="'+ph+'"/>');});
 svg.setAttribute("viewBox","0 0 "+W+" "+H);svg.innerHTML=parts.join("");
 chartData={buckets,byBucket,keys,colors,names,metric,bucket,s};
 $("u-legend").innerHTML=keys.length>1||(keys.length===1&&stackDim)?keys.map((k)=>'<span><i class="sw" style="background:'+colors.get(k)+'"></i>'+esc(names.get(k))+"</span>").join(""):"";
 $("u-chart-title").textContent=METRIC_LABELS[metric]+" per "+bucket+(stackDim?", by "+(DIM_LABELS[stackDim]||stackDim).toLowerCase()+(stackDim==="tool"?"":", top 6"):"");
 svg.setAttribute("aria-label",$("u-chart-title").textContent);}
-function tipAt(i,clientX){const d=chartData;if(!d)return;const b=d.buckets[i];const p=d.byBucket.get(b);const tip=$("u-tip");const rows=p?d.keys.map((k)=>p.stacks.find((x)=>x.key===k)).filter((k)=>k&&(k.values[d.metric]||0)>0):[];
+function bandOn(i){Array.prototype.forEach.call($("u-chart").querySelectorAll("rect.band"),(r)=>r.classList.toggle("on",Number(r.getAttribute("data-band"))===i));}
+function tipAt(i,clientX){const d=chartData;if(!d)return;bandOn(i);const b=d.buckets[i];const p=d.byBucket.get(b);const tip=$("u-tip");const rows=p?d.keys.map((k)=>p.stacks.find((x)=>x.key===k)).filter((k)=>k&&(k.values[d.metric]||0)>0):[];
 const total=rows.reduce((a,k)=>a+(k.values[d.metric]||0),0);
 tip.innerHTML="<strong>"+esc(keyLabel(d.bucket,b))+"</strong>"+(rows.length?rows.map((k)=>'<div><span><i class="sw" style="background:'+d.colors.get(k.key)+'"></i>'+esc(d.names.get(k.key))+"</span><span>"+esc(fmt(d.metric,k.values[d.metric]))+"</span></div>").join("")+(rows.length>1?"<div><span>Total</span><span>"+esc(fmt(d.metric,total))+"</span></div>":""):'<div class="muted">No requests</div>');
 tip.hidden=false;const panel=tip.parentNode.getBoundingClientRect();const w=tip.offsetWidth;let x=clientX-panel.left+14;if(x+w>panel.width-8)x=clientX-panel.left-w-14;tip.style.left=Math.max(8,x)+"px";tip.style.top="44px";}
-$("u-chart").addEventListener("mousemove",(e)=>{const h=e.target.closest("rect.hit");if(!h){$("u-tip").hidden=true;return;}tipAt(Number(h.getAttribute("data-i")),e.clientX);});
-$("u-chart").addEventListener("mouseleave",()=>{$("u-tip").hidden=true;});
+$("u-chart").addEventListener("mousemove",(e)=>{const h=e.target.closest("rect.hit");if(!h){$("u-tip").hidden=true;bandOn(-1);return;}tipAt(Number(h.getAttribute("data-i")),e.clientX);});
+$("u-chart").addEventListener("mouseleave",()=>{$("u-tip").hidden=true;bandOn(-1);});
 $("u-chart").addEventListener("click",(e)=>{const h=e.target.closest("rect.hit");if(!h||!chartData)return;const b=chartData.buckets[Number(h.getAttribute("data-i"))];const next=STATE.drill({...chartData.s,by:chartData.bucket},b);if(next){next.state={...next.state,by:chartData.s.by==="day"||chartData.s.by==="week"?"tool":chartData.s.by};go(next,true);}});
 
 const COLS=["tokens","requests","sessions","estimate","toolFigure","billed"];
@@ -466,7 +469,8 @@ function rowDrill(tr){const s=route().state;const next=STATE.drill(s,tr.getAttri
 $("u-table").tBodies[0].addEventListener("click",(e)=>{if(e.target.closest("a"))return;const tr=e.target.closest("tr.drill");if(tr)rowDrill(tr);});
 $("u-table").tBodies[0].addEventListener("keydown",(e)=>{if(e.key!=="Enter")return;const tr=e.target.closest("tr.drill");if(tr){e.preventDefault();rowDrill(tr);}});
 
-function windowText(out){const w=out.window;const d=(iso)=>iso?dayLabel(iso.slice(0,10),false):null;if(!w.since&&!w.until)return "All time, "+w.tz;return (d(w.since)||"start")+" to "+(d(w.until)||"now")+", "+w.tz;}
+function dayIn(ms,tz){try{return new Intl.DateTimeFormat("en-CA",{timeZone:tz,year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date(ms));}catch(e){return new Date(ms).toISOString().slice(0,10);}}
+function windowText(out){const w=out.window;if(!w.since&&!w.until)return "All time, "+w.tz;const from=w.since?dayLabel(dayIn(Date.parse(w.since),w.tz),false):"start";const to=w.until?dayLabel(dayIn(Date.parse(w.until)-1,w.tz),false):"now";return from+" to "+to+", "+w.tz;}
 function loadUsage(){const r=route();const s=r.state;const seq=++view.usageSeq;
 Promise.all([getJson("/api/usage?"+STATE.tableQuery(s,TZ)),getJson("/api/usage?"+STATE.chartQuery(s,TZ)),getJson("/api/usage?"+STATE.toolsQuery(s,TZ))]).then(([table,chart,tools])=>{if(seq!==view.usageSeq)return;$("u-error").hidden=true;
 ledgerTiles($("u-tiles"),tools,s.metric,true);paintChart(s,chart);paintTable(s,table,chart);$("u-window").textContent=windowText(table);
@@ -496,8 +500,8 @@ function syncSelect(sel,items){const want=items.map((i)=>i.value+"\\t"+i.text).j
 function repoHtml(r){const src=r.sources.length?'<ul class="list">'+r.sources.map((s)=>'<li><span class="'+(s.ok?"ok":"no")+'">'+(s.ok?"\\u2713":"\\u25CB")+"</span><span>"+esc(s.label)+'</span><span class="muted">'+esc(s.note)+"</span></li>").join("")+"</ul>":'<p class="muted">Sources show up after the first sync.</p>';
 return '<div class="repo"><div class="head"><strong>'+esc(r.name)+'</strong><span class="muted">'+esc(r.lastSync)+"</span>"+(r.hooks?'<span class="tag">Cursor hooks installed</span>':'<button type="button" class="btn" data-hooks="'+esc(r.root)+'">Install Cursor hooks</button>')+'<button type="button" class="btn" data-untrack="'+esc(r.root)+'">Stop tracking</button></div><div class="path">'+esc(r.root)+"</div>"+(r.error?'<p class="no">'+esc(r.error)+"</p>":"")+src+"</div>";}
 function mark(v,yes,no){return v===null?'<span class="no">n/a</span>':v?'<span class="ok">\\u2713 '+esc(yes)+"</span>":'<span class="no">'+esc(no)+"</span>";}
-function toolsHtml(tools){return tools.map((t)=>"<tr><td><strong>"+esc(t.name)+"</strong></td><td>"+mark(t.installed,"yes","not found")+'</td><td class="num">'+esc(count(t.sessions))+"</td><td>"+(t.capture.length?'<span class="ok">\\u2713 '+esc(t.capture.join(", "))+"</span>":'<span class="no">not set up</span>')+"</td><td>"+mark(t.telemetry,"on","off")+"</td><td>"+(t.lastEvent?esc(t.lastEvent):'<span class="no">never</span>')+"</td></tr>").join("");}
-function sourcesHtml(src){if(!src.tools.length)return '<tr><td colspan="4" class="muted">No AI requests stored yet.</td></tr>';return src.tools.map((t)=>"<tr><td><strong>"+esc(t.name)+'</strong></td><td class="num">'+esc(count(t.requests))+'</td><td class="num">'+(t.disagreements?'<span class="warn">'+esc(count(t.disagreements))+"</span>":'<span class="ok">0</span>')+"</td><td>"+(t.fields.length?esc(t.fields.map((f)=>f.field+" "+count(f.count)).join(", ")):'<span class="no">all sources agree</span>')+"</td></tr>").join("");}
+function toolsHtml(tools){return tools.map((t)=>"<tr><td><strong>"+esc(t.name)+"</strong></td><td class=opt>"+mark(t.installed,"yes","not found")+'</td><td class="num">'+esc(count(t.sessions))+"</td><td>"+(t.capture.length?'<span class="ok">\\u2713 '+esc(t.capture.join(", "))+"</span>":'<span class="no">not set up</span>')+"</td><td class=opt>"+mark(t.telemetry,"on","off")+"</td><td>"+(t.lastEvent?esc(t.lastEvent):'<span class="no">never</span>')+"</td></tr>").join("");}
+function sourcesHtml(src){if(!src.tools.length)return '<tr><td colspan="4" class="muted">No AI requests stored yet.</td></tr>';return src.tools.map((t)=>"<tr><td><strong>"+esc(t.name)+'</strong></td><td class="num opt">'+esc(count(t.requests))+'</td><td class="num">'+(t.disagreements?'<span class="warn">'+esc(count(t.disagreements))+"</span>":'<span class="ok">0</span>')+"</td><td>"+(t.fields.length?esc(t.fields.map((f)=>f.field+" "+count(f.count)).join(", ")):'<span class="no">all sources agree</span>')+"</td></tr>").join("");}
 function loadSetup(){return getJson("/api/setup").then((s)=>{const html=s.repos.length?s.repos.map(repoHtml).join(""):'<p class="muted">No repos tracked. Add one below.</p>';if($("s-repos").getAttribute("data-html")!==html){$("s-repos").innerHTML=html;$("s-repos").setAttribute("data-html",html);}
 $("s-tools").tBodies[0].innerHTML=toolsHtml(s.tools);
 const src=s.sources;$("s-facts").innerHTML="<span><b>"+esc(count(src.facts))+"</b> requests</span><span><b>"+esc(count(src.matched))+"</b> joined across sources</span><span><b>"+esc(count(src.unresolved))+"</b> left out as unmatched</span><span><b>"+esc(count(src.unpriced))+"</b> without a price</span>"+(src.derivedAt?"<span>rebuilt "+esc(src.derivedAt)+"</span>":"");
