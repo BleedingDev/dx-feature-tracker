@@ -111,6 +111,9 @@ const transitionOf = (subject: string): Transition | null => {
   return started === undefined ? null : { from: null, to: null };
 };
 
+export const isHeadTransition = (subject: string): boolean =>
+  transitionOf(subject) !== null;
+
 const DETACHED_NAME = /^(?:[0-9a-f]{7,64}|HEAD)$|[~^:@\s]|^refs\/(?!heads\/)/u;
 
 const looksLikeBranch = (name: string): boolean =>

@@ -7,6 +7,7 @@ import { attributeHistoricalBranches } from "./attribute.js";
 import type { HistoricalAttributionResult } from "./attribute.js";
 import { loadWorktreeTimeline } from "./git.js";
 import { joinAccountRows } from "./session-join.js";
+import { storedHeadHistory, withStoredHistory } from "./stored-moves.js";
 import { DEFAULT_BRANCH_AT_OPTIONS } from "./timeline.js";
 import type { BranchAtOptions } from "./timeline.js";
 import { loadRepoMaps, placeEventsInWorktrees } from "./worktree.js";
@@ -46,12 +47,14 @@ export const reattributeWithRunner = (
       { concurrency: 2 }
     );
 
+    const history = storedHeadHistory(events);
+
     const attributed = attributeHistoricalBranches(joined, {
       commitBranches: new Map(
         loaded.flatMap((l) => [...l.commitBranches.entries()])
       ),
       options,
-      timelines: loaded.map((l) => l.timeline),
+      timelines: loaded.map((l) => withStoredHistory(l.timeline, history)),
     });
 
     return { ...attributed, placements: placed.placements };

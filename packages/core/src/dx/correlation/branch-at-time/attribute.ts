@@ -302,6 +302,9 @@ const byHookTurn =
         };
   };
 
+const sessionRecordedBranch = (event: DxEventEnvelope): string | null =>
+  event.ai?.branchSource === "session-recorded" ? namedBranch(event) : null;
+
 const byWorktreeAtTime =
   (
     timelines: readonly WorktreeTimeline[],
@@ -316,6 +319,20 @@ const byWorktreeAtTime =
     }
 
     const resolved = branchAt(timeline, at, options);
+    const recorded = sessionRecordedBranch(event);
+
+    if (resolved.method === "commit-graph" && recorded !== null) {
+      return {
+        ...base(event),
+        attribution: "provisional",
+        basis: "collected-context",
+        branch: recorded,
+        confidence: 0.5,
+        method: "collected",
+        reason:
+          "no checkout history covers this time; kept the branch the session recorded over a nearest-commit guess",
+      };
+    }
 
     return resolved.method === "unknown"
       ? null

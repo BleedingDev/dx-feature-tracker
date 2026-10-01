@@ -8,6 +8,13 @@ import { InvalidInput } from "../../contracts/error-invalid-input.js";
 import type { SourceUnavailable } from "../../contracts/error-source-unavailable.js";
 import type { CollectInput, DxCollector } from "../../contracts/services.js";
 import { CONTRACT_VERSION } from "../../contracts/version.js";
+import { reflogArgs } from "../../correlation/branch-at-time/git.js";
+import {
+  isHeadTransition,
+  isoOf,
+  parseReflogLines,
+} from "../../correlation/branch-at-time/timeline.js";
+import type { RawReflogEntry } from "../../correlation/branch-at-time/timeline.js";
 import type { Origin } from "../../model/common.js";
 import type { SourceCoverage, SourceGap } from "../../model/coverage.js";
 import type { ModuleDescriptor } from "../../model/descriptor.js";
@@ -101,10 +108,17 @@ const observed = (field: string, unit: string | null): FieldSemantics => ({
   unit,
 });
 
+export interface HeadTransition {
+  readonly at: string;
+  readonly subject: string;
+}
+
 interface EventDraft {
   readonly identity: EventIdentity;
   readonly occurredAt: string | null;
-  readonly payload: Readonly<Record<string, string | number | null>>;
+  readonly payload: Readonly<
+    Record<string, string | number | null | readonly HeadTransition[]>
+  >;
   readonly semantics: readonly FieldSemantics[];
   readonly upstreamKey: string;
 }
@@ -205,6 +219,48 @@ export const reflogDraft = (
   semantics: [observed("action", null), observed("occurredAt", "iso8601")],
   upstreamKey: `reflog:${scopeKey}:${branch}:${entry.newSha}:${entry.occurredAt ?? "unknown"}:${entry.action}`,
 });
+
+export const headMovesDraft = (
+  scopeKey: string,
+  branch: string | null,
+  entries: readonly RawReflogEntry[],
+  observedAt: string
+): EventDraft | null => {
+  const [first] = entries;
+
+  if (first === undefined) {
+    return null;
+  }
+
+  const startedAt = isoOf(first.atMs);
+
+  const transitions = entries.flatMap((entry): readonly HeadTransition[] =>
+    isHeadTransition(entry.subject)
+      ? [{ at: isoOf(entry.atMs), subject: entry.subject }]
+      : []
+  );
+
+  const hash = sha256(JSON.stringify({ branch, startedAt, transitions })).slice(
+    0,
+    16
+  );
+
+  return {
+    identity: { ...emptyEventIdentity },
+    occurredAt: observedAt,
+    payload: {
+      branch,
+      observationKind: "head-moves",
+      startedAt,
+      transitions,
+    },
+    semantics: [
+      observed("transitions", null),
+      observed("startedAt", "iso8601"),
+    ],
+    upstreamKey: `head:${scopeKey}:${startedAt}:${hash}`,
+  };
+};
 
 const nonEmptyLines = (output: string): readonly string[] =>
   output.split("\n").flatMap((line) => {
@@ -358,6 +414,12 @@ export const collectGitObservation = Effect.fn("GitObservation.collect")(
 
     const reflogEntries = reflog ?? [];
 
+    const headEntries = parseReflogLines(
+      yield* runGit(worktree, reflogArgs("HEAD")).pipe(
+        Effect.orElseSucceed(() => "")
+      )
+    );
+
     const observedAt = DateTime.formatIso(
       DateTime.makeUnsafe(yield* Clock.currentTimeMillis)
     );
@@ -384,6 +446,9 @@ export const collectGitObservation = Effect.fn("GitObservation.collect")(
       ...reflogEntries.map((entry) =>
         reflogDraft(scopeKey, state.branch ?? "detached", entry)
       ),
+      ...[
+        headMovesDraft(scopeKey, state.branch, headEntries, observedAt),
+      ].flatMap((draft) => (draft === null ? [] : [draft])),
     ].map((draft) => toEnvelope(frame, draft));
 
     const coverage: SourceCoverage = {

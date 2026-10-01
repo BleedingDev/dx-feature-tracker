@@ -20,7 +20,7 @@ export const MAX_COMMITS_PER_BRANCH = 2000;
 const orEmpty = (effect: Effect.Effect<string, SourceUnavailable>) =>
   effect.pipe(Effect.orElseSucceed(() => ""));
 
-const reflogArgs = (ref: string): readonly string[] => [
+export const reflogArgs = (ref: string): readonly string[] => [
   "log",
   "-g",
   "--date=iso-strict",

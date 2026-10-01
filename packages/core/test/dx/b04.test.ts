@@ -278,7 +278,25 @@ describe("b04 live temp repository", () => {
           inputFor(repo, "live")
         );
 
-        const [state, ...reflog] = batch.events;
+        const [state, ...rest] = batch.events;
+
+        const reflog = rest.filter(
+          (event) => event.payload.observationKind === "branch-reflog"
+        );
+
+        const head = rest.find(
+          (event) => event.payload.observationKind === "head-moves"
+        );
+
+        expect(head?.context.worktreePath).toBe(state?.context.worktreePath);
+        expect(head?.payload).toMatchObject({
+          branch: "feature/x",
+          transitions: [
+            expect.objectContaining({
+              subject: "checkout: moving from main to feature/x",
+            }),
+          ],
+        });
 
         expect(state?.context.branch).toBe("feature/x");
         expect(state?.origin).toBe("live");
