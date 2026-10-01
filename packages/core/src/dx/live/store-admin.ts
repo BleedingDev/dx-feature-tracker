@@ -1,5 +1,6 @@
 // @effect-diagnostics nodeBuiltinImport:off -- Delete, reset and restore work on the SQLite store, the hook spool and snapshots.jsonl under DFT_HOME with synchronous file moves at the process boundary.
 import {
+  appendFileSync,
   copyFileSync,
   cpSync,
   existsSync,
@@ -21,6 +22,9 @@ import {
   HOOK_SPOOL_FOLDER,
   latestSpoolRecord,
 } from "../collectors/cursor-hooks/spool.js";
+import { HookObservationSchema } from "../harness/hook-observation.js";
+import type { HookObservation } from "../harness/hook-observation.js";
+import { HOOK_SPOOL_ROOT } from "../harness/hook-spool.js";
 import { repoWorktrees, worktreeSpoolId } from "../registry/runtime.js";
 import { STORE_SCHEMA_VERSION } from "../storage/migrations.js";
 import { openSqliteEventStore } from "../storage/sqlite-event-store.js";
@@ -60,6 +64,7 @@ export interface RemovalTotals {
 export interface RepoDataPlan {
   readonly branches: readonly BranchRemoval[];
   readonly confirmText: string;
+  readonly hookFiles: readonly string[];
   readonly repo: GitRepo;
   readonly spoolDirs: readonly string[];
   readonly totals: RemovalTotals;
@@ -75,6 +80,7 @@ export const RESET_CONFIRM_TEXT = "reset" as const;
 
 export interface ResetPlan {
   readonly confirmText: typeof RESET_CONFIRM_TEXT;
+  readonly hookFiles: readonly string[];
   readonly repos: readonly RepoEventCount[];
   readonly spoolDirs: readonly string[];
   readonly totals: RemovalTotals;
@@ -146,6 +152,10 @@ const decodeVersionRow = Schema.decodeUnknownSync(
 
 const decodeSpoolRecord = Schema.decodeUnknownOption(
   Schema.fromJsonString(SpoolRecordSchema)
+);
+
+const decodeHookLine = Schema.decodeUnknownOption(
+  Schema.fromJsonString(HookObservationSchema)
 );
 
 const decodeCommitSnapshot = Schema.decodeUnknownOption(
@@ -283,6 +293,100 @@ export const repoSpoolDirs = (
   );
 };
 
+const hookSpoolRoot = (home: LiveHome): string =>
+  path.join(home.dftHome, HOOK_SPOOL_ROOT);
+
+const hookDayFiles = (home: LiveHome): readonly string[] =>
+  filesUnder(hookSpoolRoot(home)).filter((file) => file.endsWith(".jsonl"));
+
+const linesOf = (file: string): readonly string[] => {
+  try {
+    return readFileSync(file, "utf-8")
+      .split("\n")
+      .filter((line) => line.trim() !== "");
+  } catch {
+    return [];
+  }
+};
+
+const withinAny = (target: string | null, roots: readonly string[]): boolean =>
+  target !== null &&
+  roots.some((root) => {
+    const relative = path.relative(root, path.resolve(target));
+
+    return (
+      relative === "" ||
+      (!relative.startsWith("..") && !path.isAbsolute(relative))
+    );
+  });
+
+const repoHookObservation = (
+  repo: GitRepo
+): ((line: string) => HookObservation | null) => {
+  const roots = [...new Set([repo.root, ...repoWorktrees(repo.root)])];
+
+  return (line) => {
+    const observation = Option.getOrNull(decodeHookLine(line));
+
+    if (observation === null) {
+      return null;
+    }
+
+    const seen = observation.git;
+
+    const belongs =
+      seen.repoCommonDir === null
+        ? withinAny(seen.worktreePath ?? observation.fields.cwd, roots)
+        : path.resolve(seen.repoCommonDir) === path.resolve(repo.commonDir);
+
+    return belongs ? observation : null;
+  };
+};
+
+interface HookDayNotes {
+  readonly file: string;
+  readonly notes: readonly HookObservation[];
+}
+
+const repoHookNotes = (
+  home: LiveHome,
+  repo: GitRepo
+): readonly HookDayNotes[] => {
+  const ofRepo = repoHookObservation(repo);
+
+  return hookDayFiles(home).flatMap((file) => {
+    const notes = linesOf(file).flatMap((line) => {
+      const observation = ofRepo(line);
+
+      return observation === null ? [] : [observation];
+    });
+
+    return notes.length === 0 ? [] : [{ file, notes }];
+  });
+};
+
+const appendLines = (file: string, lines: readonly string[]): void => {
+  if (lines.length === 0) {
+    return;
+  }
+
+  mkdirSync(path.dirname(file), { mode: 0o700, recursive: true });
+  appendFileSync(file, `${lines.join("\n")}\n`, { mode: 0o600 });
+};
+
+const replaceLines = (file: string, lines: readonly string[]): void => {
+  if (lines.length === 0) {
+    rmSync(file, { force: true });
+
+    return;
+  }
+
+  const temp = `${file}.${process.pid}.tmp`;
+
+  writeFileSync(temp, `${lines.join("\n")}\n`, { mode: 0o600 });
+  renameSync(temp, file);
+};
+
 const readCommitSnapshotLines = (home: LiveHome): readonly string[] => {
   const file = commitSnapshotsPath(home);
 
@@ -413,11 +517,20 @@ export const planDeleteRepoData = (
       tally.add(branchOfSpoolFile(file), "spoolFiles", 1);
     }
 
+    const hookNotes = repoHookNotes(home, repo);
+
+    for (const { notes } of hookNotes) {
+      for (const note of notes) {
+        tally.add(note.git.branch, "spoolFiles", 1);
+      }
+    }
+
     const branches = tally.rows();
 
     return {
       branches,
       confirmText: repo.name,
+      hookFiles: hookNotes.map(({ file }) => file),
       repo,
       spoolDirs,
       totals: {
@@ -455,16 +568,20 @@ export const planResetStore = (
     }));
 
     const spoolDirs = listEntries(spoolRoot(home));
+    const hookFiles = hookDayFiles(home);
 
     return {
       confirmText: RESET_CONFIRM_TEXT,
+      hookFiles,
       repos: counted.repos,
       spoolDirs,
       totals: {
         commitSnapshots: readCommitSnapshotLines(home).length,
         coverage: counted.coverage,
         events: counted.repos.reduce((sum, row) => sum + row.events, 0),
-        spoolFiles: spoolDirs.flatMap(filesUnder).length,
+        spoolFiles:
+          spoolDirs.flatMap(filesUnder).length +
+          hookFiles.reduce((sum, file) => sum + linesOf(file).length, 0),
         storeSnapshots: counted.storeSnapshots,
       },
     };
@@ -478,6 +595,13 @@ const backupMetaPath = (home: LiveHome, id: string): string =>
 
 export const backupFilesDir = (home: LiveHome, id: string): string =>
   path.join(backupsDir(home), `${id}.files`);
+
+const hookBackupPath = (home: LiveHome, id: string, file: string): string =>
+  path.join(
+    backupFilesDir(home, id),
+    HOOK_SPOOL_ROOT,
+    path.relative(hookSpoolRoot(home), file)
+  );
 
 const freshBackupId = (home: LiveHome, stamp: string): string => {
   const base = stamp.replaceAll(/[:.]/gu, "-");
@@ -639,6 +763,21 @@ export const deleteRepoData = (
           path.join(backupFilesDir(home, saved.id), "spool", path.basename(dir))
         );
       }
+
+      const ofRepo = repoHookObservation(plan.repo);
+
+      for (const file of plan.hookFiles) {
+        const lines = linesOf(file);
+
+        appendLines(
+          hookBackupPath(home, saved.id, file),
+          lines.filter((line) => ofRepo(line) !== null)
+        );
+        replaceLines(
+          file,
+          lines.filter((line) => ofRepo(line) === null)
+        );
+      }
     });
 
     yield* fileStep("Could not update snapshots.jsonl", () => {
@@ -690,6 +829,10 @@ export const resetStore = (
 
       for (const entry of listEntries(spoolRoot(home))) {
         moveInto(entry, path.join(files, "spool", path.basename(entry)));
+      }
+
+      for (const file of hookDayFiles(home)) {
+        moveInto(file, hookBackupPath(home, saved.id, file));
       }
 
       const snapshots = commitSnapshotsPath(home);
@@ -878,6 +1021,21 @@ export const restoreBackup = (
       );
 
       const usage = path.join(files, path.basename(usageStateDir(home)));
+      const hooks = path.join(files, HOOK_SPOOL_ROOT);
+
+      for (const kept of filesUnder(hooks)) {
+        const target = path.join(
+          hookSpoolRoot(home),
+          path.relative(hooks, kept)
+        );
+
+        const present = new Set(linesOf(target));
+
+        appendLines(
+          target,
+          linesOf(kept).filter((line) => !present.has(line))
+        );
+      }
 
       if (existsSync(spool)) {
         cpSync(spool, spoolRoot(home), {

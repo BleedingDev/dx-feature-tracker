@@ -11,6 +11,8 @@ import { DateTime, Effect, Schema } from "effect";
 
 import { cursorUsageApiDescriptor } from "../../src/dx/collectors/cursor-usage-api/descriptor.js";
 import { SourceUnavailable } from "../../src/dx/contracts/error-source-unavailable.js";
+import { HOOK_DECODERS } from "../../src/dx/harness/hook-decoders.js";
+import { hookSpoolFile, recordHook } from "../../src/dx/harness/hook-spool.js";
 import {
   addRepo,
   liveHome,
@@ -96,6 +98,38 @@ const hook = (generation: string) =>
     DateTime.toDateUtc(DateTime.makeUnsafe("2026-09-30T12:00:00.000Z")),
     dftHome
   );
+
+const HOOK_DAY = "2026-09-30T13:00:00.000Z";
+
+const claudeHookDay = hookSpoolFile(dftHome, "claude-code", HOOK_DAY);
+
+const claudeHook = (repo: string) =>
+  recordHook({
+    cwd: repo,
+    decoder: HOOK_DECODERS["claude-code"],
+    dftHome,
+    event: "UserPromptSubmit",
+    now: DateTime.toDateUtc(DateTime.makeUnsafe(HOOK_DAY)),
+    resolveGit: () => ({
+      branch: "main",
+      headSha: null,
+      repoCommonDir: path.join(repo, ".git"),
+      worktreePath: repo,
+    }),
+    stdinText: JSON.stringify({
+      cwd: repo,
+      session_id: `s-${path.basename(repo)}`,
+    }),
+    tool: "claude-code",
+  });
+
+const hookLinesOf = (file: string): readonly string[] =>
+  fs.existsSync(file)
+    ? fs
+        .readFileSync(file, "utf-8")
+        .split("\n")
+        .filter((line) => line !== "")
+    : [];
 
 const eventuallyEffect = (check: Effect.Effect<boolean>, limitMs: number) =>
   Effect.gen(function* poll() {
@@ -289,6 +323,10 @@ describe("live engine", () => {
     () =>
       withEngine((engine, changes) =>
         Effect.gen(function* deleteRepo() {
+          claudeHook(app);
+          claudeHook(other);
+
+          const [appNote, otherNote] = hookLinesOf(claudeHookDay);
           const appEvents = eventsFor(app);
           const otherEvents = eventsFor(other);
           const plan = yield* engine.planDeleteRepoData(app);
@@ -296,7 +334,8 @@ describe("live engine", () => {
           expect(plan.confirmText).toBe("app");
           expect(plan.tracked).toBe(true);
           expect(plan.totals.events).toBe(appEvents);
-          expect(plan.totals.spoolFiles).toBe(1);
+          expect(plan.totals.spoolFiles).toBe(2);
+          expect(plan.hookFiles).toEqual([claudeHookDay]);
           expect(plan.branches.map((row) => row.branch)).toContain("main");
 
           const refused = yield* Effect.flip(
@@ -316,6 +355,19 @@ describe("live engine", () => {
           expect(eventsFor(app)).toBe(0);
           expect(eventsFor(other)).toBe(otherEvents);
           expect(fs.existsSync(hookSpoolDirFor(app, dftHome))).toBe(false);
+          expect(hookLinesOf(claudeHookDay)).toEqual([otherNote]);
+          expect(
+            hookLinesOf(
+              path.join(
+                dftHome,
+                "backups",
+                `${done.backup.id}.files`,
+                "hooks",
+                "claude-code",
+                path.basename(claudeHookDay)
+              )
+            )
+          ).toEqual([appNote]);
           expect((yield* engine.config).repos).toEqual([other]);
           expect(changes).toContainEqual(
             expect.objectContaining({ reason: "delete", repo: app })
@@ -327,6 +379,7 @@ describe("live engine", () => {
           expect(eventsFor(app)).toBe(appEvents);
           expect(eventsFor(other)).toBe(otherEvents);
           expect(fs.readdirSync(hookSpoolDirFor(app, dftHome))).toHaveLength(1);
+          expect(hookLinesOf(claudeHookDay)).toEqual([otherNote, appNote]);
           expect((yield* engine.config).repos).toEqual([other, app]);
           expect(
             (yield* engine.listBackups).map((b) => b.reason).toSorted()
@@ -340,9 +393,13 @@ describe("live engine", () => {
     () =>
       withEngine((engine) =>
         Effect.gen(function* resetAll() {
+          const hookNotes = hookLinesOf(claudeHookDay);
           const appEvents = eventsFor(app);
           const otherEvents = eventsFor(other);
           const plan = yield* engine.planResetStore;
+
+          expect(hookNotes).toHaveLength(2);
+          expect(plan.hookFiles).toEqual([claudeHookDay]);
 
           expect(plan.totals.events).toBeGreaterThanOrEqual(
             appEvents + otherEvents
@@ -358,6 +415,7 @@ describe("live engine", () => {
           expect(eventsFor(app)).toBe(0);
           expect(eventsFor(other)).toBe(0);
           expect(fs.readdirSync(path.join(dftHome, "spool"))).toEqual([]);
+          expect(fs.existsSync(claudeHookDay)).toBe(false);
 
           const missing = yield* Effect.flip(engine.restoreBackup("../dft"));
 
@@ -368,6 +426,7 @@ describe("live engine", () => {
           expect(eventsFor(app)).toBe(appEvents);
           expect(eventsFor(other)).toBe(otherEvents);
           expect(fs.readdirSync(hookSpoolDirFor(app, dftHome))).toHaveLength(1);
+          expect(hookLinesOf(claudeHookDay)).toEqual(hookNotes);
         })
       )
   );
