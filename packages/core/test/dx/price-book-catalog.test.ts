@@ -383,6 +383,47 @@ it.layer(versionedBook)("PriceBook over cached catalog snapshots", (test) => {
   );
 });
 
+const laterCache = folder("later");
+
+fs.writeFileSync(
+  path.join(laterCache, "models.dev-2027-01-05.json"),
+  JSON.stringify(catalogOn("2027-01-05T08:00:00.000Z", 4))
+);
+
+it.layer(
+  PriceBook.fromCatalog({
+    cacheDir: laterCache,
+    fetchJson: offline,
+    nowMs: Date.parse("2027-01-05T12:00:00.000Z"),
+  })
+)("PriceBook whose first catalog came after a price change", (test) => {
+  test.effect(
+    "prices earlier requests at the bundled snapshot, not the newer price",
+    () =>
+      Effect.gen(function* firstFetch() {
+        const book = yield* PriceBook;
+
+        const at = (when: string) =>
+          usdOf(
+            book.estimate(
+              request(
+                "claude-code",
+                "anthropic",
+                "claude-sonnet-5",
+                { inputFresh: 1_000_000, output: 0 },
+                when
+              )
+            )
+          );
+
+        expect([
+          at("2026-10-15T00:00:00.000Z"),
+          at("2027-02-01T00:00:00.000Z"),
+        ]).toEqual([2, 4]);
+      })
+  );
+});
+
 const userPrices = Layer.succeed(PriceOverrides, [
   {
     id: "user",

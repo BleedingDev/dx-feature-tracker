@@ -1,5 +1,6 @@
 import { Context, Effect } from "effect";
 
+import type { Catalog } from "../price-catalog/catalog.js";
 import type { CatalogTimeline } from "../price-catalog/provider.js";
 import { BUNDLED_CATALOG } from "./bundled-catalog.js";
 import type {
@@ -70,12 +71,35 @@ export const publicSheets = (
   bundledSheet(),
 ];
 
+const isBefore = (a: Catalog, b: Catalog): boolean =>
+  a.fetchedAt.localeCompare(b.fetchedAt) < 0;
+
+const withBundledHistory = (
+  catalogs: readonly Catalog[]
+): readonly Catalog[] => {
+  const newest = catalogs
+    .toSorted((a, b) => a.fetchedAt.localeCompare(b.fetchedAt))
+    .at(-1);
+
+  const predatesAll = catalogs
+    .filter((catalog) => catalog.source === newest?.source)
+    .every((catalog) => isBefore(BUNDLED_CATALOG, catalog));
+
+  return newest?.source === BUNDLED_CATALOG.source && predatesAll
+    ? [BUNDLED_CATALOG, ...catalogs]
+    : catalogs;
+};
+
+export const catalogSheetOf = (
+  catalogs: readonly Catalog[]
+): PriceSheet | null => sheetFromCatalogs(withBundledHistory(catalogs));
+
 export const bookFromTimeline = (
   timeline: CatalogTimeline
 ): Effect.Effect<PriceBookApi> =>
   Effect.gen(function* buildBook() {
     const overrides = yield* PriceOverrides;
-    const catalogSheet = sheetFromCatalogs(timeline.catalogs);
+    const catalogSheet = catalogSheetOf(timeline.catalogs);
     const bundled = bundledSheet();
     const sheets = [...overrides, ...publicSheets(catalogSheet)];
 
