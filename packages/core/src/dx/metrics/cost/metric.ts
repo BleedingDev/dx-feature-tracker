@@ -371,19 +371,49 @@ const priceOutcome = (outcome: PriceOutcome): EstimateOutcome =>
     ? { kind: "price-table", usd: outcome.usd }
     : outcome;
 
+const MODEL_NOT_IN_TABLE: EstimateOutcome = {
+  kind: "unpriced",
+  reason: "model-not-in-table",
+};
+
+const tableOutcome = (
+  reading: TokenReading,
+  table: PriceTable | null
+): EstimateOutcome =>
+  table === null
+    ? MODEL_NOT_IN_TABLE
+    : priceOutcome(priceReading(reading, table));
+
+const bookOrTable = (
+  reading: TokenReading,
+  table: PriceTable | null,
+  book: PriceBookApi | null
+): EstimateOutcome => {
+  const fromBook = bookOutcome(reading, book);
+
+  if (fromBook === null) {
+    return tableOutcome(reading, table);
+  }
+
+  if (
+    fromBook.kind !== "unpriced" ||
+    fromBook.reason !== "model-not-in-table"
+  ) {
+    return fromBook;
+  }
+
+  const fromTable = tableOutcome(reading, table);
+
+  return fromTable.kind === "unpriced" ? fromBook : fromTable;
+};
+
 const estimateRequest = (
   reading: TokenReading,
   table: PriceTable | null,
   listPrices: ReadonlyMap<string, number>,
   book: PriceBookApi | null
 ): EstimateOutcome => {
-  const fromBook = bookOutcome(reading, book);
-
-  const outcome: EstimateOutcome =
-    fromBook ??
-    (table === null
-      ? { kind: "unpriced", reason: "model-not-in-table" }
-      : priceOutcome(priceReading(reading, table)));
+  const outcome = bookOrTable(reading, table, book);
 
   if (outcome.kind !== "unpriced") {
     return outcome;

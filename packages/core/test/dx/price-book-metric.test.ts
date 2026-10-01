@@ -6,8 +6,10 @@ import {
   computeCost,
   priceTableEstimateDefinition,
 } from "../../src/dx/metrics/cost/metric.js";
+import type { CostOptions } from "../../src/dx/metrics/cost/metric.js";
 import { priceBookOf } from "../../src/dx/metrics/cost/price-book/book.js";
 import type { PriceSheet } from "../../src/dx/metrics/cost/price-book/sheet.js";
+import { cachedPriceProvider } from "../../src/dx/metrics/cost/price-catalog/provider.js";
 import type {
   AiAttribution,
   AiTokens,
@@ -20,6 +22,8 @@ import {
   emptyFlightContext,
 } from "../../src/dx/model/event.js";
 import { EventIdSchema } from "../../src/dx/model/ids.js";
+import { deriveUsageFacts } from "../../src/dx/usage/derive.js";
+import { factEstimator } from "../../src/dx/usage/estimate.js";
 
 const MAKER: PriceSheet = {
   id: "maker",
@@ -115,14 +119,37 @@ const snapshotOf = (events: readonly DxEventEnvelope[]): StoreSnapshot => ({
   }),
 });
 
+const estimateWith = (
+  events: readonly DxEventEnvelope[],
+  options: CostOptions
+) =>
+  computeCost(snapshotOf(events), options).results.find(
+    (entry) => entry.metricId === priceTableEstimateDefinition.id
+  );
+
 const estimateOf = (events: readonly DxEventEnvelope[]) =>
-  computeCost(snapshotOf(events), {
+  estimateWith(events, {
     priceBook: BOOK,
     priceTable: null,
     subscription: null,
-  }).results.find(
-    (entry) => entry.metricId === priceTableEstimateDefinition.id
-  );
+  });
+
+const offlineProvider = cachedPriceProvider("/nonexistent/dft-home");
+
+const SHIPPED: CostOptions = {
+  priceBook: offlineProvider.book,
+  priceTable: offlineProvider.table,
+  subscription: null,
+};
+
+const cursorEvent = (id: string, model: string) =>
+  usageEvent({
+    harness: "cursor",
+    id,
+    model,
+    provider: "cursor",
+    tokens: { inputFresh: 1_000_000, output: 1_000_000 },
+  });
 
 describe("cost metric over the PriceBook", () => {
   it("gives every tool's v2 usage one maker-price estimate", () => {
@@ -174,5 +201,27 @@ describe("cost metric over the PriceBook", () => {
     expect(estimate?.measurement).toBe("partial");
     expect([estimate?.numerator, estimate?.denominator]).toEqual([1, 2]);
     expect(estimate?.reason).toContain("model-not-in-table=1");
+  });
+
+  it("prices Cursor's own models from the Cursor table when the book has none", () => {
+    const events = [
+      cursorEvent("composer", "composer-2.5"),
+      cursorEvent("muse", "muse-spark-1.3"),
+    ];
+
+    const estimate = estimateWith(events, SHIPPED);
+    const estimator = factEstimator(SHIPPED);
+
+    expect(estimate?.value).toBe(8.5);
+    expect(estimate?.measurement).toBe("estimated");
+    expect(estimate?.reason).toContain("price-table:cursor@2026-09");
+    expect(
+      Object.fromEntries(
+        deriveUsageFacts(events).facts.map((fact) => [
+          fact.model,
+          estimator(fact),
+        ])
+      )
+    ).toEqual({ "composer-2.5": 3, "muse-spark-1.3": 5.5 });
   });
 });

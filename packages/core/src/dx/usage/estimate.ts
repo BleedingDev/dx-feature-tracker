@@ -1,6 +1,7 @@
 import { tokenCategoriesOf } from "../metrics/ai-usage/typed.js";
 import type { CostOptions } from "../metrics/cost/metric.js";
 import type { PricedRequest } from "../metrics/cost/price-book/estimate.js";
+import type { PriceTable } from "../metrics/cost/price-table.js";
 import { priceReading } from "../metrics/cost/price-table.js";
 import type { TokenCounts } from "../metrics/cost/readings.js";
 import type { UsageFact } from "./fact.js";
@@ -43,40 +44,48 @@ const tokenCountsOf = (fact: UsageFact): TokenCounts =>
 
 export type FactEstimator = (fact: UsageFact) => number | null;
 
+const tableEstimator =
+  (table: PriceTable | null): FactEstimator =>
+  (fact) => {
+    if (table === null) {
+      return null;
+    }
+
+    const outcome = priceReading(
+      {
+        adapterId: fact.harness ?? "unknown",
+        branch: fact.branch,
+        dedupeKey: fact.factId,
+        eventId: fact.factId,
+        model: fact.model ?? fact.modelRaw,
+        occurredAt: fact.occurredAt,
+        requests: fact.requests,
+        sourceKind: null,
+        tokens: tokenCountsOf(fact),
+      },
+      table
+    );
+
+    return outcome.kind === "priced" ? outcome.usd : null;
+  };
+
 export const factEstimator = (options: CostOptions | null): FactEstimator => {
   const book = options?.priceBook ?? null;
-  const table = options?.priceTable ?? null;
+  const fromTable = tableEstimator(options?.priceTable ?? null);
 
-  if (book !== null) {
-    return (fact) => {
-      const estimate = book.estimate(pricedRequestOf(fact));
-
-      return estimate.kind === "priced" ? estimate.usd : null;
-    };
+  if (book === null) {
+    return fromTable;
   }
 
-  if (table !== null) {
-    return (fact) => {
-      const outcome = priceReading(
-        {
-          adapterId: fact.harness ?? "unknown",
-          branch: fact.branch,
-          dedupeKey: fact.factId,
-          eventId: fact.factId,
-          model: fact.model ?? fact.modelRaw,
-          occurredAt: fact.occurredAt,
-          requests: fact.requests,
-          sourceKind: null,
-          tokens: tokenCountsOf(fact),
-        },
-        table
-      );
+  return (fact) => {
+    const estimate = book.estimate(pricedRequestOf(fact));
 
-      return outcome.kind === "priced" ? outcome.usd : null;
-    };
-  }
+    if (estimate.kind === "priced") {
+      return estimate.usd;
+    }
 
-  return () => null;
+    return estimate.reason === "model-unpriced" ? fromTable(fact) : null;
+  };
 };
 
 export const estimateLabel = (options: CostOptions | null): string => {
