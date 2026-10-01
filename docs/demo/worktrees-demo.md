@@ -190,7 +190,7 @@ Time    3h 16m on branch · 7m active · <1m agent
 Work    1 commit · 1 file · +1 −0 lines · 8 tool calls · 1 request
 Models  Auto 100%
 
-Missing: billed, Cursor's figure, estimate. Add --verbose to see why.
+Missing: billed, tool's figure, estimate. Add --verbose to see why.
 ```
 
 Cost is empty because all runs used Auto, which has no fixed price, and the Cursor usage import is off for a store outside `~/.dft`.

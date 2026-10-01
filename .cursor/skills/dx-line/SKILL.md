@@ -19,7 +19,7 @@ Reply with the line exactly as printed, in a code block. Example shape (numbers 
 feature/checkout  $12.40 billed · $14.02 est · 26.7M tokens · 2h 45m agent · 4 chats · 1 commit
 ```
 
-- `no AI usage yet` means dft has no Cursor activity for this branch yet.
+- `no AI usage yet` means dft has no AI activity from any tool for this branch yet.
 - For every branch at once: `dft history --oneline`.
 - For the full report, use `dx-analyze`. For the chats behind it, `dx-chats`.
 
