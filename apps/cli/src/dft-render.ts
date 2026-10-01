@@ -253,6 +253,32 @@ export const sourceLabel = (id: string): string => {
   return SOURCE_LABELS.get(bare) ?? bare;
 };
 
+const addCounts = (a: number | null, b: number | null): number | null =>
+  a === null && b === null ? null : (a ?? 0) + (b ?? 0);
+
+export const mergeSteps = (steps: readonly SyncStep[]): readonly SyncStep[] => {
+  const merged = new Map<string, SyncStep>();
+
+  for (const step of steps) {
+    const seen = merged.get(step.source);
+
+    if (seen === undefined || seen.status !== "synced") {
+      merged.set(
+        step.source,
+        seen === undefined || step.status === "synced" ? step : seen
+      );
+    } else if (step.status === "synced") {
+      merged.set(step.source, {
+        ...seen,
+        duplicates: addCounts(seen.duplicates, step.duplicates),
+        inserted: addCounts(seen.inserted, step.inserted),
+      });
+    }
+  }
+
+  return [...merged.values()];
+};
+
 export const sourceNote = (step: SyncStep): string => {
   if (step.status !== "synced") {
     return (
@@ -291,7 +317,7 @@ export const syncText = (report: SyncReport, verbose: boolean): string => {
 
   return [
     head,
-    ...report.steps.map((step) =>
+    ...mergeSteps(report.steps).map((step) =>
       step.status === "synced"
         ? `  ✓ ${sourceLabel(step.source)}: ${formatCount(step.inserted ?? 0)} new, ${formatCount(step.duplicates ?? 0)} already stored`
         : `  – ${sourceLabel(step.source)}: ${step.reason ?? "not available"}`
@@ -326,7 +352,7 @@ export const statusText = (
 
   const branch = sync.context.branch ?? "detached HEAD";
 
-  const rows = sync.steps.map(
+  const rows = mergeSteps(sync.steps).map(
     (step) =>
       [
         step.status === "synced" ? "✓" : "–",
@@ -879,6 +905,40 @@ const repoName = (commonDir: string): string => {
   return (last === ".git" ? parts.at(-2) : last) ?? commonDir;
 };
 
+const repoTail = (commonDir: string): string =>
+  commonDir
+    .replace(/\/\.git$/u, "")
+    .split("/")
+    .filter((part) => part !== "")
+    .slice(-2)
+    .join("/");
+
+export const repoLabels = (
+  commonDirs: readonly (string | null)[]
+): ReadonlyMap<string, string> => {
+  const dirs = [
+    ...new Set(commonDirs.filter((dir): dir is string => dir !== null)),
+  ];
+
+  const names = dirs.map(repoName);
+
+  return new Map(
+    dirs.map((dir, index) => {
+      const name = names[index] ?? dir;
+
+      return [
+        dir,
+        names.indexOf(name) === names.lastIndexOf(name) ? name : repoTail(dir),
+      ] as const;
+    })
+  );
+};
+
+const labelOfRepo = (
+  labels: ReadonlyMap<string, string>,
+  commonDir: string
+): string => labels.get(commonDir) ?? repoName(commonDir);
+
 const rowBilled = (row: FlightHistoryRow): number | null =>
   measureValue(row.money.billed) ?? measureValue(row.money.metered);
 
@@ -933,9 +993,13 @@ const worktreeFolder = (row: FlightHistoryRow): string => {
 const historyRowCells = (
   row: FlightHistoryRow,
   now: number,
-  options: { readonly showRepo: boolean; readonly showWorktree: boolean }
+  options: {
+    readonly labels: ReadonlyMap<string, string>;
+    readonly showRepo: boolean;
+    readonly showWorktree: boolean;
+  }
 ): readonly string[] => [
-  `${options.showRepo && row.repoCommonDir !== null ? `${repoName(row.repoCommonDir)}:` : ""}${row.branch ?? UNASSIGNED_LABEL}`,
+  `${options.showRepo && row.repoCommonDir !== null ? `${labelOfRepo(options.labels, row.repoCommonDir)}:` : ""}${row.branch ?? UNASSIGNED_LABEL}`,
   ...(options.showWorktree ? [worktreeFolder(row)] : []),
   row.status.value === "unknown" ? DASH : row.status.value,
   formatAgo(row.lastActivityAt, now),
@@ -1023,6 +1087,7 @@ export const historyText = (
 
   const showWorktree = branches.some((row) => linkedWorktree(row) !== null);
   const shift = showWorktree ? 1 : 0;
+  const repoNames = repoLabels(branches.map((row) => row.repoCommonDir));
 
   const lines =
     branches.length === 0
@@ -1042,6 +1107,7 @@ export const historyText = (
           ],
           branches.map((row) =>
             historyRowCells(row, options.now, {
+              labels: repoNames,
               showRepo: options.allRepos,
               showWorktree,
             })
@@ -1063,7 +1129,7 @@ export const historyText = (
     ...(hasMoney
       ? [
           "",
-          "Billed is what Cursor charged. Estimate is list price for the tokens. They are shown apart, never added.",
+          "Billed is what a tool charged. Estimate is the model maker's public price for the tokens. They are shown apart, never added.",
         ]
       : []),
   ].join("\n");
@@ -1139,10 +1205,14 @@ export const onelineText = (label: string, facts: LineFacts | null): string => {
   return `${label}  ${parts.join(" · ")}`;
 };
 
-const rowName = (row: FlightHistoryRow, showRepo: boolean): string =>
+const rowName = (
+  row: FlightHistoryRow,
+  showRepo: boolean,
+  labels: ReadonlyMap<string, string>
+): string =>
   row.repoCommonDir === null
     ? "Cursor account"
-    : `${showRepo ? `${repoName(row.repoCommonDir)}:` : ""}${row.branch ?? UNASSIGNED_LABEL}`;
+    : `${showRepo ? `${labelOfRepo(labels, row.repoCommonDir)}:` : ""}${row.branch ?? UNASSIGNED_LABEL}`;
 
 export const branchOneline = (
   branch: string,
@@ -1170,8 +1240,10 @@ export const historyOneline = (
     return "No branches with activity in this window.";
   }
 
+  const repos = repoLabels(visible.map((row) => row.repoCommonDir));
+
   const labels = visible.map((row) =>
-    withWorktree(rowName(row, options.allRepos), row)
+    withWorktree(rowName(row, options.allRepos, repos), row)
   );
 
   const width = Math.max(...labels.map((label) => label.length));

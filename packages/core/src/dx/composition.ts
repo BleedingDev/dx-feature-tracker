@@ -43,7 +43,9 @@ export const autoSources = (
 ): readonly AutoSource[] => {
   const worktree = context.worktreePath ?? cwd;
   const commands = commandLogPath(storePath);
-  const sources: AutoSource[] = [...worktreeSources(worktree)];
+
+  const sources: AutoSource[] =
+    context.repoCommonDir === null ? [] : [...worktreeSources(worktree)];
 
   if (existsSync(commands)) {
     sources.push({ input: commands, source: "collector/shell-command" });

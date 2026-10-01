@@ -65,6 +65,7 @@ import {
   formatCount,
   formatDuration,
   sourceLabel,
+  mergeSteps,
   sourceNote,
   tokenShares,
 } from "./dft-render.js";
@@ -275,32 +276,6 @@ const withSince = <A extends object>(
   base: A,
   since: string | undefined
 ): A & { since?: string } => (since === undefined ? base : { ...base, since });
-
-const addCounts = (a: number | null, b: number | null): number | null =>
-  a === null && b === null ? null : (a ?? 0) + (b ?? 0);
-
-export const mergeSteps = (steps: readonly SyncStep[]): readonly SyncStep[] => {
-  const merged = new Map<string, SyncStep>();
-
-  for (const step of steps) {
-    const seen = merged.get(step.source);
-
-    if (seen === undefined || seen.status !== "synced") {
-      merged.set(
-        step.source,
-        seen === undefined || step.status === "synced" ? step : seen
-      );
-    } else if (step.status === "synced") {
-      merged.set(step.source, {
-        ...seen,
-        duplicates: addCounts(seen.duplicates, step.duplicates),
-        inserted: addCounts(seen.inserted, step.inserted),
-      });
-    }
-  }
-
-  return [...merged.values()];
-};
 
 const stepLabel = (source: string): string => {
   const tool = /^harness\.(?<tool>.+)$/u.exec(source)?.groups?.tool;
