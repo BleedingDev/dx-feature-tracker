@@ -631,6 +631,16 @@ describe("pi usage blocks", () => {
                   provider: "openai-codex",
                   responseModel: "gpt-5.5-2026-09-01",
                 }
+              ),
+              assistant(
+                "a4",
+                "u1",
+                5,
+                { input: 1 },
+                {
+                  model: "mlx-community/Ornith-1.0-35B-4bit",
+                  provider: "omlx",
+                }
               )
             ),
           },
@@ -647,6 +657,7 @@ describe("pi usage blocks", () => {
         ["anthropic", "cliproxy", "claude-sonnet-4-6"],
         ["local", "mlx", "my-finetune"],
         ["openai", null, "gpt-5.5"],
+        ["local", "mlx", "ornith-1.0-35b-4bit"],
       ]);
     })
   );

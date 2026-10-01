@@ -75,10 +75,27 @@ export interface PiModelAttribution {
   readonly via: string | null;
 }
 
-const runtimeHint = (provider: string): string => {
+const runtimeIn = (provider: string): string | null => {
   const lowered = provider.toLowerCase();
 
-  return LOCAL_RUNTIMES.find((runtime) => lowered.includes(runtime)) ?? "local";
+  return LOCAL_RUNTIMES.find((runtime) => lowered.includes(runtime)) ?? null;
+};
+
+const hintFor = (
+  piProvider: string | null,
+  localProviders: ReadonlySet<string>
+): string | null => {
+  if (piProvider === null || isGateway(piProvider)) {
+    return piProvider;
+  }
+
+  const runtime = runtimeIn(piProvider);
+
+  if (localProviders.has(piProvider)) {
+    return runtime ?? "local";
+  }
+
+  return runtime ?? piProvider;
 };
 
 export const attributeModel = (
@@ -86,10 +103,7 @@ export const attributeModel = (
   piProvider: string | null,
   localProviders: ReadonlySet<string>
 ): PiModelAttribution => {
-  const hint =
-    piProvider !== null && localProviders.has(piProvider)
-      ? runtimeHint(piProvider)
-      : piProvider;
+  const hint = hintFor(piProvider, localProviders);
 
   return {
     model: normalizeModel(modelRaw),
