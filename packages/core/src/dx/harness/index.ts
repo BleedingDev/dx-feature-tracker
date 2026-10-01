@@ -107,7 +107,6 @@ export {
   harnessKitLayer,
   harnessRegistryFor,
   liveHarnessLayers,
-  mockCursorHarness,
   mockHarnessLayers,
   registryWith,
 } from "./registry.js";

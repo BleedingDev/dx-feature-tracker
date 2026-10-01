@@ -2,9 +2,13 @@ export { CURSOR_CHANNELS, CURSOR_READINESS } from "./meta.js";
 
 export { CursorHarness } from "./harness.js";
 
-export type { CursorCollectorServices } from "./harness.js";
-
 export { CursorStore } from "./store.js";
+
+export type {
+  CursorCollectorServices,
+  CursorMemoryInput,
+  CursorStoreApi,
+} from "./store.js";
 
 export {
   cursorProjectSlug,

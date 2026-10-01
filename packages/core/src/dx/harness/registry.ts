@@ -8,16 +8,14 @@ import type {
   Harness,
   SessionRef,
 } from "./contract.js";
-import { CURSOR_CHANNELS, CursorHarness, CursorStore } from "./cursor/index.js";
+import { CursorHarness, CursorStore } from "./cursor/index.js";
 import { DeepseekHarness, DeepseekStore } from "./deepseek/index.js";
-import { memoryFileStore } from "./file-store.js";
 import { GitRunner } from "./git.js";
 import { HarnessHome } from "./home.js";
 import type { HarnessId } from "./ids.js";
 import { LocalSqlite } from "./local-sqlite.js";
 import { OmpHarness, OmpStore } from "./omp/index.js";
 import { OpencodeHarness, OpencodeStore } from "./opencode/index.js";
-import { pendingHarness } from "./pending.js";
 import { PiHarness, PiStore } from "./pi/index.js";
 
 export interface LocateFailure {
@@ -124,26 +122,8 @@ export const harnessRegistryFor = (home: string) =>
     )
   );
 
-export const mockCursorHarness = Layer.succeed(
-  CursorHarness,
-  pendingHarness(
-    {
-      capabilities: {
-        branchSources: ["hook", "cwd-inferred", "unassigned"],
-        liveHooks: true,
-        storedFigure: "charge",
-        subagents: true,
-      },
-      channels: CURSOR_CHANNELS,
-      displayName: "Cursor",
-      id: "cursor",
-    },
-    memoryFileStore("cursor", { files: [], roots: [] })
-  )
-);
-
 export const mockHarnessLayers = Layer.mergeAll(
-  mockCursorHarness,
+  CursorHarness.mock,
   ClaudeCodeHarness.mock,
   CodexHarness.mock,
   OpencodeHarness.mock,

@@ -9,6 +9,7 @@ import {
   toCollector,
 } from "../../../src/dx/harness/collector.js";
 import { everywhere } from "../../../src/dx/harness/contract.js";
+import { CursorHarness } from "../../../src/dx/harness/cursor/index.js";
 import { DeepseekHarness } from "../../../src/dx/harness/deepseek/index.js";
 import { HARNESS_IDS } from "../../../src/dx/harness/ids.js";
 import { OmpHarness } from "../../../src/dx/harness/omp/index.js";
@@ -44,7 +45,9 @@ harnessConformance("deepseek", registryWith(DeepseekHarness.mock), {
   tier: "mock",
 });
 
-harnessConformance("cursor", registryWith(), { tier: "mock" });
+harnessConformance("cursor", registryWith(CursorHarness.mock), {
+  tier: "mock",
+});
 
 describe("harness registry", () => {
   it.effect("holds one harness per tool, in tool order", () =>

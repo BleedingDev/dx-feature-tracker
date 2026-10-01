@@ -1,5 +1,4 @@
-import { Context, Effect, FileSystem, Layer } from "effect";
-import type { Crypto } from "effect";
+import { Context, Effect, Layer } from "effect";
 
 import { cursorCliCollector } from "../../collectors/cursor-cli/collector.js";
 import { cursorHooksCollector } from "../../collectors/cursor-hooks/collector.js";
@@ -7,21 +6,18 @@ import { cursorLocalDbCollector } from "../../collectors/cursor-local-db/collect
 import { cursorTranscriptCollector } from "../../collectors/cursor-transcripts/collector.js";
 import { SourceUnavailable } from "../../contracts/error-source-unavailable.js";
 import type { DxCollector } from "../../contracts/services.js";
-import { defaultDftHome } from "../../registry/runtime.js";
 import type {
   HarnessScope,
   Harness,
   ReadInput,
   SessionRef,
 } from "../contract.js";
-import { HarnessHome } from "../home.js";
 import { harnessAdapterId } from "../pending.js";
 import { CURSOR_CHANNELS } from "./meta.js";
-import { channelOfSource, cursorSources } from "./sources.js";
+import { channelOfSource } from "./sources.js";
 import type { CursorSource } from "./sources.js";
 import { CursorStore } from "./store.js";
-
-export type CursorCollectorServices = FileSystem.FileSystem | Crypto.Crypto;
+import type { CursorCollectorServices } from "./store.js";
 
 const COLLECTORS: readonly DxCollector<CursorCollectorServices>[] = [
   cursorHooksCollector,
@@ -59,16 +55,11 @@ export class CursorHarness extends Context.Service<CursorHarness, Harness>()(
   {
     make: Effect.gen(function* makeCursorHarness() {
       const store = yield* CursorStore;
-      const home = yield* HarnessHome;
-      const fileSystem = yield* FileSystem.FileSystem;
-      const services = yield* Effect.context<CursorCollectorServices>();
 
       const discover = Effect.gen(function* discoverCursor() {
         const roots = yield* store.roots;
 
-        const present = yield* fileSystem
-          .exists(home.dirs.cursor)
-          .pipe(Effect.orElseSucceed(() => false));
+        const present = yield* store.present;
 
         const transcripts = present
           ? yield* store.listSessions.pipe(Effect.orElseSucceed(() => []))
@@ -77,7 +68,7 @@ export class CursorHarness extends Context.Service<CursorHarness, Harness>()(
         return {
           harness: "cursor" as const,
           present,
-          reason: present ? null : `no Cursor folder at ${home.dirs.cursor}`,
+          reason: present ? null : `no Cursor folder at ${store.folder}`,
           roots,
           sessions: transcripts.length,
           version: null,
@@ -85,14 +76,7 @@ export class CursorHarness extends Context.Service<CursorHarness, Harness>()(
       });
 
       const locate = (scope: HarnessScope) =>
-        Effect.sync(() =>
-          cursorSources({
-            dftHome: scope.dftHome ?? defaultDftHome(),
-            home: home.home,
-            repoCommonDir: scope.repoCommonDir,
-            worktrees: scope.worktrees,
-          }).map(refOf)
-        );
+        store.sources(scope).pipe(Effect.map((sources) => sources.map(refOf)));
 
       const read = (ref: SessionRef, input: ReadInput) => {
         const collector = collectorFor(ref.source);
@@ -116,7 +100,7 @@ export class CursorHarness extends Context.Service<CursorHarness, Harness>()(
             selectedInput: ref.path,
           })
           .pipe(
-            Effect.provide(services),
+            Effect.provide(store.reader),
             Effect.catchTags({
               Cancelled: (failure) =>
                 Effect.fail(
@@ -170,4 +154,8 @@ export class CursorHarness extends Context.Service<CursorHarness, Harness>()(
   }
 ) {
   static readonly layer = Layer.effect(this, this.make);
+
+  static readonly mock = Layer.effect(this, this.make).pipe(
+    Layer.provide(CursorStore.memory({ files: [], roots: [] }))
+  );
 }
