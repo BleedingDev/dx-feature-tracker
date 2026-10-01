@@ -1,5 +1,6 @@
 import { Effect } from "effect";
 
+import { touchedPaths } from "../../correlation/attribution/touched-paths.js";
 import type { FlightContext } from "../../model/event.js";
 import type { BranchSource } from "../ids.js";
 import type { Placement } from "./events.js";
@@ -64,6 +65,19 @@ const placeEverywhere = (
         ? insideWorktree(context, pick)
         : outsideWorktree(pick),
   }));
+
+export const pointingIntoWorktree = (
+  worktree: string,
+  home: string | null,
+  placed: readonly PlacedPick[]
+): readonly PlacedPick[] =>
+  placed.filter(
+    ({ pick, placement }) =>
+      placement.context.worktreePath !== null ||
+      touchedPaths({ calls: pick.calls, cwd: pick.row.cwd, home }).some(
+        (path) => isInside(path, worktree)
+      )
+  );
 
 export const placePicks = (
   worktree: string | null,

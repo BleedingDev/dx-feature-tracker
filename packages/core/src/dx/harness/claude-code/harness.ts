@@ -32,9 +32,14 @@ import type { EventInput, Placement, SessionFacts } from "./events.js";
 import { claudeCodeHookDecoder } from "./hook.js";
 import { splitLines } from "./lines.js";
 import { CLAUDE_CODE_CHANNELS } from "./meta.js";
-import { groupFamilies, metaPathOf, slugMayHold } from "./paths.js";
+import {
+  groupFamilies,
+  isOwnFolderFamily,
+  metaPathOf,
+  slugMayHold,
+} from "./paths.js";
 import type { SessionFamily } from "./paths.js";
-import { placePicks } from "./placement.js";
+import { placePicks, pointingIntoWorktree } from "./placement.js";
 import type { PlacedPick } from "./placement.js";
 import { decodeClaudeLine } from "./rows.js";
 import { scanChunks } from "./scan.js";
@@ -487,12 +492,17 @@ export class ClaudeCodeHarness extends Context.Service<
 
         const scan = scanChunks(chunks);
 
-        const placed = yield* placePicks(
+        const picked = yield* placePicks(
           ref.worktree,
           input.context,
           scan.requests,
           store.isRepoRoot
         );
+
+        const placed =
+          ref.worktree === null || isOwnFolderFamily(ref.path, ref.worktree)
+            ? picked
+            : pointingIntoWorktree(ref.worktree, store.home, picked);
 
         const observedAt = DateTime.formatIso(yield* DateTime.now);
 

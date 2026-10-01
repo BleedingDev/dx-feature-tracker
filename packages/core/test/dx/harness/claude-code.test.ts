@@ -277,7 +277,7 @@ describe("Claude Code fixture sessions", () => {
   );
 
   it.effect(
-    "finds a worktree's own sessions and nothing from its sibling",
+    "finds a worktree's own sessions and skips parent-folder requests that point elsewhere",
     () =>
       Effect.gen(function* worktree() {
         const inTwo = yield* readSessions(scopeOf(wtTwo), {
@@ -299,10 +299,15 @@ describe("Claude Code fixture sessions", () => {
                   `${event.context.worktreePath}|${event.context.branch}|${event.ai?.branchSource}`
               )
           ),
-        ]).toStrictEqual([
-          `${wtTwo}|feat/claude-code-two|harness-recorded`,
-          "null|null|unassigned",
-        ]);
+        ]).toStrictEqual([`${wtTwo}|feat/claude-code-two|harness-recorded`]);
+        expect(
+          inTwo.events.filter(
+            (event) =>
+              event.identity.sessionId?.startsWith(
+                "24ae293e-278a-483e-a09d-62c57aa4728e"
+              ) === true
+          )
+        ).toStrictEqual([]);
       })
   );
 

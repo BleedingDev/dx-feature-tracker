@@ -64,6 +64,12 @@ export const slugMayHold = (slug: string, worktree: string): boolean => {
   );
 };
 
+export const isOwnFolderFamily = (
+  familyPath: string,
+  worktree: string
+): boolean =>
+  trimSlashes(familyPath).split("/").at(-2) === projectSlug(worktree);
+
 export interface SessionFamily {
   readonly dir: string;
   readonly files: readonly StoredSession[];
