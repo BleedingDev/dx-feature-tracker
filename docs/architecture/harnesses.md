@@ -68,7 +68,7 @@ Correlation (`correlation/branch-at-time/attribute.ts`) applies D28 to every har
 
 ## Repo attribution
 
-Before branch precedence runs, `attributeRepos` (`correlation/attribution/repos.ts`) decides which repo and worktree each AI request belongs to. The read path runs it in `accountAwareEvents` (`correlation/branch-at-time/snapshot.ts`), so a repo's reports also pick up requests that were stored under no repo or under the wrong one, and the usage facts rebuild (`usage/load.ts`) runs it over the whole store before grouping, so `dft usage`, the dashboard, `dft analyze` and `dft history` agree. A request that its harness already placed by its own tool calls (`branchSource: "tool-calls"`, as OMP does) and that carries no `touchedPaths` keeps that place.
+Before branch precedence runs, `attributeRepos` (`correlation/attribution/repos.ts`) decides which repo and worktree each AI request belongs to. The read path runs it in `accountAwareEvents` (`correlation/branch-at-time/snapshot.ts`), so a repo's reports also pick up requests that were stored under no repo or under the wrong one, and the usage facts rebuild (`usage/load.ts`) runs it over the whole store before grouping, so `dft usage`, the dashboard, `dft analyze` and `dft history` agree. A request that its harness already placed by its own tool calls (`branchSource: "tool-calls"`, as OMP does) and that carries no `touchedPaths` keeps that place and its `tool-calls` label; checkout history then gives only its branch.
 
 | Step | Rule | Label |
 | --- | --- | --- |

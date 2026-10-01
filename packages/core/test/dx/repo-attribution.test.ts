@@ -648,6 +648,14 @@ describe("orchestrator outside a repo (D36)", () => {
           repo: APP_GIT,
           worktree: APP,
         });
+
+        const history = attributeHistoricalBranches(result.events, {
+          commitBranches: new Map(),
+          timelines: [timeline(APP, "feature/at-time")],
+        });
+
+        expect(history.events[0]?.context.branch).toBe("feature/at-time");
+        expect(history.events[0]?.ai?.branchSource).toBe("tool-calls");
       }).pipe(Effect.provide(memory))
   );
 });

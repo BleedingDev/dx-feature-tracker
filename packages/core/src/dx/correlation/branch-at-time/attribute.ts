@@ -442,15 +442,26 @@ const PLACED_BY_REPO_ATTRIBUTION: ReadonlySet<HistoricalBasis> = new Set([
   "unassigned",
 ]);
 
+const placementMethodOf = (event: DxEventEnvelope): BranchSource | null => {
+  const method = repoMethodOf(event);
+
+  if (method === "tool-calls" || method === "subagent-split") {
+    return method;
+  }
+
+  return method === null && event.ai?.branchSource === "tool-calls"
+    ? "tool-calls"
+    : null;
+};
+
 const repoLabel = (
   event: DxEventEnvelope,
   found: HistoricalAttribution
 ): BranchSource | null => {
-  const method = repoMethodOf(event);
+  const placedBy = placementMethodOf(event);
 
-  return (method === "tool-calls" || method === "subagent-split") &&
-    PLACED_BY_REPO_ATTRIBUTION.has(found.basis)
-    ? method
+  return placedBy !== null && PLACED_BY_REPO_ATTRIBUTION.has(found.basis)
+    ? placedBy
     : null;
 };
 
