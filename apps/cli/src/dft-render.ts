@@ -362,7 +362,11 @@ export const statusText = (
     return [head, "", "Sources not checked (--no-sync)."].join("\n");
   }
 
-  const branch = sync.context.branch ?? "detached HEAD";
+  const branch =
+    sync.context.branch ??
+    (sync.context.worktreePath === null
+      ? "none, this folder is not a git repo"
+      : "detached HEAD");
 
   const rows = mergeSteps(sync.steps).map(
     (step) =>

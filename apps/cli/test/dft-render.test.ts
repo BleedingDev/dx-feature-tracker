@@ -7,6 +7,7 @@ import {
   formatDuration,
   formatUsd,
   sourceNote,
+  statusText,
   syncText,
 } from "../src/dft-render.js";
 
@@ -15,6 +16,24 @@ const turn = (model: string, effort: string | null) => ({
   maxMode: null,
   model,
 });
+
+const syncAt = (branch: string | null, worktreePath: string | null) => ({
+  context: {
+    branch,
+    flightId: null,
+    headSha: null,
+    repoCommonDir: worktreePath,
+    worktreePath,
+  },
+  steps: [],
+});
+
+const branchLine = (sync: ReturnType<typeof syncAt>) =>
+  statusText({ snapshotCount: null, storePath: "/h/.dft/dft.db" }, sync, {
+    home: "/h",
+    now: 0,
+    verbose: false,
+  }).split("\n")[1];
 
 describe("dft human output", () => {
   it("formats money, counts and durations for people", () => {
@@ -97,5 +116,13 @@ describe("dft human output", () => {
     expect(sourceNote({ ...step, duplicates: 30, inserted: 2 })).toBe(
       "32 events (2 new)"
     );
+  });
+
+  it("says when dft status runs outside a git repo instead of detached HEAD", () => {
+    expect(branchLine(syncAt(null, null))).toBe(
+      "Branch: none, this folder is not a git repo"
+    );
+    expect(branchLine(syncAt(null, "/r/app"))).toBe("Branch: detached HEAD");
+    expect(branchLine(syncAt("main", "/r/app"))).toBe("Branch: main");
   });
 });
