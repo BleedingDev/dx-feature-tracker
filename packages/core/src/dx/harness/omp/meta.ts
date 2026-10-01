@@ -8,4 +8,4 @@ export const OMP_CHANNELS = [
   "hooks",
 ] as const satisfies readonly Channel[];
 
-export const OMP_READINESS: ModuleReadiness = "unsupported";
+export const OMP_READINESS: ModuleReadiness = "ready";
