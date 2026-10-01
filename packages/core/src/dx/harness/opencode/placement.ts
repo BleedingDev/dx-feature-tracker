@@ -20,10 +20,13 @@ const parentDir = (path: string): string => {
   return index <= 0 ? "/" : trimmed.slice(0, index);
 };
 
-export const pathCandidates = (path: string): readonly string[] => [
-  path,
-  parentDir(path),
-];
+const FILE_NAME = /^[^.].*\.[\w-]+$/u;
+
+const looksLikeFile = (path: string): boolean =>
+  FILE_NAME.test(path.slice(path.lastIndexOf("/") + 1));
+
+export const pathCandidates = (path: string): readonly string[] =>
+  looksLikeFile(path) ? [parentDir(path)] : [path, parentDir(path)];
 
 export const gitOfPath = (lookup: GitLookup, path: string): GitAt => {
   for (const candidate of pathCandidates(path)) {

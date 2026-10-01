@@ -79,7 +79,7 @@ const gapsOf = (rows: OcRows, views: readonly OcSessionView[]): SourceGap[] => {
   if (inFlight > 0) {
     gaps.push({
       code: "requests-in-flight",
-      message: `${inFlight} request(s) were still streaming and will be read once OpenCode finishes them`,
+      message: `${inFlight} request(s) have no result yet; they are read once OpenCode stores one, and requests abandoned mid-stream never carried tokens`,
     });
   }
 
@@ -304,7 +304,7 @@ export class OpencodeHarness extends Context.Service<
             expectedItems: null,
             gaps,
             observedItems: kept.length,
-            state: gaps.length > 1 ? "partial" : "complete",
+            state: rows.failures > 0 ? "partial" : "complete",
             watermark: watermark === null ? null : isoOf(watermark),
             windowFrom: times[0] ?? null,
             windowTo: times.at(-1) ?? null,
