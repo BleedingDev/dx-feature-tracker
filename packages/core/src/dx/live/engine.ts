@@ -19,7 +19,7 @@ import {
 
 import { runCollect } from "../cli/commands/collect.js";
 import type { EventStoreService } from "../contracts/services.js";
-import { harnessRegistryFor } from "../harness/registry.js";
+import { HarnessRegistry, harnessRegistryFor } from "../harness/registry.js";
 import { emptyFlightContext } from "../model/event.js";
 import type { FlightContext } from "../model/event.js";
 import { allCollectors } from "../registry/registry.js";
@@ -87,6 +87,7 @@ export const LIVE_DEFAULTS = {
   maxBackoffMs: 60 * 60 * 1000,
   pollMs: 60 * 1000,
   scanMs: 2000,
+  sessionDebounceMs: 1500,
   usageIntervalMs: 5 * 60 * 1000,
 } as const;
 
@@ -100,6 +101,7 @@ export interface LiveEngineOptions {
   readonly maxBackoffMs?: number;
   readonly pollMs?: number;
   readonly scanMs?: number;
+  readonly sessionDebounceMs?: number;
   readonly signals?: readonly LiveSignal[];
   readonly storePath?: string | null;
   readonly usageIntervalMs?: number;
@@ -414,6 +416,9 @@ export const startLiveEngine = (
     const pollMs = options.pollMs ?? LIVE_DEFAULTS.pollMs;
     const scanMs = options.scanMs ?? LIVE_DEFAULTS.scanMs;
 
+    const sessionDebounceMs =
+      options.sessionDebounceMs ?? LIVE_DEFAULTS.sessionDebounceMs;
+
     const usageIntervalMs =
       options.usageIntervalMs ?? LIVE_DEFAULTS.usageIntervalMs;
 
@@ -706,15 +711,17 @@ export const startLiveEngine = (
 
     const usageRuns = makeCoalescer(scope, () => withServices(usageWork));
 
-    const trigger = (root: string) =>
+    const triggerAfter = (delayMs: number) => (root: string) =>
       FiberMap.run(
         debouncers,
         root,
-        Effect.sleep(debounceMs).pipe(
+        Effect.sleep(delayMs).pipe(
           Effect.andThen(repoRuns.request(root)),
           Effect.asVoid
         )
       ).pipe(Effect.asVoid);
+
+    const trigger = triggerAfter(debounceMs);
 
     const watchDir = (
       dir: string,
@@ -949,6 +956,34 @@ export const startLiveEngine = (
 
       yield* afterSyncCheck;
     });
+
+    const sessionRoots = yield* HarnessRegistry.pipe(
+      Effect.flatMap((registry) => registry.discover),
+      Effect.map((found) => [
+        ...new Set(
+          found.flatMap((discovery) => discovery.roots).filter(existsSync)
+        ),
+      ]),
+      Effect.provide(harnessRegistryFor(options.home))
+    );
+
+    const onSessionEvent = Effect.suspend(() =>
+      running
+        ? Effect.forEach([...repos.keys()], triggerAfter(sessionDebounceMs), {
+            discard: true,
+          })
+        : Effect.void
+    );
+
+    for (const root of sessionRoots) {
+      yield* Effect.forkIn(
+        fs.watch(root, { recursive: true }).pipe(
+          Stream.runForEach(() => onSessionEvent),
+          Effect.ignore
+        ),
+        scope
+      );
+    }
 
     yield* scanChanges;
 

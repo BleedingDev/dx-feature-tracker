@@ -205,6 +205,55 @@ describe("live engine", () => {
     )
   );
 
+  it.live("a new tool session file triggers a sync within seconds", () => {
+    const projects = path.join(scratch, ".claude", "projects");
+    const folder = path.join(projects, app.replaceAll(/[^A-Za-z0-9]/gu, "-"));
+
+    fs.mkdirSync(folder, { recursive: true });
+
+    return withEngine(
+      (engine) =>
+        Effect.gen(function* sessionSync() {
+          const syncs = engine.status.pipe(
+            Effect.map(
+              (status) =>
+                status.repos.find((repo) => repo.repo === app)?.syncs ?? 0
+            )
+          );
+
+          const before = yield* syncs;
+
+          fs.writeFileSync(
+            path.join(folder, "live-session.jsonl"),
+            `${JSON.stringify({
+              cwd: app,
+              gitBranch: "main",
+              message: {
+                content: [{ text: "synthetic", type: "text" }],
+                id: "msg_live_1",
+                model: "claude-sonnet-5",
+                role: "assistant",
+                stop_reason: "end_turn",
+                usage: { input_tokens: 2, output_tokens: 3 },
+              },
+              requestId: "req_live_1",
+              sessionId: "live-session",
+              timestamp: "2026-09-30T12:00:00.000Z",
+              type: "assistant",
+            })}\n`
+          );
+
+          const synced = yield* eventuallyEffect(
+            syncs.pipe(Effect.map((after) => after > before)),
+            5000
+          );
+
+          expect(synced).toBe(true);
+        }),
+      { pollMs: 600_000, sessionDebounceMs: 100 }
+    );
+  });
+
   it.live("a sync that finds nothing new sends no change event", () =>
     withEngine((engine, changes) =>
       Effect.gen(function* quietSync() {
