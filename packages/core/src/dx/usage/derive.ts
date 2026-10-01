@@ -487,12 +487,24 @@ const sessionFigureFacts = (
 
 const decodeKey = Schema.decodeUnknownOption(Schema.NonEmptyString);
 
+const replacedKeyOf = (event: DxEventEnvelope): Option.Option<string> =>
+  decodeKey(event.payload.replacesRequestKey);
+
 const replacedKeys = (events: readonly DxEventEnvelope[]): Set<string> =>
-  new Set(
-    events.flatMap((event) =>
-      Option.toArray(decodeKey(event.payload.replacesRequestKey))
-    )
+  new Set(events.flatMap((event) => Option.toArray(replacedKeyOf(event))));
+
+const isSuperseded = (
+  event: DxEventEnvelope,
+  replaced: ReadonlySet<string>
+): boolean => {
+  const key = event.usage?.requestKey ?? null;
+
+  return (
+    key !== null &&
+    replaced.has(key) &&
+    !Option.contains(replacedKeyOf(event), key)
   );
+};
 
 export const deriveUsageFacts = (
   events: readonly DxEventEnvelope[]
@@ -502,7 +514,7 @@ export const deriveUsageFacts = (
   const bearing = [
     ...new Map(
       events.flatMap((event) =>
-        usageBearing(event) && !replaced.has(event.usage?.requestKey ?? "")
+        usageBearing(event) && !isSuperseded(event, replaced)
           ? [[event.eventId, event] as const]
           : []
       )

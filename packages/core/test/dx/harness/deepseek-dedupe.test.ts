@@ -11,6 +11,7 @@ import type { MemoryFile } from "../../../src/dx/harness/file-store.js";
 import type { CollectCursor } from "../../../src/dx/model/coverage.js";
 import { emptyFlightContext } from "../../../src/dx/model/event.js";
 import type { DxEventEnvelope } from "../../../src/dx/model/event.js";
+import { deriveUsageFacts } from "../../../src/dx/usage/derive.js";
 import {
   memoryFile,
   memoryHarness,
@@ -184,6 +185,9 @@ const totalOf = (events: readonly DxEventEnvelope[]) =>
     (sum, event) => sum + (event.usage?.tokens.total ?? 0),
     0
   );
+
+const factTotals = (events: readonly DxEventEnvelope[]) =>
+  deriveUsageFacts(events).facts.map((fact) => fact.tokens.total);
 
 const session = (id: string, lines: readonly string[], cwd = CWD) =>
   memoryFile({ cwd, id }, zstdLog([[header(id)], [...lines]]));
@@ -630,6 +634,23 @@ describe("DeepSeek incremental reads", () => {
         false
       );
       expect(again.events).toStrictEqual([]);
+    })
+  );
+
+  it.effect("keeps a same-step replacement that arrives in a later read", () =>
+    Effect.gen(function* replacedLater() {
+      const rows = turnRows(1, 1, [attempt(3, 1, 1, U1), attempt(4, 1, 1, U2)]);
+
+      const before = zstdLog([[header(id)], rows.slice(0, 3)]);
+      const after = zstdLog([[header(id)], rows.slice(0, 3), rows.slice(3)]);
+      const whole = yield* readRef(after, 2, null);
+      const first = yield* readRef(before, 1, null);
+      const second = yield* readRef(after, 2, first.cursor);
+
+      expect(factTotals(whole.events)).toStrictEqual([227]);
+      expect(factTotals([...first.events, ...second.events])).toStrictEqual([
+        227,
+      ]);
     })
   );
 
