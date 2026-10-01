@@ -20,6 +20,8 @@ Rules:
 - Hook files are merged: dft adds one matcher group per event only when no dft command is there yet and never edits other entries. Key order is kept. A re-run points dft's own entries at this Node and `dft` and gives them this build's `async` and `timeout`.
 - A file tracked by git is never written (teammates would see it). A same-named file without dft's marker is left alone.
 - Paths git does not already ignore go into a marked block in this clone's `.git/info/exclude`, never into `.gitignore`.
+- The untracked `.cursor/hooks.json` and `dx-*` skills go into the same block.
+- `--git-hooks` when `core.hooksPath` points into the repo (husky 8 and older, a committed `githooks/`): a tracked hook, or an untracked one git does not ignore, is left alone and dft prints the line to add yourself. A hook dft creates there goes into the exclude block.
 - Running it again reports every file as unchanged.
 
 What each tool still needs from the user, printed by `dft install`:

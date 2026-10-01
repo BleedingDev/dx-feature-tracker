@@ -59,18 +59,21 @@ export const isGitRepo = (worktree: string): boolean => {
   }
 };
 
-const gitTracks = (worktree: string, rel: string): boolean => {
+const gitSucceeds = (worktree: string, args: readonly string[]): boolean => {
   try {
-    execFileSync("git", ["ls-files", "--error-unmatch", "--", rel], {
-      cwd: worktree,
-      stdio: "ignore",
-    });
+    execFileSync("git", [...args], { cwd: worktree, stdio: "ignore" });
 
     return true;
   } catch {
     return false;
   }
 };
+
+const gitTracks = (worktree: string, rel: string): boolean =>
+  gitSucceeds(worktree, ["ls-files", "--error-unmatch", "--", rel]);
+
+const gitIgnores = (worktree: string, rel: string): boolean =>
+  gitSucceeds(worktree, ["check-ignore", "-q", "--no-index", "--", rel]);
 
 export const dftInvocation = (nodePath: string, entry: string): string =>
   `${quote(nodePath)} ${quote(path.resolve(entry))}`;
@@ -333,6 +336,43 @@ export const gitHooksDir = (worktree: string): string =>
     }).trim()
   );
 
+const isInside = (parent: string, child: string): boolean => {
+  const relative = path.relative(parent, child);
+
+  return !relative.startsWith("..") && !path.isAbsolute(relative);
+};
+
+const gitCommonDir = (worktree: string): string =>
+  path.resolve(
+    worktree,
+    execFileSync("git", ["rev-parse", "--git-common-dir"], {
+      cwd: worktree,
+      encoding: "utf-8",
+    }).trim()
+  );
+
+const existingPath = (file: string): string =>
+  existsSync(file) || path.dirname(file) === file
+    ? samePath(file)
+    : path.join(existingPath(path.dirname(file)), path.basename(file));
+
+export const hooksDirInWorktree = (
+  worktree: string,
+  dir: string
+): string | null => {
+  const hooks = existingPath(dir);
+  const top = samePath(worktree);
+
+  if (
+    isInside(samePath(gitCommonDir(worktree)), hooks) ||
+    !isInside(top, hooks)
+  ) {
+    return null;
+  }
+
+  return path.relative(top, hooks);
+};
+
 export const lefthookConfig = (worktree: string): string | null =>
   LEFTHOOK_FILES.map((name) => path.join(worktree, name)).find((file) =>
     existsSync(file)
@@ -343,6 +383,8 @@ export const hookLine = (command: string): string =>
 
 export const gitHookLine = (command: string): string =>
   `${command} snapshot </dev/null || true`;
+
+const SHARED_HOOK_LINE = gitHookLine("dft");
 
 const POSIX_SHELL_SHEBANG = /^#!\s*\S*\/(?:env\s+)?(?:ba|da|k|z)?sh(?:\s|$)/u;
 
@@ -383,10 +425,33 @@ export const installGitHooks = (
   }
 
   const dir = gitHooksDir(worktree);
+  const shared = hooksDirInWorktree(worktree, dir);
   const line = gitHookLine(command);
 
   return GIT_HOOKS.map((hook): InstallStep => {
     const file = path.join(dir, hook);
+    const rel = shared === null ? null : path.join(shared, hook);
+
+    if (rel !== null && gitTracks(worktree, rel)) {
+      return {
+        action: "skipped",
+        detail: `${hook} is tracked by git in ${shared ?? ""} (core.hooksPath), so changing it would affect teammates; dft left it alone. To record cost for everyone who has dft, commit this line yourself: ${SHARED_HOOK_LINE}`,
+        path: file,
+      };
+    }
+
+    if (
+      rel !== null &&
+      existsSync(file) &&
+      !gitIgnores(worktree, rel) &&
+      !readFileSync(file, "utf-8").split("\n").some(isSnapshotLine)
+    ) {
+      return {
+        action: "skipped",
+        detail: `${hook} is in the repo (core.hooksPath ${shared ?? ""}) and git does not ignore it, so it could be committed; dft left it alone. Add this line yourself if it stays local: ${line}`,
+        path: file,
+      };
+    }
 
     if (!existsSync(file)) {
       mkdirSync(dir, { recursive: true });
@@ -980,11 +1045,15 @@ export const uninstallGitHooks = (worktree: string): readonly RemovalStep[] => {
   }
 
   const dir = gitHooksDir(worktree);
+  const shared = hooksDirInWorktree(worktree, dir);
 
   return GIT_HOOKS.flatMap((hook): readonly RemovalStep[] => {
     const file = path.join(dir, hook);
 
-    if (!existsSync(file)) {
+    if (
+      !existsSync(file) ||
+      (shared !== null && gitTracks(worktree, path.join(shared, hook)))
+    ) {
       return [];
     }
 

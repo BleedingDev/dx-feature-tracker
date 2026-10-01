@@ -1363,7 +1363,11 @@ const installCommand = Command.make(
           tools,
           worktree,
           capture,
-          writtenUntracked(worktree, [result.hooks, ...result.skills])
+          writtenUntracked(worktree, [
+            result.hooks,
+            ...result.skills,
+            ...(result.git ?? []),
+          ])
         )
       );
 

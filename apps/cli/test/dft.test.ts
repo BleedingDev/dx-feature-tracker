@@ -1,6 +1,8 @@
 // @effect-diagnostics nodeBuiltinImport:off -- Install wiring edits real files in a throwaway git repository, so the test drives node:fs and git directly.
 import { execFileSync, spawnSync } from "node:child_process";
 import {
+  existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
@@ -13,6 +15,11 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "@effect/vitest";
 import { resolveDftStore } from "@rat-stack/core/dx";
 
+import {
+  ignoreCaptureFiles,
+  unignoreCaptureFiles,
+  writtenUntracked,
+} from "../src/dft-capture.js";
 import {
   CURSOR_HOOK_EVENTS,
   hasDftHooks,
@@ -220,6 +227,69 @@ describe("dft install --git-hooks", () => {
 
     expect(step?.action).toBe("skipped");
     expect(readFileSync(preCommit, "utf-8")).toBe(python);
+  });
+
+  it("leaves hooks committed in a core.hooksPath folder alone and keeps a hook it adds there out of git", () => {
+    const repo = scratchRepo();
+
+    const exclude = readFileSync(
+      path.join(repo, ".git", "info", "exclude"),
+      "utf-8"
+    );
+
+    const preCommit = path.join(repo, ".husky", "pre-commit");
+    const prePush = path.join(repo, ".husky", "pre-push");
+    const teamHook = "#!/bin/sh\npnpm lint\n";
+
+    mkdirSync(path.dirname(preCommit));
+    writeFileSync(preCommit, teamHook);
+    execFileSync("git", ["-C", repo, "config", "core.hooksPath", ".husky"]);
+    execFileSync("git", ["-C", repo, "add", ".husky/pre-commit"]);
+    execFileSync("git", [
+      "-C",
+      repo,
+      "-c",
+      "user.name=dft",
+      "-c",
+      "user.email=dft@example.com",
+      "commit",
+      "-q",
+      "-m",
+      "team hooks",
+    ]);
+
+    const steps = installGitHooks(repo, "/r/bin/dft");
+
+    expect(steps.map((step) => step.action)).toEqual(["skipped", "created"]);
+    expect(steps[0]?.detail).toContain("dft snapshot </dev/null || true");
+    expect(readFileSync(preCommit, "utf-8")).toBe(teamHook);
+
+    ignoreCaptureFiles(repo, writtenUntracked(repo, steps));
+
+    expect(
+      execFileSync("git", ["-C", repo, "status", "--porcelain", "-uall"], {
+        encoding: "utf-8",
+      })
+    ).toBe("");
+
+    writeFileSync(prePush, "#!/bin/sh\necho local\n");
+
+    expect(installGitHooks(repo, "/r/bin/dft")[1]?.action).toBe("updated");
+
+    rmSync(prePush);
+    installGitHooks(repo, "/r/bin/dft");
+    uninstallGitHooks(repo);
+    unignoreCaptureFiles(repo);
+
+    expect(readFileSync(preCommit, "utf-8")).toBe(teamHook);
+    expect(existsSync(prePush)).toBe(false);
+    expect(
+      readFileSync(path.join(repo, ".git", "info", "exclude"), "utf-8")
+    ).toBe(exclude);
+
+    writeFileSync(prePush, "#!/bin/sh\necho mine\n");
+
+    expect(installGitHooks(repo, "/r/bin/dft")[1]?.action).toBe("skipped");
   });
 
   it("prints a snippet instead of editing when lefthook manages hooks", () => {

@@ -734,7 +734,11 @@ export const writtenUntracked = (
         : [path.relative(worktree, item.path)]
     )
     .filter(
-      (rel) => rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel)
+      (rel) =>
+        rel !== "" &&
+        !rel.startsWith("..") &&
+        !path.isAbsolute(rel) &&
+        rel.split(path.sep)[0] !== ".git"
     );
 
   const tracked = trackedAmong(worktree, rels);
