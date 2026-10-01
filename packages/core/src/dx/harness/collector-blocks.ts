@@ -233,25 +233,30 @@ const costFigure = (
     : null;
 };
 
+const UNBILLED_COST_LEDGERS: ReadonlySet<string> = new Set([
+  "metered",
+  "unallocated",
+]);
+
 const toolFigureOf = (
   payload: Payload,
   origin: CollectorOrigin
 ): ToolFigure | null => {
   const currency = textField(payload, "currency");
   const charge = amountField(payload, "charge");
-
-  if (charge !== null && origin.storesCharge) {
-    return figure(charge, currency, "charge");
-  }
-
   const ledger = textField(payload, "costLedger");
   const costUsd = amountField(payload, "costUsd");
+  const unbilled = ledger !== null && UNBILLED_COST_LEDGERS.has(ledger);
+
+  if (charge !== null && origin.storesCharge && (!unbilled || charge > 0)) {
+    return figure(charge, currency, "charge");
+  }
 
   if (origin.storesCharge && costUsd !== null && ledger === "charge") {
     return figure(costUsd, currency, "charge");
   }
 
-  if (costUsd !== null && ledger === "metered") {
+  if (costUsd !== null && unbilled) {
     return figure(costUsd, currency, origin.estimateKind);
   }
 

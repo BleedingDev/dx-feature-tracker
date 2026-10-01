@@ -17,6 +17,10 @@ import {
 } from "../../../src/dx/metrics/ai-usage/ledger.js";
 import type { AiUsageAccount } from "../../../src/dx/metrics/ai-usage/ledger.js";
 import {
+  billedFigureOf,
+  toolOwnFigureOf,
+} from "../../../src/dx/metrics/ai-usage/typed.js";
+import {
   computeCost,
   costByBranch,
 } from "../../../src/dx/metrics/cost/metric.js";
@@ -589,6 +593,71 @@ describe("Cursor money ledgers stay pinned", () => {
         expect(resultLines(results)).toContain(
           "dx.cost.list-price-estimate.price-table.usd=null unavailable"
         );
+      }).pipe(Effect.provide(NodeServices.layer))
+  );
+
+  it.effect(
+    "keeps the list price of a plan-included request the account import marks as charged nothing",
+    () =>
+      Effect.gen(function* freeCreditAuto() {
+        const batch = yield* cursorDashboardResponseCollector.collect({
+          adapterId: "cursor-dashboard-response",
+          context: { ...emptyFlightContext, branch: "feature/free" },
+          cursor: null,
+          origin: "fixture",
+          scratchDir: null,
+          selectedInput: fixturePath("b43/dashboard-complete-paged.json"),
+        });
+
+        const [template] = batch.events;
+
+        expect(template).toBeDefined();
+
+        if (template === undefined) {
+          return;
+        }
+
+        const metered = withCollectorBlocks({
+          ...template,
+          eventId: EventIdSchema.make("auto-free-credit"),
+          identity: { ...template.identity, requestId: "auto-free-credit" },
+          payload: {
+            charge: null,
+            costLedger: "metered",
+            costRawField: "tokenUsage.totalCents",
+            costUsd: 0.42,
+            currency: "USD",
+            model: "grok-bot-default",
+            rawCategory: "FREE_CREDIT",
+            requestKey: "auto-free-credit",
+            sourceKind: "dashboard-response",
+            tokens: { input: 1000, output: 100 },
+          },
+        });
+
+        const imported = toApiEvent(
+          metered,
+          new Map([["request:auto-free-credit", 0]])
+        );
+
+        const { results } = computeCost(snapshotOf([imported]), options);
+        const lines = resultLines(results);
+
+        expect(imported.payload.charge).toBe(0);
+        expect(imported.usage?.toolFigure).toStrictEqual({
+          amount: 0.42,
+          currency: "USD",
+          kind: "list-price",
+        });
+        expect(billedFigureOf(imported)).toBeNull();
+        expect(toolOwnFigureOf(imported)?.amount).toBe(0.42);
+        expect(lines).toContain("dx.cost.metered.usd=0.42 measured");
+        expect(lines).toContain(
+          "dx.cost.list-price-estimate.price-table.usd=0.42 estimated"
+        );
+        expect([...extractReadings([imported]).listPrices]).toStrictEqual([
+          ["auto-free-credit", 0.42],
+        ]);
       }).pipe(Effect.provide(NodeServices.layer))
   );
 });
