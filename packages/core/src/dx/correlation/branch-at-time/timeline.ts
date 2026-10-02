@@ -158,57 +158,29 @@ const stateOf = (
 const nameGitLeft = (transition: Transition): string | null =>
   transition.returning === true ? transition.to : transition.from;
 
-interface StoppedRebase {
-  readonly startedOn: string | null;
-  readonly underway: boolean;
-}
-
 interface Leaving {
   readonly interrupted: boolean;
   readonly next: Transition | undefined;
-  readonly stopped: StoppedRebase | null;
+  readonly stopped: boolean;
 }
-
-const leftDetached = (transition: Transition): boolean =>
-  transition.from === null || DETACHED_NAME.test(transition.from);
 
 const stoppedRebases = (
   transitions: readonly (Transition | null)[]
-): readonly (StoppedRebase | null)[] => {
-  let stopped: StoppedRebase | null = null;
-  let head: string | null = null;
+): readonly boolean[] => {
+  let stopped = false;
 
   return transitions.map((transition) => {
-    if (transition === null) {
-      return stopped;
-    }
+    const during = stopped;
 
-    const during: StoppedRebase | null =
-      stopped === null
-        ? null
-        : {
-            ...stopped,
-            underway: stopped.underway && leftDetached(transition),
-          };
-
-    if (transition.to === null) {
-      stopped = { startedOn: head, underway: true };
-    } else {
-      stopped = transition.returning === true ? null : during;
-      head = transition.to;
+    if (transition?.to === null) {
+      stopped = true;
+    } else if (transition?.returning === true) {
+      stopped = false;
     }
 
     return during;
   });
 };
-
-const endsStoppedRebase = (
-  next: Transition,
-  stopped: StoppedRebase | null,
-  local: boolean
-): boolean =>
-  stopped !== null &&
-  (stopped.underway || local || next.to === stopped.startedOn);
 
 const nextLeaving = (
   transitions: readonly (Transition | null)[]
@@ -222,7 +194,7 @@ const nextLeaving = (
     leaving[index] = {
       interrupted,
       next,
-      stopped: stopped[index] ?? null,
+      stopped: stopped[index] ?? false,
     };
 
     if (transition !== null) {
@@ -254,11 +226,7 @@ const leftByName = (
     return true;
   }
 
-  if (
-    next.returning === true &&
-    !interrupted &&
-    !endsStoppedRebase(next, stopped, local)
-  ) {
+  if (next.returning === true && !interrupted && !stopped) {
     return false;
   }
 
@@ -275,7 +243,7 @@ interface CheckoutRefs {
 const NOT_LEFT: Leaving = {
   interrupted: false,
   next: undefined,
-  stopped: null,
+  stopped: false,
 };
 
 const checkoutStateOf = (

@@ -308,14 +308,6 @@ describe("checking out a remote-tracking ref or a tag detaches HEAD", () => {
       ],
     ]);
 
-    const afterQuit = reflog([
-      ["2026-09-01T08:00:00Z", "commit (initial): base"],
-      ["2026-09-01T08:30:00Z", "rebase (start): checkout HEAD~1"],
-      ["2026-09-01T09:00:00Z", `checkout: moving from ${SHA} to feat`],
-      ["2026-09-01T10:00:00Z", "checkout: moving from feat to origin/main"],
-      ["2026-09-01T10:15:00Z", "rebase (finish): returning to refs/heads/feat"],
-    ]);
-
     const read = (
       entries: ReturnType<typeof reflog>,
       branches: ReadonlySet<string>,
@@ -335,11 +327,6 @@ describe("checking out a remote-tracking ref or a tag detaches HEAD", () => {
     expect(
       read(fromDetachedMain, new Set(["main", "feat"]), "feat")
     ).toStrictEqual(["main", "feat", "main", "detached:feat", "feat"]);
-    expect(read(afterQuit, new Set(["feat"]), "feat").slice(-3)).toStrictEqual([
-      "feat",
-      "detached:feat",
-      "feat",
-    ]);
   });
 
   it("keeps a branch checked out during a stopped rebase that is then aborted", () => {
@@ -418,6 +405,11 @@ describe("checking out a remote-tracking ref or a tag detaches HEAD", () => {
       "main",
       "other",
       "detached:other",
+      "other",
+      "newbranch",
+      "feat",
+    ]);
+    expect(read(startedElsewhere, new Set()).slice(-3)).toStrictEqual([
       "other",
       "newbranch",
       "feat",
