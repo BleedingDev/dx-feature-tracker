@@ -517,6 +517,14 @@ describe("b37 redaction", () => {
     expect(performance.now() - started).toBeLessThan(5000);
   });
 
+  it("scrubs emails with local parts longer than 64 characters", () => {
+    for (const local of ["a".repeat(70), `jane_doe_${"x".repeat(60)}`]) {
+      const result = redactText(`mail ${local}@example.com end`);
+
+      expect(result.text).toBe("mail [redacted:email] end");
+    }
+  });
+
   it("scrubs credentials inside urls in free text", () => {
     const result = redactText(
       "remote https://fixture-user:hunter2@git.example.test/repo.git"

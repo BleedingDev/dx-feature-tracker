@@ -80,7 +80,7 @@ const SECRET_PATTERNS: readonly (readonly [RegExp, string])[] = [
     /\b(?<scheme>[a-z][\d+.a-z-]{0,31}:\/\/)[^\s/@]+@/giu,
     "$<scheme>[redacted]@",
   ],
-  [/\b[\w.%+-]{1,64}@[\w-]+(?:\.[\w-]+)+\b/gu, "[redacted:email]"],
+  [/(?<![\w.%+-])[\w.%+-]+@[\w-]+(?:\.[\w-]+)+\b/gu, "[redacted:email]"],
   [/(?:\/Users|\/home)\/[^/\s"']+/gu, "~"],
   [/[A-Za-z]:\\Users\\[^\\\s"']+/gu, "~"],
 ];
