@@ -2,6 +2,30 @@
 
 Release notes for `dft` (dx-feature-tracker). Versions before 0.2.0 are described on the [GitHub releases page](https://github.com/BleedingDev/dx-feature-tracker/releases).
 
+## 0.2.1
+
+A fix release: numbers that were counted twice or put on the wrong branch, and secrets that could slip past redaction.
+
+### Fixed
+
+- **Requests counted once.** A DeepSeek Harness request read three or more times now counts once, as its newest reading. An OpenCode orchestrator message split again by a later sync replaces its earlier split instead of adding to it. With Codex OpenTelemetry on (`dft install --telemetry`), a session with no session file no longer shows one extra request from the warmup Codex sends when it starts.
+- **`dft analyze` and `dft history` agree with `dft usage`.** Codex cached input is no longer counted as fresh input there, and a DeepSeek Harness request that a later read replaced is no longer counted twice.
+- **Detached HEAD is not a branch.** Requests made after `git checkout origin/main`, a tag or `git checkout --detach main` no longer land on a branch named `origin/main` or `main`. They count toward the branch around them, also when a rebase left that checkout or `git fetch --prune` later removed the remote branch.
+- **Removed Claude Code worktrees.** Sessions from a worktree that was removed before dft first synced are kept when they show a commit the repo knows or name the repo's worktree folder, and they land on the branch Claude Code recorded. Requests that then move into the main worktree with `cd` stay in the repo instead of falling under "(no repo)".
+- **Crashed Codex turns.** A last turn that never finished is closed as unfinished after 30 quiet minutes, and a turn still waiting for its first model reply is no longer cut off by a long quiet spell.
+- **Secret redaction.** dft redacts more secrets in what it keeps: long setting names such as `spring.datasource.password=`, `AWS_SECRET_ACCESS_KEY=` and other names ending in `_KEY`, `_TOKEN`, `_PAT` or `_PASSWORD`, `password: value` with the value on the next line, `password => 'value'`, `--password value` and `--token value` (also after a line continuation or a non-breaking space), `mysql -p`, `sshpass -p`, `curl -u user:pass`, `user:pass@host` in links and Google API keys. Whole values are hidden now, not just the part before a `;` or `,`. Ordinary words such as `token_count`, `token_type` and `PWD` paths are left alone. A command run through `sudo -u root gh` is recorded as `gh`.
+- **Prices.** OpenAI Batch cache reads are priced at the Batch input rate for models where OpenAI lists no Batch cached rate (gpt-4.1, gpt-4o and their minis, gpt-4.1-nano, o1, o3, o3-mini, o4-mini). Dated gpt-4o models use gpt-4o's Fast rate.
+- **Tool versions.** Pi and DeepSeek Harness rows now carry the installed tool version instead of none.
+- **`dft mcp`.** The MCP server reports its name as `dft`. `dft usage --help` lists every `--by` choice, including `parentSession` and `agent`.
+
+### Upgrading
+
+Nothing to do. Your next `dft sync` derives stored usage again with the fixes above, so branch and request totals of older chats can change.
+
+### Known limits
+
+The points still open are listed in [harnesses.md](docs/architecture/harnesses.md#known-limits).
+
 ## 0.2.0
 
 dft now tracks seven AI coding tools, not just Cursor: Cursor, Claude Code, Codex, OpenCode, Pi, OMP and DeepSeek Harness.
