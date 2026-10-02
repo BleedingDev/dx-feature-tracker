@@ -500,6 +500,23 @@ describe("b37 redaction", () => {
     expect(performance.now() - started).toBeLessThan(5000);
   });
 
+  it("redacts long lines of short command flags in linear time", () => {
+    const size = 120_000;
+    const started = performance.now();
+
+    for (const input of [
+      " -p".repeat(size / 3),
+      " -px".repeat(size / 4),
+      " -u".repeat(size / 3),
+      " --user".repeat(size / 7),
+      ` --proxy-user${" -U".repeat(size / 3)}`,
+    ]) {
+      redactText(input);
+    }
+
+    expect(performance.now() - started).toBeLessThan(5000);
+  });
+
   it("scrubs credentials inside urls in free text", () => {
     const result = redactText(
       "remote https://fixture-user:hunter2@git.example.test/repo.git"

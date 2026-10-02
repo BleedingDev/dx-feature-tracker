@@ -29,7 +29,9 @@ const FLAG_VALUE = String.raw`(?!-)(?:${QUOTED_VALUE}|[^\s&;|]+)`;
 
 const FLAG_GAP = String.raw`(?:[^\S\r\n]|\\\r?\n)`;
 
-const COMMAND_TEXT = String.raw`(?:[^\n|;&]|\\\r?\n)*?`;
+const MAX_COMMAND_TEXT = 512;
+
+const COMMAND_TEXT = String.raw`(?:[^\n|;&]|\\\r?\n){0,${MAX_COMMAND_TEXT}}?`;
 
 const SECRET_LABEL = new RegExp(
   String.raw`(?<prefix>${SECRET_WORD}[\w.-]{0,64}["']?${LABEL_SEPARATOR})${LABEL_VALUE}`,
