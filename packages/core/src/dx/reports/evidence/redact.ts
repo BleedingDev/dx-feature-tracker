@@ -42,7 +42,7 @@ const ENV_KEY_LABEL = new RegExp(
 );
 
 const SECRET_FLAG = new RegExp(
-  String.raw`(?<prefix>(?<![\w.-])--?[\w.-]*?${SECRET_WORD}${FLAG_GAP}+)${FLAG_VALUE}`,
+  String.raw`(?<prefix>(?:(?<![\w.-])--?[\w.-]*?|(?<![\w-])--?[\w.-]{0,64}?)${SECRET_WORD}${FLAG_GAP}+)${FLAG_VALUE}`,
   "giu"
 );
 

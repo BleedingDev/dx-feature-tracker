@@ -259,6 +259,27 @@ describe("b37 redaction", () => {
     }
   });
 
+  it("scrubs space-separated values behind secret flags glued to a dot", () => {
+    const secret = ["Tr0ub", "4dor", "Fixture"].join("");
+
+    const cases: readonly (readonly [string, string])[] = [
+      [`see docs.--api-key ${secret}`, "see docs.--api-key [redacted]"],
+      [`app...--password ${secret}`, "app...--password [redacted]"],
+      [`run.--db-password ${secret}`, "run.--db-password [redacted]"],
+      [`foo.-password ${secret}`, "foo.-password [redacted]"],
+    ];
+
+    for (const [line, expected] of cases) {
+      expect(redactText(line), line).toEqual({
+        redacted: true,
+        text: expected,
+      });
+      expect(excerptPayload({ note: line }).excerpt ?? "", line).not.toContain(
+        secret
+      );
+    }
+  });
+
   it("scrubs whole values with spaces, escaped quotes and separators", () => {
     const cases: readonly (readonly [string, readonly string[]])[] = [
       [
@@ -461,6 +482,7 @@ describe("b37 redaction", () => {
       `--${"a.-password".repeat(size / 11)}`,
       " --x.-password".repeat(size / 14),
       `--${"-password".repeat(size / 9)}=`,
+      ".--x".repeat(size / 4),
       `${"A_".repeat(size / 2)}KEY`,
       `${"x.".repeat(size / 2)}@a.b`,
       `${"a.".repeat(size / 2)}://`,
