@@ -50,6 +50,8 @@ const SESSION = "464d3ae5-0952-4217-9f80-fabd271a363d";
 
 const OTHER_SESSION = "7b1c2f0e-3d4a-4e5b-8c6d-9e0f1a2b3c4d";
 
+const CONTAINER_SESSION = "2c9e4b1a-6f3d-4a8e-9b7c-1d2e3f4a5b6c";
+
 const FIXTURE_TIME = Date.parse("2026-10-01T10:56:00.000Z") / 1000;
 
 const FIXTURE_PROJECTS = path.join(
@@ -497,6 +499,32 @@ describe("Claude Code sessions from a worktree removed before the first sync", (
         const sha = commitInWorktree(gone, BRANCH, false);
 
         writeSession(gone, `[${BRANCH} ${sha.slice(0, 7)}] Document greet`);
+        writeSession(
+          path.join(container, "b"),
+          "synthetic text",
+          OTHER_SESSION
+        );
+        rmSync(container, { force: true, recursive: true });
+
+        const context = contextForRepo(REPO);
+        const { planned } = yield* placedOf(context);
+
+        expect(planned).toStrictEqual(keptUnder(gone, context));
+      }).pipe(Effect.provide(registryWith(claudeAt)))
+  );
+
+  it.effect(
+    "judge each worktree in a deleted container by its own folder when a session started in the container",
+    () =>
+      Effect.gen(function* sessionInDeletedContainer() {
+        setUpRepo();
+
+        const container = path.join(scratch, "wts-launch");
+        const gone = path.join(container, "a");
+        const sha = commitInWorktree(gone, BRANCH, false);
+
+        writeSession(gone, `[${BRANCH} ${sha.slice(0, 7)}] Document greet`);
+        writeSession(container, "synthetic text", CONTAINER_SESSION);
         writeSession(
           path.join(container, "b"),
           "synthetic text",

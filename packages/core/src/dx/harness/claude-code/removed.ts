@@ -28,7 +28,7 @@ const cwdPattern = (worktree: string): RegExp =>
   );
 
 interface StartedFamily {
-  readonly cwd: string | null;
+  readonly cwd: string;
   readonly family: SessionFamily;
 }
 
@@ -39,17 +39,13 @@ const parentSlugOf = (worktree: string): string =>
 
 const trimmed = (folder: string): string => folder.replace(/\/+$/u, "");
 
-const outermostStart = (starts: readonly string[], folder: string): string => {
-  let outer = folder;
-
-  for (const start of starts) {
-    if (start.length < outer.length && isInside(folder, start)) {
-      outer = start;
-    }
-  }
-
-  return outer;
-};
+const outermostEnclosing = (
+  folders: readonly string[],
+  folder: string
+): string | undefined =>
+  folders
+    .filter((outer) => isInside(folder, outer))
+    .toSorted((a, b) => a.length - b.length)[0];
 
 export const firstCwd = (bytes: Uint8Array): string | null => {
   for (const line of splitLines(bytes, 0).complete) {
@@ -124,58 +120,28 @@ const fileTextPointsIntoRepo = (
     rowPointsIntoRepo(line.text, folder, worktreesDir, removed)
   );
 
-const folderPointsIntoRepo = (
+const familyPointsIntoRepo = (
   store: ClaudeCodeFiles,
-  scope: HarnessScope,
   removed: RemovedWorktrees,
-  folder: string,
-  members: readonly StartedFamily[]
+  worktreesDir: string | null,
+  { cwd, family }: StartedFamily
 ) =>
-  Effect.gen(function* folderEvidence() {
-    const worktreesDir =
-      scope.repoCommonDir === null
-        ? null
-        : `${scope.repoCommonDir.replace(/\/+$/u, "")}/worktrees/`;
+  Effect.gen(function* familyEvidence() {
+    for (const file of family.files) {
+      const points = yield* store.readFrom(file.path, 0).pipe(
+        Effect.map((bytes) =>
+          fileTextPointsIntoRepo(bytes, cwd, worktreesDir, removed)
+        ),
+        Effect.orElseSucceed(() => false)
+      );
 
-    for (const { family } of members) {
-      for (const file of family.files) {
-        const points = yield* store.readFrom(file.path, 0).pipe(
-          Effect.map((bytes) =>
-            fileTextPointsIntoRepo(bytes, folder, worktreesDir, removed)
-          ),
-          Effect.orElseSucceed(() => false)
-        );
-
-        if (points) {
-          return true;
-        }
+      if (points) {
+        return true;
       }
     }
 
     return false;
   });
-
-const byRemovedRoot = (
-  started: readonly StartedFamily[]
-): ReadonlyMap<string, readonly StartedFamily[]> => {
-  const folders = new Map<string, StartedFamily[]>();
-
-  const starts = started.flatMap(({ cwd }) =>
-    cwd === null ? [] : [trimmed(cwd)]
-  );
-
-  for (const member of started) {
-    const { cwd } = member;
-
-    if (cwd !== null) {
-      const root = outermostStart(starts, trimmed(cwd));
-
-      folders.set(root, [...(folders.get(root) ?? []), member]);
-    }
-  }
-
-  return folders;
-};
 
 const liveWorktreesEntered = (
   store: ClaudeCodeFiles,
@@ -231,27 +197,41 @@ export const removedWorktreeFamilies = (
       Effect.map(startingFolder(store, family), (cwd) => ({ cwd, family }))
     )(candidates);
 
-    const gone = started.filter(
-      ({ cwd }) =>
-        cwd !== null &&
-        !scope.worktrees.some((worktree) => isInside(cwd, worktree)) &&
-        removed.gone(cwd)
+    const gone = started.flatMap(({ cwd, family }) =>
+      cwd === null ||
+      scope.worktrees.some((worktree) => isInside(cwd, worktree)) ||
+      !removed.gone(cwd)
+        ? []
+        : [{ cwd: trimmed(cwd), family }]
     );
+
+    const worktreesDir =
+      scope.repoCommonDir === null
+        ? null
+        : `${scope.repoCommonDir.replace(/\/+$/u, "")}/worktrees/`;
+
+    const proven: string[] = [];
+
+    for (const member of gone) {
+      if (yield* familyPointsIntoRepo(store, removed, worktreesDir, member)) {
+        proven.push(member.cwd);
+      }
+    }
 
     const kept = new Map<string, RemovedFamily>();
 
-    for (const [folder, members] of byRemovedRoot(gone)) {
-      if (yield* folderPointsIntoRepo(store, scope, removed, folder, members)) {
-        for (const { family } of members) {
-          kept.set(family.path, {
-            gone: folder,
-            movesInto: yield* liveWorktreesEntered(
-              store,
-              scope.worktrees,
-              family
-            ),
-          });
-        }
+    for (const { cwd, family } of gone) {
+      const folder = outermostEnclosing(proven, cwd);
+
+      if (folder !== undefined) {
+        kept.set(family.path, {
+          gone: folder,
+          movesInto: yield* liveWorktreesEntered(
+            store,
+            scope.worktrees,
+            family
+          ),
+        });
       }
     }
 
