@@ -146,9 +146,14 @@ describe("checking out a remote-tracking ref or a tag detaches HEAD", () => {
     ]);
 
     expect(
-      checkoutRows(buildHeadMoves(entries, new Set(), "topic/next")).map(
-        (move) => move.branch ?? `detached:${move.owner}`
-      )
+      checkoutRows(
+        buildHeadMoves(
+          entries,
+          new Set(),
+          "topic/next",
+          new Set(["origin/main"])
+        )
+      ).map((move) => move.branch ?? `detached:${move.owner}`)
     ).toStrictEqual([
       "main",
       "detached:main",
@@ -414,6 +419,54 @@ describe("checking out a remote-tracking ref or a tag detaches HEAD", () => {
       "newbranch",
       "feat",
     ]);
+  });
+
+  it("keeps the branch a stopped rebase left without returning after that branch is deleted", () => {
+    const quit = reflog([
+      ["2026-09-01T08:00:00Z", "commit (initial): base"],
+      ["2026-09-01T09:00:00Z", "checkout: moving from main to feat"],
+      ["2026-09-01T10:00:00Z", "rebase (start): checkout main"],
+      ["2026-09-01T10:00:00Z", "rebase: fast-forward"],
+      ["2026-09-01T10:30:00Z", `checkout: moving from ${SHA} to main`],
+    ]);
+
+    const checkedOutDuringStop = reflog([
+      ["2026-09-01T08:00:00Z", "commit (initial): base"],
+      ["2026-09-01T09:00:00Z", "checkout: moving from main to feat"],
+      ["2026-09-01T10:00:00Z", "rebase (start): checkout main"],
+      ["2026-09-01T10:05:00Z", "rebase (edit): f"],
+      ["2026-09-01T10:10:00Z", `checkout: moving from ${SHA} to other`],
+      ["2026-09-01T10:20:00Z", "rebase (abort): returning to refs/heads/feat"],
+      ["2026-09-01T10:30:00Z", "checkout: moving from feat to main"],
+    ]);
+
+    const read = (
+      entries: ReturnType<typeof reflog>,
+      branches: ReadonlySet<string>
+    ) =>
+      checkoutRows(buildHeadMoves(entries, branches, "main")).map((move) =>
+        move.detached ? `detached:${move.owner}` : move.branch
+      );
+
+    for (const branches of [new Set(["main"]), new Set<string>()]) {
+      expect(read(quit, branches)).toStrictEqual([
+        "main",
+        "feat",
+        "detached:feat",
+        "main",
+      ]);
+    }
+
+    for (const branches of [new Set(["main", "other"]), new Set<string>()]) {
+      expect(read(checkedOutDuringStop, branches)).toStrictEqual([
+        "main",
+        "feat",
+        "detached:feat",
+        "other",
+        "feat",
+        "main",
+      ]);
+    }
   });
 
   it("does not read a rebase still in progress as a detached checkout", () => {

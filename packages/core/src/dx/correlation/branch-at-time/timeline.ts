@@ -209,8 +209,7 @@ const nextLeaving = (
 const leftByName = (
   name: string,
   { interrupted, next, stopped }: Leaving,
-  currentBranch: string | null,
-  local: boolean
+  currentBranch: string | null
 ): boolean | null => {
   if (next === undefined) {
     if (interrupted) {
@@ -230,7 +229,7 @@ const leftByName = (
     return false;
   }
 
-  return (!interrupted || !local) && left !== null && DETACHED_NAME.test(left)
+  return !interrupted && left !== null && DETACHED_NAME.test(left)
     ? false
     : null;
 };
@@ -263,7 +262,7 @@ const checkoutStateOf = (
     return stateOf(name, branches);
   }
 
-  const byName = leftByName(name, leaving, currentBranch, branches.has(name));
+  const byName = leftByName(name, leaving, currentBranch);
 
   if (byName !== null) {
     return byName ? { branch: name, detached: false } : DETACHED;
