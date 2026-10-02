@@ -358,6 +358,72 @@ describe("checking out a remote-tracking ref or a tag detaches HEAD", () => {
     ).toStrictEqual(["main", "feat", "detached:feat", "main", "feat"]);
   });
 
+  it("keeps every branch checked out one after another during a stopped rebase", () => {
+    const stoppedOnFeat = (end: string) =>
+      reflog([
+        ["2026-09-01T08:00:00Z", "commit (initial): base"],
+        ["2026-09-01T09:00:00Z", "checkout: moving from main to feat"],
+        ["2026-09-01T10:00:00Z", "rebase (start): checkout main"],
+        ["2026-09-01T10:05:00Z", "rebase (edit): f"],
+        ["2026-09-01T10:10:00Z", `checkout: moving from ${SHA} to other`],
+        ["2026-09-01T10:20:00Z", "checkout: moving from other to third"],
+        ["2026-09-01T10:30:00Z", end],
+      ]);
+
+    const startedElsewhere = reflog([
+      ["2026-09-01T08:00:00Z", "commit (initial): base"],
+      ["2026-09-01T09:00:00Z", "checkout: moving from main to other"],
+      ["2026-09-01T10:00:00Z", "rebase -i (start): checkout main"],
+      ["2026-09-01T10:05:00Z", "rebase -i (edit): f"],
+      ["2026-09-01T10:10:00Z", `checkout: moving from ${SHA} to other`],
+      ["2026-09-01T10:20:00Z", "checkout: moving from other to newbranch"],
+      [
+        "2026-09-01T10:30:00Z",
+        "rebase -i (abort): returning to refs/heads/feat",
+      ],
+    ]);
+
+    const read = (
+      entries: ReturnType<typeof reflog>,
+      branches: ReadonlySet<string>
+    ) =>
+      checkoutRows(buildHeadMoves(entries, branches, "feat")).map((move) =>
+        move.detached ? `detached:${move.owner}` : move.branch
+      );
+
+    const local = new Set(["main", "feat", "other", "third"]);
+
+    for (const end of [
+      "rebase (abort): returning to refs/heads/feat",
+      "rebase (finish): returning to refs/heads/feat",
+    ]) {
+      expect(read(stoppedOnFeat(end), local)).toStrictEqual([
+        "main",
+        "feat",
+        "detached:feat",
+        "other",
+        "third",
+        "feat",
+      ]);
+      expect(read(stoppedOnFeat(end), new Set()).slice(-3)).toStrictEqual([
+        "other",
+        "third",
+        "feat",
+      ]);
+    }
+
+    expect(
+      read(startedElsewhere, new Set(["main", "feat", "other", "newbranch"]))
+    ).toStrictEqual([
+      "main",
+      "other",
+      "detached:other",
+      "other",
+      "newbranch",
+      "feat",
+    ]);
+  });
+
   it("does not read a rebase still in progress as a detached checkout", () => {
     const entries = reflog([
       ["2026-09-01T08:00:00Z", "commit (initial): base"],

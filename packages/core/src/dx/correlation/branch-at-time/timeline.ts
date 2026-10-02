@@ -158,38 +158,62 @@ const stateOf = (
 const nameGitLeft = (transition: Transition): string | null =>
   transition.returning === true ? transition.to : transition.from;
 
+interface StoppedRebase {
+  readonly startedOn: string | null;
+  readonly underway: boolean;
+}
+
 interface Leaving {
   readonly interrupted: boolean;
   readonly next: Transition | undefined;
-  readonly rebasing: boolean;
+  readonly stopped: StoppedRebase | null;
 }
 
 const leftDetached = (transition: Transition): boolean =>
   transition.from === null || DETACHED_NAME.test(transition.from);
 
-const rebasesUnderway = (
+const stoppedRebases = (
   transitions: readonly (Transition | null)[]
-): readonly boolean[] => {
-  let rebasing = false;
+): readonly (StoppedRebase | null)[] => {
+  let stopped: StoppedRebase | null = null;
+  let head: string | null = null;
 
   return transitions.map((transition) => {
     if (transition === null) {
-      return rebasing;
+      return stopped;
     }
 
-    const during = rebasing && leftDetached(transition);
+    const during: StoppedRebase | null =
+      stopped === null
+        ? null
+        : {
+            ...stopped,
+            underway: stopped.underway && leftDetached(transition),
+          };
 
-    rebasing =
-      transition.to === null || (during && transition.returning !== true);
+    if (transition.to === null) {
+      stopped = { startedOn: head, underway: true };
+    } else {
+      stopped = transition.returning === true ? null : during;
+      head = transition.to;
+    }
 
     return during;
   });
 };
 
+const endsStoppedRebase = (
+  next: Transition,
+  stopped: StoppedRebase | null,
+  local: boolean
+): boolean =>
+  stopped !== null &&
+  (stopped.underway || local || next.to === stopped.startedOn);
+
 const nextLeaving = (
   transitions: readonly (Transition | null)[]
 ): readonly Leaving[] => {
-  const underway = rebasesUnderway(transitions);
+  const stopped = stoppedRebases(transitions);
   const leaving: Leaving[] = [];
   let next: Transition | undefined;
   let interrupted = false;
@@ -198,7 +222,7 @@ const nextLeaving = (
     leaving[index] = {
       interrupted,
       next,
-      rebasing: underway[index] ?? false,
+      stopped: stopped[index] ?? null,
     };
 
     if (transition !== null) {
@@ -212,7 +236,7 @@ const nextLeaving = (
 
 const leftByName = (
   name: string,
-  { interrupted, next, rebasing }: Leaving,
+  { interrupted, next, stopped }: Leaving,
   currentBranch: string | null,
   local: boolean
 ): boolean | null => {
@@ -230,7 +254,11 @@ const leftByName = (
     return true;
   }
 
-  if (next.returning === true && !interrupted && !rebasing) {
+  if (
+    next.returning === true &&
+    !interrupted &&
+    !endsStoppedRebase(next, stopped, local)
+  ) {
     return false;
   }
 
@@ -247,7 +275,7 @@ interface CheckoutRefs {
 const NOT_LEFT: Leaving = {
   interrupted: false,
   next: undefined,
-  rebasing: false,
+  stopped: null,
 };
 
 const checkoutStateOf = (
