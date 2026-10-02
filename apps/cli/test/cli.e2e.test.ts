@@ -7,6 +7,7 @@ import {
   readdirSync,
   realpathSync,
   rmSync,
+  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -30,6 +31,10 @@ const scratchHome = path.join(scratch, "home");
 const dftHome = path.join(scratch, "dft-home");
 
 mkdirSync(scratchHome, { recursive: true });
+
+const shortNotePath = path.join(scratch, "note.md");
+
+writeFileSync(shortNotePath, "one\ntwo\n");
 
 afterAll(() => {
   rmSync(scratch, { force: true, recursive: true });
@@ -280,7 +285,7 @@ describe("built MCP server", () => {
           method: "tools/call",
           params: {
             arguments: {
-              code: `await tools.inspectFile({ path: ${JSON.stringify(readmePath)} }); return await tools.rat_list_calls({});`,
+              code: `await tools.inspectFile({ path: ${JSON.stringify(shortNotePath)} }); return await tools.rat_list_calls({});`,
             },
             name: "execute",
           },
@@ -299,7 +304,7 @@ describe("built MCP server", () => {
     expect(matched).toBe(1);
     expect(entry).toMatchObject({
       capability: "inspectFile",
-      input: { path: readmePath },
+      input: { path: shortNotePath },
     });
     expect(
       entry !== undefined && OutcomeSchema.guards.Succeeded(entry.outcome)
