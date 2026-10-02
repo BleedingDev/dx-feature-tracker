@@ -46,7 +46,7 @@ node apps/cli/dist/cli.js dx analyze --repo <target>
 
 To get token counts from a headless `cursor-agent -p --output-format json` run, save its stdout to a file and collect it with `--source collector/cursor-cli --input <file>`.
 
-In Cursor, ask "what did this branch cost?". The `dx-analyze` skill calls `dx_analyze` on the `rat-stack` MCP server.
+In Cursor, ask "what did this branch cost?". The `dx-analyze` skill calls `dx_analyze` on the MCP server registered as `rat-stack` in `mcp.json`; the server itself reports its name as `dft`.
 
 ## Uninstall
 
