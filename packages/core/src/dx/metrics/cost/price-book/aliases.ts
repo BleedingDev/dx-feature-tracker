@@ -109,10 +109,14 @@ const dottedForms = (name: string): readonly string[] =>
     ? [name.replace(/(?<major>\d)-(?<minor>\d)(?=-|$)/u, "$<major>.$<minor>")]
     : [];
 
+export const withoutDate = (key: string): string =>
+  key.replace(DATE_SUFFIX, "");
+
 export const candidateKeys = (base: string): readonly string[] => {
-  const undated = base
-    .replace(DATE_SUFFIX, "")
-    .replace(DEEPSEEK_SNAPSHOT_SUFFIX, "$<name>");
+  const undated = withoutDate(base).replace(
+    DEEPSEEK_SNAPSHOT_SUFFIX,
+    "$<name>"
+  );
 
   return [
     ...new Set([

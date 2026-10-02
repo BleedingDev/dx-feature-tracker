@@ -1,11 +1,12 @@
 import { DateTime, Option } from "effect";
 
 import type { ModelProvider } from "../../../harness/ids.js";
+import { withoutDate } from "./aliases.js";
 import { DEEPSEEK_PEAK_CARD_FROM } from "./maker-sheet.js";
 import { versionAt } from "./sheet.js";
 
 export const PRICING_RULES_SOURCE =
-  "Maker pricing pages read 2026-10-01: Anthropic prompt caching (5 minute write 1.25x input, 1 hour write 2x input), Anthropic fast mode (Claude Opus 5.5, Opus 5 and Opus 4.8 at 2x; Opus 4.6 at USD 30/150 per million, 6x, from its 2026-02-07 launch with half off through 2026-02-16, and billed at standard since its removal on 2026-06-29; Opus 4.7 at the Opus 4.6 price from 2026-05-12 until its removal on 2026-07-24, per the Claude API release notes), Anthropic web search (USD 10 per 1,000 searches), OpenAI web search tool (USD 10 per 1,000 calls; search content tokens are already in the request's tokens), OpenAI Fast, formerly Priority (2x, except gpt-5.5 2.5x, gpt-5-mini 1.8x, gpt-4.1, gpt-4.1-mini, gpt-4o-2024-05-13 and o3 1.75x, gpt-4o and its snapshots 1.7x, gpt-4o-mini 5/3x, o4-mini 20/11x), OpenAI Ultrafast (gpt-6-astra 6x), OpenAI Flex and Batch (0.5x; Batch lists no cached-input price for gpt-4.1, gpt-4.1-mini, gpt-4.1-nano, gpt-4o, gpt-4o-mini, o1, o3, o3-mini and o4-mini, so their cache reads bill as Batch input; checked against the pricing page 2026-10-02), DeepSeek peak hours (2x, 01:00-04:00 and 06:00-10:00 UTC on weekdays from the 2026-08-16 16:00 UTC peak/off-peak card, flat before it; Chinese public holidays are not modelled), GitHub Copilot premium requests (USD 0.04 each).";
+  "Maker pricing pages read 2026-10-01: Anthropic prompt caching (5 minute write 1.25x input, 1 hour write 2x input), Anthropic fast mode (Claude Opus 5.5, Opus 5 and Opus 4.8 at 2x; Opus 4.6 at USD 30/150 per million, 6x, from its 2026-02-07 launch with half off through 2026-02-16, and billed at standard since its removal on 2026-06-29; Opus 4.7 at the Opus 4.6 price from 2026-05-12 until its removal on 2026-07-24, per the Claude API release notes), Anthropic web search (USD 10 per 1,000 searches), OpenAI web search tool (USD 10 per 1,000 calls; search content tokens are already in the request's tokens), OpenAI Fast, formerly Priority (2x, except gpt-5.5 2.5x, gpt-5-mini 1.8x, gpt-4.1, gpt-4.1-mini, gpt-4o-2024-05-13 and o3 1.75x, gpt-4o 1.7x, gpt-4o-mini 5/3x, o4-mini 20/11x; a dated id uses its undated model's ratio unless listed itself), OpenAI Ultrafast (gpt-6-astra 6x), OpenAI Flex and Batch (0.5x; Batch lists no cached-input price for gpt-4.1, gpt-4.1-mini, gpt-4.1-nano, gpt-4o, gpt-4o-mini, o1, o3, o3-mini and o4-mini, so their cache reads, dated ids included, bill as Batch input; checked against the pricing page 2026-10-02), DeepSeek peak hours (2x, 01:00-04:00 and 06:00-10:00 UTC on weekdays from the 2026-08-16 16:00 UTC peak/off-peak card, flat before it; Chinese public holidays are not modelled), GitHub Copilot premium requests (USD 0.04 each).";
 
 export const ANTHROPIC_CACHE_WRITE_5M_MULTIPLIER = 1.25;
 
@@ -53,8 +54,6 @@ const OPENAI_FAST_MULTIPLIERS: ReadonlyMap<string, number> = new Map([
   ["gpt-4.1-mini", 1.75],
   ["o3", 1.75],
   ["gpt-4o", 1.7],
-  ["gpt-4o-2024-08-06", 1.7],
-  ["gpt-4o-2024-11-20", 1.7],
   ["gpt-4o-2024-05-13", 1.75],
   ["gpt-4o-mini", 5 / 3],
   ["o4-mini", 20 / 11],
@@ -79,8 +78,6 @@ const OPENAI_BATCH_UNCACHED = new Set([
   "gpt-4.1-mini",
   "gpt-4.1-nano",
   "gpt-4o",
-  "gpt-4o-2024-08-06",
-  "gpt-4o-2024-11-20",
   "gpt-4o-mini",
   "o1",
   "o3",
@@ -163,8 +160,13 @@ const serviceTierPricing = (
     return standard;
   }
 
+  const forms = [key, withoutDate(key)];
+  const byModel = MODEL_TIER_MULTIPLIERS.get(maker)?.get(tier);
+
   const multiplier =
-    MODEL_TIER_MULTIPLIERS.get(maker)?.get(tier)?.get(key) ??
+    forms
+      .map((form) => byModel?.get(form))
+      .find((found) => found !== undefined) ??
     SERVICE_TIER_MULTIPLIERS.get(maker)?.get(tier);
 
   if (multiplier !== undefined) {
@@ -173,7 +175,7 @@ const serviceTierPricing = (
       cacheReadAsInput:
         maker === "openai" &&
         tier === "batch" &&
-        OPENAI_BATCH_UNCACHED.has(key),
+        forms.some((form) => OPENAI_BATCH_UNCACHED.has(form)),
       label: tier,
       multiplier,
     };

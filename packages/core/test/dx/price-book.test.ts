@@ -781,3 +781,84 @@ it.layer(PriceBook.memory([USER, MAKER]))("PriceBook sheet order", (test) => {
     })
   );
 });
+
+const DATED: PriceSheet = {
+  id: "litellm",
+  models: {
+    "gpt-4.1-2025-04-14": once({ "cached-input": 0.5, input: 2, output: 8 }),
+    "gpt-4o-2024-05-13": once({ input: 5, output: 15 }),
+    "gpt-4o-2024-08-06": once({
+      "cached-input": 1.25,
+      input: 2.5,
+      output: 10,
+    }),
+    "o3-2025-04-16": once({ "cached-input": 0.5, input: 2, output: 8 }),
+  },
+  source: "catalog with dated OpenAI ids",
+  version: "2026-10-01",
+};
+
+const codexRequest = (
+  model: string,
+  serviceTier: string,
+  counts: Partial<AiTokens>
+) =>
+  request({
+    harness: "codex",
+    model,
+    provider: "openai",
+    serviceTier,
+    tokens: counts,
+  });
+
+const ONE_MILLION_CACHE_READS = {
+  cacheRead: 1_000_000,
+  inputFresh: 0,
+  output: 0,
+};
+
+it.layer(PriceBook.memory([DATED]))("PriceBook dated OpenAI keys", (test) => {
+  test.effect("prices batch cache reads on a dated key as batch input", () =>
+    Effect.gen(function* datedBatch() {
+      const book = yield* PriceBook;
+
+      const batch = priced(
+        book.estimate(
+          codexRequest("gpt-4.1-2025-04-14", "batch", ONE_MILLION_CACHE_READS)
+        )
+      );
+
+      const snapshot = priced(
+        book.estimate(
+          codexRequest("gpt-4o-2024-08-06", "batch", ONE_MILLION_CACHE_READS)
+        )
+      );
+
+      expect([batch.usd, snapshot.usd]).toEqual([1, 1.25]);
+      expect(batch.notes).toContain(
+        "batch lists no cached-input price for gpt-4.1-2025-04-14; cache reads priced as batch input"
+      );
+    })
+  );
+
+  test.effect(
+    "uses the undated Fast ratio for a dated key unless the snapshot lists its own",
+    () =>
+      Effect.gen(function* datedFast() {
+        const book = yield* PriceBook;
+
+        const fast = (model: string) =>
+          priced(
+            book.estimate(codexRequest(model, "fast", ONE_MILLION_IN_OUT))
+          );
+
+        const o3 = fast("o3-2025-04-16");
+        const snapshot = fast("gpt-4o-2024-08-06");
+        const listed = fast("gpt-4o-2024-05-13");
+
+        expect([o3.usd, o3.multiplier]).toEqual([17.5, 1.75]);
+        expect([snapshot.usd, snapshot.multiplier]).toEqual([21.25, 1.7]);
+        expect([listed.usd, listed.multiplier]).toEqual([35, 1.75]);
+      })
+  );
+});
