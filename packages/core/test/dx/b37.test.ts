@@ -220,6 +220,45 @@ describe("b37 redaction", () => {
     );
   });
 
+  it("scrubs space-separated values behind long secret flag names", () => {
+    const secret = ["Tr0ub", "4dor", "Fixture"].join("");
+
+    const cases: readonly (readonly [string, string])[] = [
+      [
+        `app --my-application-database-connection-pool-primary-replica-readonly-password ${secret}`,
+        "app --my-application-database-connection-pool-primary-replica-readonly-password [redacted]",
+      ],
+      [
+        `java --spring.datasource.hikari.maximum-pool-size.connection-test-query.datasource.password ${secret} -jar app.jar`,
+        "java --spring.datasource.hikari.maximum-pool-size.connection-test-query.datasource.password [redacted] -jar app.jar",
+      ],
+      [
+        `tool -${"x".repeat(90)}-api-key \\\n  '${secret}'`,
+        `tool -${"x".repeat(90)}-api-key \\\n  [redacted]`,
+      ],
+    ];
+
+    for (const [line, expected] of cases) {
+      expect(redactText(line), line).toEqual({
+        redacted: true,
+        text: expected,
+      });
+      expect(excerptPayload({ note: line }).excerpt ?? "", line).not.toContain(
+        secret
+      );
+    }
+
+    for (const plain of [
+      `app --my-application-database-connection-pool-primary-replica-readonly-password-file ./pw.txt`,
+      `app --my-application-database-connection-pool-primary-replica-readonly-token-count 12`,
+    ]) {
+      expect(redactText(plain), plain).toEqual({
+        redacted: false,
+        text: plain,
+      });
+    }
+  });
+
   it("scrubs whole values with spaces, escaped quotes and separators", () => {
     const cases: readonly (readonly [string, readonly string[]])[] = [
       [
@@ -419,6 +458,9 @@ describe("b37 redaction", () => {
       `curl${" a".repeat(size / 2)} -u`,
       `password="${String.raw`\a`.repeat(size / 2)}`,
       `--${"token".repeat(size / 5)}`,
+      `--${"a.-password".repeat(size / 11)}`,
+      " --x.-password".repeat(size / 14),
+      `--${"-password".repeat(size / 9)}=`,
       `${"A_".repeat(size / 2)}KEY`,
       `${"x.".repeat(size / 2)}@a.b`,
       `${"a.".repeat(size / 2)}://`,
