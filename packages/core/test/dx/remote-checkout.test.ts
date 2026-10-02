@@ -288,6 +288,76 @@ describe("checking out a remote-tracking ref or a tag detaches HEAD", () => {
     ]);
   });
 
+  it("reads a checkout that a rebase finished from without a start entry as detached", () => {
+    const fromRemote = reflog([
+      ["2026-09-01T08:00:00Z", "commit (initial): base"],
+      ["2026-09-01T09:00:00Z", "checkout: moving from main to feat"],
+      ["2026-09-01T10:00:00Z", "checkout: moving from feat to origin/main"],
+      ["2026-09-01T10:15:00Z", "rebase (finish): returning to refs/heads/feat"],
+      ["2026-09-01T11:00:00Z", "checkout: moving from feat to main"],
+    ]);
+
+    const fromDetachedMain = reflog([
+      ["2026-09-01T08:00:00Z", "commit (initial): base"],
+      ["2026-09-01T09:00:00Z", "checkout: moving from main to feat"],
+      ["2026-09-01T10:00:00Z", "checkout: moving from feat to main"],
+      ["2026-09-01T10:30:00Z", "checkout: moving from main to main"],
+      [
+        "2026-09-01T10:45:00Z",
+        "rebase -i (finish): returning to refs/heads/feat",
+      ],
+    ]);
+
+    const afterQuit = reflog([
+      ["2026-09-01T08:00:00Z", "commit (initial): base"],
+      ["2026-09-01T08:30:00Z", "rebase (start): checkout HEAD~1"],
+      ["2026-09-01T09:00:00Z", `checkout: moving from ${SHA} to feat`],
+      ["2026-09-01T10:00:00Z", "checkout: moving from feat to origin/main"],
+      ["2026-09-01T10:15:00Z", "rebase (finish): returning to refs/heads/feat"],
+    ]);
+
+    const read = (
+      entries: ReturnType<typeof reflog>,
+      branches: ReadonlySet<string>,
+      currentBranch: string
+    ) =>
+      checkoutRows(buildHeadMoves(entries, branches, currentBranch)).map(
+        (move) => (move.detached ? `detached:${move.owner}` : move.branch)
+      );
+
+    expect(read(fromRemote, new Set(), "main")).toStrictEqual([
+      "main",
+      "feat",
+      "detached:feat",
+      "feat",
+      "main",
+    ]);
+    expect(
+      read(fromDetachedMain, new Set(["main", "feat"]), "feat")
+    ).toStrictEqual(["main", "feat", "main", "detached:feat", "feat"]);
+    expect(read(afterQuit, new Set(["feat"]), "feat").slice(-3)).toStrictEqual([
+      "feat",
+      "detached:feat",
+      "feat",
+    ]);
+  });
+
+  it("keeps a branch checked out during a stopped rebase that is then aborted", () => {
+    const entries = reflog([
+      ["2026-09-01T08:00:00Z", "commit (initial): base"],
+      ["2026-09-01T09:00:00Z", "checkout: moving from main to feat"],
+      ["2026-09-01T10:10:00Z", "rebase (start): checkout main"],
+      ["2026-09-01T10:20:00Z", `checkout: moving from ${SHA} to main`],
+      ["2026-09-01T10:30:00Z", "rebase (abort): returning to refs/heads/feat"],
+    ]);
+
+    expect(
+      checkoutRows(
+        buildHeadMoves(entries, new Set(["main", "feat"]), "feat")
+      ).map((move) => (move.detached ? `detached:${move.owner}` : move.branch))
+    ).toStrictEqual(["main", "feat", "detached:feat", "main", "feat"]);
+  });
+
   it("does not read a rebase still in progress as a detached checkout", () => {
     const entries = reflog([
       ["2026-09-01T08:00:00Z", "commit (initial): base"],
@@ -771,6 +841,108 @@ describe("checkout history that outlives its refs", () => {
               .filter((payload) => payload.observationKind === "head-moves")
               .map((payload) => payload.detachedRefs)
           ).toStrictEqual([["origin/feat-r"]]);
+        })
+      ).pipe(Effect.provide(NodeServices.layer))
+  );
+
+  it.effect(
+    "keeps origin/main detached after the remote is removed and in a 0.2.0 observation without ref lists",
+    () =>
+      Effect.scoped(
+        Effect.gen(function* removedRemote() {
+          const fileSystem = yield* FileSystem.FileSystem;
+          const path = yield* Path.Path;
+          const gitAt = yield* datedRunner;
+
+          const root = yield* fileSystem.realPath(
+            yield* fileSystem.makeTempDirectoryScoped()
+          );
+
+          const upstream = path.join(root, "upstream");
+          const work = path.join(root, "work");
+
+          yield* fileSystem.makeDirectory(upstream);
+
+          const steps: readonly (readonly [
+            string,
+            string,
+            readonly string[],
+          ])[] = [
+            ["2026-09-01T08:00:00Z", upstream, ["init", "-q", "-b", "main"]],
+            [
+              "2026-09-01T08:00:00Z",
+              upstream,
+              ["commit", "-q", "--allow-empty", "-m", "base"],
+            ],
+            ["2026-09-01T08:30:00Z", root, ["clone", "-q", upstream, work]],
+            ["2026-09-01T09:00:00Z", work, ["switch", "-q", "-c", "feat"]],
+            [
+              "2026-09-01T09:30:00Z",
+              work,
+              ["commit", "-q", "--allow-empty", "-m", "f"],
+            ],
+            [
+              "2026-09-01T09:40:00Z",
+              upstream,
+              ["commit", "-q", "--allow-empty", "-m", "up2"],
+            ],
+            ["2026-09-01T09:50:00Z", work, ["fetch", "-q"]],
+            ["2026-09-01T10:00:00Z", work, ["checkout", "-q", "origin/main"]],
+            [
+              "2026-09-01T10:15:00Z",
+              work,
+              ["rebase", "-q", "origin/main", "feat"],
+            ],
+            ["2026-09-01T11:00:00Z", work, ["checkout", "-q", "main"]],
+            ["2026-09-01T11:30:00Z", work, ["remote", "remove", "origin"]],
+          ];
+
+          for (const [date, cwd, args] of steps) {
+            yield* gitAt(date)(cwd, args);
+          }
+
+          const { observed, timeline } = yield* liveAndReplayed(
+            gitAt("2026-09-01T12:00:00Z"),
+            work
+          );
+
+          const released = observed.events.map((event) => ({
+            ...event,
+            payload: Object.fromEntries(
+              Object.entries(event.payload).filter(
+                ([key]) => key !== "detachedRefs" && key !== "localBranches"
+              )
+            ),
+          }));
+
+          const replayed = withStoredHistory(
+            {
+              currentBranch: null,
+              currentSinceMs: null,
+              moves: [],
+              points: [],
+              reflogFromMs: null,
+              worktree: work,
+            },
+            storedHeadHistory(released)
+          );
+
+          const read = readAt([
+            "2026-09-01T09:45:00Z",
+            "2026-09-01T10:05:00Z",
+            "2026-09-01T10:30:00Z",
+            "2026-09-01T11:30:00Z",
+          ]);
+
+          const expected = ["feat", "feat (detached)", "feat", "main"];
+
+          expect(read(timeline)).toStrictEqual(expected);
+          expect(read(replayed)).toStrictEqual(expected);
+          expect(
+            [...timeline.moves, ...replayed.moves].filter((move) =>
+              [move.branch, move.owner].includes("origin/main")
+            )
+          ).toStrictEqual([]);
         })
       ).pipe(Effect.provide(NodeServices.layer))
   );

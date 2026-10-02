@@ -161,17 +161,45 @@ const nameGitLeft = (transition: Transition): string | null =>
 interface Leaving {
   readonly interrupted: boolean;
   readonly next: Transition | undefined;
+  readonly rebasing: boolean;
 }
+
+const leftDetached = (transition: Transition): boolean =>
+  transition.from === null || DETACHED_NAME.test(transition.from);
+
+const rebasesUnderway = (
+  transitions: readonly (Transition | null)[]
+): readonly boolean[] => {
+  let rebasing = false;
+
+  return transitions.map((transition) => {
+    if (transition === null) {
+      return rebasing;
+    }
+
+    const during = rebasing && leftDetached(transition);
+
+    rebasing =
+      transition.to === null || (during && transition.returning !== true);
+
+    return during;
+  });
+};
 
 const nextLeaving = (
   transitions: readonly (Transition | null)[]
 ): readonly Leaving[] => {
+  const underway = rebasesUnderway(transitions);
   const leaving: Leaving[] = [];
   let next: Transition | undefined;
   let interrupted = false;
 
   for (const [index, transition] of [...transitions.entries()].toReversed()) {
-    leaving[index] = { interrupted, next };
+    leaving[index] = {
+      interrupted,
+      next,
+      rebasing: underway[index] ?? false,
+    };
 
     if (transition !== null) {
       interrupted = transition.to === null;
@@ -184,7 +212,7 @@ const nextLeaving = (
 
 const leftByName = (
   name: string,
-  { interrupted, next }: Leaving,
+  { interrupted, next, rebasing }: Leaving,
   currentBranch: string | null,
   local: boolean
 ): boolean | null => {
@@ -202,6 +230,10 @@ const leftByName = (
     return true;
   }
 
+  if (next.returning === true && !interrupted && !rebasing) {
+    return false;
+  }
+
   return (!interrupted || !local) && left !== null && DETACHED_NAME.test(left)
     ? false
     : null;
@@ -212,7 +244,11 @@ interface CheckoutRefs {
   readonly detachedRefs: ReadonlySet<string>;
 }
 
-const NOT_LEFT: Leaving = { interrupted: false, next: undefined };
+const NOT_LEFT: Leaving = {
+  interrupted: false,
+  next: undefined,
+  rebasing: false,
+};
 
 const checkoutStateOf = (
   transition: Transition,
