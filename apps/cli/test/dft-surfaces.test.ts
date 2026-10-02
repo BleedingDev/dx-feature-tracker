@@ -75,9 +75,12 @@ const helpOf = (command: string) => {
 const byLine = (help: string, flag: string) => {
   const start = help.indexOf(`${flag} choice`);
 
-  expect(start).toBeGreaterThanOrEqual(0);
+  const choices = help.indexOf("(choices:", start);
 
-  return help.slice(start, help.indexOf(" --", start + flag.length));
+  expect(start).toBeGreaterThanOrEqual(0);
+  expect(choices).toBeGreaterThan(start);
+
+  return help.slice(start, choices);
 };
 
 describe("dft mcp", () => {
