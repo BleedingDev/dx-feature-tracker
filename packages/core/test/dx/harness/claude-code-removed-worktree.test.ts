@@ -467,6 +467,51 @@ describe("Claude Code sessions from a worktree removed before the first sync", (
   );
 
   it.effect(
+    "are kept under their own worktree when the folder holding the removed worktrees is deleted too",
+    () =>
+      Effect.gen(function* deletedContainer() {
+        setUpRepo();
+
+        const container = path.join(scratch, "wts-single");
+        const gone = path.join(container, "a");
+        const sha = commitInWorktree(gone, BRANCH, false);
+
+        writeSession(gone, `[${BRANCH} ${sha.slice(0, 7)}] Document greet`);
+        rmSync(container, { force: true, recursive: true });
+
+        const context = contextForRepo(REPO);
+        const { planned } = yield* placedOf(context);
+
+        expect(planned).toStrictEqual(keptUnder(gone, context));
+      }).pipe(Effect.provide(registryWith(claudeAt)))
+  );
+
+  it.effect(
+    "do not keep an unrelated sibling from a deleted container on its neighbour's commit",
+    () =>
+      Effect.gen(function* siblingInDeletedContainer() {
+        setUpRepo();
+
+        const container = path.join(scratch, "wts-pair");
+        const gone = path.join(container, "a");
+        const sha = commitInWorktree(gone, BRANCH, false);
+
+        writeSession(gone, `[${BRANCH} ${sha.slice(0, 7)}] Document greet`);
+        writeSession(
+          path.join(container, "b"),
+          "synthetic text",
+          OTHER_SESSION
+        );
+        rmSync(container, { force: true, recursive: true });
+
+        const context = contextForRepo(REPO);
+        const { planned } = yield* placedOf(context);
+
+        expect(planned).toStrictEqual(keptUnder(gone, context));
+      }).pipe(Effect.provide(registryWith(claudeAt)))
+  );
+
+  it.effect(
     "are not kept from a deleted unrelated folder whose session committed only after moving into the repo",
     () =>
       Effect.gen(function* committedAfterMoving() {

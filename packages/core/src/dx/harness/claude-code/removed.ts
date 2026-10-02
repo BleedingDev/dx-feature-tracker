@@ -37,12 +37,18 @@ const parentOf = (folder: string): string => folder.replace(/\/[^/]*\/*$/u, "");
 const parentSlugOf = (worktree: string): string =>
   `${projectSlug(parentOf(worktree))}-`;
 
-const removedRoot = (removed: RemovedWorktrees, folder: string): string => {
-  const parent = parentOf(folder);
+const trimmed = (folder: string): string => folder.replace(/\/+$/u, "");
 
-  return parent !== "" && parent !== folder && removed.gone(parent)
-    ? removedRoot(removed, parent)
-    : folder;
+const outermostStart = (starts: readonly string[], folder: string): string => {
+  let outer = folder;
+
+  for (const start of starts) {
+    if (start.length < outer.length && isInside(folder, start)) {
+      outer = start;
+    }
+  }
+
+  return outer;
 };
 
 export const firstCwd = (bytes: Uint8Array): string | null => {
@@ -150,16 +156,19 @@ const folderPointsIntoRepo = (
   });
 
 const byRemovedRoot = (
-  removed: RemovedWorktrees,
   started: readonly StartedFamily[]
 ): ReadonlyMap<string, readonly StartedFamily[]> => {
   const folders = new Map<string, StartedFamily[]>();
+
+  const starts = started.flatMap(({ cwd }) =>
+    cwd === null ? [] : [trimmed(cwd)]
+  );
 
   for (const member of started) {
     const { cwd } = member;
 
     if (cwd !== null) {
-      const root = removedRoot(removed, cwd.replace(/\/+$/u, ""));
+      const root = outermostStart(starts, trimmed(cwd));
 
       folders.set(root, [...(folders.get(root) ?? []), member]);
     }
@@ -231,7 +240,7 @@ export const removedWorktreeFamilies = (
 
     const kept = new Map<string, RemovedFamily>();
 
-    for (const [folder, members] of byRemovedRoot(removed, gone)) {
+    for (const [folder, members] of byRemovedRoot(gone)) {
       if (yield* folderPointsIntoRepo(store, scope, removed, folder, members)) {
         for (const { family } of members) {
           kept.set(family.path, {
