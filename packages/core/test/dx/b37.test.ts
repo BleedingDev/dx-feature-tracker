@@ -328,6 +328,57 @@ describe("b37 redaction", () => {
     ).toBe("curl -u [redacted] https://example.test");
   });
 
+  it("scrubs flag values after unicode spaces and shell line continuations", () => {
+    const cases: readonly (readonly [string, string])[] = [
+      ["app --password hunter2", "app --password [redacted]"],
+      ["app --passphrase　hunter2", "app --passphrase　[redacted]"],
+      ["app --token hunter2 --verbose", "app --token [redacted] --verbose"],
+      ["app --password \\\n  hunter2", "app --password \\\n  [redacted]"],
+      ["app --api-key \\\r\n\t'hunter2'", "app --api-key \\\r\n\t[redacted]"],
+      ["mysql -u root -p hunter2 db", "mysql -u root -p [redacted] db"],
+      [
+        "sshpass -p \\\n  hunter2 ssh host",
+        "sshpass -p \\\n  [redacted] ssh host",
+      ],
+      [
+        "curl -u admin:hunter2 https://example.test",
+        "curl -u [redacted] https://example.test",
+      ],
+      [
+        "curl --user \\\n  admin:hunter2 https://example.test",
+        "curl --user \\\n  [redacted] https://example.test",
+      ],
+      [
+        "curl -X POST \\\n  -u admin:hunter2 \\\n  https://example.test",
+        "curl -X POST \\\n  -u [redacted] \\\n  https://example.test",
+      ],
+      [
+        "mysql -h db \\\r\n  -u root \\\r\n  -phunter2 app",
+        "mysql -h db \\\r\n  -u root \\\r\n  -p[redacted] app",
+      ],
+    ];
+
+    for (const [line, expected] of cases) {
+      expect(redactText(line), JSON.stringify(line)).toEqual({
+        redacted: true,
+        text: expected,
+      });
+    }
+
+    for (const plain of [
+      "app --token-file \\\n  ./token.txt",
+      "docker login --password-stdin \\\n  registry.example.test",
+      "app --password\nnext-command",
+      "curl https://example.test\nsort -u names.txt",
+      "mysql -h db\nmkdir -p build/out",
+    ]) {
+      expect(redactText(plain), JSON.stringify(plain)).toEqual({
+        redacted: false,
+        text: plain,
+      });
+    }
+  });
+
   it("keeps identifiers, counts, cwd paths and harmless flags", () => {
     for (const plain of [
       "getUserProfileByIdV2AndOrganizationName42AsyncHandlerFactory",
@@ -375,6 +426,9 @@ describe("b37 redaction", () => {
       `password=${"\r\n".repeat(size / 2)}`,
       `token${" ".repeat(size)}x`,
       "password:\n".repeat(size / 10),
+      `--password${" \\\n".repeat(size / 3)}`,
+      `mysql -p${" ".repeat(size)}`,
+      `curl -u${" \\\n".repeat(size / 3)}`,
     ]) {
       redactText(input);
     }

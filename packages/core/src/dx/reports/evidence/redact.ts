@@ -27,6 +27,10 @@ const LABEL_VALUE = String.raw`(?:${QUOTED_VALUE}|(?=\S)(?<=:\s*)[^\r\n]+|[^\s&]
 
 const FLAG_VALUE = String.raw`(?!-)(?:${QUOTED_VALUE}|[^\s&;|]+)`;
 
+const FLAG_GAP = String.raw`(?:[^\S\r\n]|\\\r?\n)`;
+
+const COMMAND_TEXT = String.raw`(?:[^\n|;&]|\\\r?\n)*?`;
+
 const SECRET_LABEL = new RegExp(
   String.raw`(?<prefix>${SECRET_WORD}[\w.-]{0,64}["']?${LABEL_SEPARATOR})${LABEL_VALUE}`,
   "giu"
@@ -38,17 +42,17 @@ const ENV_KEY_LABEL = new RegExp(
 );
 
 const SECRET_FLAG = new RegExp(
-  String.raw`(?<prefix>(?<![\w-])--?[\w.-]{0,64}?${SECRET_WORD}[ \t]+)${FLAG_VALUE}`,
+  String.raw`(?<prefix>(?<![\w-])--?[\w.-]{0,64}?${SECRET_WORD}${FLAG_GAP}+)${FLAG_VALUE}`,
   "giu"
 );
 
 const COMMAND_PASSWORD_FLAG = new RegExp(
-  String.raw`(?<=\b(?:mysql\w*|mariadb[\w-]*|sshpass)\b[^\n|;&]*?[ \t])(?<prefix>-p[ \t]*)${FLAG_VALUE}`,
+  String.raw`(?<=\b(?:mysql\w*|mariadb[\w-]*|sshpass)\b${COMMAND_TEXT}${FLAG_GAP})(?<prefix>-p${FLAG_GAP}*)${FLAG_VALUE}`,
   "gu"
 );
 
 const CURL_USER_FLAG = new RegExp(
-  String.raw`(?<=\bcurl\b[^\n|;&]*?[ \t])(?<prefix>(?:-[Uu]|--(?:proxy-)?user)(?:[ \t]+|=)?)${FLAG_VALUE}`,
+  String.raw`(?<=\bcurl\b${COMMAND_TEXT}${FLAG_GAP})(?<prefix>(?:-[Uu]|--(?:proxy-)?user)(?:${FLAG_GAP}+|=)?)${FLAG_VALUE}`,
   "gu"
 );
 
