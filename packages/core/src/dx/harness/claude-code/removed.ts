@@ -32,8 +32,18 @@ interface StartedFamily {
   readonly family: SessionFamily;
 }
 
+const parentOf = (folder: string): string => folder.replace(/\/[^/]*\/*$/u, "");
+
 const parentSlugOf = (worktree: string): string =>
-  `${projectSlug(worktree.replace(/\/[^/]*\/*$/u, ""))}-`;
+  `${projectSlug(parentOf(worktree))}-`;
+
+const removedRoot = (removed: RemovedWorktrees, folder: string): string => {
+  const parent = parentOf(folder);
+
+  return parent !== "" && parent !== folder && removed.gone(parent)
+    ? removedRoot(removed, parent)
+    : folder;
+};
 
 export const firstCwd = (bytes: Uint8Array): string | null => {
   for (const line of splitLines(bytes, 0).complete) {
@@ -74,56 +84,73 @@ const startingFolder = (store: ClaudeCodeFiles, family: SessionFamily) => {
   );
 };
 
-const transcriptPointsIntoRepo = (
-  store: ClaudeCodeFiles,
-  family: SessionFamily,
-  repoCommonDir: string | null,
+const rowPointsIntoRepo = (
+  text: string,
+  folder: string,
+  worktreesDir: string | null,
   removed: RemovedWorktrees
-) => {
-  const [first] = family.files;
+): boolean => {
+  const mentionsWorktrees =
+    worktreesDir !== null && text.includes(worktreesDir);
 
-  if (first === undefined) {
-    return Effect.succeed(false);
+  const commits = recordedCommits(text);
+
+  if (!mentionsWorktrees && commits.length === 0) {
+    return false;
   }
 
-  return store.readFrom(first.path, 0).pipe(
-    Effect.map((bytes) => {
-      const text = decoder.decode(bytes);
+  const row = decodeClaudeLine(text);
 
-      return (
-        (repoCommonDir !== null &&
-          text.includes(`${repoCommonDir.replace(/\/+$/u, "")}/worktrees/`)) ||
-        recordedCommits(text).some((sha) => removed.knowsCommit(sha))
-      );
-    }),
-    Effect.orElseSucceed(() => false)
+  return (
+    (row.kind === "assistant" || row.kind === "user") &&
+    isInside(row.cwd, folder) &&
+    (mentionsWorktrees || commits.some((sha) => removed.knowsCommit(sha)))
   );
 };
+
+const fileTextPointsIntoRepo = (
+  bytes: Uint8Array,
+  folder: string,
+  worktreesDir: string | null,
+  removed: RemovedWorktrees
+): boolean =>
+  splitLines(bytes, 0).complete.some((line) =>
+    rowPointsIntoRepo(line.text, folder, worktreesDir, removed)
+  );
 
 const folderPointsIntoRepo = (
   store: ClaudeCodeFiles,
   scope: HarnessScope,
   removed: RemovedWorktrees,
+  folder: string,
   members: readonly StartedFamily[]
 ) =>
   Effect.gen(function* folderEvidence() {
+    const worktreesDir =
+      scope.repoCommonDir === null
+        ? null
+        : `${scope.repoCommonDir.replace(/\/+$/u, "")}/worktrees/`;
+
     for (const { family } of members) {
-      if (
-        yield* transcriptPointsIntoRepo(
-          store,
-          family,
-          scope.repoCommonDir,
-          removed
-        )
-      ) {
-        return true;
+      for (const file of family.files) {
+        const points = yield* store.readFrom(file.path, 0).pipe(
+          Effect.map((bytes) =>
+            fileTextPointsIntoRepo(bytes, folder, worktreesDir, removed)
+          ),
+          Effect.orElseSucceed(() => false)
+        );
+
+        if (points) {
+          return true;
+        }
       }
     }
 
     return false;
   });
 
-const byFolder = (
+const byRemovedRoot = (
+  removed: RemovedWorktrees,
   started: readonly StartedFamily[]
 ): ReadonlyMap<string, readonly StartedFamily[]> => {
   const folders = new Map<string, StartedFamily[]>();
@@ -132,7 +159,9 @@ const byFolder = (
     const { cwd } = member;
 
     if (cwd !== null) {
-      folders.set(cwd, [...(folders.get(cwd) ?? []), member]);
+      const root = removedRoot(removed, cwd.replace(/\/+$/u, ""));
+
+      folders.set(root, [...(folders.get(root) ?? []), member]);
     }
   }
 
@@ -202,8 +231,8 @@ export const removedWorktreeFamilies = (
 
     const kept = new Map<string, RemovedFamily>();
 
-    for (const [folder, members] of byFolder(gone)) {
-      if (yield* folderPointsIntoRepo(store, scope, removed, members)) {
+    for (const [folder, members] of byRemovedRoot(removed, gone)) {
+      if (yield* folderPointsIntoRepo(store, scope, removed, folder, members)) {
         for (const { family } of members) {
           kept.set(family.path, {
             gone: folder,
