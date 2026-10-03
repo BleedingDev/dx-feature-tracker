@@ -138,7 +138,8 @@
       "registeredStageOwner": "dft-agent-system-release-artifact",
       "registeredStageReleased": false,
       "preexistingRootsInRegistry": 0,
-      "preexistingAuthority": "Caller-owned workspace outputs. Existing roots are preserved; no deletion approval or new ownership registration inferred."
+      "preexistingAuthority": "Caller-owned workspace outputs. Existing roots are preserved; no deletion approval or new ownership registration inferred.",
+      "state": "historical-before-resource-closure"
     },
     "scratchOwner": "owned-temp-dir:7d994b875aa04b898ee878ab7c0f2629",
     "candidateArtifacts": [
@@ -1638,7 +1639,7 @@
         }
       },
       "identityVerifiedAfterFenceAndArchiveSmoke": true,
-      "subsequentChanges": "This publication receipt only; runtime, tests, compiled outputs and package inputs remain identical."
+      "subsequentChanges": "Execution receipt metadata only; runtime, tests, compiled outputs and package inputs remain identical."
     },
     "archive": {
       "file": "dx-feature-tracker-0.3.0.tgz",
