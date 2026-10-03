@@ -1,0 +1,212 @@
+{
+  "fixtureId": "s01-isolated-agent-storage",
+  "batches": [
+    {
+      "coverage": {
+        "adapterId": "fixture.s01",
+        "expectedItems": 2,
+        "gaps": [],
+        "observedItems": 2,
+        "state": "complete",
+        "watermark": "fixture-first",
+        "windowFrom": "2026-01-01T00:00:00.000Z",
+        "windowTo": "2026-01-01T00:01:00.000Z"
+      },
+      "cursor": null,
+      "events": [
+        {
+          "schemaVersion": "dx.event.v2",
+          "eventId": "evt_s01_0",
+          "adapterId": "fixture.s01",
+          "adapterVersion": "fixture.v1",
+          "sourceVersion": null,
+          "kind": "marker.claim",
+          "occurredAt": "2026-01-01T00:00:00.000Z",
+          "occurredAtPrecision": "exact",
+          "observedAt": "2026-01-01T00:00:00.000Z",
+          "origin": "fixture",
+          "acquisition": "manual",
+          "context": {
+            "repoCommonDir": "/fixture/s01/repo/.git",
+            "worktreePath": "/fixture/s01/repo",
+            "branch": "main",
+            "headSha": null,
+            "flightId": null
+          },
+          "identity": {
+            "sessionId": null,
+            "generationId": null,
+            "requestId": null,
+            "turnId": null,
+            "commitSha": null,
+            "githubRunId": null,
+            "githubAttempt": null,
+            "prNumber": null
+          },
+          "evidence": {
+            "hash": null,
+            "ref": "fixture:s01:0",
+            "bounded": true
+          },
+          "payload": {
+            "fixture": true,
+            "index": 0
+          },
+          "fieldSemantics": [],
+          "ai": null,
+          "usage": null,
+          "upstreamKey": "fixture:s01:0"
+        },
+        {
+          "schemaVersion": "dx.event.v2",
+          "eventId": "evt_s01_1",
+          "adapterId": "fixture.s01",
+          "adapterVersion": "fixture.v1",
+          "sourceVersion": null,
+          "kind": "marker.claim",
+          "occurredAt": "2026-01-01T00:01:00.000Z",
+          "occurredAtPrecision": "exact",
+          "observedAt": "2026-01-01T00:01:00.000Z",
+          "origin": "fixture",
+          "acquisition": "manual",
+          "context": {
+            "repoCommonDir": "/fixture/s01/repo/.git",
+            "worktreePath": "/fixture/s01/repo",
+            "branch": "main",
+            "headSha": null,
+            "flightId": null
+          },
+          "identity": {
+            "sessionId": null,
+            "generationId": null,
+            "requestId": null,
+            "turnId": null,
+            "commitSha": null,
+            "githubRunId": null,
+            "githubAttempt": null,
+            "prNumber": null
+          },
+          "evidence": {
+            "hash": null,
+            "ref": "fixture:s01:1",
+            "bounded": true
+          },
+          "payload": {
+            "fixture": true,
+            "index": 1
+          },
+          "fieldSemantics": [],
+          "ai": null,
+          "usage": null,
+          "upstreamKey": "fixture:s01:1"
+        }
+      ]
+    },
+    {
+      "coverage": {
+        "adapterId": "fixture.s01",
+        "expectedItems": 4,
+        "gaps": [
+          {
+            "code": "fixture-only",
+            "message": "Isolated fixture has no live observations"
+          }
+        ],
+        "observedItems": 4,
+        "state": "partial",
+        "watermark": "fixture-second",
+        "windowFrom": "2026-01-01T00:00:00.000Z",
+        "windowTo": "2026-01-01T00:03:00.000Z"
+      },
+      "cursor": null,
+      "events": [
+        {
+          "schemaVersion": "dx.event.v2",
+          "eventId": "evt_s01_2",
+          "adapterId": "fixture.s01",
+          "adapterVersion": "fixture.v1",
+          "sourceVersion": null,
+          "kind": "marker.claim",
+          "occurredAt": "2026-01-01T00:02:00.000Z",
+          "occurredAtPrecision": "exact",
+          "observedAt": "2026-01-01T00:02:00.000Z",
+          "origin": "fixture",
+          "acquisition": "manual",
+          "context": {
+            "repoCommonDir": "/fixture/s01/repo/.git",
+            "worktreePath": "/fixture/s01/repo",
+            "branch": "main",
+            "headSha": null,
+            "flightId": null
+          },
+          "identity": {
+            "sessionId": null,
+            "generationId": null,
+            "requestId": null,
+            "turnId": null,
+            "commitSha": null,
+            "githubRunId": null,
+            "githubAttempt": null,
+            "prNumber": null
+          },
+          "evidence": {
+            "hash": null,
+            "ref": "fixture:s01:2",
+            "bounded": true
+          },
+          "payload": {
+            "fixture": true,
+            "index": 2
+          },
+          "fieldSemantics": [],
+          "ai": null,
+          "usage": null,
+          "upstreamKey": "fixture:s01:2"
+        },
+        {
+          "schemaVersion": "dx.event.v2",
+          "eventId": "evt_s01_3",
+          "adapterId": "fixture.s01",
+          "adapterVersion": "fixture.v1",
+          "sourceVersion": null,
+          "kind": "marker.claim",
+          "occurredAt": "2026-01-01T00:03:00.000Z",
+          "occurredAtPrecision": "exact",
+          "observedAt": "2026-01-01T00:03:00.000Z",
+          "origin": "fixture",
+          "acquisition": "manual",
+          "context": {
+            "repoCommonDir": "/fixture/s01/repo/.git",
+            "worktreePath": "/fixture/s01/repo",
+            "branch": "main",
+            "headSha": null,
+            "flightId": null
+          },
+          "identity": {
+            "sessionId": null,
+            "generationId": null,
+            "requestId": null,
+            "turnId": null,
+            "commitSha": null,
+            "githubRunId": null,
+            "githubAttempt": null,
+            "prNumber": null
+          },
+          "evidence": {
+            "hash": null,
+            "ref": "fixture:s01:3",
+            "bounded": true
+          },
+          "payload": {
+            "fixture": true,
+            "index": 3
+          },
+          "fieldSemantics": [],
+          "ai": null,
+          "usage": null,
+          "upstreamKey": "fixture:s01:3"
+        }
+      ]
+    }
+  ]
+}

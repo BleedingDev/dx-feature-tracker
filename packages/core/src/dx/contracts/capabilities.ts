@@ -1,6 +1,11 @@
 import { defineContract } from "@rat-stack/capability/contract";
 import { Schema } from "effect";
 
+import { AgentRequestSchema } from "../model/agent-common.js";
+import {
+  AgentQueryOutputSchema,
+  AgentResponseContextSchema,
+} from "../model/agent-query.js";
 import { SourceCoverageSchema } from "../model/coverage.js";
 import {
   AnalyzeReportSchema,
@@ -8,6 +13,7 @@ import {
   ExplainTimelineSchema,
   StatusReportSchema,
 } from "../model/report.js";
+import { AgentFailureSchema } from "./agent.js";
 import {
   CollectFailureSchema,
   MarkFailureSchema,
@@ -21,11 +27,17 @@ export const CapabilityNames = [
   "dx_analyze",
   "dx_explain",
   "dx_evidence",
+  "dx_usage",
+  "dx_operation",
+  "dx_learning",
 ] as const;
 
 export type CapabilityName = (typeof CapabilityNames)[number];
 
-export const DxStatusInput = Schema.Struct({});
+export const DxStatusInput = Schema.Struct({
+  agentQuery: Schema.optional(AgentRequestSchema),
+  detail: Schema.optional(Schema.Literals(["summary", "detailed"])),
+});
 
 export const DxCollectInput = Schema.Struct({
   flight: Schema.optional(Schema.String),
@@ -68,13 +80,16 @@ export const DxMarkOutput = Schema.Struct({
 });
 
 export const DxAnalyzeInput = Schema.Struct({
+  agentQuery: Schema.optional(AgentRequestSchema),
   asOf: Schema.optional(Schema.String),
+  cursor: Schema.optional(Schema.String),
   flight: Schema.optional(Schema.String),
   repo: Schema.optional(Schema.String),
   snapshotId: Schema.optional(Schema.String),
 });
 
 export const DxExplainInput = Schema.Struct({
+  agentQuery: Schema.optional(AgentRequestSchema),
   asOf: Schema.optional(Schema.String),
   cursor: Schema.optional(Schema.String),
   flight: Schema.optional(Schema.String),
@@ -83,19 +98,36 @@ export const DxExplainInput = Schema.Struct({
 });
 
 export const DxEvidenceInput = Schema.Struct({
+  agentQuery: Schema.optional(AgentRequestSchema),
   asOf: Schema.optional(Schema.String),
+  cursor: Schema.optional(Schema.String),
   evidenceIds: Schema.Array(Schema.String),
   snapshotId: Schema.optional(Schema.String),
 });
 
 export const DxEvidenceOutput = Schema.Struct({
+  context: Schema.optional(AgentResponseContextSchema),
+  disclosures: Schema.optional(Schema.Array(Schema.String)),
   items: Schema.Array(EvidenceItemSchema),
+  missing: Schema.optional(
+    Schema.Array(
+      Schema.Struct({
+        evidenceId: Schema.String,
+        reason: Schema.Literals([
+          "unknown-in-snapshot",
+          "invalid-id",
+          "over-limit",
+        ]),
+      })
+    )
+  ),
+  snapshotId: Schema.optional(Schema.String),
 });
 
 export const dxStatusContract = defineContract("dx_status", {
   annotations: { idempotent: true, readOnly: true },
   description: "Show dx-feature-tracker modules, store and contract version",
-  failure: QueryFailureSchema,
+  failure: Schema.Union([QueryFailureSchema, AgentFailureSchema]),
   input: DxStatusInput,
   output: StatusReportSchema,
 });
@@ -122,23 +154,23 @@ export const dxAnalyzeContract = defineContract("dx_analyze", {
   annotations: { idempotent: true, readOnly: false },
   description:
     "Analyze a branch or feature from stored evidence; persists snapshot metadata only, never collects",
-  failure: QueryFailureSchema,
+  failure: Schema.Union([QueryFailureSchema, AgentFailureSchema]),
   input: DxAnalyzeInput,
-  output: AnalyzeReportSchema,
+  output: Schema.Union([AnalyzeReportSchema, AgentQueryOutputSchema]),
 });
 
 export const dxExplainContract = defineContract("dx_explain", {
   annotations: { idempotent: true, readOnly: true },
   description: "Explain a branch or feature as an evidence-linked timeline",
-  failure: QueryFailureSchema,
+  failure: Schema.Union([QueryFailureSchema, AgentFailureSchema]),
   input: DxExplainInput,
-  output: ExplainTimelineSchema,
+  output: Schema.Union([ExplainTimelineSchema, AgentQueryOutputSchema]),
 });
 
 export const dxEvidenceContract = defineContract("dx_evidence", {
   annotations: { idempotent: true, readOnly: true },
   description: "Return redacted, bounded evidence items by ID",
-  failure: QueryFailureSchema,
+  failure: Schema.Union([QueryFailureSchema, AgentFailureSchema]),
   input: DxEvidenceInput,
-  output: DxEvidenceOutput,
+  output: Schema.Union([DxEvidenceOutput, AgentQueryOutputSchema]),
 });

@@ -1,10 +1,12 @@
 // @effect-diagnostics nodeBuiltinImport:off -- This Node CLI edits project-level Cursor config files in one explicitly selected target directory.
 import {
   copyFileSync,
-  cpSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
+  rmdirSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
@@ -13,6 +15,11 @@ import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 
 import { DateTime, Option, Schema } from "effect";
+
+import {
+  isReleasedSkillBody,
+  skillDigest,
+} from "../apps/cli/src/dft-skills.js";
 
 export const INSTALL_SCHEMA = "dx-install/v1" as const;
 
@@ -69,6 +76,21 @@ const McpEntrySchema = Schema.Struct({
 
 type McpEntry = typeof McpEntrySchema.Type;
 
+const HookEntrySchema = Schema.Struct({ command: Schema.String });
+
+const OwnedHookSchema = Schema.Struct({
+  createdEvent: Schema.optionalKey(Schema.Boolean),
+  entry: HookEntrySchema,
+  event: Schema.String,
+});
+
+const InstallOwnershipSchema = Schema.Struct({
+  gitExclude: Schema.Boolean,
+  hooks: Schema.Array(OwnedHookSchema),
+  mcpServer: Schema.Boolean,
+  skillFiles: Schema.Record(Schema.String, Schema.String),
+});
+
 const InstallManifestSchema = Schema.Struct({
   backups: Schema.Array(Schema.String),
   createdFiles: Schema.Array(Schema.String),
@@ -77,14 +99,13 @@ const InstallManifestSchema = Schema.Struct({
   hookEvents: Schema.Array(Schema.String),
   installedAt: Schema.String,
   mcpServer: Schema.Struct({ entry: McpEntrySchema, name: Schema.String }),
+  ownership: Schema.optionalKey(InstallOwnershipSchema),
   schema: Schema.Literal(INSTALL_SCHEMA),
   skills: Schema.Array(Schema.String),
   target: Schema.String,
 });
 
 export type InstallManifest = typeof InstallManifestSchema.Type;
-
-const HookEntrySchema = Schema.Struct({ command: Schema.String });
 
 const decodeJsonObject = Schema.decodeUnknownOption(
   Schema.fromJsonString(JsonObjectSchema)
@@ -116,11 +137,23 @@ interface Journal {
   readonly notes: string[];
   readonly createdFiles: Set<string>;
   readonly now: DateTime.Utc;
+  readonly ownership: {
+    gitExclude: boolean;
+    hooks: (typeof OwnedHookSchema.Type)[];
+    mcpServer: boolean;
+    skillFiles: Record<string, string>;
+  };
 }
 
 const readJsonObject = (file: string): JsonObject | null => {
-  if (!existsSync(file)) {
+  const stat = lstatSync(file, { throwIfNoEntry: false });
+
+  if (stat === undefined) {
     return null;
+  }
+
+  if (!stat.isFile()) {
+    throw new InstallError(`${file} is not a regular file; left in place`);
   }
 
   const decoded = decodeJsonObject(readFileSync(file, "utf-8"));
@@ -142,12 +175,23 @@ const writeJson = (file: string, value: Schema.Json): void => {
 const stamp = (now: DateTime.Utc): string =>
   DateTime.formatIso(now).replaceAll(/[:.]/gu, "-");
 
-const backup = (file: string, journal: Journal): void => {
+const backup = (
+  file: string,
+  journal: Journal,
+  backupBase: string = file
+): void => {
   if (!existsSync(file)) {
     return;
   }
 
-  const copy = `${file}.dx-backup-${stamp(journal.now)}`;
+  const base = `${backupBase}.dx-backup-${stamp(journal.now)}`;
+  let copy = base;
+  let suffix = 0;
+
+  while (lstatSync(copy, { throwIfNoEntry: false }) !== undefined) {
+    suffix += 1;
+    copy = `${base}-${suffix}`;
+  }
 
   copyFileSync(file, copy);
   journal.backups.push(copy);
@@ -155,6 +199,72 @@ const backup = (file: string, journal: Journal): void => {
 
 const sameJson = (a: Schema.Json | undefined, b: Schema.Json): boolean =>
   a !== undefined && JSON.stringify(a) === JSON.stringify(b);
+
+const ownershipFor = (
+  manifest: InstallManifest | null
+): Journal["ownership"] => ({
+  gitExclude: manifest?.ownership?.gitExclude ?? false,
+  hooks: [...(manifest?.ownership?.hooks ?? [])],
+  mcpServer: manifest?.ownership?.mcpServer ?? false,
+  skillFiles: { ...manifest?.ownership?.skillFiles },
+});
+
+const regularLocation = (root: string, file: string): boolean => {
+  const relative = path.relative(root, file);
+
+  if (
+    relative === ".." ||
+    relative.startsWith(`..${path.sep}`) ||
+    path.isAbsolute(relative)
+  ) {
+    return false;
+  }
+
+  const parts = relative === "" ? [] : relative.split(path.sep);
+
+  const locations = [
+    root,
+    ...parts.map((_, index) => path.join(root, ...parts.slice(0, index + 1))),
+  ];
+
+  return locations.every((location, index) => {
+    const stat = lstatSync(location, { throwIfNoEntry: false });
+
+    return (
+      stat === undefined ||
+      (index === locations.length - 1 && parts.length > 0
+        ? stat.isFile()
+        : stat.isDirectory())
+    );
+  });
+};
+
+const skillFileFor = (configRoot: string, relative: string): string | null => {
+  const parts = relative.split("/");
+
+  if (
+    parts.length < 2 ||
+    !SKILL_NAMES.some((name) => name === parts[0]) ||
+    parts.some(
+      (part) =>
+        part === "" || part === "." || part === ".." || part.includes("\\")
+    )
+  ) {
+    return null;
+  }
+
+  const file = path.join(configRoot, "skills", ...parts);
+
+  return regularLocation(configRoot, file) ? file : null;
+};
+
+const requireRegularLocation = (root: string, file: string): void => {
+  if (!regularLocation(root, file)) {
+    throw new InstallError(
+      `${file} is not a regular location; refusing to modify it`
+    );
+  }
+};
 
 export const configRootFor = (options: {
   readonly target: string;
@@ -196,8 +306,8 @@ const legacyManifestPath = (configRoot: string): string =>
   path.join(configRoot, LEGACY_MANIFEST_FILE);
 
 const existingManifestPath = (configRoot: string): string | null =>
-  [manifestPath(configRoot), legacyManifestPath(configRoot)].find((file) =>
-    existsSync(file)
+  [manifestPath(configRoot), legacyManifestPath(configRoot)].find(
+    (file) => lstatSync(file, { throwIfNoEntry: false }) !== undefined
   ) ?? null;
 
 export const readManifest = (configRoot: string): InstallManifest | null => {
@@ -206,6 +316,8 @@ export const readManifest = (configRoot: string): InstallManifest | null => {
   if (file === null) {
     return null;
   }
+
+  requireRegularLocation(configRoot, file);
 
   const decoded = decodeManifest(readFileSync(file, "utf-8"));
 
@@ -237,9 +349,12 @@ const installMcp = (
   const existing = servers[MCP_SERVER_NAME];
 
   const owned =
-    previous !== null && sameJson(existing, previous.mcpServer.entry);
+    previous?.ownership?.mcpServer === true &&
+    sameJson(existing, previous.mcpServer.entry);
 
   if (sameJson(existing, entry)) {
+    journal.ownership.mcpServer = owned;
+
     return;
   }
 
@@ -255,6 +370,59 @@ const installMcp = (
     mcpServers: { ...servers, [MCP_SERVER_NAME]: entry },
   });
   journal.changed.push(mcpFile);
+  journal.ownership.mcpServer = true;
+};
+
+const sourceSkillFiles = (
+  source: string,
+  journal: Journal
+): readonly string[] => {
+  const files: string[] = [];
+
+  for (const entry of readdirSync(source, { withFileTypes: true })) {
+    const file = path.join(source, entry.name);
+
+    if (entry.isDirectory()) {
+      files.push(...sourceSkillFiles(file, journal));
+    } else if (entry.isFile()) {
+      files.push(file);
+    } else {
+      journal.notes.push(`skill source ${file} is not a regular file; skipped`);
+    }
+  }
+
+  return files;
+};
+
+const migrateSkillOwnership = (
+  skill: string,
+  configRoot: string,
+  manifest: InstallManifest | null,
+  journal: Journal
+): void => {
+  if (
+    manifest?.ownership !== undefined ||
+    manifest?.skills.includes(skill) !== true
+  ) {
+    return;
+  }
+
+  const key = `${skill}/SKILL.md`;
+  const file = skillFileFor(configRoot, key);
+
+  if (file === null || !existsSync(file)) {
+    return;
+  }
+
+  const body = readFileSync(file, "utf-8");
+
+  if (isReleasedSkillBody(skill, body)) {
+    journal.ownership.skillFiles[key] = skillDigest(body);
+  } else {
+    journal.notes.push(
+      `legacy skill ${skill} has no verified file ownership; kept`
+    );
+  }
 };
 
 const installSkill = (
@@ -267,7 +435,12 @@ const installSkill = (
   const source = path.join(options.skillsSource, skill);
   const dest = path.join(configRoot, "skills", skill);
 
-  if (!existsSync(path.join(source, "SKILL.md"))) {
+  migrateSkillOwnership(skill, configRoot, previous, journal);
+
+  if (
+    !regularLocation(options.skillsSource, path.join(source, "SKILL.md")) ||
+    !existsSync(path.join(source, "SKILL.md"))
+  ) {
     journal.notes.push(`skill ${skill} missing at ${source}; skipped`);
 
     return false;
@@ -281,53 +454,47 @@ const installSkill = (
     return false;
   }
 
-  const destSkill = path.join(dest, "SKILL.md");
-  const owned = previous?.skills.includes(skill) === true;
+  for (const file of sourceSkillFiles(source, journal)) {
+    const key = `${skill}/${path.relative(source, file).split(path.sep).join("/")}`;
+    const destination = skillFileFor(configRoot, key);
 
-  const foreign =
-    existsSync(destSkill) &&
-    !owned &&
-    readFileSync(destSkill, "utf-8") !==
-      readFileSync(path.join(source, "SKILL.md"), "utf-8");
+    if (destination === null) {
+      journal.notes.push(`skill ${key} has a conflicting destination; kept`);
+      continue;
+    }
 
-  if (foreign) {
-    throw new InstallError(
-      `${dest} exists and was not installed by dx-feature-tracker; refusing to overwrite it`
-    );
+    const digest = skillDigest(readFileSync(file));
+
+    const current = existsSync(destination)
+      ? skillDigest(readFileSync(destination))
+      : null;
+
+    const owned = journal.ownership.skillFiles[key];
+
+    if (current !== null && current !== owned) {
+      if (current !== digest) {
+        journal.notes.push(`skill ${key} is unowned or edited; kept`);
+      }
+
+      continue;
+    }
+
+    if (current !== digest) {
+      backup(destination, journal);
+      mkdirSync(path.dirname(destination), { recursive: true });
+      copyFileSync(file, destination);
+      journal.changed.push(destination);
+    }
+
+    journal.ownership.skillFiles[key] = digest;
   }
 
-  cpSync(source, dest, { force: true, recursive: true });
-  journal.changed.push(dest);
-
   return true;
-};
-
-const mergeHookList = (
-  list: readonly Schema.Json[],
-  command: string,
-  stale: string | null
-): readonly Schema.Json[] => {
-  const kept = list.filter(
-    (item) =>
-      !(
-        isHookEntry(item) &&
-        stale !== null &&
-        stale !== command &&
-        item.command === stale
-      )
-  );
-
-  const present = kept.some(
-    (item) => isHookEntry(item) && item.command === command
-  );
-
-  return present ? kept : [...kept, { command }];
 };
 
 const installHooks = (
   configRoot: string,
   command: string,
-  previous: InstallManifest | null,
   journal: Journal
 ): void => {
   const hooksFile = path.join(configRoot, "hooks.json");
@@ -339,20 +506,46 @@ const installHooks = (
 
   const doc = existingDoc ?? { version: 1 };
   const current = objectField(doc, "hooks");
-  const stale = previous?.hookCommand ?? null;
+  const hooks = { ...current };
+  const owned: (typeof OwnedHookSchema.Type)[] = [];
+  const entry = { command };
 
-  const merged = Object.fromEntries(
-    HOOK_EVENTS.map((event) => [
-      event,
-      mergeHookList(
-        Option.getOrElse(asArray(current[event]), () => []),
-        command,
-        stale
-      ),
-    ])
-  );
+  for (const event of HOOK_EVENTS) {
+    let list = [...Option.getOrElse(asArray(current[event]), () => [])];
 
-  const hooks = { ...current, ...merged };
+    const previousOwned = journal.ownership.hooks.filter(
+      (hook) => hook.event === event
+    );
+
+    for (const hook of previousOwned) {
+      const index = list.findIndex((item) => sameJson(item, hook.entry));
+
+      if (index === -1) {
+        continue;
+      }
+
+      if (sameJson(hook.entry, entry)) {
+        owned.push(hook);
+      } else {
+        list = [...list.slice(0, index), ...list.slice(index + 1)];
+      }
+    }
+
+    if (!list.some((item) => isHookEntry(item) && item.command === command)) {
+      list.push(entry);
+      owned.push({
+        createdEvent:
+          current[event] === undefined ||
+          previousOwned.some((hook) => hook.createdEvent === true),
+        entry,
+        event,
+      });
+    }
+
+    hooks[event] = list;
+  }
+
+  journal.ownership.hooks = owned;
 
   const next = { ...doc, hooks, version: doc.version ?? 1 };
 
@@ -376,15 +569,105 @@ const installExclude = (exclude: string | null, journal: Journal): void => {
 
   const text = existsSync(exclude) ? readFileSync(exclude, "utf-8") : "";
 
-  if (text.split("\n").includes(SPOOL_IGNORE_LINE)) {
+  if (
+    text
+      .split("\n")
+      .some((line) => line.replace(/\r$/u, "") === SPOOL_IGNORE_LINE)
+  ) {
     return;
   }
 
   const separator = text === "" || text.endsWith("\n") ? "" : "\n";
 
   mkdirSync(path.dirname(exclude), { recursive: true });
+  backup(exclude, journal);
   writeFileSync(exclude, `${text}${separator}${SPOOL_IGNORE_LINE}\n`);
   journal.changed.push(exclude);
+  journal.ownership.gitExclude = true;
+};
+
+const preflightHooks = (configRoot: string): void => {
+  const hooksFile = path.join(configRoot, "hooks.json");
+  const hooks = readJsonObject(hooksFile);
+
+  if (hooks?.hooks !== undefined && Option.isNone(asObject(hooks.hooks))) {
+    throw new InstallError(
+      `${hooksFile} has invalid hooks; refusing to modify it`
+    );
+  }
+
+  for (const event of HOOK_EVENTS) {
+    const value =
+      hooks === null ? undefined : objectField(hooks, "hooks")[event];
+
+    if (value !== undefined && Option.isNone(asArray(value))) {
+      throw new InstallError(
+        `${hooksFile} has an invalid ${event} list; refusing to modify it`
+      );
+    }
+  }
+};
+
+const preflightInstall = (
+  configRoot: string,
+  options: InstallOptions,
+  previous: InstallManifest | null,
+  entry: McpEntry
+): void => {
+  if (
+    previous !== null &&
+    path.resolve(previous.target) !== path.resolve(options.target)
+  ) {
+    throw new InstallError(
+      `manifest belongs to ${previous.target}; uninstall it before selecting a different target`
+    );
+  }
+
+  for (const file of [
+    manifestPath(configRoot),
+    legacyManifestPath(configRoot),
+    path.join(configRoot, "mcp.json"),
+    ...(options.hooks ? [path.join(configRoot, "hooks.json")] : []),
+  ]) {
+    requireRegularLocation(configRoot, file);
+  }
+
+  const mcpFile = path.join(configRoot, "mcp.json");
+  const mcp = readJsonObject(mcpFile);
+
+  if (
+    mcp?.mcpServers !== undefined &&
+    Option.isNone(asObject(mcp.mcpServers))
+  ) {
+    throw new InstallError(
+      `${mcpFile} has invalid mcpServers; refusing to modify it`
+    );
+  }
+
+  const existing =
+    mcp === null ? undefined : objectField(mcp, "mcpServers")[MCP_SERVER_NAME];
+
+  const owned =
+    previous?.ownership?.mcpServer === true &&
+    sameJson(existing, previous.mcpServer.entry);
+
+  if (existing !== undefined && !sameJson(existing, entry) && !owned) {
+    throw new InstallError(
+      `${mcpFile} has an unowned "${MCP_SERVER_NAME}" server; refusing to overwrite it`
+    );
+  }
+
+  if (!options.hooks) {
+    return;
+  }
+
+  preflightHooks(configRoot);
+
+  const exclude = gitExcludeFor(path.resolve(options.target));
+
+  if (exclude !== null) {
+    requireRegularLocation(path.resolve(options.target), exclude);
+  }
 };
 
 export const install = (options: InstallOptions): ActionResult => {
@@ -403,21 +686,30 @@ export const install = (options: InstallOptions): ActionResult => {
     createdFiles: new Set(previous?.createdFiles),
     notes: [],
     now: options.now,
+    ownership: ownershipFor(previous),
   };
 
   const entry = mcpEntryFor(options);
 
+  preflightInstall(configRoot, options, previous, entry);
+
   installMcp(configRoot, entry, previous, journal);
 
-  const skills = SKILL_NAMES.filter((skill) =>
-    installSkill(skill, options, configRoot, previous, journal)
-  );
+  const skills = [
+    ...new Set([
+      ...(previous?.skills ?? []),
+      ...SKILL_NAMES.filter((skill) =>
+        installSkill(skill, options, configRoot, previous, journal)
+      ),
+    ]),
+  ];
 
   const command = hookCommandFor(options.nodePath, options.cliPath);
   const exclude = gitExcludeFor(target);
 
   if (options.hooks) {
-    installHooks(configRoot, command, previous, journal);
+    installHooks(configRoot, command, journal);
+    journal.ownership.gitExclude &&= previous?.gitExclude === exclude;
     installExclude(exclude, journal);
   } else {
     journal.notes.push(
@@ -428,11 +720,12 @@ export const install = (options: InstallOptions): ActionResult => {
   const manifest: InstallManifest = {
     backups: [...(previous?.backups ?? []), ...journal.backups],
     createdFiles: [...journal.createdFiles],
-    gitExclude: options.hooks ? exclude : null,
-    hookCommand: options.hooks ? command : null,
-    hookEvents: options.hooks ? [...HOOK_EVENTS] : [],
+    gitExclude: options.hooks ? exclude : (previous?.gitExclude ?? null),
+    hookCommand: options.hooks ? command : (previous?.hookCommand ?? null),
+    hookEvents: options.hooks ? [...HOOK_EVENTS] : (previous?.hookEvents ?? []),
     installedAt: DateTime.formatIso(options.now),
     mcpServer: { entry, name: MCP_SERVER_NAME },
+    ownership: journal.ownership,
     schema: INSTALL_SCHEMA,
     skills,
     target,
@@ -453,6 +746,12 @@ const uninstallMcp = (
   manifest: InstallManifest,
   journal: Journal
 ): void => {
+  if (manifest.ownership?.mcpServer !== true) {
+    journal.notes.push("MCP ownership was not recorded; existing entry kept");
+
+    return;
+  }
+
   const mcpFile = path.join(configRoot, "mcp.json");
   const mcp = readJsonObject(mcpFile);
 
@@ -497,10 +796,15 @@ const uninstallMcp = (
 
 const uninstallHooks = (
   configRoot: string,
-  command: string,
   manifest: InstallManifest,
   journal: Journal
 ): void => {
+  const owned = manifest.ownership?.hooks ?? [];
+
+  if (owned.length === 0) {
+    return;
+  }
+
   const hooksFile = path.join(configRoot, "hooks.json");
   const doc = readJsonObject(hooksFile);
 
@@ -519,13 +823,22 @@ const uninstallHooks = (
       continue;
     }
 
-    const kept = list.value.filter(
-      (item) => !(isHookEntry(item) && item.command === command)
-    );
+    let kept = [...list.value];
+
+    for (const hook of owned.filter((entry) => entry.event === event)) {
+      const index = kept.findIndex((item) => sameJson(item, hook.entry));
+
+      if (index !== -1) {
+        kept = [...kept.slice(0, index), ...kept.slice(index + 1)];
+      }
+    }
 
     removed ||= kept.length !== list.value.length;
 
-    if (kept.length > 0 || !manifest.hookEvents.includes(event)) {
+    if (
+      kept.length > 0 ||
+      !owned.some((hook) => hook.event === event && hook.createdEvent === true)
+    ) {
       hooks[event] = kept;
     }
   }
@@ -538,7 +851,9 @@ const uninstallHooks = (
 
   if (
     manifest.createdFiles.includes("hooks.json") &&
-    Object.keys(hooks).length === 0
+    Object.keys(hooks).length === 0 &&
+    doc.version === 1 &&
+    Object.keys(doc).every((key) => key === "hooks" || key === "version")
   ) {
     rmSync(hooksFile);
   } else {
@@ -554,14 +869,73 @@ const uninstallExclude = (exclude: string, journal: Journal): void => {
   }
 
   const lines = readFileSync(exclude, "utf-8").split("\n");
-  const kept = lines.filter((line) => line !== SPOOL_IGNORE_LINE);
 
-  if (kept.length === lines.length) {
+  const index = lines.findIndex(
+    (line) => line.replace(/\r$/u, "") === SPOOL_IGNORE_LINE
+  );
+
+  if (index === -1) {
     return;
   }
 
-  writeFileSync(exclude, kept.join("\n"));
+  backup(exclude, journal);
+  writeFileSync(
+    exclude,
+    [...lines.slice(0, index), ...lines.slice(index + 1)].join("\n")
+  );
   journal.changed.push(exclude);
+};
+
+const uninstallSkillFiles = (
+  configRoot: string,
+  manifest: InstallManifest,
+  journal: Journal
+): void => {
+  for (const skill of manifest.skills) {
+    migrateSkillOwnership(skill, configRoot, manifest, journal);
+  }
+
+  for (const [relative, digest] of Object.entries(
+    journal.ownership.skillFiles
+  )) {
+    const file = skillFileFor(configRoot, relative);
+
+    if (file === null) {
+      journal.notes.push(
+        `skill ${relative} has a conflicting destination; kept`
+      );
+      continue;
+    }
+
+    if (!existsSync(file)) {
+      continue;
+    }
+
+    if (skillDigest(readFileSync(file)) !== digest) {
+      journal.notes.push(`skill ${relative} was edited after install; kept`);
+      continue;
+    }
+
+    backup(
+      file,
+      journal,
+      path.join(configRoot, `skill-${skillDigest(relative).slice(0, 16)}`)
+    );
+    rmSync(file);
+    journal.changed.push(file);
+
+    const skillsRoot = path.join(configRoot, "skills");
+    let directory = path.dirname(file);
+
+    while (directory !== skillsRoot && readdirSync(directory).length === 0) {
+      rmdirSync(directory);
+      directory = path.dirname(directory);
+    }
+
+    if (readdirSync(skillsRoot).length === 0) {
+      rmdirSync(skillsRoot);
+    }
+  }
 };
 
 export const uninstall = (options: UninstallOptions): ActionResult => {
@@ -578,24 +952,34 @@ export const uninstall = (options: UninstallOptions): ActionResult => {
     createdFiles: new Set(),
     notes: [],
     now: options.now,
+    ownership: ownershipFor(manifest),
   };
+
+  if (manifest.ownership?.mcpServer === true) {
+    const file = path.join(configRoot, "mcp.json");
+    requireRegularLocation(configRoot, file);
+    readJsonObject(file);
+  }
+
+  if ((manifest.ownership?.hooks.length ?? 0) > 0) {
+    const file = path.join(configRoot, "hooks.json");
+    requireRegularLocation(configRoot, file);
+    readJsonObject(file);
+  }
+
+  if (manifest.ownership?.gitExclude === true && manifest.gitExclude !== null) {
+    requireRegularLocation(path.resolve(options.target), manifest.gitExclude);
+  }
 
   uninstallMcp(configRoot, manifest, journal);
 
-  if (manifest.hookCommand !== null) {
-    uninstallHooks(configRoot, manifest.hookCommand, manifest, journal);
+  if ((manifest.ownership?.hooks.length ?? 0) > 0) {
+    uninstallHooks(configRoot, manifest, journal);
   }
 
-  for (const skill of manifest.skills) {
-    const dest = path.join(configRoot, "skills", skill);
+  uninstallSkillFiles(configRoot, manifest, journal);
 
-    if (existsSync(dest)) {
-      rmSync(dest, { force: true, recursive: true });
-      journal.changed.push(dest);
-    }
-  }
-
-  if (manifest.gitExclude !== null) {
+  if (manifest.ownership?.gitExclude === true && manifest.gitExclude !== null) {
     uninstallExclude(manifest.gitExclude, journal);
   }
 
@@ -621,7 +1005,7 @@ const HELP = `Usage: node scripts/dx-install.ts <install|uninstall|status> --tar
   --cli <file>         Built dft CLI (default <repo>/apps/cli/dist/cli.js).
   --node <file>        Node binary for commands (default: this node).
 
-Never edits ~/.cursor. Every modified file is backed up next to itself.`;
+Never edits ~/.cursor. Existing MCP, hook, ignore and skill files are backed up before changes.`;
 
 const print = (value: ActionResult | InstallManifest | null): void => {
   process.stdout.write(

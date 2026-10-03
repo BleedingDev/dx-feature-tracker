@@ -1,5 +1,5 @@
 import { Console, Effect, Option, Predicate, Schema, SchemaAST } from "effect";
-import { Argument, Command, Flag } from "effect/unstable/cli";
+import { Argument, CliError, Command, Flag } from "effect/unstable/cli";
 
 import { Approval } from "./approval.js";
 import type {
@@ -15,6 +15,7 @@ export interface ToCommandOptions<Output> {
   readonly name?: string | undefined;
   readonly positional?: readonly string[] | undefined;
   readonly render?: ((output: Output) => string) | undefined;
+  readonly strictInput?: boolean | undefined;
 }
 
 interface FieldSpec {
@@ -81,28 +82,65 @@ const describe = (field: PlainSchema): FieldSpec => {
   return { description, kind, literals: [], optional };
 };
 
-const jsonFlag = (name: string, field: PlainSchema) =>
+const decodeJsonInput = (
+  name: string,
+  field: PlainSchema,
+  kind: "argument" | "flag",
+  parseOptions?: SchemaAST.ParseOptions
+) => {
+  const decode = Schema.decodeUnknownEffect(
+    Schema.fromJsonString(field),
+    parseOptions
+  );
+
+  return (value: string) =>
+    decode(value).pipe(
+      Effect.mapError(
+        (cause) =>
+          new CliError.InvalidValue({
+            expected: `Schema validation failed: ${cause.message}`,
+            kind,
+            option: name,
+            value,
+          })
+      )
+    );
+};
+
+const jsonFlag = (
+  name: string,
+  field: PlainSchema,
+  parseOptions?: SchemaAST.ParseOptions
+) =>
   Flag.String(name).pipe(
-    // SAFETY: a JSON-string flag decoded by the field's own schema. `withSchema` wants a codec with the CLI environment as its services; a plain field schema needs none, which `never` satisfies.
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion
-    Flag.withSchema(Schema.fromJsonString(field) as never),
+    Flag.mapEffect(decodeJsonInput(name, field, "flag", parseOptions)),
     Flag.withMetavar("JSON")
   );
 
 const flagBuilders = {
   boolean: (name) => Flag.Boolean(name).pipe(Flag.withDefault(false)),
-  json: (name, field) => jsonFlag(name, field),
+  json: (name, field, _spec, parseOptions) =>
+    jsonFlag(name, field, parseOptions),
   literals: (name, _field, spec) => Flag.Literals(name, spec.literals),
   number: (name) => Flag.Finite(name),
   string: (name) => Flag.String(name),
 } satisfies Record<
   FieldSpec["kind"],
-  (name: string, field: PlainSchema, spec: FieldSpec) => Flag.Flag<unknown>
+  (
+    name: string,
+    field: PlainSchema,
+    spec: FieldSpec,
+    parseOptions?: SchemaAST.ParseOptions
+  ) => Flag.Flag<unknown>
 >;
 
-const flagFor = (name: string, field: PlainSchema): Flag.Flag<unknown> => {
+const flagFor = (
+  name: string,
+  field: PlainSchema,
+  parseOptions?: SchemaAST.ParseOptions
+): Flag.Flag<unknown> => {
   const spec = describe(field);
-  const base = flagBuilders[spec.kind](name, field, spec);
+  const base = flagBuilders[spec.kind](name, field, spec, parseOptions);
 
   const described =
     spec.description === undefined
@@ -114,17 +152,22 @@ const flagFor = (name: string, field: PlainSchema): Flag.Flag<unknown> => {
     : described;
 };
 
-const schemaArgument = (name: string, field: PlainSchema, metavar: string) =>
+const schemaArgument = (
+  name: string,
+  field: PlainSchema,
+  metavar: string,
+  parseOptions?: SchemaAST.ParseOptions
+) =>
   Argument.String(name).pipe(
-    // SAFETY: the string argument is decoded by its field schema, which has no CLI services.
-    // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- `PlainSchema` has no requirements, so the CLI environment satisfies the codec.
-    Argument.withSchema(Schema.fromJsonString(field) as never),
+    Argument.mapEffect(decodeJsonInput(name, field, "argument", parseOptions)),
     Argument.withMetavar(metavar)
   );
 
 const argumentBuilders = {
-  boolean: (name, field) => schemaArgument(name, field, "BOOLEAN"),
-  json: (name, field) => schemaArgument(name, field, "JSON"),
+  boolean: (name, field, _spec, parseOptions) =>
+    schemaArgument(name, field, "BOOLEAN", parseOptions),
+  json: (name, field, _spec, parseOptions) =>
+    schemaArgument(name, field, "JSON", parseOptions),
   literals: (name, _field, spec) => Argument.Literals(name, spec.literals),
   number: (name) => Argument.Finite(name),
   string: (name) => Argument.String(name),
@@ -133,16 +176,18 @@ const argumentBuilders = {
   (
     name: string,
     field: PlainSchema,
-    spec: FieldSpec
+    spec: FieldSpec,
+    parseOptions?: SchemaAST.ParseOptions
   ) => Argument.Argument<unknown>
 >;
 
 const argumentFor = (
   name: string,
-  field: PlainSchema
+  field: PlainSchema,
+  parseOptions?: SchemaAST.ParseOptions
 ): Argument.Argument<unknown> => {
   const spec = describe(field);
-  const base = argumentBuilders[spec.kind](name, field, spec);
+  const base = argumentBuilders[spec.kind](name, field, spec, parseOptions);
 
   const described =
     spec.description === undefined
@@ -166,6 +211,9 @@ export const toCommand = <C extends AnyCapability>(
   const positional = new Set(options?.positional);
   const render = options?.render;
 
+  const parseOptions: SchemaAST.ParseOptions | undefined =
+    options?.strictInput === true ? { onExcessProperty: "error" } : undefined;
+
   if (render !== undefined && Object.hasOwn(contract.input.fields, JSON_FLAG)) {
     throw new Error(
       "Input field `json` conflicts with the reserved `--json` flag"
@@ -188,8 +236,8 @@ export const toCommand = <C extends AnyCapability>(
 
   for (const [name, field] of Object.entries(contract.input.fields)) {
     config[name] = positional.has(name)
-      ? argumentFor(name, field)
-      : flagFor(name, field);
+      ? argumentFor(name, field, parseOptions)
+      : flagFor(name, field, parseOptions);
   }
 
   if (render !== undefined) {
@@ -206,7 +254,7 @@ export const toCommand = <C extends AnyCapability>(
     );
   }
 
-  const decodeInput = Schema.decodeUnknownEffect(contract.input);
+  const decodeInput = Schema.decodeUnknownEffect(contract.input, parseOptions);
   const encodeOutput = Schema.encodeEffect(contract.output);
 
   // SAFETY: `C extends Any` widens the handler's channels to `unknown`; the extractors recover the concrete ones from `C`.

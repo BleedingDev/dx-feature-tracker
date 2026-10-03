@@ -23,4 +23,6 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Check and test
+        env:
+          VITEST_MAX_WORKERS: "1"
         run: pnpm turbo run check test build

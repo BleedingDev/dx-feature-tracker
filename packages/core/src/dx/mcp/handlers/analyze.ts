@@ -98,7 +98,13 @@ export const handleAnalyze = (
     const store = yield* EventStore;
     const query = yield* parseQuery(input, deps.resolveSelector);
     const selected = yield* selectAnalyzeSnapshot(store, query);
-    const metricDefinitions = metricDefinitionIds(deps);
+
+    const resolvedDeps =
+      deps.resolveMetrics === undefined
+        ? deps
+        : { ...deps, metrics: deps.resolveMetrics() };
+
+    const metricDefinitions = metricDefinitionIds(resolvedDeps);
 
     const snapshot: StoreSnapshot =
       selected.mode === "pinned"
@@ -119,7 +125,7 @@ export const handleAnalyze = (
       yield* store.putSnapshotManifest(snapshot.manifest);
     }
 
-    const computed = computeMetrics(deps.metrics, snapshot);
+    const computed = computeMetrics(resolvedDeps.metrics, snapshot);
 
     const persistence = persist
       ? [

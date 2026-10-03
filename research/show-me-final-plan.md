@@ -1,6 +1,6 @@
 # dx-feature-tracker: Cursor-first walkthrough
 
-Standalone Ratstack product. Four-hour execution deadline. All product implementation and runtime proof are pending. This view explains the validated plan, not a shipped application.
+Historical visual explanation of the original 2026-09-30 Cursor-first build proposal. Its pending implementation and four-hour schedule refer to that planning snapshot. Today's product includes later tool/dashboard decisions. The current proposed system view is in [agent system](../docs/architecture/agent-system.md); the new dependency view is in [follow-up plans](../plans/agent-system/README.md). Original receipts are preserved separately.
 
 ## Proposed solution
 

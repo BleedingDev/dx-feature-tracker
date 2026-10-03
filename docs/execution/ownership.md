@@ -1,6 +1,27 @@
 # Ownership manifest (A05)
 
-Generated from `research/execution-manifest.json` (sha256 `edf6d82859a14264908703404829a285d66a5e014297004e762a4958b91b46ca`, 79 nodes, 145 edges). The canonical manifest wins over this rendering; regenerate if it changes. Tables are derived mechanically from the manifest nodes and edges; overlap and cycle checks are described in `docs/execution/nodes/a05.md`.
+Historical rendering generated from `research/execution-manifest.json` (sha256 `edf6d82859a14264908703404829a285d66a5e014297004e762a4958b91b46ca`, 79 nodes, 145 edges). That manifest wins for its original execution selection; its table and receipts are preserved. New agent-system work uses the separately activated ownership below. The historical manifest cannot silently override an activated follow-up assignment.
+
+## Agent-system follow-up ownership
+
+The user authorized full implementation on 2026-10-02. Root activated the exact source assignments in [plans/agent-system/manifest.json](../../plans/agent-system/manifest.json) on `feat/agent-system` after verifying that the earlier native agents completed read-only work. S00 owns the shared contract freeze. Producers start from that freeze and implement concurrently through typed ports; read and release gates still require their dependencies. [execution.json](../../plans/agent-system/execution.json) records the current assignments and phase state.
+
+| Node | Exclusive responsibility after activation | Prior ownership being transferred |
+| --- | --- | --- |
+| S00 | Contracts/model, frozen contract documentation and command catalog | A03 and A01 command-catalog responsibility |
+| S01 | Storage, migrations, durable basis/journal/learning persistence | B01 |
+| S02 | Reports, usage, reconciliation and cost/price-book query semantics | B23-B37 relevant paths and later usage/price additions |
+| S03 | Operations, live administration and `registry/sync.ts` | Later live additions and the sync portion of integration |
+| S04 | New learning service | Newly assigned path |
+| R00 then S05 | One sequential integration owner for CLI app/adapters, shared registration/composition, host guidance and installer; root gates the initial read milestone | B38-B40, C13, A02/A07/A08 relevant paths and later app additions |
+| S06 | Isolated independent audit tests/fixtures | Newly assigned paths; production fixes return to owners |
+| S07 | Root release receipt, active design/plan status, and opt-in strict toolkit decoding/test | Root phase authority; narrow projection strengthening |
+
+Every node has its own tests/fixtures where assigned and `docs/execution/nodes/<node>.json|.md` handoff. The exact manifest resolves file/subtree boundaries; this summary is not permission to expand them. Historical fixture index, manifests/lockfiles, generators and fence settings are outside the reassignment. No worker creates its own dependency tree. S00 owns the exact agent contract files listed in the manifest. The shared `contracts/capabilities.ts` registration belongs to R00/S05. Only the R00/S05 sequential owner edits shared registration; root alone runs R00/S07 release queues. Unowned source paths require explicit assignment.
+
+Root assigned `packages/core/test/dx/branch-switch.test.ts` to S02, `packages/core/test/dx/live-engine.test.ts` and `packages/core/test/dx/restore-old-backup.test.ts` to S03, and `packages/core/test/dx/integration/sync-home.test.ts` to S05 after the full follow-up fence exposed compatibility failures. These exact transfers preserve the tests' replay, restoration and source-isolation behavior. Other historical test paths retain their existing ownership.
+
+The remaining rules/table describe the original execution. Their unowned-document restriction does not block the user's explicit design revision or the separately activated follow-up scope.
 
 ## Rules
 
@@ -101,3 +122,8 @@ Generated from `research/execution-manifest.json` (sha256 `edf6d82859a1426490870
 
 A02, A07 and A08 are one integration owner holding a sequential baton. They share every integration path; only the current baton holder writes. A07 starts after G01 passes, A08 after G02 passes. No other overlap exists.
 
+Root extends S07 ownership to `packages/capability/src/to-command.ts` and `packages/capability/test/strict-command.test.ts` for opt-in strict JSON CLI decoding. The native strict projection worker is the sole writer of these paths; default upstream behavior remains compatible.
+
+HarnessCursors lives in S01-owned `packages/core/src/dx/storage/harness-cursors.ts`. S01 exposes its compatible atomic cursor method from the event-store connection; S03/S05 own their existing caller paths. No harness-directory paths are transferred.
+
+Root S07 owns the optional `VITEST_MAX_WORKERS` declaration in `.env.schema` and its exact test-task passthrough in `turbo.json`. This controls validation concurrency without changing test selection, assertions, deadlines, strict environment mode or dependency pins.

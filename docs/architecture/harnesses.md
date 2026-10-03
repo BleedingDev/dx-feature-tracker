@@ -2,6 +2,8 @@
 
 A harness is one coding tool (`cursor`, `claude-code`, `codex`, `opencode`, `pi`, `omp`, `deepseek`). The UI and CLI call it a "tool" (D43). Each harness turns what its tool leaves on disk into `dx.event.v2` events. Everything lives in `packages/core/src/dx/harness/`.
 
+This page describes current adapters and their limits. For proposed agent control and cross-module behavior, read [agent system](agent-system.md). Harness readers remain observation producers; scoped operation plans and receipts coordinate them. A channel's preferred value still needs field semantics, provenance and uncertainty in the resulting query.
+
 ## The pieces
 
 ```mermaid

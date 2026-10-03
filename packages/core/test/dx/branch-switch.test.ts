@@ -246,7 +246,7 @@ describe("same chat continued on a new branch", () => {
   });
 
   it.live(
-    "analyze, history, chats and replay split the chat at the checkout",
+    "analyze, history and chats split at the checkout while legacy replay keeps raw evidence",
     () =>
       Effect.gen(function* splitAtCheckout() {
         const store = yield* seed;
@@ -319,16 +319,43 @@ describe("same chat continued on a new branch", () => {
           snapshotId: pinnedId,
         });
 
+        const storedRaw = yield* store.getSnapshot(pinnedId);
+
+        expect(storedRaw.events).toEqual(events);
+
         const replayed = yield* selectAnalyzeSnapshot(store, {
           asOf: null,
           selector: selectorFor("feature/b"),
           snapshotId: pinnedId,
         });
 
-        expect(idsOn(replayed.snapshot.events)).toEqual(
-          idsOn(onB.snapshot.events)
+        expect(replayed.snapshot).toEqual(storedRaw);
+        expect(replayed.mode).toBe("pinned");
+        expect(replayed.attribution).toBeUndefined();
+        expect(replayed.disclosures.join(" ")).toContain(
+          "evidence-selection-only"
         );
-        expect(replayed.attribution).toEqual(onB.attribution);
+        expect(replayed.disclosures.join(" ")).toContain(
+          "historical attribution, prices and metric implementations were not retained"
+        );
+
+        yield* Effect.sync(() =>
+          git("2026-09-30T01:00:00Z", "checkout", "-q", "main")
+        );
+
+        const currentBranch = yield* Effect.sync(() =>
+          git("2026-09-30T01:00:00Z", "branch", "--show-current").trim()
+        );
+
+        expect(currentBranch).toBe("main");
+
+        const afterCheckout = yield* selectAnalyzeSnapshot(store, {
+          asOf: null,
+          selector: selectorFor("feature/b"),
+          snapshotId: pinnedId,
+        });
+
+        expect(afterCheckout).toEqual(replayed);
       }).pipe(Effect.provide(layer))
   );
 });

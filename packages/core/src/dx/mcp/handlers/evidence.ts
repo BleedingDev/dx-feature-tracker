@@ -5,6 +5,7 @@ import type { SnapshotNotFound } from "../../contracts/error-snapshot-not-found.
 import { EventStore } from "../../contracts/event-store.js";
 import type { StoreFailure } from "../../contracts/services.js";
 import type { EvidenceItem } from "../../model/report.js";
+import type { EvidenceMiss } from "../../reports/evidence/resolve.js";
 import {
   lookupEvidence,
   MAX_EVIDENCE_IDS,
@@ -22,7 +23,12 @@ export const handleEvidence = (
   deps: DxHandlerDeps,
   input: EvidenceInput
 ): Effect.Effect<
-  { readonly items: readonly EvidenceItem[] },
+  {
+    readonly items: readonly EvidenceItem[];
+    readonly missing: readonly EvidenceMiss[];
+    readonly disclosures: readonly string[];
+    readonly snapshotId: string;
+  },
   StoreFailure | SnapshotNotFound | InvalidInput,
   EventStore
 > =>
@@ -55,5 +61,5 @@ export const handleEvidence = (
       snapshotId: query.snapshotId,
     });
 
-    return { items: resolution.items };
+    return resolution;
   });

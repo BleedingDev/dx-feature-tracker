@@ -1,6 +1,6 @@
 {
   "name": "dx-feature-tracker",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "dft: local AI engineering cost tracker for git. Records Cursor, Claude Code, Codex, OpenCode, Pi, OMP and DeepSeek Harness sessions into a local SQLite store and reports cost per branch.",
   "keywords": [
     "ai",

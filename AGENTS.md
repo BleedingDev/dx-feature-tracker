@@ -4,7 +4,7 @@
 
 This repository is the standalone **dx-feature-tracker** (CLI `dft`, "AI Engineering Cost Tracker"), scaffolded from Ratstack `joelhooks/rat-stack@753c7b07dcc516037dd1d455a8766bf112084844`. The dx-feature-tracker rules below override the upstream Ratstack text that follows it wherever they conflict.
 
-- **Workspace:** `apps/cli`, `packages/core`, `packages/capability`, `packages/devtools`. Upstream `apps/web`, `apps/infra`, `apps/mischief`, `packages/auth`, `packages/database`, `packages/lore` are **not** in this tree; ignore upstream references to them. No cloud deployment, auth, web dashboard or code-mode sandbox.
+- **Workspace:** `apps/cli`, `packages/core`, `packages/capability`, `packages/devtools`. Upstream `apps/web`, `apps/infra`, `apps/mischief`, `packages/auth`, `packages/database`, `packages/lore` are **not** in this tree; ignore upstream references to them. The existing local dashboard is hosted by the CLI on loopback. No cloud deployment, auth service or code-mode sandbox.
 - **Product code** lives in `packages/core/src/dx/` and is exported only as `@rat-stack/core/dx` (barrel `packages/core/src/dx/index.ts`, owned by the integration owner). Tests live in `packages/core/test/dx/<id>.test.ts`, fixtures in `packages/core/test/dx/fixtures/<id>/`.
 - **Ownership:** `docs/execution/ownership.md` is authoritative. Write only your owned paths plus `docs/execution/nodes/<id>.json|.md`. Never edit shared barrels, registries, manifests, lockfile, migrations or fixture index unless you own them.
 - **Commands:** use `docs/execution/commands.json` exactly (per-owner vitest/typecheck/lint). Runtime facts: `docs/execution/runtime.md`.
@@ -12,6 +12,9 @@ This repository is the standalone **dx-feature-tracker** (CLI `dft`, "AI Enginee
 - **Honesty:** missing data stays `unavailable` with a reason. Never fabricate tokens, charges, waiting time, causal savings or AI ownership. Synthetic fixtures are labelled as fixtures and never merged with live observations.
 - **MCP:** stdio only, launched as `node apps/cli/dist/cli.js mcp`; stdout is reserved for JSON-RPC frames, diagnostics go to stderr.
 - **Persistence:** `node:sqlite` (`DatabaseSync`) on Node 24.18.0, single writer, owned by the storage owner.
+- **Agent host:** stay in Codex and use its native tools and agents. Use an available native model when an upstream model or orchestration tool is unavailable. Upstream Pi instructions do not authorize another agent CLI; cross-host execution requires the user's explicit request.
+- **Design navigation:** for agent queries, control, learning or cross-module design, read `docs/architecture/agent-system.md`. Its follow-up requirements are proposed until runtime/behavior evidence demonstrates them; do not advertise planned capabilities as installed.
+- **Plan selection:** new agent-system work uses `plans/agent-system/manifest.json` only. The activated path assignments and phase admission are recorded in that manifest and its execution state. The original `dxfr-rat-*` graph and G00-G04 receipts remain historical evidence.
 
 ---
 

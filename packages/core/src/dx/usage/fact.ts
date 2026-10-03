@@ -7,8 +7,11 @@ import {
   ModelProviderSchema,
 } from "../harness/ids.js";
 import { AiTokensSchema, ToolFigureSchema } from "../model/attribution.js";
+import type { DxEventEnvelope } from "../model/event.js";
 
 export const USAGE_DERIVATION_VERSION = 18;
+
+export const AGENT_USAGE_DERIVATION_VERSION = "dx.usage.agent.v1" as const;
 
 export const NO_REPO = "(no repo)" as const;
 
@@ -84,4 +87,72 @@ export interface DerivedRows {
   readonly disagreements: readonly UsageDisagreement[];
   readonly rows: readonly DerivedRow[];
   readonly unresolved: readonly string[];
+}
+
+export type UsageExplanationValue = string | number | boolean | null;
+
+export interface UsageFieldCandidate {
+  readonly channel: string;
+  readonly eventId: string;
+  readonly value: UsageExplanationValue;
+}
+
+export interface UsageFieldExplanation {
+  readonly candidates: readonly UsageFieldCandidate[];
+  readonly disagreement: boolean;
+  readonly field: string;
+  readonly rule: string;
+  readonly semantics: "observed" | "reconciled" | "provisional" | "unavailable";
+  readonly value: UsageExplanationValue;
+  readonly winnerEventId: string | null;
+}
+
+export interface UsageExplanation {
+  readonly factId: string;
+  readonly fields: readonly UsageFieldExplanation[];
+  readonly sources: readonly string[];
+}
+
+export interface AccountAssociationCandidate {
+  readonly distanceMs: number;
+  readonly endMs: number;
+  readonly eventIds: readonly string[];
+  readonly gapMs: number;
+  readonly selected: boolean;
+  readonly startMs: number;
+  readonly turnFactId: string;
+}
+
+export interface AccountAssociation {
+  readonly accountEventIds: readonly string[];
+  readonly accountFactId: string;
+  readonly candidates: readonly AccountAssociationCandidate[];
+  readonly method: "same-harness-session-window";
+  readonly reason: string;
+  readonly selectedTurnFactId: string | null;
+  readonly semantics: "provisional";
+}
+
+export interface AccountAllocation {
+  readonly accountEventIds: readonly string[];
+  readonly branch: string | null;
+  readonly method: "request-identity" | "same-harness-session-window";
+  readonly repo: string;
+  readonly semantics: "reconciled" | "provisional";
+  readonly turnEventIds: readonly string[];
+  readonly turnFactId: string;
+  readonly worktree: string | null;
+}
+
+export interface AgentAccountLedger {
+  readonly allocated: readonly AccountAllocation[];
+  readonly observed: readonly DxEventEnvelope[];
+  readonly remainder: readonly DxEventEnvelope[];
+}
+
+export interface AgentDerivedUsageRows {
+  readonly accountLedger: AgentAccountLedger;
+  readonly associations: readonly AccountAssociation[];
+  readonly derived: DerivedRows;
+  readonly explanations: readonly UsageExplanation[];
 }

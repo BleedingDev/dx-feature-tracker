@@ -1,0 +1,292 @@
+{
+  "schema": "dft-agent-node/v1",
+  "node": "R00",
+  "state": "accepted",
+  "contractVersion": "dx.agent-contracts.v1",
+  "contractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+  "enabledReads": [
+    "dx_status",
+    "dx_analyze",
+    "dx_usage",
+    "dx_explain",
+    "dx_evidence"
+  ],
+  "profileVersion": "dx.agent.v1",
+  "behavior": {
+    "status": "Bounded current metadata or an indexed exact-scope retained basis header; original window and resume basis reference; no event history, source discovery or price initialization.",
+    "queries": "Explicit recorded-only acquisition, cached or pinned prices, independent ready-only or bounded-refresh derivation, shared structured views and typed continuation references.",
+    "humanCompatibility": "Default report auto-sync retained with JSON effects and receipt disclosure.",
+    "dashboardRead": "Existing loopback server GET /api/query dispatches five strict shared read contracts; explicit agentQuery required.",
+    "nativeHostGuidance": "Packaged Codex .agents/skills install/uninstall preserves unrelated and edited files; MCP registration remains explicit."
+  },
+  "verification": [
+    {
+      "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/r00.test.ts",
+      "exit": 0,
+      "tests": 7,
+      "scope": "labelled fixtures, shared usage continuation after SQLite reopen, cold/warm status and legacy disclosures"
+    },
+    {
+      "command": "pnpm exec oxlint <owned integration files>",
+      "exit": 0,
+      "scope": "shared capabilities/handlers/barrel/runtime and delegated app/installer source"
+    },
+    {
+      "command": "pnpm exec oxfmt --check <owned integration files>",
+      "exit": 0,
+      "scope": "delegated app/installer source; owned parent files formatted and linted"
+    },
+    {
+      "command": "Root complete fence9 and same-input native11",
+      "exit": 0,
+      "passed": 2001,
+      "optionalSkippedTests": 3,
+      "successfulTasks": 18,
+      "totalTasks": 18,
+      "nativeProtocolFrames": 14,
+      "nativeNonProtocolFrames": 0,
+      "nativeStderrBytes": 0,
+      "scope": "Root terminal R00 acceptance on exact frozen source/artifact and packaged equality; actual resource closure is recorded separately."
+    }
+  ],
+  "latestConsumerVerification": {
+    "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/r00.test.ts",
+    "exit": 0,
+    "passed": 7,
+    "failed": 0,
+    "resolvedProducerSeams": [
+      "Unresolved branch coverage retains its truthful placement gap instead of becoming a budget refusal.",
+      "The measured cursor port is connected to the real same-writer store."
+    ],
+    "historicalSuccessPreserved": true
+  },
+  "builtConsumerVerification": {
+    "candidate": "Root Build5 passed all four packages before the final app batch; source remained frozen.",
+    "command": "Root-admitted final eleven-file app batch documented in S05",
+    "exit": 0,
+    "passed": 163,
+    "failed": 0,
+    "scope": "Includes built cheap status/profile rejection, shared dashboard read parity, strict wrappers, effects disclosure and native guide installer preservation."
+  },
+  "currentValidationCheckpoint": {
+    "validationInputSourceDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+    "validationInputSourceFiles": 1058,
+    "compiledCandidateDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+    "compiledCandidateFiles": 1820,
+    "candidate": "Final frozen candidate8 after the test-only liveness error-channel correction",
+    "fullFenceAttempt": 9,
+    "fullFenceExit": 0,
+    "nativeAttempt": 11,
+    "nativeExit": 0,
+    "scope": "Root accepted R00 after every required full-fence task/report passed and exact source/dist/manifests/guidance/assets equality held after native11."
+  },
+  "pending": [],
+  "nativeObservation": {
+    "owner": "Root S07 rehearsal",
+    "candidate": "Historical compiled Candidate5, root artifact prefix e47e65e3 and suffix 5744; final app page repairs require another candidate",
+    "passed": true,
+    "basisId": "basis_02e0d2120c902ae9da7ae3c8b0d90ab374ce98e503c3032c",
+    "scope": "Real Git identity only in an isolated store, cold and pinned warm reads with the same basis digest/window, stdio discovery/status/analyze and expanded redacted Git evidence follow-up, fresh-process learning resume and Codex installer preservation. Fourteen protocol frames, zero non-protocol stdout frames and zero stderr frames. No automatic current-turn tool registration, Cursor host or AI usage is claimed."
+  },
+  "readMilestoneOnly": false,
+  "networkRequestsInFixtures": 0,
+  "writesOutsideOwnedFixtures": 0,
+  "operationLearningDescriptors": "The historical R00-only composition kept these disabled. Current production composition is tracked by S05.",
+  "continuations": "Replay the same view selectors with an output cursor; source selectors/window are retained by basis.",
+  "scope": "Accepted and completed R00 behavior phase on the final frozen combined artifact: complete fence9, same-candidate native11 and actual S07 resource closure. Publication is outside this receipt scope.",
+  "historicalValidationCheckpoints": [
+    {
+      "validationInputSourceDigest": "sha256:93276235d115aed4a4104c9e6d3ef53a22985bcde10f36c72b21926edf7377a2",
+      "validationInputSourceFiles": 1058,
+      "compiledCandidateDigest": "sha256:f565f505399e12d969aebf468a91d476fc533088d8d705f9d74fd671cedb6f7c",
+      "compiledCandidateUnchanged": true,
+      "scope": "Root reports the named SSE diagnostic case passed with unchanged deadlines and assertions; only test diagnostics changed. Full fence7 is admitted and final acceptance remains pending."
+    },
+    {
+      "validationInputSourceDigest": "sha256:70da2ccc6e3bdcf4bfdbd27ec625102551d860d60eb7de03aeb6fb5d31129341",
+      "validationInputSourceFiles": 1058,
+      "compiledCandidateDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+      "compiledCandidateFiles": 1820,
+      "candidate": "Root Build8",
+      "buildExit": 0,
+      "scope": "Root reports Build8 passed all four packages and aligned native adapter behavior passed 48/48. Complete core preflight also passed. Native candidate8 rehearsal and full fence8 remain pending; this read checkpoint is not terminal release acceptance."
+    }
+  ],
+  "status": "complete",
+  "accepted": true,
+  "phaseReceipt": "docs/execution/phases/r00.json",
+  "releaseGatePassed": true,
+  "finalValidation": {
+    "attempt": 9,
+    "command": "pnpm exec turbo run check test build",
+    "processEnvironment": {
+      "VITEST_MAX_WORKERS": "1"
+    },
+    "state": "passed",
+    "exit": 0,
+    "successfulTasks": 18,
+    "totalTasks": 18,
+    "cachedTasks": 9,
+    "durationMs": 519182,
+    "outerElapsedMs": 522684,
+    "completedAllRequiredPassingReports": true,
+    "acceptance": "passed-full-fence-and-same-input-rehearsal",
+    "candidateDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+    "sourceDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+    "reports": {
+      "capability": {
+        "passed": 80,
+        "filesPassed": 11
+      },
+      "devtools": {
+        "passed": 19,
+        "filesPassed": 1
+      },
+      "core": {
+        "passed": 1581,
+        "skipped": 3,
+        "total": 1584,
+        "filesPassed": 132,
+        "filesSkipped": 3,
+        "totalFiles": 135,
+        "report": "Complete cached report from same frozen core preflight."
+      },
+      "cli": {
+        "passed": 321,
+        "failed": 0,
+        "filesPassed": 30,
+        "durationMs": 485490
+      }
+    },
+    "aggregate": {
+      "passed": 2001,
+      "skipped": 3,
+      "failed": 0
+    },
+    "skips": [
+      {
+        "file": "packages/core/test/dx/harness/harness-versions.test.ts",
+        "testsSkipped": 2
+      },
+      {
+        "file": "packages/core/test/dx/harness/deepseek-live.test.ts",
+        "testsSkipped": 1
+      },
+      {
+        "file": "packages/core/test/dx/harness/live.test.ts",
+        "tests": 0
+      },
+      {
+        "file": "packages/core/test/dx/harness/omp-live.test.ts",
+        "tests": 0
+      }
+    ],
+    "static": {
+      "lintErrors": 0,
+      "lintWarnings": 0,
+      "formattedFiles": 964,
+      "typecheck": "passed; nonfatal suggestions retained"
+    },
+    "cancelled": false,
+    "rule": {
+      "required": [
+        "Successful exit",
+        "Every required task completes successfully",
+        "Complete passing test reports, with skips and unavailable observations disclosed",
+        "Frozen runtime source identity and compiled/packaged artifact equality",
+        "Rehearsal uses the same candidate",
+        "Owned resource lifecycle accounted for"
+      ],
+      "cancelledOrIncomplete": "unverified even when shell exit is zero"
+    }
+  },
+  "finalCandidateEquality": {
+    "scope": "After complete passedfence9 and native11 on identical frozen source and packaged artifact.",
+    "digest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+    "files": 1820,
+    "distMatchesCandidate8": true,
+    "sourceMatchesFence9": true,
+    "sourceDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+    "packaged": [
+      {
+        "path": "packages/capability/package.json",
+        "same": true
+      },
+      {
+        "path": "packages/core/package.json",
+        "same": true
+      },
+      {
+        "path": "packages/devtools/package.json",
+        "same": true
+      },
+      {
+        "path": "apps/cli/package.json",
+        "same": true
+      },
+      {
+        "path": "apps/cli/assets",
+        "files": 3,
+        "same": true
+      },
+      {
+        "path": ".cursor/skills",
+        "files": 6,
+        "same": true
+      }
+    ],
+    "ownExportAbsent": true
+  },
+  "globalReleaseClosure": "Root S07 reports all exact-owned resources released and removed, with scratch/export absence and known validation/rehearsal PIDs absent. No native, equality or resource condition remains pending.",
+  "historicalReadMilestoneOnly": true,
+  "readPhaseOnly": true,
+  "finalNativeObservation": {
+    "owner": "Root S07",
+    "id": "native-candidate8-final-attempt11",
+    "attempt": 11,
+    "exit": 0,
+    "passed": true,
+    "sourceDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+    "candidateDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+    "outerElapsedMs": 26726,
+    "basisId": "basis_d1960192a18085dc141ee4a036b400d35bbeaa041187ed39",
+    "resultDigest": "c5d834ac2b784f96f24f43105bdda30d1cddde3f3285e64fa9d520ba640c388b",
+    "operationId": "operation-8b7d0a1d7bd0f5257049f8256aefbeab3a2f6d414510d752e58315c665732b4c",
+    "operationExecution": "succeeded",
+    "operationVerification": "verified",
+    "operationResources": {
+      "bytesRead": 28555,
+      "elapsedMs": 348,
+      "recordsDecoded": null,
+      "requests": 6,
+      "retries": 0
+    },
+    "investigationId": "s07-real-git-investigation",
+    "protocolFrames": 14,
+    "nonProtocolStdoutFrames": 0,
+    "stderrBytes": 0,
+    "scope": "Exact final frozen source and packaged candidate: separately selected real Git identity, retained CLI/MCP basis/result, exact durable receipt recovery, fresh-process learning resume, and native Codex guidance preservation. Current-host observation is native Codex exec driving public CLI and stdio MCP; automatic MCP registration, actual Cursor host capture and live AI usage remain unclaimed."
+  },
+  "resourceLifecycle": {
+    "owner": "Root S07",
+    "recordedAtUtc": "2026-10-02T22:22:22.038217Z",
+    "registrationsReleased": 2,
+    "releaseExitCodes": [
+      0,
+      0
+    ],
+    "verifiedOwnershipChecks": [
+      "owner",
+      "device",
+      "inode",
+      "UID",
+      "marker"
+    ],
+    "scratchAbsent": true,
+    "ownExportAbsent": true,
+    "knownFence9Native11PidsAbsent": true,
+    "pendingConditions": [],
+    "scope": "Root reports exact-owned cleanup and process absence; no runtime or filesystem recheck was performed by the integration owner."
+  },
+  "historySemantics": "Earlier verification entries and historical snapshots retain their observed checkpoint status, including failed or incomplete attempts; current acceptance is recorded by finalValidation and releaseGatePassed."
+}

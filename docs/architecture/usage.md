@@ -2,6 +2,8 @@
 
 Decisions D31, D32 and D37. Code in `packages/core/src/dx/usage/`.
 
+This page describes the legacy-compatible usage path. The implemented [agent query contract](agent-queries.md) adds negotiated full basis binding, explicit effects and bounded views with its documented limits. A `usage_facts` refresh or query-time price lookup does not by itself freeze historical results.
+
 ## usage_facts
 
 A derived table (store migrations 3 and 4) with one row per deduplicated AI request across every tool. `dft sync` refreshes it right away and every query refreshes it first. Nothing in it is a source of truth: deleting it only costs a rebuild.
@@ -21,6 +23,8 @@ A query reads only what its answer needs: facts inside the window that match its
 Events of one request are joined by request id, the usage block's request key, and session plus request or generation id; a request id seen without a session joins the one session that has it. An account row with the session but no request id (a Cursor dashboard row) joins the request of another channel of that session whose turn it falls in: the turn runs from the request's time back over its reported duration, give or take 60 seconds. Each row joins at most one request and each request at most one row, nearest first, so `dft usage`, `dft chats` and `dft history` count the request once, with its tokens from the best channel and the charge from the account row. Inside a request every field takes its most precise source by the harness's channel precedence (`harness/<tool>/meta.ts`): tokens come whole from the best channel that has them, the branch from the best branch source (D28 order). When channels disagree on the model, effort, branch or a token bucket, one row per field goes into `usage_disagreements`; `dx_usage` reports the counts per tool.
 
 A report without any key that overlaps another channel of the same session is left out and counted as unresolved. A session-level figure (Claude Code's cumulative session cost) is kept once per session, at its latest value, as the tool's figure with zero requests. When its per-model costs add up to the total, it becomes one fact per model, each with the provider and gateway of its model. The figure covers the whole session, so a query counts it only where the whole session counts: it is left out of a time window or filter that cuts the session (with a note), it sits in `(unattributed)` when the session spans several values of a grouped placement dimension (branch, repo, worktree, model, provider, via, effort, agent, attribution, day, week, month; model, provider and via only when the figure does not already know them), and the series places it at the session's last request. Usage export rows without a request are `account-bucket` facts and are never added to requests unless asked for.
+
+The nearest-time account association above is an interpretation, not an exact request identity. Negotiated agent queries expose provisional attribution, alternatives and unallocated remainder through their supported views and disclosures. Observed account charges remain distinct from reconstructed branch allocation. These disclosures must not be inferred from the legacy path's single chosen row.
 
 ## dx_usage (CLI, MCP, HTTP)
 

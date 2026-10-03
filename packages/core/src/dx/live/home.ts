@@ -5,6 +5,7 @@ import { Data } from "effect";
 
 import { CURSOR_USAGE_STATE_FOLDER } from "../collectors/cursor-usage-api/collector.js";
 import { DFT_DB_FILE } from "../registry/runtime.js";
+import type { AdministrationResources } from "./store-admin.js";
 
 export type LiveActionReason =
   | "backup-incompatible"
@@ -12,12 +13,16 @@ export type LiveActionReason =
   | "confirmation"
   | "not-a-repo"
   | "outside-home"
+  | "stale-plan"
   | "store"
   | "unknown-backup";
 
 export class LiveActionError extends Data.TaggedError("LiveActionError")<{
   readonly message: string;
   readonly reason: LiveActionReason;
+  readonly backupIds?: readonly string[] | undefined;
+  readonly partialErrors?: readonly string[] | undefined;
+  readonly resources?: AdministrationResources | undefined;
 }> {}
 
 export interface LiveHome {

@@ -1,0 +1,1155 @@
+{
+  "schema": "dft.agent-system.release.v1",
+  "gate": "S07",
+  "state": "accepted",
+  "branch": "feat/agent-system",
+  "baselineCommit": "eddcedb29c3900a1e5e365dc3999bf6f7fdcfd7b",
+  "scope": "Local implementation and verification of the enabled agent system. No commit, publication or host MCP registration.",
+  "candidate": {
+    "state": "accepted-final-candidate",
+    "runtimeSourceContentDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+    "runtimeSourceFileCount": 1058,
+    "compiledArtifactDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+    "compiledFileCount": 1820,
+    "digestMethod": "SHA256 of [relative path,SHA256(file bytes)] compact JSON in package order capability/core/devtools/cli, with paths sorted within each dist tree. Source digest includes runtime/tests/assets/guidance/configuration and excludes design/execution documents.",
+    "build8": {
+      "id": "build8",
+      "command": "pnpm exec turbo run build",
+      "exit": 0,
+      "successfulTasks": 4,
+      "totalTasks": 4,
+      "cachedTasks": 3,
+      "durationMs": 4681,
+      "outerElapsedMs": 5493,
+      "sourceDigest": "sha256:70da2ccc6e3bdcf4bfdbd27ec625102551d860d60eb7de03aeb6fb5d31129341",
+      "sourceFileCount": 1058,
+      "compiledDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+      "compiledFileCount": 1820
+    },
+    "validationInputHistory": [
+      {
+        "digest": "sha256:70da2ccc6e3bdcf4bfdbd27ec625102551d860d60eb7de03aeb6fb5d31129341",
+        "scope": "Build8/native10/focused48 input before test-only liveness typed-error wrapper."
+      }
+    ],
+    "afterNative10": "Only test error-channel typing changed. Production packaged candidate remains931e and1820-file equality was verified before fullfence9; native production evidence still targets this exact candidate.",
+    "finalEquality": {
+      "scope": "After complete passedfence9 and native11 on identical frozen source and packaged artifact.",
+      "digest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+      "files": 1820,
+      "distMatchesCandidate8": true,
+      "sourceMatchesFence9": true,
+      "sourceDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+      "packaged": [
+        {
+          "path": "packages/capability/package.json",
+          "same": true
+        },
+        {
+          "path": "packages/core/package.json",
+          "same": true
+        },
+        {
+          "path": "packages/devtools/package.json",
+          "same": true
+        },
+        {
+          "path": "apps/cli/package.json",
+          "same": true
+        },
+        {
+          "path": "apps/cli/assets",
+          "files": 3,
+          "same": true
+        },
+        {
+          "path": ".cursor/skills",
+          "files": 6,
+          "same": true
+        }
+      ],
+      "ownExportAbsent": true
+    }
+  },
+  "contract": {
+    "version": "dx.agent-contracts.v1",
+    "digest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+    "profileVersion": "dx.agent.v1"
+  },
+  "database": {
+    "schemaVersion": 8,
+    "sqliteVersion": "3.53.1",
+    "migration": "CREATE INDEX agent_operation_aliases_operation ON agent_operation_aliases(operation_id)",
+    "rewriteEventBody": null,
+    "observation": "Readonly probe of the owned database created by the production candidate7 native rehearsal confirmed PRAGMA user_version8 and the exact alias index. Controlled v7\u2192v8 fixture preserves store identity, basis, result and reservation."
+  },
+  "availability": {
+    "enabledOperationKinds": [
+      "collect",
+      "configure",
+      "export",
+      "delete",
+      "reset",
+      "restore"
+    ],
+    "reservedDisabledOperationKinds": [
+      "derive-usage",
+      "refresh-prices",
+      "live-start",
+      "live-stop"
+    ],
+    "configurationActions": [
+      "add-repo",
+      "remove-repo",
+      "cursor-usage",
+      "install-guidance",
+      "install-hooks"
+    ],
+    "exportDisclosure": "metadata-only",
+    "agentAcquisition": "recorded-only; refresh-selected reports unavailable with operation guidance",
+    "agentPrices": "cached or pinned; refresh-selected reports unavailable with operation guidance",
+    "guidanceHost": "Native Codex"
+  },
+  "behavior": {
+    "storage": {
+      "testFile": "packages/core/test/dx/s01.test.ts",
+      "passed": 21,
+      "proof": "Actual evidence deletion; immutable succeeded/failed receipt recovery across18 resets and restore; exact digest/key retry/get; unused-plan/fresh-key denial; failed-state resume denial; compatible index migration."
+    },
+    "queries": {
+      "scopedPassed": 15,
+      "proof": "Full pinned calculation inputs, bounded retained pages and provenance; latest branch/token behavior; legacy raw selection replay across actual checkout change explicitly discloses unavailable historical attribution/prices/definitions."
+    },
+    "operations": {
+      "checkpointPassed": 129,
+      "subsequentTestBoundaryPassed": 1,
+      "proof": "Cumulative budgets, selected adapters, immutable reservations, recovery, cancellation and genuine v1 restore. Derived source associations rebuild transactionally through existing event triggers."
+    },
+    "learning": {
+      "passed": 39,
+      "proof": "Authored CAS and history, append-only independently targeted evaluations, scoped bounded suggestions, missing cited basis and actual event deletion invalidate supported projections without deleting authored knowledge."
+    },
+    "dashboardRecovery": {
+      "files": 2,
+      "passed": 24,
+      "command": "pnpm --filter @rat-stack/cli exec vitest run test/dft-agent-live-bridge.test.ts test/dft-live-page.test.ts",
+      "exit": 0,
+      "durationMs": 23450,
+      "proof": "Completed metadata export, lost reply, ordinary reset and same review/key recover one original artifact. Unused stale review/different key denied. Historical shared-plan proof is required for aliased receipts; missing or mismatched proof retains the original pair. Confirmed cancellation permits an explicit new preview."
+    },
+    "audit": {
+      "file": "packages/core/test/dx/s06.test.ts",
+      "checkpointPassed": 27,
+      "proof": "Independent connected fixture loop and three real spawned public-built-API processes test killed/live-owner distinction, operation recovery and investigation resume. Final full-fence rerun supplies current candidate evidence."
+    },
+    "dashboardSse": {
+      "scope": "test-only corrected race: actual hello/subscription precedes fixture write; finite error propagation and request cleanup",
+      "staticExit": 0,
+      "namedTestExit": 1,
+      "passed": 0,
+      "failed": 1,
+      "filtered": 17,
+      "propagationDeadlineMs": 10000,
+      "testDeadlineMs": 30000,
+      "disposition": "No propagation pass under loaded host. Production and numerical deadlines unchanged.",
+      "diagnosticProbe": {
+        "exit": 0,
+        "state": "finished",
+        "passed": 1,
+        "filtered": 17,
+        "vitestDurationMs": 33180,
+        "transformDurationMs": 20040,
+        "outerElapsedMs": 38377,
+        "propagationDeadlineMs": 10000,
+        "testDeadlineMs": 30000,
+        "scope": "Only finite failure diagnostics added to test; no diagnostics fired on passing invocation. Prior10s failures preserved; no causal performance claim."
+      }
+    }
+  },
+  "fixturePolicy": "Destructive/recovery, ambiguous allocation, missing source, price change, concurrent import and adversarial cases use labelled owned fixtures. The separately selected real observation is one Git context, not AI usage or charges.",
+  "diagnostics": {
+    "build7": "Fresh supported TraceDecay CLI workspace diagnostics returned0 errors/warnings.",
+    "finalFence": "Fresh supported TraceDecay CLI diagnostics before fence6 returned connection refused. Mandatory raw repository compiler/lint/formatter/tests/build remain authoritative; no diagnostics, hooks or versions were loosened.",
+    "beforeNextFence": {
+      "command": "tracedecay tool tracedecay_diagnostics --args {scope:workspace,format:json} --json",
+      "exit": 0,
+      "errorCount": 0,
+      "warningCount": 0,
+      "elapsedMs": 20203,
+      "recordedBeforeFinalGate": true,
+      "limits": "Mandatory raw compiler and complete repository fence remain authoritative."
+    },
+    "scopeLimit": "CLI default selected the nearest initialized project. Correlation metadata has more commits than this repository; exact dx project registry context request failed on a later disconnected socket. Diagnostic project identity is unverified; raw dx compiler/fence authority is required.",
+    "finalExplicitProjectAttempt": {
+      "exit": null,
+      "state": "timeout",
+      "seconds": 15,
+      "projectPath": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+      "rawCompilerRequired": true
+    },
+    "durableMemory": "Checked-in acceptance predicate retained. Explicit project_context and diagnose/diagnostics CLI attempts failed or timed out; no durable fact written to an unconfirmed project. Raw compiler/fence authoritative."
+  },
+  "remainingLimits": [
+    "Four reserved operation kinds have no composed adapter. Metadata-only export is enabled; redacted-evidence and selected-learning exports remain unavailable.",
+    "Actual current-host evidence is native Codex exec driving production CLI and stdio MCP plus guidance installation. Automatic MCP registration, actual Cursor host capture and live AI token/cost observations are unclaimed.",
+    "T3 preview did not open successfully. Dashboard behavior is covered by meaningful VM and real HTTP capability tests; visual browser observation is unavailable.",
+    "Physical Git, socket and SQLite I/O and task-attributable peak memory remain unavailable. Logical captured/decoded work is measured; no universal resource savings are asserted.",
+    "Receipt bodies have a256KiB default limit, but alias history and total reset work grow with retained recovery metadata. V1 has no aggregate alias-count/byte cap or automatic journal eviction. Deleted source/basis/result bodies remain deleted.",
+    "Legacy snapshots guarantee raw evidence selection only. Historical agent-basis reconstruction requires retained inputs and supported semantic versions.",
+    "Unimplemented reference resolvers and detailed basis-delta reference comparison report explicit limits.",
+    "Descriptive learning support does not establish causal savings, correctness, waiting time or AI ownership."
+  ],
+  "resources": {
+    "state": "released-and-removed",
+    "preserve": "Caller-owned dependency/dist/.turbo trees and durable user stores are preserved.",
+    "ownedTemporaryExport": "Final rehearsal export content digest verified and exact artifact removed; captured final fence/native supervisor/task/worker PIDs checked absent.",
+    "registry": "Both exact newly-created release registrations were identity-checked, released with exit0, and their owned scratch removed. No registration or deletion of existing dependency/dist/.turbo roots.",
+    "measurementBoundary": "Handler/source work and caller wall time are separately reported. Cold/warm native CLI measurements include startup/transport in outer elapsedMs; context.resources reports logical handler work. No task-attributable peak memory or physical I/O claim.",
+    "latestKnownOwnProcessCheck": {
+      "pids": [
+        63476,
+        63908,
+        64006,
+        66189,
+        69268,
+        92478,
+        63632
+      ],
+      "allAbsent": true,
+      "scope": "Captured finalfence9 supervisor/Turbo/task/worker and native11 supervisor PIDs checked absent after completion. No unrelated process changed."
+    },
+    "finalCleanup": {
+      "state": "released-and-removed",
+      "completedAt": "2026-10-02T22:22:22.038217+00:00",
+      "registrations": [
+        {
+          "path": "/private/var/folders/l5/j97t559s5ljgmjc_ylqn1jmh0000gn/T/dft-agent-system-release.n6h5r115/build",
+          "owner": "dft-agent-system-release-artifact",
+          "identity": [
+            16777232,
+            652539140,
+            501
+          ],
+          "releaseExit": 0
+        },
+        {
+          "path": "/private/var/folders/l5/j97t559s5ljgmjc_ylqn1jmh0000gn/T/dft-agent-system-release.n6h5r115",
+          "owner": "owned-temp-dir:7d994b875aa04b898ee878ab7c0f2629",
+          "identity": [
+            16777232,
+            652053332,
+            501
+          ],
+          "releaseExit": 0
+        }
+      ],
+      "scratchAbsent": true,
+      "ownedExportAbsent": true,
+      "scope": "Only two exact newly-created root-owned registrations and their scratch contents. Directory/owner/device/inode/UID/marker checks passed. Symlink targets and preexisting dependency/dist/.turbo trees, durable stores and other sessions preserved."
+    }
+  },
+  "validationConcurrency": {
+    "processEnvironment": {
+      "VITEST_MAX_WORKERS": "1"
+    },
+    "scope": "Each Vitest process. Package tasks retain parallel scheduling; native agent concurrency is unaffected.",
+    "configuration": "turbo.json test.passThroughEnv forwards only VITEST_MAX_WORKERS under strict environment mode; .env.schema declares its optional positive values.",
+    "envCheck": {
+      "command": "pnpm env:check",
+      "exit": 0
+    },
+    "deadlines": "Existing test/hook/source deadlines and every test/assertion retained.",
+    "history": "Uncapped full fence5 reported nine app wall timeouts and two Git-result failures. Unchanged isolated C08 passed4/4; hook passed3/3; two composite enterprise tests still exceeded30s in the focused parallel batch. Worker cap is a validation control, not proof of a performance defect or improvement."
+  },
+  "fullFence": {
+    "attempt": 9,
+    "command": "pnpm exec turbo run check test build",
+    "processEnvironment": {
+      "VITEST_MAX_WORKERS": "1"
+    },
+    "state": "passed",
+    "exit": 0,
+    "successfulTasks": 18,
+    "totalTasks": 18,
+    "cachedTasks": 9,
+    "durationMs": 519182,
+    "outerElapsedMs": 522684,
+    "completedAllRequiredPassingReports": true,
+    "acceptance": "accepted",
+    "candidateDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+    "sourceDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+    "reports": {
+      "capability": {
+        "passed": 80,
+        "filesPassed": 11
+      },
+      "devtools": {
+        "passed": 19,
+        "filesPassed": 1
+      },
+      "core": {
+        "passed": 1581,
+        "skipped": 3,
+        "total": 1584,
+        "filesPassed": 132,
+        "filesSkipped": 3,
+        "totalFiles": 135,
+        "report": "Complete cached report from same frozen core preflight."
+      },
+      "cli": {
+        "passed": 321,
+        "failed": 0,
+        "filesPassed": 30,
+        "durationMs": 485490
+      }
+    },
+    "aggregate": {
+      "passed": 2001,
+      "skipped": 3,
+      "failed": 0
+    },
+    "skips": [
+      {
+        "file": "packages/core/test/dx/harness/harness-versions.test.ts",
+        "testsSkipped": 2
+      },
+      {
+        "file": "packages/core/test/dx/harness/deepseek-live.test.ts",
+        "testsSkipped": 1
+      },
+      {
+        "file": "packages/core/test/dx/harness/live.test.ts",
+        "tests": 0
+      },
+      {
+        "file": "packages/core/test/dx/harness/omp-live.test.ts",
+        "tests": 0
+      }
+    ],
+    "static": {
+      "lintErrors": 0,
+      "lintWarnings": 0,
+      "formattedFiles": 964,
+      "typecheck": "passed; nonfatal suggestions retained"
+    },
+    "cancelled": false
+  },
+  "acceptancePredicate": {
+    "required": [
+      "Successful exit",
+      "Every required task completes successfully",
+      "Complete passing test reports, with skips and unavailable observations disclosed",
+      "Frozen runtime source identity and compiled/packaged artifact equality",
+      "Rehearsal uses the same candidate",
+      "Owned resource lifecycle accounted for"
+    ],
+    "cancelledOrIncomplete": "unverified even when shell exit is zero"
+  },
+  "hostPressure": {
+    "logicalCpus": 10,
+    "observations": [
+      {
+        "loadAverage": [
+          298.78,
+          274.09,
+          256.75
+        ]
+      },
+      {
+        "loadAverage": [
+          286.55,
+          273.4,
+          257.02
+        ]
+      },
+      {
+        "loadAverage": [
+          179.05,
+          207.36,
+          230.77
+        ]
+      },
+      {
+        "loadAverage": [
+          229.93,
+          215.39,
+          229.41
+        ]
+      }
+    ],
+    "causality": "The aggregate observations do not identify a product defect or attribute all pressure to TraceDecay.",
+    "ownProcesses": "Known fence6 process IDs were all absent on the post-cancellation probe.",
+    "priorityAction": "Supported taskpolicy -B applied only to verified own fence6 and fence7 descendants. Turbo creates independent task process groups; ownership established by captured ancestry and uid. No nice, concurrency, deadlines or unrelated workloads changed; no performance-causality claim.",
+    "testDeadlines": "Unchanged."
+  },
+  "runtimeVersions": {
+    "node": "v24.18.0",
+    "pnpm": "11.3.0",
+    "git": "git version 2.56.0",
+    "sqlite": "3.53.1",
+    "storeSchema": 8,
+    "effect": "4.0.0-rc.117",
+    "xstate": "6.0.0-alpha.59",
+    "xstateEffect": "0.1.0-alpha.2"
+  },
+  "nativeRehearsal": {
+    "id": "native-candidate8-final-attempt11",
+    "candidateDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+    "sourceDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+    "attempt": 11,
+    "exit": 0,
+    "outerElapsedMs": 26726,
+    "observations": {
+      "origin": "separately-selected-real-git",
+      "collected": {
+        "adapterId": "git-identity",
+        "coverage": {
+          "adapterId": "git-identity",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "context:/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker:eddcedb29c3900a1e5e365dc3999bf6f7fdcfd7b:feat/agent-system:eddcedb29c3900a1e5e365dc3999bf6f7fdcfd7b",
+          "windowFrom": "2026-10-02T22:19:16.281Z",
+          "windowTo": "2026-10-02T22:19:16.281Z"
+        },
+        "duplicates": 0,
+        "inserted": 1
+      },
+      "basisId": "basis_d1960192a18085dc141ee4a036b400d35bbeaa041187ed39",
+      "resultDigest": "c5d834ac2b784f96f24f43105bdda30d1cddde3f3285e64fa9d520ba640c388b",
+      "window": {
+        "resolvedAt": "2026-10-02T22:19:17.099Z",
+        "sinceInclusive": null,
+        "timezone": "UTC",
+        "untilExclusive": "2026-10-02T22:19:17.099Z"
+      },
+      "originMix": [
+        {
+          "count": 1,
+          "origin": "live"
+        }
+      ],
+      "cold": {
+        "resources": {
+          "appliedLimits": {
+            "maxDecodedBytes": 1048576,
+            "maxElapsedMs": 5000,
+            "maxFacts": 1000,
+            "maxItems": 20,
+            "maxNetworkRequests": 0,
+            "maxOutputBytes": 65536,
+            "maxSeriesBuckets": 32,
+            "maxStacks": 8
+          },
+          "continuation": "page_481b5f1041f17f2bd8b3c004b8c8842081be2404680ce3d2",
+          "decodedBytes": 2996,
+          "elapsedMs": 41,
+          "factsExamined": 1,
+          "limitReached": "items",
+          "networkRequests": 0,
+          "outputBytes": 24637
+        },
+        "elapsedMs": 854.5822499999995,
+        "outputBytes": 24638
+      },
+      "warm": {
+        "resources": {
+          "appliedLimits": {
+            "maxDecodedBytes": 1048576,
+            "maxElapsedMs": 5000,
+            "maxFacts": 1000,
+            "maxItems": 20,
+            "maxNetworkRequests": 0,
+            "maxOutputBytes": 65536,
+            "maxSeriesBuckets": 32,
+            "maxStacks": 8
+          },
+          "continuation": "page_481b5f1041f17f2bd8b3c004b8c8842081be2404680ce3d2",
+          "decodedBytes": 45824,
+          "elapsedMs": 4,
+          "factsExamined": 23,
+          "limitReached": "items",
+          "networkRequests": 0,
+          "outputBytes": 24633
+        },
+        "elapsedMs": 757.8293330000015,
+        "outputBytes": 24634
+      },
+      "operationId": "operation-8b7d0a1d7bd0f5257049f8256aefbeab3a2f6d414510d752e58315c665732b4c",
+      "operationState": "succeeded",
+      "verificationState": "verified",
+      "operationResources": {
+        "bytesRead": 28555,
+        "elapsedMs": 348,
+        "recordsDecoded": null,
+        "requests": 6,
+        "retries": 0
+      },
+      "investigationId": "s07-real-git-investigation",
+      "currentHost": "Codex native exec driving production stdio MCP; no automatic MCP host registration",
+      "tools": [
+        "inspectFile",
+        "dx_status",
+        "dx_analyze",
+        "dx_explain",
+        "dx_evidence",
+        "dx_collect",
+        "dx_mark",
+        "dx_history",
+        "dx_chats",
+        "dx_usage",
+        "dx_operation",
+        "dx_learning"
+      ],
+      "protocolFrames": 14,
+      "nonProtocolLines": 0,
+      "stderrBytes": 0
+    },
+    "scope": "Exact finalfence9 source+compiled candidate; selected actualGitcontext only, no liveAI/capture/automaticregistrationclaim.",
+    "installation": "Native Codex guidance install/reinstall/uninstall preserved edited and unrelated fixture skills.",
+    "recovery": "Production CLI/MCP durable keyed operation recovery, exact reviewed plan proof and fresh-process authored investigation resume passed."
+  },
+  "daemonRecovery": {
+    "restartCommand": "timed-out20s; own CLI child stopped",
+    "registrationAfterRestart": "absent; socketmissing; disabled override observed",
+    "causality": "No pre-restart disabled-state snapshot; do not claim restart caused it.",
+    "restoration": [
+      "launchctl enable gui/501/com.tracedecay.daemon",
+      "launchctl bootstrap gui/501 /Users/satan/Library/LaunchAgents/com.tracedecay.daemon.plist"
+    ],
+    "restorationExits": [
+      0,
+      0
+    ],
+    "observedDisabledOverride": "enabled",
+    "observedState": "running",
+    "observedPid": 18739,
+    "socket": "connectable",
+    "healthRequest": {
+      "tool": "tracedecay_project_list",
+      "limit": 1,
+      "exit": 0,
+      "elapsedMs": 1891
+    },
+    "diagnosticsRequest": {
+      "tool": "tracedecay_diagnostics",
+      "exit": 0,
+      "errors": 0,
+      "warnings": 0
+    },
+    "changes": "Restored exact existing service state. No plist/store edits, reinstall, socket-file deletion or client kills.",
+    "laterObservation": {
+      "request": "tracedecay_project_context for exact dx-feature-tracker path",
+      "exit": 1,
+      "reason": "socketconnectionrefused",
+      "scope": "Earlier running/connectable/successful request observations remain historical. Persistent daemon health is not established. No second lifecycle retry."
+    }
+  },
+  "documentChecks": {
+    "completedNodes": 9,
+    "graphPlans": 9,
+    "graphEdges": 11,
+    "graphErrors": 0,
+    "graphWarnings": 0,
+    "changedPaths": 187,
+    "unowned": 0,
+    "unexpectedOverlaps": 0,
+    "parsedJsonCount": 85,
+    "navigationDocs": 16,
+    "localLinks": 79,
+    "missingLinks": 0,
+    "scopedFormatExit": 0,
+    "scopedFormatMatchedFiles": 6,
+    "diffCheckExit": 0,
+    "protectedConfigsAndPinsChanged": false,
+    "scope": "Final document/plan metadata checks after complete passing runtime gate and same-input native rehearsal; no production or test edits after frozen validation."
+  },
+  "fullFenceHistory": [
+    {
+      "attempt": 6,
+      "command": "pnpm exec turbo run check test build",
+      "shellExit": 0,
+      "state": "cancelled",
+      "signal": "SIGTERM to verified own Turbo process",
+      "successfulTasks": 16,
+      "totalTasks": 18,
+      "cachedTasks": 8,
+      "durationMs": 1036305,
+      "completedAllRequiredPassingReports": false,
+      "acceptance": "unverified",
+      "disposition": "Known timing failures under extreme shared-host pressure; root cancelled the failed run to conserve resources. A zero wrapper exit following cancellation is not acceptance."
+    },
+    {
+      "attempt": 7,
+      "command": "pnpm exec turbo run check test build",
+      "processEnvironment": {
+        "VITEST_MAX_WORKERS": "1"
+      },
+      "state": "failed",
+      "exit": 1,
+      "acceptance": "unverified",
+      "successfulTasks": 16,
+      "totalTasks": 18,
+      "cachedTasks": 8,
+      "durationMs": 578963,
+      "outerElapsedMs": 579660,
+      "completedAllRequiredPassingReports": false,
+      "reports": {
+        "capability": {
+          "passed": 80,
+          "filesPassed": 11
+        },
+        "devtools": {
+          "passed": 19,
+          "filesPassed": 1
+        },
+        "cli": {
+          "passed": 305,
+          "failed": 2,
+          "total": 307,
+          "filesPassed": 28,
+          "filesFailed": 2,
+          "totalFiles": 30,
+          "durationMs": 550000
+        },
+        "core": {
+          "complete": false,
+          "reason": "Gate interrupted after CLI task failure; no final core summary."
+        },
+        "live": {
+          "passed": 18,
+          "durationMs": 80417,
+          "sseCaseDurationMs": 9191
+        },
+        "C08": {
+          "passed": 4,
+          "durationMs": 38991
+        }
+      },
+      "knownFailures": [
+        {
+          "file": "apps/cli/test/dft-usage.test.ts",
+          "durationMs": 35226,
+          "deadlineMs": 30000,
+          "disposition": "Five independent CLI assertions now use independent tests and one shared fixture; no commands, assertions or deadlines removed."
+        },
+        {
+          "file": "apps/cli/test/dft-agent-adapters.test.ts",
+          "durationMs": 31668,
+          "deadlineMs": 30000,
+          "disposition": "Exact oversized Buffer equality now uses native byte equality. Production budget/timeout defect found separately and repair is active."
+        },
+        {
+          "file": "packages/core/test/dx/usage-rebuild-scale.test.ts",
+          "durationMs": 31909,
+          "deadlineMs": 20000,
+          "disposition": "Unchanged 100000-event performance oracle. Root isolated run admitted; cause unverified."
+        }
+      ]
+    },
+    {
+      "attempt": 8,
+      "command": "pnpm exec turbo run check test build",
+      "processEnvironment": {
+        "VITEST_MAX_WORKERS": "1"
+      },
+      "state": "failed",
+      "exit": 1,
+      "acceptance": "unverified",
+      "successfulTasks": 11,
+      "totalReportedTasks": 14,
+      "cachedTasks": 10,
+      "durationMs": 31482,
+      "outerElapsedMs": 38110,
+      "completedAllRequiredPassingReports": false,
+      "knownFailures": [
+        {
+          "file": "apps/cli/test/dft-agent-cursor-hooks.test.ts",
+          "line": 776,
+          "codes": [
+            "TS377021",
+            "TS377030"
+          ],
+          "reason": "Unknown Effect.try catch error channel in newly authored liveness proof. Test-only typed boundary repair; no production change or assertion weakening."
+        }
+      ],
+      "completeReports": {
+        "capability": {
+          "passed": 80
+        },
+        "devtools": {
+          "passed": 19
+        },
+        "core": {
+          "passed": 1581,
+          "skipped": 3,
+          "total": 1584,
+          "filesPassed": 132,
+          "filesSkipped": 3,
+          "totalFiles": 135
+        }
+      },
+      "cliReportComplete": false,
+      "candidateDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+      "sourceDigest": "sha256:70da2ccc6e3bdcf4bfdbd27ec625102551d860d60eb7de03aeb6fb5d31129341"
+    }
+  ],
+  "productionRepair": {
+    "state": "verified-closed",
+    "owner": "S05",
+    "scope": [
+      "apps/cli/src/dft-agent-adapters.ts",
+      "apps/cli/src/dft-agent-cursor-hooks.ts"
+    ],
+    "finding": "Local ownership Git subprocesses bypassed native-request admission/counts and synchronous SIGTERM timeout could wait indefinitely. Outer Git resolver did not account for these inner attempts.",
+    "required": "Admit and charge each attempted invocation, settle cumulative phase counts, hard-stop and reap owned child processes with bounded stdout/stderr and remaining elapsed budget. Preserve zero-quota denial, scope/byte guards and durable terminal/key recovery.",
+    "contract": "Public 4f wire digest unchanged; no acceptance until repaired candidate rebuilt and complete gate passes."
+  },
+  "isolatedScale": {
+    "id": "unchanged-scale-isolated",
+    "command": [
+      "pnpm",
+      "--filter",
+      "@rat-stack/core",
+      "exec",
+      "vitest",
+      "run",
+      "test/dx/usage-rebuild-scale.test.ts"
+    ],
+    "exit": 0,
+    "passed": 2,
+    "filesPassed": 1,
+    "vitestDurationMs": 10490,
+    "outerElapsedMs": 14791,
+    "caseDeadlinesMs": [
+      20000,
+      20000
+    ],
+    "scope": "Existing unchanged100000-event and300worktree performance oracles. No source change or deadline calibration; isolated pass does not erase full-fence7 failure or establish its cause."
+  },
+  "usageIndependentCases": {
+    "id": "usage-independent-cases",
+    "command": [
+      "pnpm",
+      "--filter",
+      "@rat-stack/cli",
+      "exec",
+      "vitest",
+      "run",
+      "test/dft-usage.test.ts"
+    ],
+    "exit": 0,
+    "passed": 8,
+    "filesPassed": 1,
+    "vitestDurationMs": 18180,
+    "outerElapsedMs": 21198,
+    "caseDeadlineMs": 30000,
+    "scope": "Same six fresh CLI commands and exact original assertions; independent usage tests share one cached fixture. Build7 compiled usage behavior unchanged, not acceptance of ongoing production repair."
+  },
+  "candidateHistory": [
+    {
+      "runtimeSourceContentDigest": "sha256:93276235d115aed4a4104c9e6d3ef53a22985bcde10f36c72b21926edf7377a2",
+      "runtimeSourceFileCount": 1058,
+      "compiledArtifactDigest": "sha256:f565f505399e12d969aebf468a91d476fc533088d8d705f9d74fd671cedb6f7c",
+      "compiledFileCount": 1820,
+      "digestMethod": "SHA256 of sorted [relative path, SHA256(file bytes)] JSON. Runtime source includes tests, packaged guidance/assets and pinned check configuration; design/execution documents are excluded. Compiled digest covers all four package dist trees.",
+      "build7": {
+        "command": "pnpm exec turbo run build",
+        "exit": 0,
+        "successfulTasks": 4,
+        "cachedTasks": 2,
+        "durationMs": 7214
+      },
+      "afterBuild7": "Two further test repairs plus S05 production request/termination repair invalidate Build7 as current release candidate. Historical native9/equality evidence is retained.",
+      "postFence6Equality": {
+        "scope": "After aborted fence6; equality alone is not release acceptance",
+        "digest": "sha256:f565f505399e12d969aebf468a91d476fc533088d8d705f9d74fd671cedb6f7c",
+        "files": 1820,
+        "distMatchesCandidate7": true,
+        "packaged": [
+          {
+            "path": "packages/capability/package.json",
+            "same": true
+          },
+          {
+            "path": "packages/core/package.json",
+            "same": true
+          },
+          {
+            "path": "packages/devtools/package.json",
+            "same": true
+          },
+          {
+            "path": "apps/cli/package.json",
+            "same": true
+          },
+          {
+            "path": "apps/cli/assets",
+            "files": 3,
+            "same": true
+          },
+          {
+            "path": ".cursor/skills",
+            "files": 6,
+            "same": true
+          }
+        ]
+      },
+      "validationInputHistory": [
+        {
+          "digest": "sha256:a26e14ba872701a6a3de6a0426e6105781be162c480d50cb8fd7ed1eaf10150d",
+          "scope": "SSE readiness correction and optional worker controls; before failure-stage diagnostic test additions."
+        }
+      ],
+      "state": "historical-build7"
+    }
+  ],
+  "corePreflight": {
+    "id": "complete-core-package-preflight",
+    "command": [
+      "pnpm",
+      "exec",
+      "turbo",
+      "run",
+      "test",
+      "--filter=@rat-stack/core"
+    ],
+    "processEnvironment": {
+      "VITEST_MAX_WORKERS": "1"
+    },
+    "exit": 0,
+    "successfulTasks": 3,
+    "totalTasks": 3,
+    "cachedTasks": 2,
+    "turboDurationMs": 445098,
+    "outerElapsedMs": 445501,
+    "testFilesPassed": 132,
+    "testFilesSkipped": 3,
+    "testFilesTotal": 135,
+    "passed": 1581,
+    "skipped": 3,
+    "total": 1584,
+    "vitestDurationMs": 441620,
+    "scaleCaseDurationsMs": [
+      5384,
+      1762
+    ],
+    "caseDeadlinesMs": [
+      20000,
+      20000
+    ],
+    "scope": "Complete frozen core report; three existing optional live-host skips disclosed. No app source writes in this test selection. Not complete combined release acceptance."
+  },
+  "nativeAdapterRepair": {
+    "id": "native-adapter-repair-aligned",
+    "command": [
+      "pnpm",
+      "--filter",
+      "@rat-stack/cli",
+      "exec",
+      "vitest",
+      "run",
+      "test/dft-agent-adapters.test.ts",
+      "test/dft-agent-cursor-hooks.test.ts"
+    ],
+    "processEnvironment": {
+      "VITEST_MAX_WORKERS": "1"
+    },
+    "exit": 0,
+    "passed": 48,
+    "filesPassed": 2,
+    "vitestDurationMs": 20890,
+    "outerElapsedMs": 23925,
+    "candidateDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+    "sourceDigest": "sha256:70da2ccc6e3bdcf4bfdbd27ec625102551d860d60eb7de03aeb6fb5d31129341",
+    "proofs": [
+      "Zero native quota prevents launches.",
+      "Shared cumulative request quota includes failed attempts.",
+      "Private child diagnostics are withheld.",
+      "Unused old adapter plans refuse before target/native resolution.",
+      "A ready owned child demonstrably ignores SIGTERM and is then hard-killed and reaped.",
+      "Exact2MiB unrelated backup is byte-identical and outside reviewed scope."
+    ],
+    "limits": "Original byte/file/record/retry/time bounds and full original assertions retained; not complete combined release acceptance."
+  },
+  "nativeRehearsalHistory": [
+    {
+      "origin": "separately-selected-real-git",
+      "collected": {
+        "adapterId": "git-identity",
+        "coverage": {
+          "adapterId": "git-identity",
+          "expectedItems": 1,
+          "gaps": [],
+          "observedItems": 1,
+          "state": "complete",
+          "watermark": "context:/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker:eddcedb29c3900a1e5e365dc3999bf6f7fdcfd7b:feat/agent-system:eddcedb29c3900a1e5e365dc3999bf6f7fdcfd7b",
+          "windowFrom": "2026-10-02T20:31:43.937Z",
+          "windowTo": "2026-10-02T20:31:43.937Z"
+        },
+        "duplicates": 0,
+        "inserted": 1
+      },
+      "basisId": "basis_b7ca1c4f00f518f90e9192e01b9f15de40c944098db56393",
+      "resultDigest": "9a3a08f1cae526f66ba1496f648583cee238d9fe20d6f2433e54c45017ff088d",
+      "window": {
+        "resolvedAt": "2026-10-02T20:31:49.411Z",
+        "sinceInclusive": null,
+        "timezone": "UTC",
+        "untilExclusive": "2026-10-02T20:31:49.411Z"
+      },
+      "originMix": [
+        {
+          "count": 1,
+          "origin": "live"
+        }
+      ],
+      "cold": {
+        "resources": {
+          "appliedLimits": {
+            "maxDecodedBytes": 1048576,
+            "maxElapsedMs": 5000,
+            "maxFacts": 1000,
+            "maxItems": 20,
+            "maxNetworkRequests": 0,
+            "maxOutputBytes": 65536,
+            "maxSeriesBuckets": 32,
+            "maxStacks": 8
+          },
+          "continuation": "page_8e51799c656d672566f76501d755cce45919f8bd94353a80",
+          "decodedBytes": 2996,
+          "elapsedMs": 320,
+          "factsExamined": 1,
+          "limitReached": "items",
+          "networkRequests": 0,
+          "outputBytes": 24638
+        },
+        "elapsedMs": 5830.675958,
+        "outputBytes": 24639
+      },
+      "warm": {
+        "resources": {
+          "appliedLimits": {
+            "maxDecodedBytes": 1048576,
+            "maxElapsedMs": 5000,
+            "maxFacts": 1000,
+            "maxItems": 20,
+            "maxNetworkRequests": 0,
+            "maxOutputBytes": 65536,
+            "maxSeriesBuckets": 32,
+            "maxStacks": 8
+          },
+          "continuation": "page_8e51799c656d672566f76501d755cce45919f8bd94353a80",
+          "decodedBytes": 45824,
+          "elapsedMs": 171,
+          "factsExamined": 23,
+          "limitReached": "items",
+          "networkRequests": 0,
+          "outputBytes": 24635
+        },
+        "elapsedMs": 4354.106207999997,
+        "outputBytes": 24636
+      },
+      "operationId": "operation-0348976c3919db82ee8f677d1252e4668be08f913eb1c053ae5058549d752e38",
+      "operationState": "succeeded",
+      "verificationState": "verified",
+      "operationResources": {
+        "bytesRead": 28555,
+        "elapsedMs": 1307,
+        "recordsDecoded": null,
+        "requests": 6,
+        "retries": 0
+      },
+      "investigationId": "s07-real-git-investigation",
+      "currentHost": "Codex native exec driving production stdio MCP; no automatic MCP host registration",
+      "tools": [
+        "inspectFile",
+        "dx_status",
+        "dx_analyze",
+        "dx_explain",
+        "dx_evidence",
+        "dx_collect",
+        "dx_mark",
+        "dx_history",
+        "dx_chats",
+        "dx_usage",
+        "dx_operation",
+        "dx_learning"
+      ],
+      "protocolFrames": 14,
+      "nonProtocolLines": 0,
+      "stderrBytes": 0,
+      "candidateArtifactDigest": "sha256:f565f505399e12d969aebf468a91d476fc533088d8d705f9d74fd671cedb6f7c",
+      "scope": "Production candidate7 public CLI/stdio MCP driven by native Codex exec; one separately selected Git context. No actual AI usage, live charge observation or automatic host MCP registration."
+    },
+    {
+      "id": "native-candidate8-attempt10",
+      "candidateDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+      "sourceDigest": "sha256:70da2ccc6e3bdcf4bfdbd27ec625102551d860d60eb7de03aeb6fb5d31129341",
+      "exit": 0,
+      "outerElapsedMs": 45992,
+      "attempt": 10,
+      "observations": {
+        "origin": "separately-selected-real-git",
+        "collected": {
+          "adapterId": "git-identity",
+          "coverage": {
+            "adapterId": "git-identity",
+            "expectedItems": 1,
+            "gaps": [],
+            "observedItems": 1,
+            "state": "complete",
+            "watermark": "context:/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker:eddcedb29c3900a1e5e365dc3999bf6f7fdcfd7b:feat/agent-system:eddcedb29c3900a1e5e365dc3999bf6f7fdcfd7b",
+            "windowFrom": "2026-10-02T22:04:27.305Z",
+            "windowTo": "2026-10-02T22:04:27.305Z"
+          },
+          "duplicates": 0,
+          "inserted": 1
+        },
+        "basisId": "basis_e8b814967d22b1bde42ddb2c1e4b4d611faa42a99c788dc5",
+        "resultDigest": "574a0a38f672328a851149f7b04a4e0bd6d6a47c39610f7ba148da68d887dbd0",
+        "window": {
+          "resolvedAt": "2026-10-02T22:04:30.904Z",
+          "sinceInclusive": null,
+          "timezone": "UTC",
+          "untilExclusive": "2026-10-02T22:04:30.904Z"
+        },
+        "originMix": [
+          {
+            "count": 1,
+            "origin": "live"
+          }
+        ],
+        "cold": {
+          "resources": {
+            "appliedLimits": {
+              "maxDecodedBytes": 1048576,
+              "maxElapsedMs": 5000,
+              "maxFacts": 1000,
+              "maxItems": 20,
+              "maxNetworkRequests": 0,
+              "maxOutputBytes": 65536,
+              "maxSeriesBuckets": 32,
+              "maxStacks": 8
+            },
+            "continuation": "page_6688dae7842df21f1738cb2cf340825bdce8cefda0e62e69",
+            "decodedBytes": 2996,
+            "elapsedMs": 119,
+            "factsExamined": 1,
+            "limitReached": "items",
+            "networkRequests": 0,
+            "outputBytes": 24638
+          },
+          "elapsedMs": 3715.0780830000003,
+          "outputBytes": 24639
+        },
+        "warm": {
+          "resources": {
+            "appliedLimits": {
+              "maxDecodedBytes": 1048576,
+              "maxElapsedMs": 5000,
+              "maxFacts": 1000,
+              "maxItems": 20,
+              "maxNetworkRequests": 0,
+              "maxOutputBytes": 65536,
+              "maxSeriesBuckets": 32,
+              "maxStacks": 8
+            },
+            "continuation": "page_6688dae7842df21f1738cb2cf340825bdce8cefda0e62e69",
+            "decodedBytes": 45824,
+            "elapsedMs": 5,
+            "factsExamined": 23,
+            "limitReached": "items",
+            "networkRequests": 0,
+            "outputBytes": 24633
+          },
+          "elapsedMs": 3076.566583,
+          "outputBytes": 24634
+        },
+        "operationId": "operation-516f6f2ea744086f6b974ee1ad7607dece9a88f6464885a64f0f4e0b2e3da854",
+        "operationState": "succeeded",
+        "verificationState": "verified",
+        "operationResources": {
+          "bytesRead": 28555,
+          "elapsedMs": 751,
+          "recordsDecoded": null,
+          "requests": 6,
+          "retries": 0
+        },
+        "investigationId": "s07-real-git-investigation",
+        "currentHost": "Codex native exec driving production stdio MCP; no automatic MCP host registration",
+        "tools": [
+          "inspectFile",
+          "dx_status",
+          "dx_analyze",
+          "dx_explain",
+          "dx_evidence",
+          "dx_collect",
+          "dx_mark",
+          "dx_history",
+          "dx_chats",
+          "dx_usage",
+          "dx_operation",
+          "dx_learning"
+        ],
+        "protocolFrames": 14,
+        "nonProtocolLines": 0,
+        "stderrBytes": 0
+      },
+      "assertions": [
+        "Exact production CLI cold/warm pinned basis/result parity.",
+        "Production stdio initialize/tools/calls with14frames,0noise,0stderr.",
+        "Reviewed operation verified; exact durable retry/get recovery and CLI/MCP receipt parity.",
+        "Fresh-process authored investigation resume with exact retained references.",
+        "Native Codex guidance install/reinstall/uninstall preserves user edits and unrelated fixture skills.",
+        "Own metadata export digest verified and exact temporary artifact removed."
+      ],
+      "scope": "One separately selected actual project Git context. No live AI tokens/charges, registered native MCP tool, automatic host registration or actual Cursor capture claim."
+    }
+  ],
+  "accepted": true,
+  "acceptedAt": "2026-10-02T22:24:10.340820+00:00",
+  "documentChecksHistory": [
+    {
+      "ownership": {
+        "exit": 0,
+        "changedPaths": 186,
+        "unowned": 0,
+        "unexpectedOverlaps": 0
+      },
+      "scopedFormatting": {
+        "exit": 0,
+        "matchedFiles": 7,
+        "scope": "AGENTS, VISION, four agent architecture docs and turbo.json. Ignored execution/planning prose is not claimed formatted."
+      },
+      "jsonParse": {
+        "exit": 0,
+        "files": 14
+      },
+      "localNavigation": {
+        "files": 9,
+        "checkedLinks": 73,
+        "missing": 0
+      },
+      "exactPlanGraph": {
+        "exit": 0,
+        "plans": 9,
+        "edges": 11,
+        "errors": 0,
+        "warnings": 0,
+        "scope": "Ordering/metadata only; not runtime acceptance."
+      },
+      "manifestHandoffRefs": {
+        "removedNonexistentOptionalMarkdownRefs": [
+          "docs/execution/nodes/r00.md",
+          "docs/execution/nodes/s04.md",
+          "docs/execution/nodes/s05.md",
+          "docs/execution/nodes/s06.md",
+          "docs/execution/nodes/s07.md"
+        ],
+        "rule": "Existing JSON or Markdown handoffs only; no synthetic empty documents or missing paths advertised."
+      }
+    }
+  ]
+}

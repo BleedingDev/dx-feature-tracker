@@ -18,8 +18,15 @@ import {
 } from "effect";
 
 import { runCollect } from "../cli/commands/collect.js";
-import type { EventStoreService } from "../contracts/services.js";
+import type { AgentStoreService } from "../contracts/agent-store.js";
+import type {
+  CollectError,
+  EventStoreService,
+  StoreFailure,
+} from "../contracts/services.js";
+import type { ReadError } from "../harness/contract.js";
 import { HarnessRegistry, harnessRegistryFor } from "../harness/registry.js";
+import type { HarnessCatalog } from "../harness/registry.js";
 import { emptyFlightContext } from "../model/event.js";
 import type { FlightContext } from "../model/event.js";
 import { allCollectors } from "../registry/registry.js";
@@ -29,12 +36,11 @@ import type {
 } from "../registry/registry.js";
 import { contextForRepo, repoWorktrees } from "../registry/runtime.js";
 import { planSources, runPlannedStep } from "../registry/sync.js";
-import type { SyncStep } from "../registry/sync.js";
-import {
-  HarnessCursors,
-  openHarnessCursors,
-} from "../storage/harness-cursors.js";
+import type { PlannedSource, SyncStep } from "../registry/sync.js";
+import { HarnessCursors } from "../storage/harness-cursors.js";
+import type { HarnessCursorsApi } from "../storage/harness-cursors.js";
 import { openSqliteEventStore } from "../storage/sqlite-event-store.js";
+import type { OpenedEventStore } from "../storage/sqlite-event-store.js";
 import { ACCOUNT_POLLS, LIVE_CAPTURES } from "./capture.js";
 import type { SpoolWatch } from "./capture.js";
 import {
@@ -53,20 +59,29 @@ import type {
 import { liveHome, LiveActionError } from "./home.js";
 import type { LiveHome } from "./home.js";
 import {
+  applyReviewedAdministration as applyReviewedAdministrationIn,
   deleteRepoData as deleteRepoDataIn,
   listBackups as listBackupsIn,
   planDeleteRepoData as planDeleteRepoDataIn,
   planResetStore as planResetStoreIn,
+  previewAdministration as previewAdministrationIn,
+  probeReviewedAdministration as probeReviewedAdministrationIn,
   resetStore as resetStoreIn,
   restoreBackup as restoreBackupIn,
 } from "./store-admin.js";
 import type {
   BackupInfo,
   DeleteRepoResult,
+  LiveAdministrationPreview,
+  LiveAdministrationProbe,
+  LiveAdministrationRequest,
+  LiveAdministrationResult,
+  LiveAdministrationLimits,
   RepoDataPlan,
   ResetPlan,
   ResetResult,
   RestoreResult,
+  RetainedAdministrationReview,
 } from "./store-admin.js";
 
 export {
@@ -93,9 +108,26 @@ export const LIVE_DEFAULTS = {
 
 export type LiveSignal = "SIGINT" | "SIGTERM" | "SIGHUP" | "SIGUSR2";
 
+export interface LiveAcquisitionEnvironment {
+  readonly store: EventStoreService;
+  readonly storePath: string;
+  readonly cursors: HarnessCursorsApi;
+  readonly registry: HarnessCatalog;
+}
+
+export type LiveAcquisitionExecutor = (
+  planned: PlannedSource,
+  environment: LiveAcquisitionEnvironment
+) => Effect.Effect<
+  SyncStep,
+  CollectError | StoreFailure | ReadError | LiveActionError,
+  DxCollectorServices
+>;
+
 export interface LiveEngineOptions {
   readonly collectors?: readonly RegisteredCollector[];
   readonly debounceMs?: number;
+  readonly deferAcquisitionUntilConfigured?: boolean;
   readonly dftHome: string;
   readonly home: string;
   readonly maxBackoffMs?: number;
@@ -153,10 +185,20 @@ export interface LiveStatus {
 export type LiveListener = (change: LiveChange) => void;
 
 export interface LiveEngine {
+  readonly agentStore: AgentStoreService;
+  readonly appendBounded: OpenedEventStore["appendBounded"];
   readonly addRepo: (
     target: string
   ) => Effect.Effect<TrackResult, LiveActionError>;
+  readonly applyReviewedAdministration: (
+    request: LiveAdministrationRequest,
+    fingerprint: string,
+    confirmation: string,
+    operationId: string,
+    limits?: LiveAdministrationLimits
+  ) => Effect.Effect<LiveAdministrationResult, LiveActionError>;
   readonly config: Effect.Effect<LiveConfig>;
+  readonly cursors: HarnessCursorsApi;
   readonly deleteRepoData: (
     target: string,
     confirmation: string
@@ -167,6 +209,15 @@ export interface LiveEngine {
     target: string
   ) => Effect.Effect<RepoDataPlan, LiveActionError>;
   readonly planResetStore: Effect.Effect<ResetPlan, LiveActionError>;
+  readonly previewAdministration: (
+    request: LiveAdministrationRequest,
+    limits?: LiveAdministrationLimits
+  ) => Effect.Effect<LiveAdministrationPreview, LiveActionError>;
+  readonly probeReviewedAdministration: (
+    reviewed: RetainedAdministrationReview,
+    backupIds?: readonly string[],
+    limits?: LiveAdministrationLimits
+  ) => Effect.Effect<LiveAdministrationProbe, LiveActionError>;
   readonly ready: Effect.Effect<void>;
   readonly removeRepo: (
     target: string
@@ -180,11 +231,69 @@ export interface LiveEngine {
   readonly setCursorUsageImport: (
     enabled: boolean
   ) => Effect.Effect<LiveConfig, LiveActionError>;
+  readonly setAcquisitionExecutor: (
+    executor: LiveAcquisitionExecutor
+  ) => Effect.Effect<void>;
   readonly status: Effect.Effect<LiveStatus>;
+  readonly store: EventStoreService;
   readonly stop: Effect.Effect<void>;
   readonly stopped: Effect.Effect<void>;
   readonly subscribe: (listener: LiveListener) => () => void;
 }
+
+export type AdministrationBackend = Pick<
+  LiveEngine,
+  | "agentStore"
+  | "applyReviewedAdministration"
+  | "home"
+  | "previewAdministration"
+  | "probeReviewedAdministration"
+  | "store"
+>;
+
+export const makeAdministrationBackend = (options: {
+  readonly home: LiveHome;
+  readonly store: EventStoreService;
+  readonly agentStore: AgentStoreService;
+}): Effect.Effect<AdministrationBackend> =>
+  Effect.gen(function* makeAdministration() {
+    const lock = yield* Semaphore.make(1);
+    const exclusive = Semaphore.withPermits(lock, 1);
+
+    return {
+      agentStore: options.agentStore,
+      applyReviewedAdministration: (
+        request,
+        expectedFingerprint,
+        confirmation,
+        operationId,
+        limits
+      ) =>
+        exclusive(
+          applyReviewedAdministrationIn(
+            options.home,
+            request,
+            expectedFingerprint,
+            confirmation,
+            operationId,
+            limits
+          )
+        ),
+      home: options.home,
+      previewAdministration: (request, limits) =>
+        exclusive(previewAdministrationIn(options.home, request, limits)),
+      probeReviewedAdministration: (reviewed, backupIds, limits) =>
+        exclusive(
+          probeReviewedAdministrationIn(
+            options.home,
+            reviewed,
+            backupIds,
+            limits
+          )
+        ),
+      store: options.store,
+    };
+  });
 
 interface RunState {
   pending: boolean;
@@ -433,7 +542,7 @@ export const startLiveEngine = (
 
     const inScope = Scope.provide(scope);
 
-    const store: EventStoreService = yield* inScope(
+    const openedStore = yield* inScope(
       Effect.acquireRelease(
         openSqliteEventStore({ kind: "live", path: home.storePath }).pipe(
           Effect.mapError(
@@ -449,17 +558,11 @@ export const startLiveEngine = (
             opened.close();
           })
       )
-    ).pipe(Effect.map((opened) => opened.service));
-
-    const cursors = yield* inScope(openHarnessCursors(home.storePath)).pipe(
-      Effect.mapError(
-        (error) =>
-          new LiveActionError({
-            message: `Could not open the store: ${error.message}`,
-            reason: "store",
-          })
-      )
     );
+
+    const store: EventStoreService = openedStore.service;
+    const agentStore: AgentStoreService = openedStore.agentService;
+    const cursors = openedStore.cursorService;
 
     const reader = yield* inScope(
       Effect.acquireRelease(
@@ -490,8 +593,22 @@ export const startLiveEngine = (
     };
 
     let running = true;
+    let acquisitionExecutor: LiveAcquisitionExecutor | null = null;
+    const acquisitionReady = yield* Deferred.make<boolean>();
+
+    if (options.deferAcquisitionUntilConfigured !== true) {
+      yield* Deferred.succeed(acquisitionReady, true);
+    }
 
     const exclusive = Semaphore.withPermits(lock, 1);
+
+    const serializeLegacyAcquisition = <A, E, R>(
+      work: Effect.Effect<A, E, R>
+    ): Effect.Effect<A, E, R> =>
+      Effect.suspend(() =>
+        acquisitionExecutor === null ? exclusive(work) : work
+      );
+
     const configLock = yield* Semaphore.make(1);
     const configExclusive = Semaphore.withPermits(configLock, 1);
 
@@ -576,6 +693,42 @@ export const startLiveEngine = (
         )
       );
 
+    const executePlannedAcquisition = (
+      planned: PlannedSource,
+      registry: HarnessCatalog
+    ): Effect.Effect<SyncStep, never, DxCollectorServices> =>
+      Effect.suspend(() => {
+        if (acquisitionExecutor !== null) {
+          return acquisitionExecutor(planned, {
+            cursors,
+            registry,
+            store,
+            storePath: home.storePath,
+          }).pipe(
+            Effect.catchCause((cause) =>
+              Effect.succeed<SyncStep>({
+                duplicates: null,
+                input: planned.input,
+                inserted: null,
+                reason: causeText(cause),
+                source: planned.source,
+                status: "unavailable",
+              })
+            )
+          );
+        }
+
+        return (
+          planned.ref === null && planned.unavailable === null
+            ? collectStep(planned.context, planned.source, planned.input)
+            : runPlannedStep(
+                { store, storePath: home.storePath },
+                collectors,
+                planned
+              )
+        ).pipe(Effect.provideService(HarnessRegistry, registry));
+      });
+
     const syncRepoWork = (root: string) =>
       Effect.gen(function* syncRepo() {
         const state = repos.get(root);
@@ -596,6 +749,8 @@ export const startLiveEngine = (
         const context = contextForRepo(root);
 
         const steps = yield* Effect.gen(function* syncPlanned() {
+          const registry = yield* HarnessRegistry;
+
           const plan = (yield* planSources(
             context,
             {
@@ -611,15 +766,7 @@ export const startLiveEngine = (
           const done: SyncStep[] = [];
 
           for (const step of plan) {
-            done.push(
-              step.ref === null && step.unavailable === null
-                ? yield* collectStep(step.context, step.source, step.input)
-                : yield* runPlannedStep(
-                    { store, storePath: home.storePath },
-                    collectors,
-                    step
-                  )
-            );
+            done.push(yield* executePlannedAcquisition(step, registry));
           }
 
           return done;
@@ -629,7 +776,11 @@ export const startLiveEngine = (
         );
 
         const rows = branchesSince(before, state.repo.commonDir);
-        const inserted = rows.reduce((sum, row) => sum + row.n, 0);
+
+        const inserted =
+          acquisitionExecutor === null
+            ? rows.reduce((sum, row) => sum + row.n, 0)
+            : steps.reduce((sum, step) => sum + (step.inserted ?? 0), 0);
 
         state.lastInserted = inserted;
         state.lastSyncAt = yield* nowIso;
@@ -665,41 +816,56 @@ export const startLiveEngine = (
             }
           })
         ),
-        exclusive
+        serializeLegacyAcquisition,
+        (work) => Effect.andThen(Deferred.await(acquisitionReady), work)
       );
 
-    const usageWork = exclusive(
-      Effect.gen(function* syncUsage() {
-        if (
-          ACCOUNT_POLL === undefined ||
-          !ACCOUNT_POLL.enabled(config) ||
-          !running
-        ) {
-          return;
-        }
+    const usageWork = Deferred.await(acquisitionReady).pipe(
+      Effect.andThen(
+        serializeLegacyAcquisition(
+          Effect.gen(function* syncUsage() {
+            if (
+              ACCOUNT_POLL === undefined ||
+              !ACCOUNT_POLL.enabled(config) ||
+              !running
+            ) {
+              return;
+            }
 
-        const step = yield* collectStep(
-          emptyFlightContext,
-          ACCOUNT_POLL.source,
-          ACCOUNT_POLL.input
-        );
+            const registry = yield* HarnessRegistry.pipe(
+              Effect.provide(harnessRegistryFor(options.home))
+            );
 
-        usage.runs += 1;
-        usage.lastRunAt = yield* nowIso;
+            const step = yield* executePlannedAcquisition(
+              {
+                context: emptyFlightContext,
+                harness: null,
+                input: ACCOUNT_POLL.input,
+                ref: null,
+                source: ACCOUNT_POLL.source,
+                unavailable: null,
+              },
+              registry
+            );
 
-        if (step.status === "synced") {
-          usage.failures = 0;
-          usage.lastError = null;
-          usage.lastInserted = step.inserted;
+            usage.runs += 1;
+            usage.lastRunAt = yield* nowIso;
 
-          if ((step.inserted ?? 0) > 0) {
-            yield* change("usage", null, [], step.inserted ?? 0);
-          }
-        } else {
-          usage.failures += 1;
-          usage.lastError = step.reason;
-        }
-      })
+            if (step.status === "synced") {
+              usage.failures = 0;
+              usage.lastError = null;
+              usage.lastInserted = step.inserted;
+
+              if ((step.inserted ?? 0) > 0) {
+                yield* change("usage", null, [], step.inserted ?? 0);
+              }
+            } else {
+              usage.failures += 1;
+              usage.lastError = step.reason;
+            }
+          })
+        )
+      )
     );
 
     const services = yield* Effect.context<DxCollectorServices>();
@@ -1097,7 +1263,103 @@ export const startLiveEngine = (
             return result;
           })
         ),
+      agentStore,
+      appendBounded: openedStore.appendBounded,
+      applyReviewedAdministration: (
+        request,
+        expectedFingerprint,
+        confirmation,
+        operationId,
+        limits
+      ) =>
+        withLock(
+          Effect.gen(function* applyAndRefresh() {
+            const result = yield* applyReviewedAdministrationIn(
+              home,
+              request,
+              expectedFingerprint,
+              confirmation,
+              operationId,
+              limits
+            );
+
+            return yield* Effect.gen(
+              function* reconcileReviewedAdministration() {
+                yield* refreshConfig;
+
+                for (const [root, state] of repos) {
+                  if (
+                    !config.repos.some(
+                      (entry) =>
+                        path.resolve(entry) === root ||
+                        resolveGitRepo(entry)?.commonDir ===
+                          state.repo.commonDir
+                    )
+                  ) {
+                    yield* untrack(root);
+                  }
+                }
+
+                for (const entry of config.repos) {
+                  const repo = resolveGitRepo(entry);
+
+                  if (repo !== null) {
+                    yield* track(repo);
+                  }
+                }
+
+                yield* change(
+                  request.kind === "configure" ? "config" : request.kind,
+                  "target" in request ? path.resolve(request.target) : null,
+                  [],
+                  0
+                );
+
+                if (
+                  request.kind === "configure" &&
+                  request.action === "cursor-usage" &&
+                  request.enabled
+                ) {
+                  yield* usageRuns.request("usage");
+                }
+
+                if (
+                  request.kind === "configure" &&
+                  request.action === "add-repo"
+                ) {
+                  const repo = resolveGitRepo(request.target);
+
+                  if (repo !== null) {
+                    yield* repoRuns.request(repo.root);
+                  }
+                }
+
+                if (
+                  request.kind === "restore" &&
+                  result.result !== null &&
+                  "retracked" in result.result
+                ) {
+                  yield* Effect.forEach(
+                    result.result.retracked,
+                    repoRuns.request,
+                    { discard: true }
+                  );
+                }
+
+                return result;
+              }
+            ).pipe(
+              Effect.catch((error) =>
+                Effect.succeed({
+                  ...result,
+                  partialErrors: [...result.partialErrors, error.message],
+                })
+              )
+            );
+          }).pipe(Effect.uninterruptible)
+        ),
       config: Effect.sync(() => config),
+      cursors,
       deleteRepoData: (target, confirmation) =>
         withLock(
           Effect.gen(function* deleteTracked() {
@@ -1120,6 +1382,12 @@ export const startLiveEngine = (
       planDeleteRepoData: (target) =>
         withLock(planDeleteRepoDataIn(home, target)),
       planResetStore: withLock(planResetStoreIn(home)),
+      previewAdministration: (request, limits) =>
+        withLock(previewAdministrationIn(home, request, limits)),
+      probeReviewedAdministration: (reviewed, backupIds, limits) =>
+        withLock(
+          probeReviewedAdministrationIn(home, reviewed, backupIds, limits)
+        ),
       ready: Effect.asVoid(
         Effect.raceFirst(
           Deferred.await(readySignal),
@@ -1180,6 +1448,16 @@ export const startLiveEngine = (
             })
           )
         ),
+      setAcquisitionExecutor: (executor) =>
+        exclusive(
+          Effect.sync(() => {
+            acquisitionExecutor = executor;
+          }).pipe(
+            Effect.andThen(Deferred.succeed(acquisitionReady, true)),
+            Effect.asVoid,
+            Effect.uninterruptible
+          )
+        ),
       setCursorUsageImport: (enabled) =>
         configExclusive(
           Effect.gen(function* setUsage() {
@@ -1213,6 +1491,7 @@ export const startLiveEngine = (
       })),
       stop,
       stopped: Effect.asVoid(Deferred.await(stoppedSignal)),
+      store,
       subscribe: (listener) => {
         listeners.add(listener);
 

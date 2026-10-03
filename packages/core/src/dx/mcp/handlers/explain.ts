@@ -33,5 +33,5 @@ export const handleExplain = (
       limit: input.limit ?? null,
     });
 
-    return result.timeline;
+    return { ...result.timeline, disclosures: result.disclosures };
   });

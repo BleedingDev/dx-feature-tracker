@@ -1,6 +1,8 @@
 # Stoppable phases and validation
 
-These are product milestones, not estimates. The four-hour deadline still applies. Every gate is pending until execution produces its evidence. Passing plan-graph validation does not pass a product gate.
+Historical promotion policy for the original `dxfr-rat-*` selection. The proposed four-hour deadline was superseded during execution; this page does not set a deadline for later work. [Original receipts](../docs/execution/phases/g04.json) record actual outcomes and limitations. New agent-system milestones and acceptance are in [the follow-up plans](../plans/agent-system/README.md).
+
+The milestones below describe the original required proof. At planning time every gate was pending until execution evidence. Passing plan-graph validation never passed a product gate.
 
 | Phase | Presentable result | Required checks | Stop or continue |
 |---|---|---|---|

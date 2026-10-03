@@ -1,0 +1,626 @@
+{
+  "schema": "dft-agent-node/v1",
+  "node": "S05",
+  "state": "accepted",
+  "contractVersion": "dx.agent-contracts.v1",
+  "contractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+  "composition": {
+    "services": "One retained operation coordinator and learning service share the selected AgentStore. EventStore, cursors and bounded replacement use the same opened SQLite writer.",
+    "surfaces": "CLI commands, stdio MCP tools and dashboard dispatch bind the shared Ratstack capabilities. Negotiated JSON inputs reject excess properties.",
+    "reads": "Recorded reads use bounded metadata or retained basis inputs; pinned reads avoid current discovery and price initialization.",
+    "live": "The engine acquisition gate installs the shared operation callback before readiness. Selected native references retain their source identity and cursor metadata.",
+    "administration": "Reviewed configuration, delete, reset and restore preserve typed confirmations, backups and durable operation receipts.",
+    "exports": "The app adapter supports reviewed metadata-only export for a retained basis; additional export disclosure modes remain unavailable.",
+    "exportRecovery": "Dashboard preview fixes the basis, destination, shared plan and durable key before apply. The page retains that review for receipt checks and the same-key retry; new previews require an explicit decision. Built tests verify one retained artifact, partial/lost-response recovery, explicit replacement after matched cancellation or stale unused reviews, and consumed reset-generation recovery. Aliased receipts require the shared historical reviewed-plan proof; missing or mismatched proof retains the original review and key.",
+    "learning": "Fresh writes resolve the selected caller scope lazily; unknown applicability remains unknown, and stored text is never executed."
+  },
+  "verification": [
+    {
+      "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/s05.test.ts",
+      "exit": 0,
+      "tests": 3,
+      "scope": "Final measured-port source checkpoint: same-store collection/read/reopen, durable learning, and reviewed headless configuration. Built app and full-gate verification remain pending."
+    },
+    {
+      "command": "pnpm exec oxlint apps/cli/src/dft-live.ts packages/core/src/dx/index.ts packages/core/src/dx/mcp/handlers/status-agent.ts packages/core/src/dx/registry/runtime.ts",
+      "exit": 0,
+      "scope": "Parent-owned final source checkpoint; exact scoped format check also passed."
+    },
+    {
+      "command": "Root-admitted Build3 app batch: dft-agent, dashboard, dashboard-write, live-bridge, adapters, cursor-hooks, enrollment, install-agent, live and live-page",
+      "exit": 1,
+      "tests": 150,
+      "passed": 145,
+      "failed": 5,
+      "scope": "Ten present app files against the aligned Build3 artifact. One dashboard disclosure defect and four fixture or output assertions are being corrected; this is not a passing app gate."
+    },
+    {
+      "command": "Root-admitted Build4 app batch: prior ten files plus dft-install-tools",
+      "exit": 1,
+      "tests": 155,
+      "passed": 152,
+      "failed": 3,
+      "scope": "Eleven present app files against aligned Build4. Original failures resolved; native click fixture binding and explicit source-probe assertions remain under diagnosis. Production source is unchanged after this run."
+    },
+    {
+      "command": "pnpm --filter @rat-stack/cli exec vitest run test/dft-agent.test.ts test/dft-agent-dashboard.test.ts test/dft-agent-dashboard-write.test.ts test/dft-agent-live-bridge.test.ts test/dft-agent-adapters.test.ts test/dft-agent-cursor-hooks.test.ts test/dft-agent-enrollment.test.ts test/dft-install-agent.test.ts test/dft-live.test.ts test/dft-live-page.test.ts test/dft-install-tools.test.ts",
+      "exit": 0,
+      "tests": 163,
+      "passed": 163,
+      "failed": 0,
+      "files": 11,
+      "candidate": "Root Build5 passed all four packages before this run; source remained frozen.",
+      "scope": "Shared CLI and dashboard reads/writes, strict input decoding, native guide and hook ownership, historical installer compatibility, reviewed destructive guards, same-key export replay/get with one artifact, and lost-response/partial/stale page recovery. Fixture inputs remained isolated and cleanup completed."
+    },
+    {
+      "command": "Root full fence3 app suite on aligned Build6",
+      "exit": 0,
+      "tests": 305,
+      "passed": 305,
+      "failed": 0,
+      "files": 30,
+      "scope": "Entire app suite, including matched cancellation, typed stale-generation and unchanged unknown-response recovery. The overall fence failed seven separate core cases; this app pass is not a full-release pass."
+    },
+    {
+      "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/b40.test.ts",
+      "exit": 0,
+      "tests": 12,
+      "scope": "Analyze guidance advertises the actual cursor input and retained-basis continuation; no test weakening. Exact scoped Markdown format check passed."
+    },
+    {
+      "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/integration/sync-home.test.ts",
+      "exit": 0,
+      "tests": 1,
+      "scope": "Strict explicit unavailable metadata expectation with privacy, offline, given-home and source-absence assertions retained. Exact scoped lint and format checks passed."
+    },
+    {
+      "command": "pnpm --filter @rat-stack/cli exec vitest run test/dft-agent-live-bridge.test.ts",
+      "exit": 1,
+      "tests": 10,
+      "passed": 9,
+      "failed": 1,
+      "scope": "Direct bridge source with core dist from Build6. The real SQLite completed-export/lost-reply/ordinary-reset case exposes absent core consumed terminal aliases; stale unused review and different-key denial checks remain strict. Rerun is held until root Build7 aligns the core fix."
+    },
+    {
+      "command": "pnpm --filter @rat-stack/cli exec vitest run test/dft-agent-live-bridge.test.ts test/dft-live-page.test.ts",
+      "exit": 0,
+      "tests": 24,
+      "passed": 24,
+      "failed": 0,
+      "files": 2,
+      "candidate": "Aligned Root Build7; no source or test mutations during the run.",
+      "scope": "Real SQLite completed export, lost reply, ordinary reset and same reviewed retry recover the original effect/artifact with an aliased receipt handle. Stale unused review and changed key remain denied. Page requires historical reviewed-plan proof and keeps the original pair after mismatched or unavailable proof. Cancellation, partial recovery and explicit stale-review replacement remain covered."
+    },
+    {
+      "command": "Root full fence5 app suite on aligned candidate7",
+      "exit": 1,
+      "tests": 307,
+      "passed": 296,
+      "failed": 11,
+      "scope": "Root reports nine wall-time failures, one nonzero enterprise history child and one hook observation with null Git context. The whole gate failed after 6m31s; footer output mismatch was not reported. Source remains frozen while root investigates execution load and test-worker caps."
+    },
+    {
+      "command": "pnpm --filter @rat-stack/cli exec vitest run test/dft-enterprise.test.ts test/dft-hook.test.ts",
+      "exit": 1,
+      "tests": 7,
+      "passed": 5,
+      "failed": 2,
+      "files": 2,
+      "candidate": "Same aligned candidate7 with source, assertions, config and timeouts unchanged.",
+      "scope": "Hook passes 3/3. Enterprise help and history each reach the unchanged 30-second timeout, at 33.126s and 34.718s. No footer assertion mismatch, nonzero child status or null Git context recurs. Total run 104.26s; cause remains under root investigation."
+    },
+    {
+      "command": "pnpm --filter @rat-stack/cli exec vitest run test/dft-live.test.ts -t \"pushes a change event after a hook file lands in the spool\"",
+      "exit": 1,
+      "tests": 1,
+      "failed": 1,
+      "filterExcludedTests": 17,
+      "scope": "Authorized test-only hello-before-hook ordering and finite socket/hook cleanup correction; same 10-second propagation and 30-second outer deadlines with all semantic assertions retained. Sole named attempt still times out at 10 seconds under the observed pressure; test 16.136s, total 64.96s, transform 40.19s. No finite request/response/hook error appears. Final brace-only lint correction followed the run, and final scoped checks pass. Propagation success remains unverified."
+    },
+    {
+      "command": "Root full fence6 with supported VITEST_MAX_WORKERS=1 per package",
+      "outcome": "cancelled-incomplete",
+      "wrapperExit": 0,
+      "reportedTasks": 16,
+      "totalTasks": 18,
+      "cachedTasks": 8,
+      "elapsed": "17m16.305s",
+      "accepted": false,
+      "scope": "The wrapper returned zero after cancellation; the gate did not finish and supplies no release acceptance. All earlier failures and focused behavior checkpoints remain retained."
+    },
+    {
+      "command": "pnpm --filter @rat-stack/cli exec vitest run test/dft-live.test.ts -t \"pushes a change event after a hook file lands in the spool\"",
+      "owner": "Root single named SSE diagnostic probe",
+      "exit": 0,
+      "tests": 1,
+      "passed": 1,
+      "failed": 0,
+      "filterExcludedTests": 17,
+      "vitestElapsedSeconds": 33.18,
+      "transformElapsedSeconds": 20.04,
+      "supervisorElapsedSeconds": 38.377,
+      "scope": "Root reports the case passed after minimal test-only phase diagnostics. The original 10-second propagation and 30-second test deadlines and all semantic assertions are unchanged. Production candidate7 remains unchanged; previous failed attempts remain recorded."
+    },
+    {
+      "command": "Root full fence7 with supported VITEST_MAX_WORKERS=1 per package",
+      "exit": 1,
+      "reportedTasks": 16,
+      "totalTasks": 18,
+      "cachedTasks": 8,
+      "elapsed": "9m38.963s",
+      "appPassed": 305,
+      "appTests": 307,
+      "accepted": false,
+      "scope": "Root reports two generic 30-second app failures in the former monolithic usage case and exact 2MiB guidance comparison. All 18 live cases passed. The unchanged 100k core scale case reached its 20-second limit and the core report was interrupted. Subsequent isolated scale passes do not turn this failed gate into acceptance."
+    },
+    {
+      "command": "Root isolated dft-usage.test.ts verification after the test-only scenario split",
+      "exit": 0,
+      "tests": 8,
+      "passed": 8,
+      "failed": 0,
+      "vitestElapsedSeconds": 18.18,
+      "supervisorElapsedSeconds": 21.198,
+      "scope": "Same historical built candidate7. All original CLI invocations, semantic assertions, fixtures and deadlines remain; only the independent scenario grouping changed. Native adapter repairs still require rebuilt validation."
+    },
+    {
+      "command": "Root Build8 for all four workspace packages",
+      "exit": 0,
+      "packages": 4,
+      "cachedPackages": 3,
+      "elapsedSeconds": 4.681,
+      "supervisorElapsedSeconds": 5.493,
+      "sourceDigest": "sha256:70da2ccc6e3bdcf4bfdbd27ec625102551d860d60eb7de03aeb6fb5d31129341",
+      "sourceFiles": 1058,
+      "artifactDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+      "artifactFiles": 1820,
+      "scope": "Aligned build after the confirmed native command-budget repair; contract4f and schema8 are unchanged. Earlier builds and failed gates remain historical checkpoints."
+    },
+    {
+      "command": "Root aligned focused native adapter batch",
+      "files": [
+        "apps/cli/test/dft-agent-adapters.test.ts",
+        "apps/cli/test/dft-agent-cursor-hooks.test.ts"
+      ],
+      "exit": 0,
+      "tests": 48,
+      "passed": 48,
+      "failed": 0,
+      "fileCount": 2,
+      "vitestElapsedSeconds": 20.89,
+      "supervisorElapsedSeconds": 23.925,
+      "candidateDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+      "scope": "All 22 main and 26 Cursor cases passed, including zero launches at zero quota, cumulative and failed-attempt counts, private diagnostic withholding, no-work legacy guards and owned child forced termination/reaping. Original byte/file limits, deadlines and exact artifact canaries remain."
+    },
+    {
+      "command": "Root complete core package preflight",
+      "exit": 0,
+      "passed": 1581,
+      "skipped": 3,
+      "passedFiles": 132,
+      "skippedFiles": 3,
+      "totalFiles": 135,
+      "elapsedSeconds": 445.098,
+      "scope": "Separate complete core preflight passed; unchanged scale cases took 5.384s and 1.762s under the existing 20-second limit. This checkpoint does not replace final combined fence acceptance."
+    },
+    {
+      "command": "Root full fence8",
+      "exit": 1,
+      "diagnostics": [
+        "TS377021: test Effect.try catch callback returned unknown",
+        "TS377030: unknown test error channel"
+      ],
+      "file": "apps/cli/test/dft-agent-cursor-hooks.test.ts",
+      "scope": "Two test-only type diagnostics. Corrected with a specific tagged liveness error retaining the actual OS cause; ESRCH, no-launch, privacy, ready-child and no-write assertions remained. Production packaged candidate 931e was unchanged."
+    },
+    {
+      "command": "Root native candidate8 rehearsal attempt10",
+      "exit": 0,
+      "candidateDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+      "outerElapsedSeconds": 45.992,
+      "protocolFrames": 14,
+      "nonProtocolStdoutFrames": 0,
+      "stderrBytes": 0,
+      "scope": "Historical passing native checkpoint before the test-only error-channel correction; final same-source acceptance uses attempt11."
+    },
+    {
+      "command": "pnpm exec turbo run check test build",
+      "owner": "Root full fence9",
+      "processEnvironment": {
+        "VITEST_MAX_WORKERS": "1"
+      },
+      "exit": 0,
+      "successfulTasks": 18,
+      "totalTasks": 18,
+      "cachedTasks": 9,
+      "durationMs": 519182,
+      "outerElapsedMs": 522684,
+      "passed": 2001,
+      "skipped": 3,
+      "failed": 0,
+      "sourceDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+      "candidateDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+      "scope": "Complete final passing reports: capability 80, devtools 19, core 1581 with 3 optional skipped tests, CLI 321 across all 30 app files. Exact original semantic assertions, bounds and deadlines remain; every required task completed."
+    },
+    {
+      "command": "Root final native candidate8 rehearsal attempt11",
+      "exit": 0,
+      "sourceDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+      "candidateDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+      "outerElapsedMs": 26726,
+      "protocolFrames": 14,
+      "nonProtocolStdoutFrames": 0,
+      "stderrBytes": 0,
+      "scope": "Exact final fence9 input and packaged candidate. CLI/MCP receipt equality, restart learning, native guidance preservation and verified owned metadata export passed; exported fixture artifact absent after exact-owner removal."
+    }
+  ],
+  "pending": [],
+  "startupProbe": {
+    "candidate": "Unchanged compiled candidate7",
+    "command": "Root-authorized owned-temp-dir job with one bare Node, Effect import and compiled dft --help child",
+    "childDeadlineMs": 120000,
+    "measurements": [
+      {
+        "case": "bare-node",
+        "elapsedMs": 200.309,
+        "status": 0,
+        "stderrBytes": 0
+      },
+      {
+        "case": "effect-import",
+        "elapsedMs": 2938.116,
+        "status": 0,
+        "stderrBytes": 0
+      },
+      {
+        "case": "compiled-dft-help",
+        "elapsedMs": 13373.151,
+        "status": 0,
+        "stdoutBytes": 2836,
+        "stderrBytes": 0
+      }
+    ],
+    "cleanup": "Owned-temp-dir confirms cleaned; no product source or test deadline changed.",
+    "hostPressure": "Root observed load averages 248.38/273.18/250.36 on 10 logical CPUs during fence6. These loaded samples do not calibrate healthy startup or prove a source fault."
+  },
+  "nativeObservation": {
+    "owner": "Root S07 rehearsal",
+    "candidate": "Historical compiled Candidate5, root artifact prefix e47e65e3 and suffix 5744; final page repairs require another candidate",
+    "passed": true,
+    "basisId": "basis_02e0d2120c902ae9da7ae3c8b0d90ab374ce98e503c3032c",
+    "operationId": "operation-f41eb665f179819df61869eee2e97dfb844ca2dc279f2b420dfe7a1506e4a2d5",
+    "operationExecution": "succeeded",
+    "operationVerification": "verified",
+    "investigationId": "s07-real-git-investigation",
+    "protocolFrames": 14,
+    "nonProtocolStdoutFrames": 0,
+    "stderrFrames": 0,
+    "scope": "Native Codex tools drove real repository Git identity into an isolated store, cold and pinned warm reads, stdio discovery and evidence follow-up, reviewed metadata export and receipt-bound original plan retrieval, durable learning resume in a fresh process, and edited/unrelated Codex guidance preservation. No actual Cursor host, automatic current-turn MCP registration or AI usage is claimed."
+  },
+  "sourceChecks": {
+    "runtime": "Exact scoped lint and format check passed; producer routes, same-writer replacement, bounded enrollment and target resolvers are connected.",
+    "appAdapters": "All source/test files remain frozen. Scoped checks, aligned48-case focused batch, final 321-case app suite and complete fence9 passed; native11 used the same packaged candidate. The test-only finite liveness failure wrapper preserves the original OS ESRCH check.",
+    "dashboard": "Final complete 321-case app report passed all 30 files, including actual SSE propagation, shared HTTP reads/writes, exact reviewed export recovery, cancellation, generation aliases and historical plan proof. VM and real HTTP coverage are accepted; visual browser observation remains unavailable.",
+    "installer": "Prepared exact ownership admission and bounded serialization scoped lint/format checks passed.",
+    "enrollment": "Explicit mapped/spool root union and mandatory production bounded resolver scoped checks passed; eight named app cases passed in the aligned Build5 batch."
+  },
+  "finalNativeObservation": {
+    "owner": "Root S07",
+    "id": "native-candidate8-final-attempt11",
+    "attempt": 11,
+    "exit": 0,
+    "passed": true,
+    "sourceDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+    "candidateDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+    "outerElapsedMs": 26726,
+    "basisId": "basis_d1960192a18085dc141ee4a036b400d35bbeaa041187ed39",
+    "resultDigest": "c5d834ac2b784f96f24f43105bdda30d1cddde3f3285e64fa9d520ba640c388b",
+    "operationId": "operation-8b7d0a1d7bd0f5257049f8256aefbeab3a2f6d414510d752e58315c665732b4c",
+    "operationExecution": "succeeded",
+    "operationVerification": "verified",
+    "operationResources": {
+      "bytesRead": 28555,
+      "elapsedMs": 348,
+      "recordsDecoded": null,
+      "requests": 6,
+      "retries": 0
+    },
+    "investigationId": "s07-real-git-investigation",
+    "protocolFrames": 14,
+    "nonProtocolStdoutFrames": 0,
+    "stderrBytes": 0,
+    "scope": "Exact final frozen source and packaged candidate: separately selected real Git identity, retained CLI/MCP basis/result, exact durable receipt recovery, fresh-process learning resume, and native Codex guidance preservation. Current-host observation is native Codex exec driving public CLI and stdio MCP; automatic MCP registration, actual Cursor host capture and live AI usage remain unclaimed."
+  },
+  "candidateBuild": {
+    "latestRootAttempt": "Build8 and final full fence9 passed; test-only typing changed validation input while the packaged candidate remained equal. Native11 passed on the same final frozen source and artifact.",
+    "artifactDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+    "artifactFiles": 1820,
+    "runtimeSourceDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+    "runtimeSourceFiles": 1058,
+    "validationInputSourceDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+    "validationInputSourceFiles": 1058,
+    "priorValidationInputSourceDigests": [
+      "sha256:a26e14ba872701a6a3de6a0426e6105781be162c480d50cb8fd7ed1eaf10150d",
+      "sha256:93276235d115aed4a4104c9e6d3ef53a22985bcde10f36c72b21926edf7377a2",
+      "sha256:70da2ccc6e3bdcf4bfdbd27ec625102551d860d60eb7de03aeb6fb5d31129341"
+    ],
+    "compiledCandidateEqualityCheck": "Root verified equality after complete fence9 and native11: exact frozen source and 1820 dist files, four manifests, six guidance files and three assets; owned export absent.",
+    "validationInputDigestIsHistorical": false,
+    "releaseCandidateInvalidated": false,
+    "storageSchema": 8,
+    "repairCheckpoint": "All previous failures and meaningful checkpoints are retained. Native command admission, cumulative counts, forced cleanup and unused-plan guards passed focused 48 and the final 321-case app report. Complete fence9 passed 2001 with 3 optional skipped tests and all 18 tasks. Same-input native11 passed 14 pure protocol frames with verified operation and restart learning. R00/S05 behavior phases are accepted; global resource closure remains S07.",
+    "historicalBuiltBehaviorAdmitted": true,
+    "builtBehaviorAdmitted": true,
+    "finalBehaviorAccepted": true
+  },
+  "nativeCommandBudgetRepair": {
+    "status": "accepted-on-final-frozen-candidate",
+    "sourceFiles": [
+      "apps/cli/src/dft-agent-adapters.ts",
+      "apps/cli/src/dft-agent-cursor-hooks.ts"
+    ],
+    "testFiles": [
+      "apps/cli/test/dft-agent-adapters.test.ts",
+      "apps/cli/test/dft-agent-cursor-hooks.test.ts"
+    ],
+    "staticChecks": "All four owned files are frozen and passed exact scoped lint and format checks. Main has 22 authored cases and Cursor has 26. No worker runtime, compiler or build ran.",
+    "behavior": "Native invocations admit request and file units before launch, count failed attempts, and settle cumulative actual phase work. Scoped subprocesses cap combined stdout/stderr and force termination with awaited exit. Physical Git I/O remains unavailable and network destinations remain empty. Adapter v2 guards reject unused old plans before target resolution; mismatched probes return explicit indeterminate without new work. Terminal keyed receipt recovery remains shared-coordinator behavior.",
+    "contractDigestUnchanged": true,
+    "storageSchemaUnchanged": true,
+    "proofs": "Root aligned focused batch passed all 48 cases. Runtime assertions cover zero-launch quota, cumulative and failed-attempt counts/privacy, unused-plan guards, and forced termination/reaping of owned ready children with SIGTERM handlers. Main also observed an actual ignored SIGTERM before handoff. All existing limits and canaries remain.",
+    "requestQuotas": "Positive native fixtures explicitly review finite quotas: main 4, Cursor 32. Zero-quota cases expect zero launches. Byte, file and elapsed limits are retained.",
+    "preserved": "All prior failed checkpoints, byte/file limits, generic 30-second test defaults, scale 20-second limit, privacy and exact artifact canaries remain.",
+    "runtimeVerification": {
+      "owner": "Root",
+      "candidateDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+      "exit": 0,
+      "tests": 48,
+      "passed": 48,
+      "failed": 0,
+      "finalSourceDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+      "fullFenceAttempt": 9,
+      "fullAppPassed": 321,
+      "releaseGatePassed": true
+    }
+  },
+  "releaseGatePassed": true,
+  "hostRegistration": "Explicit configuration is required. Packaged guidance alone does not register MCP tools.",
+  "scope": "Accepted and completed S05 behavior phase on the final frozen combined artifact: complete fence9, same-candidate native11 and actual S07 resource closure. Publication is outside this receipt scope.",
+  "historicalCandidateBuilds": [
+    {
+      "latestRootAttempt": "Historical Root Build7 passed all four packages with two cache hits; the native command-budget repair invalidates candidate7 for final release, and Build8 is pending.",
+      "artifactDigest": "sha256:f565f505399e12d969aebf468a91d476fc533088d8d705f9d74fd671cedb6f7c",
+      "artifactFiles": 1820,
+      "runtimeSourceDigest": "sha256:2d3007752a247f9d4a948229edde05dd7bb6918cc242c991138f97ed96638e93",
+      "runtimeSourceFiles": 1058,
+      "validationInputSourceDigest": "sha256:93276235d115aed4a4104c9e6d3ef53a22985bcde10f36c72b21926edf7377a2",
+      "validationInputSourceFiles": 1058,
+      "priorValidationInputSourceDigests": [
+        "sha256:a26e14ba872701a6a3de6a0426e6105781be162c480d50cb8fd7ed1eaf10150d"
+      ],
+      "compiledCandidateEqualityCheck": "Historical equality check confirmed candidate7's exact 1820 files, manifests, assets and guidance. Later production command-budget repairs require a new aligned build; the retained digest is historical.",
+      "validationInputDigestIsHistorical": true,
+      "releaseCandidateInvalidated": true,
+      "storageSchema": 8,
+      "repairCheckpoint": "Build6, native rehearsal8 and all 305 app cases passed. Analyze guidance and strict unavailable sync receipt repairs passed their assigned suites. The strict real-store bridge test exposed missing core terminal receipt aliases, repaired by S01's schema8 follow-up. Aligned Build7 passed and bridge/page behavior passed 24/24. Root's named SSE probe passed 1/1 with unchanged 10-second propagation, 30-second test limits and semantic assertions; prior failures remain recorded. Full fence6 was cancelled incomplete and full fence7 failed. The later confirmed native command-budget repair has all four source/test files frozen with scoped checks passed and awaits aligned Build8 behavior validation. No direct app reservation, product timeout or frozen contract schema change was added.",
+      "historicalBuiltBehaviorAdmitted": true,
+      "builtBehaviorAdmitted": false
+    },
+    {
+      "latestRootAttempt": "Root Build8 passed all four packages with three cache hits; aligned owned native adapter behavior passed 48/48.",
+      "artifactDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+      "artifactFiles": 1820,
+      "runtimeSourceDigest": "sha256:70da2ccc6e3bdcf4bfdbd27ec625102551d860d60eb7de03aeb6fb5d31129341",
+      "runtimeSourceFiles": 1058,
+      "validationInputSourceDigest": "sha256:70da2ccc6e3bdcf4bfdbd27ec625102551d860d60eb7de03aeb6fb5d31129341",
+      "validationInputSourceFiles": 1058,
+      "priorValidationInputSourceDigests": [
+        "sha256:a26e14ba872701a6a3de6a0426e6105781be162c480d50cb8fd7ed1eaf10150d",
+        "sha256:93276235d115aed4a4104c9e6d3ef53a22985bcde10f36c72b21926edf7377a2"
+      ],
+      "compiledCandidateEqualityCheck": "Root reports aligned Build8 source and artifact digests; no source/test mutations or worker reruns after the four-file freeze.",
+      "validationInputDigestIsHistorical": false,
+      "releaseCandidateInvalidated": false,
+      "storageSchema": 8,
+      "repairCheckpoint": "Earlier failed fences and successful functional checkpoints remain recorded. All four native repair source/test files passed scoped static checks; aligned Build8 and focused 48/48 passed. Root complete core preflight passed 1581 with 3 skipped. Native candidate8 rehearsal attempt10 and full fence8 remain pending; release acceptance is false. No direct app reservation, product timeout, wire or storage schema change was added.",
+      "historicalBuiltBehaviorAdmitted": true,
+      "builtBehaviorAdmitted": true
+    }
+  ],
+  "status": "complete",
+  "accepted": true,
+  "phaseReceipt": "docs/execution/phases/r00.json",
+  "finalValidation": {
+    "attempt": 9,
+    "command": "pnpm exec turbo run check test build",
+    "processEnvironment": {
+      "VITEST_MAX_WORKERS": "1"
+    },
+    "state": "passed",
+    "exit": 0,
+    "successfulTasks": 18,
+    "totalTasks": 18,
+    "cachedTasks": 9,
+    "durationMs": 519182,
+    "outerElapsedMs": 522684,
+    "completedAllRequiredPassingReports": true,
+    "acceptance": "passed-full-fence-and-same-input-rehearsal",
+    "candidateDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+    "sourceDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+    "reports": {
+      "capability": {
+        "passed": 80,
+        "filesPassed": 11
+      },
+      "devtools": {
+        "passed": 19,
+        "filesPassed": 1
+      },
+      "core": {
+        "passed": 1581,
+        "skipped": 3,
+        "total": 1584,
+        "filesPassed": 132,
+        "filesSkipped": 3,
+        "totalFiles": 135,
+        "report": "Complete cached report from same frozen core preflight."
+      },
+      "cli": {
+        "passed": 321,
+        "failed": 0,
+        "filesPassed": 30,
+        "durationMs": 485490
+      }
+    },
+    "aggregate": {
+      "passed": 2001,
+      "skipped": 3,
+      "failed": 0
+    },
+    "skips": [
+      {
+        "file": "packages/core/test/dx/harness/harness-versions.test.ts",
+        "testsSkipped": 2
+      },
+      {
+        "file": "packages/core/test/dx/harness/deepseek-live.test.ts",
+        "testsSkipped": 1
+      },
+      {
+        "file": "packages/core/test/dx/harness/live.test.ts",
+        "tests": 0
+      },
+      {
+        "file": "packages/core/test/dx/harness/omp-live.test.ts",
+        "tests": 0
+      }
+    ],
+    "static": {
+      "lintErrors": 0,
+      "lintWarnings": 0,
+      "formattedFiles": 964,
+      "typecheck": "passed; nonfatal suggestions retained"
+    },
+    "cancelled": false,
+    "rule": {
+      "required": [
+        "Successful exit",
+        "Every required task completes successfully",
+        "Complete passing test reports, with skips and unavailable observations disclosed",
+        "Frozen runtime source identity and compiled/packaged artifact equality",
+        "Rehearsal uses the same candidate",
+        "Owned resource lifecycle accounted for"
+      ],
+      "cancelledOrIncomplete": "unverified even when shell exit is zero"
+    }
+  },
+  "finalCandidateEquality": {
+    "scope": "After complete passedfence9 and native11 on identical frozen source and packaged artifact.",
+    "digest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+    "files": 1820,
+    "distMatchesCandidate8": true,
+    "sourceMatchesFence9": true,
+    "sourceDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+    "packaged": [
+      {
+        "path": "packages/capability/package.json",
+        "same": true
+      },
+      {
+        "path": "packages/core/package.json",
+        "same": true
+      },
+      {
+        "path": "packages/devtools/package.json",
+        "same": true
+      },
+      {
+        "path": "apps/cli/package.json",
+        "same": true
+      },
+      {
+        "path": "apps/cli/assets",
+        "files": 3,
+        "same": true
+      },
+      {
+        "path": ".cursor/skills",
+        "files": 6,
+        "same": true
+      }
+    ],
+    "ownExportAbsent": true
+  },
+  "globalReleaseClosure": "Root S07 reports all exact-owned resources released and removed, with scratch/export absence and known validation/rehearsal PIDs absent. No native, equality or resource condition remains pending.",
+  "nativeObservationHistory": [
+    {
+      "owner": "Root S07 rehearsal8",
+      "candidateDigest": "sha256:32bed9e4f0ae54e7dd8c3fc7451e3596e7f0320d6ffb19d3f9c3b7d42ffd662c",
+      "passed": true,
+      "protocolFrames": 14,
+      "nonProtocolStdoutFrames": 0,
+      "operationExecution": "succeeded",
+      "operationVerification": "verified",
+      "scope": "Root reports real Git, retained-basis reads, pure stdio protocol, verified metadata export, durable resume and native Codex guide preservation passed. Later guidance and core repairs require the final aggregate gate; no actual Cursor host, automatic registration or AI usage is claimed."
+    }
+  ],
+  "availability": {
+    "enabledOperationKinds": [
+      "collect",
+      "configure",
+      "export",
+      "delete",
+      "reset",
+      "restore"
+    ],
+    "reservedDisabledOperationKinds": [
+      "derive-usage",
+      "refresh-prices",
+      "live-start",
+      "live-stop"
+    ],
+    "configurationActions": [
+      "add-repo",
+      "remove-repo",
+      "cursor-usage",
+      "install-guidance",
+      "install-hooks"
+    ],
+    "exportDisclosure": "metadata-only",
+    "agentAcquisition": "recorded-only; refresh-selected reports unavailable with operation guidance",
+    "agentPrices": "cached or pinned; refresh-selected reports unavailable with operation guidance",
+    "guidanceHost": "Native Codex"
+  },
+  "remainingLimits": [
+    "Four reserved operation kinds have no composed adapter. Metadata-only export is enabled; redacted-evidence and selected-learning exports remain unavailable.",
+    "Actual current-host evidence is native Codex exec driving production CLI and stdio MCP plus guidance installation. Automatic MCP registration, actual Cursor host capture and live AI token/cost observations are unclaimed.",
+    "T3 preview did not open successfully. Dashboard behavior is covered by meaningful VM and real HTTP capability tests; visual browser observation is unavailable.",
+    "Physical Git, socket and SQLite I/O and task-attributable peak memory remain unavailable. Logical captured/decoded work is measured; no universal resource savings are asserted.",
+    "Receipt bodies have a 256 KiB default limit, but alias history and total reset work grow with retained recovery metadata. V1 has no aggregate alias-count/byte cap or automatic journal eviction. Deleted source/basis/result bodies remain deleted.",
+    "Legacy snapshots guarantee raw evidence selection only. Historical agent-basis reconstruction requires retained inputs and supported semantic versions.",
+    "Unimplemented reference resolvers and detailed basis-delta reference comparison report explicit limits.",
+    "Descriptive learning support does not establish causal savings, correctness, waiting time or AI ownership."
+  ],
+  "resourceLifecycle": {
+    "owner": "Root S07",
+    "recordedAtUtc": "2026-10-02T22:22:22.038217Z",
+    "registrationsReleased": 2,
+    "releaseExitCodes": [
+      0,
+      0
+    ],
+    "verifiedOwnershipChecks": [
+      "owner",
+      "device",
+      "inode",
+      "UID",
+      "marker"
+    ],
+    "scratchAbsent": true,
+    "ownExportAbsent": true,
+    "knownFence9Native11PidsAbsent": true,
+    "pendingConditions": [],
+    "scope": "Root reports exact-owned cleanup and process absence; no runtime or filesystem recheck was performed by the integration owner."
+  },
+  "historySemantics": "Earlier verification entries and historical snapshots retain their observed checkpoint status, including failed or incomplete attempts; current acceptance is recorded by finalValidation and releaseGatePassed."
+}

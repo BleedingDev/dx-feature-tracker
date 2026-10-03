@@ -10,7 +10,6 @@ import {
   accountAwareEvents,
   narrowToBranch,
   reattributeIfPossible,
-  replayAccountAwareEvents,
   summaryToJson,
 } from "../../correlation/branch-at-time/snapshot.js";
 import type { SnapshotId } from "../../model/ids.js";
@@ -82,19 +81,14 @@ const pinned = (
 ): Effect.Effect<SelectedSnapshot, StoreFailure | SnapshotNotFound> =>
   Effect.gen(function* pinnedSnapshot() {
     const stored = yield* store.getSnapshot(snapshotId);
-    const events = yield* replayAccountAwareEvents(store, stored);
-    const retro = yield* reattributeIfPossible(events);
-    const attribution = summaryToJson(retro.summary);
-    const disclosure = disclosureOf(retro.applied, attribution);
 
     return {
-      attribution,
-      disclosures:
-        disclosure === null
-          ? [`Reused requested snapshot ${snapshotId}.`]
-          : [`Reused requested snapshot ${snapshotId}.`, disclosure],
+      disclosures: [
+        `Reused requested snapshot ${snapshotId}.`,
+        "Legacy snapshot reproducibility is evidence-selection-only; historical attribution, prices and metric implementations were not retained. Recorded observations are reused without consulting current Git state.",
+      ],
       mode: "pinned" as const,
-      snapshot: narrowToBranch(stored, stored.manifest.selector, retro.events),
+      snapshot: stored,
     };
   });
 

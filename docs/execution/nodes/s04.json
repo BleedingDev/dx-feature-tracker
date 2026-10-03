@@ -1,0 +1,92 @@
+{
+  "schema": "dft.agent-system.node-receipt.v1",
+  "node": "S04",
+  "status": "complete",
+  "contractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+  "runtimeVersions": {
+    "observedOn": "2026-10-02",
+    "observedBy": "root acceptance and S00 command catalog",
+    "node": "v24.18.0",
+    "pnpm": "11.3.0",
+    "effect": "4.0.0-rc.117",
+    "typescript": "7.0.2",
+    "effectTsgoPatch": "0.45.0",
+    "vitest": "5.0.1",
+    "effectVitest": "4.0.0-rc.117",
+    "turbo": "2.11.2",
+    "source": "docs/execution/commands.json"
+  },
+  "ownedPaths": [
+    "packages/core/src/dx/learning/",
+    "packages/core/test/dx/s04.test.ts",
+    "packages/core/test/dx/fixtures/s04/",
+    "docs/execution/nodes/s04.json"
+  ],
+  "exports": {
+    "module": "packages/core/src/dx/learning/service.ts",
+    "symbols": [
+      "makeLearningService",
+      "LearningService",
+      "runLearning",
+      "learningRecordRef"
+    ],
+    "factory": "makeLearningService(store: AgentStoreService, options?: LearningServiceOptions) returns a captured run(LearningInput) Effect<LearningOutput, AgentStoreFailure>",
+    "layers": "LearningService.layer and LearningService.layerWith(options) require AgentStore; runLearning requires LearningService",
+    "options": [
+      "context: selected caller scope, window, tool/source/metric versions, workflow and coverage conditions, origin",
+      "resolveContext: optional lazy Effect provider used only for fresh evaluation or record candidate search; no startup, read or durable retry scope resolution",
+      "maxEvaluations: default 20, maximum 100",
+      "maxReferenceChecks: default 32, maximum 256",
+      "maxBasisChecks: default 8, maximum 32",
+      "maxOutputBytes: default and maximum 4194304"
+    ]
+  },
+  "behavior": [
+    "One service handles list, get, record, evaluate and supersede through the frozen AgentStore ports only.",
+    "Authored investigations retain open, concluded and awaiting-evidence states with immutable revision history.",
+    "Lesson states are proposed, supported-within-scope, contradicted and superseded. Support and contradiction are projections of append-only evaluations for the selected authored revision.",
+    "Current-revision counterevidence wins over support while both evidence chains remain reachable. Unavailable or incompatible citations prevent current supported recall.",
+    "Generic evaluation targets support both investigations and lessons. Independent evaluations of a pinned historical revision survive later author updates and concurrent appends.",
+    "Record updates and supersession use expected revision and preserve parent lineage. Keyed payload retries use durable storage receipts; changed payloads conflict.",
+    "Exact evaluation lookup recovers idempotent retries even beyond 100 newer evaluations or after cited evidence disappears.",
+    "Get expands lesson, investigation or evaluation references, including explicit authored revisions; focused evaluation retrieval returns its parent record and one requested evaluation.",
+    "List uses indexed scoped bounded storage selection, ranks applicability and evidence compatibility before recency within the selected page, and returns compact summaries with clipping disclosure, reference counts and drilldown handles.",
+    "Near-duplicate record suggestions compare normalized lexical token sets in one indexed selected-scope page of at most 25 records. Matching uses same kind, repository and definition/tool/source versions; at most eight references return, with bounds and unknown skipped-search disclosure. Distinct and opposing claims remain separate.",
+    "Canonical retained bases determine origin mix and coverage. Fixture, replay or synthetic observations, including mixed origin evidence, cannot support live lessons.",
+    "Fresh evaluations require the caller's selected repository context. Reference visibility is independently resolved under that scope; wider applicability never grants wider citation visibility.",
+    "Scope-only recall discloses unknown version, workflow or coverage compatibility and cannot return verified supported claims.",
+    "Stored and returned authored prose reuses existing credential redaction and remains inert data. Learning never executes commands, changes consent or alters accounting policy.",
+    "No direct database access, dependency installation, VCS writes, shared barrel edits or whole-workspace validation were performed by this owner."
+  ],
+  "retentionAndDisclosure": [
+    "Authored records and append-only evaluations are retained through the storage owner; this service performs no automatic prose eviction or deletion.",
+    "Generation-bound unavailable, stale, withheld and over-budget citations remain explicit rather than replaced with invented evidence.",
+    "Withheld or unavailable evaluation citations remove origin and coverage metadata from the caller's returned evaluation and add a visibility disclosure.",
+    "Export and deletion remain operation-service responsibilities and do not follow implicitly from learning retrieval or applicability."
+  ],
+  "validation": {
+    "behavior": {
+      "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/s04.test.ts",
+      "exit": 0,
+      "tests": 39,
+      "evidence": "Includes production replay-port close/reopen, exact historical author revision retrieval, concurrent evaluation append, CAS retry reuse and canonical found/missing/withheld citations. Focused transitions prove earlier support does not carry across authored revision updates and deliberate production source replacement deletes a cited event, tombstones its retained basis and withdraws support while preserving learning and evaluations. Labelled injected-port cases also verify dynamic cited basis artifact deletion."
+    },
+    "lint": {
+      "command": "pnpm exec oxlint packages/core/src/dx/learning/ packages/core/test/dx/s04.test.ts packages/core/test/dx/fixtures/s04/store.ts",
+      "exit": 0
+    },
+    "format": {
+      "command": "pnpm exec oxfmt --check packages/core/src/dx/learning/ packages/core/test/dx/s04.test.ts packages/core/test/dx/fixtures/s04/store.ts",
+      "exit": 0
+    },
+    "typecheck": "Root owns the core compiler queue; worker-reported service errors from the queue were repaired."
+  },
+  "limits": [
+    "Authored criterion and outcome text remain reports by the author; canonical evidence checks do not automatically prove an arbitrary natural-language criterion.",
+    "Causal support is unavailable in v1. Causal-criterion evaluations may remain inconclusive; descriptive associations explicitly do not establish saved time or correctness.",
+    "Similarity suggestions are lexical and bounded, not semantic equivalence or automatic merging.",
+    "Ranking applies within each bounded indexed candidate page rather than promising a globally sorted whole store.",
+    "Bounded history with unseen evaluations cannot establish support. Exact evaluation drilldown and explicit higher limits are available.",
+    "This module's observed integration uses a labelled replay store, not selected live private evidence."
+  ]
+}

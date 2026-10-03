@@ -1,0 +1,339 @@
+{
+  "schema": "dft.agent-system.execution.v1",
+  "graphId": "dft-agent-system-v1",
+  "status": "completed",
+  "baseline": {
+    "branch": "main",
+    "commit": "eddcedb29c3900a1e5e365dc3999bf6f7fdcfd7b",
+    "revalidateBeforeExecution": true
+  },
+  "design": "docs/architecture/agent-system.md",
+  "planningOwner": "root, authorized document revision",
+  "activation": "Completed user-authorized native Codex execution on feat/agent-system. All nine producers/gates are closed on the accepted frozen candidate; ownership rules and histories remain available for follow-up.",
+  "deadlineMinutes": null,
+  "rules": [
+    "Exact plan selection only; exclude historical dxfr-rat plans.",
+    "Dependencies order implementation; completion still requires behavior evidence.",
+    "Preserve others' changes; no worker installs, whole-tree formatters, shared-file edits or VCS mutation.",
+    "Use docs/execution/commands.json; S00 verifies new recipes before dispatch.",
+    "Only the R00/S05 sequential owner registers shared capabilities and edits app composition.",
+    "Only root coordinates R00/S07 full release fences through one queue.",
+    "No live private input or cross-host execution is implied by this plan.",
+    "User-authorized parallel execution: S01-S04 implement against S00 frozen ports/fakes concurrently; R00 integration can prepare at freeze but read gate waits for S01/S02. Full gate waits for all producers.",
+    "S06 may build independent tests after S00 freeze in parallel; its final verdict requires the completed S05 artifact.",
+    "Root owns the narrow opt-in strict MCP decoding projection and its isolated capability test; default upstream toolkit behavior remains compatible.",
+    "Root admitted the same integration owner to S05 wiring after R00 7-case behavior and zero owned compiler errors. Implementation may overlap outstanding read/build checks; S05 acceptance still requires the terminal R00 read predicate and S03/S04 evidence. No early release claim.",
+    "Root also owns opt-in strict JSON CLI decoding and its isolated projection test; new operation/learning commands use it while default projection behavior remains compatible.",
+    "HarnessCursors already lives in S01-owned storage/harness-cursors.ts. Its compatible atomic cursor method and same-connection binder require no additional harness ownership.",
+    "For the authorized complete execution, R00/S07 may share one full fence on the same frozen artifact. Distinct read and full-system predicates/receipts remain required; no independent read-only artifact was released.",
+    "S00 owns the six exact agent contract files and model subtree. The legacy contracts/capabilities.ts registration file belongs to the same sequential R00/S05 integration owner; parent-directory ownership does not overlap it.",
+    "Root assigned the four exact existing branch-switch, live-engine, restore-old-backup and sync-home test paths to their responsible producers after full fence3 exposed compatibility failures; preserve semantic privacy, replay and restoration assertions. No other historical test paths are transferred.",
+    "Gate acceptance requires complete successful reports for every required task and test on unchanged frozen source/compiled identities; cancellation or incomplete reports stays unverified even with wrapper exit0."
+  ],
+  "nodes": [
+    {
+      "id": "S00",
+      "owner": "contract steward",
+      "paths": [
+        "packages/core/src/dx/model/",
+        "docs/execution/contracts-v1.md",
+        "docs/execution/commands.json",
+        "packages/core/src/dx/contracts/agent-fixtures.ts",
+        "packages/core/src/dx/contracts/agent-store.ts",
+        "packages/core/src/dx/contracts/agent-version.ts",
+        "packages/core/src/dx/contracts/agent.ts",
+        "packages/core/src/dx/contracts/error-agent.ts",
+        "packages/core/src/dx/contracts/fake-agent-store.ts"
+      ],
+      "planName": "dft-agent-s00-contracts",
+      "planPath": "plans/agent-system/s00-contracts.plan.md",
+      "status": "completed",
+      "handoffPaths": [
+        "docs/execution/nodes/s00.json",
+        "docs/execution/nodes/s00.md"
+      ],
+      "startAfter": []
+    },
+    {
+      "id": "S01",
+      "owner": "storage owner",
+      "paths": [
+        "packages/core/src/dx/storage/",
+        "packages/core/test/dx/s01.test.ts",
+        "packages/core/test/dx/fixtures/s01/"
+      ],
+      "planName": "dft-agent-s01-storage",
+      "planPath": "plans/agent-system/s01-storage.plan.md",
+      "status": "completed",
+      "handoffPaths": [
+        "docs/execution/nodes/s01.json",
+        "docs/execution/nodes/s01.md"
+      ],
+      "startAfter": [
+        "S00"
+      ]
+    },
+    {
+      "id": "S02",
+      "owner": "query and reconciliation owner",
+      "paths": [
+        "packages/core/src/dx/reports/",
+        "packages/core/src/dx/usage/",
+        "packages/core/src/dx/correlation/",
+        "packages/core/src/dx/metrics/cost/",
+        "packages/core/test/dx/s02.test.ts",
+        "packages/core/test/dx/fixtures/s02/",
+        "packages/core/test/dx/branch-switch.test.ts"
+      ],
+      "planName": "dft-agent-s02-queries",
+      "planPath": "plans/agent-system/s02-queries.plan.md",
+      "status": "completed",
+      "handoffPaths": [
+        "docs/execution/nodes/s02.json",
+        "docs/execution/nodes/s02.md"
+      ],
+      "startAfter": [
+        "S00"
+      ]
+    },
+    {
+      "id": "R00",
+      "owner": "same sole integration and host owner as S05; root read gate",
+      "paths": [
+        "apps/cli/src/",
+        "apps/cli/test/",
+        "packages/core/src/dx/cli/commands/",
+        "packages/core/src/dx/mcp/handlers/",
+        "packages/core/src/dx/registry/admission.ts",
+        "packages/core/src/dx/registry/registry.ts",
+        "packages/core/src/dx/registry/runtime.ts",
+        "packages/core/src/dx/capabilities.ts",
+        "packages/core/src/dx/composition.ts",
+        "packages/core/src/dx/index.ts",
+        ".cursor/skills/",
+        "scripts/dx-install.ts",
+        "packages/core/test/dx/r00.test.ts",
+        "packages/core/test/dx/fixtures/r00/",
+        "docs/execution/phases/r00.json",
+        "packages/core/src/dx/contracts/capabilities.ts"
+      ],
+      "planName": "dft-agent-r00-read-gate",
+      "planPath": "plans/agent-system/r00-read-gate.plan.md",
+      "status": "completed",
+      "handoffPaths": [
+        "docs/execution/nodes/r00.json"
+      ],
+      "startAfter": [
+        "S00"
+      ]
+    },
+    {
+      "id": "S03",
+      "owner": "operation owner",
+      "paths": [
+        "packages/core/src/dx/operations/",
+        "packages/core/src/dx/live/",
+        "packages/core/src/dx/registry/sync.ts",
+        "packages/core/test/dx/s03.test.ts",
+        "packages/core/test/dx/fixtures/s03/",
+        "packages/core/test/dx/live-engine.test.ts",
+        "packages/core/test/dx/restore-old-backup.test.ts"
+      ],
+      "planName": "dft-agent-s03-operations",
+      "planPath": "plans/agent-system/s03-operations.plan.md",
+      "status": "completed",
+      "handoffPaths": [
+        "docs/execution/nodes/s03.json",
+        "docs/execution/nodes/s03.md"
+      ],
+      "startAfter": [
+        "S00"
+      ]
+    },
+    {
+      "id": "S04",
+      "owner": "learning owner",
+      "paths": [
+        "packages/core/src/dx/learning/",
+        "packages/core/test/dx/s04.test.ts",
+        "packages/core/test/dx/fixtures/s04/"
+      ],
+      "planName": "dft-agent-s04-learning",
+      "planPath": "plans/agent-system/s04-learning.plan.md",
+      "status": "completed",
+      "handoffPaths": [
+        "docs/execution/nodes/s04.json"
+      ],
+      "startAfter": [
+        "S00"
+      ]
+    },
+    {
+      "id": "S05",
+      "owner": "same sole integration and host owner as R00, sequential baton after read gate",
+      "paths": [
+        "apps/cli/src/",
+        "apps/cli/test/",
+        "packages/core/src/dx/cli/commands/",
+        "packages/core/src/dx/mcp/handlers/",
+        "packages/core/src/dx/registry/admission.ts",
+        "packages/core/src/dx/registry/registry.ts",
+        "packages/core/src/dx/registry/runtime.ts",
+        "packages/core/src/dx/capabilities.ts",
+        "packages/core/src/dx/composition.ts",
+        "packages/core/src/dx/index.ts",
+        ".cursor/skills/",
+        "scripts/dx-install.ts",
+        "packages/core/test/dx/s05.test.ts",
+        "packages/core/test/dx/fixtures/s05/",
+        "packages/core/src/dx/contracts/capabilities.ts",
+        "packages/core/test/dx/integration/sync-home.test.ts"
+      ],
+      "planName": "dft-agent-s05-integration",
+      "planPath": "plans/agent-system/s05-integration.plan.md",
+      "status": "completed",
+      "handoffPaths": [
+        "docs/execution/nodes/s05.json"
+      ],
+      "startAfter": [
+        "S00"
+      ]
+    },
+    {
+      "id": "S06",
+      "owner": "independent system auditor",
+      "paths": [
+        "packages/core/test/dx/s06.test.ts",
+        "packages/core/test/dx/fixtures/s06/"
+      ],
+      "planName": "dft-agent-s06-audit",
+      "planPath": "plans/agent-system/s06-audit.plan.md",
+      "status": "completed",
+      "handoffPaths": [
+        "docs/execution/nodes/s06.json"
+      ],
+      "startAfter": [
+        "S00"
+      ]
+    },
+    {
+      "id": "S07",
+      "owner": "root release authority",
+      "paths": [
+        "docs/execution/phases/s07.json",
+        "AGENTS.md",
+        "VISION.md",
+        "docs/architecture/agent-system.md",
+        "docs/architecture/agent-queries.md",
+        "docs/architecture/agent-control.md",
+        "docs/architecture/agent-learning.md",
+        "docs/architecture/capture.md",
+        "docs/architecture/harnesses.md",
+        "docs/architecture/prices.md",
+        "docs/architecture/usage.md",
+        "docs/execution/ownership.md",
+        "docs/product/decisions.md",
+        "research/README.md",
+        "research/synthesis.md",
+        "research/implementation-spec.md",
+        "research/phase-gates.md",
+        "research/hackathon-execution.md",
+        "research/plan-index.md",
+        "research/show-me-final-plan.md",
+        "research/revision-ledger.md",
+        "plans/agent-system/",
+        "packages/capability/src/to-toolkit.ts",
+        "packages/capability/test/strict-toolkit.test.ts",
+        "packages/capability/src/to-command.ts",
+        "packages/capability/test/strict-command.test.ts",
+        "docs/execution/runtime.md",
+        "turbo.json",
+        ".env.schema",
+        "CHANGELOG.md",
+        "packages/dft-npm/package.json",
+        ".github/workflows/ci.yml"
+      ],
+      "planName": "dft-agent-s07-release",
+      "planPath": "plans/agent-system/s07-release.plan.md",
+      "status": "completed",
+      "handoffPaths": [
+        "docs/execution/nodes/s07.json"
+      ],
+      "startAfter": [
+        "S06"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "S00",
+      "to": "S01"
+    },
+    {
+      "from": "S00",
+      "to": "S02"
+    },
+    {
+      "from": "S00",
+      "to": "S03"
+    },
+    {
+      "from": "S00",
+      "to": "S04"
+    },
+    {
+      "from": "S01",
+      "to": "R00"
+    },
+    {
+      "from": "S02",
+      "to": "R00"
+    },
+    {
+      "from": "R00",
+      "to": "S05"
+    },
+    {
+      "from": "S03",
+      "to": "S05"
+    },
+    {
+      "from": "S04",
+      "to": "S05"
+    },
+    {
+      "from": "S05",
+      "to": "S06"
+    },
+    {
+      "from": "S06",
+      "to": "S07"
+    }
+  ],
+  "sharedPathExceptions": [
+    {
+      "nodes": [
+        "R00",
+        "S05"
+      ],
+      "paths": [
+        "apps/cli/src/",
+        "apps/cli/test/",
+        "packages/core/src/dx/cli/commands/",
+        "packages/core/src/dx/mcp/handlers/",
+        "packages/core/src/dx/registry/admission.ts",
+        "packages/core/src/dx/registry/registry.ts",
+        "packages/core/src/dx/registry/runtime.ts",
+        "packages/core/src/dx/capabilities.ts",
+        "packages/core/src/dx/composition.ts",
+        "packages/core/src/dx/index.ts",
+        ".cursor/skills/",
+        "scripts/dx-install.ts",
+        "packages/core/src/dx/contracts/capabilities.ts"
+      ],
+      "rule": "One integration owner holds both phases. Root records admission to S05 after R00 source behavior; R00 acceptance is required before full S05 acceptance, without a second concurrent writer."
+    }
+  ],
+  "executionBranch": "feat/agent-system",
+  "completedAt": "2026-10-02T22:24:10.340820+00:00"
+}

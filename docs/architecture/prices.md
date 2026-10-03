@@ -2,6 +2,8 @@
 
 Every tool gets one estimate (D26, D30, D40): its tokens times the public price of the company that made the model. A gateway (cliproxy, OpenRouter, Copilot) never sets the price; it stays in `ai.via`. Everything lives in `packages/core/src/dx/metrics/cost/price-book/`.
 
+The proposed [agent query contract](agent-queries.md) binds exact price-sheet content and policy to each analysis basis. It separates source synchronization from price refresh: the current CLI's `--no-sync` alone is not a no-network guarantee. A local runtime's zero API-price estimate excludes unknown hardware/compute cost and does not mean the work consumes no resources.
+
 ## Three ledgers
 
 | Ledger | Comes from | Example |

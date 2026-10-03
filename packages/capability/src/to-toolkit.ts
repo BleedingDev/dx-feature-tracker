@@ -56,6 +56,10 @@ export interface ToolkitProjection<Caps extends readonly AnyCapability[]> {
   >;
 }
 
+export interface ToToolkitOptions {
+  readonly strictInput?: boolean | undefined;
+}
+
 const emptyObjectJsonSchema = {
   additionalProperties: false,
   properties: {},
@@ -74,8 +78,10 @@ const emptyInputTool = (contract: AnyCapability["contract"]): Tool.Any =>
     success: contract.output,
   });
 
-const toTool = ({ contract }: AnyCapability) => {
-  const tool = hasNoInputFields(contract)
+const toTool = ({ contract }: AnyCapability, options?: ToToolkitOptions) => {
+  const emptyInput = hasNoInputFields(contract);
+
+  const tool = emptyInput
     ? emptyInputTool(contract)
     : toolFor(
         contract.name,
@@ -86,7 +92,12 @@ const toTool = ({ contract }: AnyCapability) => {
         contract.needsApproval
       );
 
-  return tool
+  const annotatedTool =
+    options?.strictInput === true && !emptyInput
+      ? tool.annotate(Tool.Strict, true)
+      : tool;
+
+  return annotatedTool
     .annotate(Tool.Readonly, contract.annotations.readOnly)
     .annotate(Tool.Destructive, contract.annotations.destructive)
     .annotate(Tool.Idempotent, contract.annotations.idempotent)
@@ -94,9 +105,13 @@ const toTool = ({ contract }: AnyCapability) => {
 };
 
 export const toToolkit = <const Caps extends readonly AnyCapability[]>(
-  capabilities: Caps
+  capabilities: Caps,
+  options?: ToToolkitOptions
 ): ToolkitProjection<Caps> => {
-  const made: unknown = Toolkit.make(...capabilities.map(toTool));
+  const made: unknown = Toolkit.make(
+    ...capabilities.map((capability) => toTool(capability, options))
+  );
+
   // SAFETY: `Toolkit.make` is variadic over a tuple of tools; the tuple type is recovered by `ToolsOf<Caps>`, which `map` over the runtime array cannot carry. One cast at this boundary keeps every caller fully typed.
   // oxlint-disable-next-line typescript/no-unsafe-type-assertion
   const toolkit = made as Toolkit.Toolkit<ToolsOf<Caps>>;

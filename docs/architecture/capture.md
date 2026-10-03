@@ -2,6 +2,8 @@
 
 How `dft install`, `dft install --telemetry`, `dft uninstall` and the OTLP receiver wire each tool to dft (D12, D27, D38, D39). Code: `apps/cli/src/dft-capture.ts`, `dft-telemetry.ts`, `dft-otlp.ts`, `dft-otlp-receiver.ts`, `dft-tools.ts`.
 
+This page describes current capture. The proposed [agent control contract](agent-control.md) wraps these same changes in reviewed plans, revision checks and durable receipts. Installation, configured hooks, host approval and observed working capture remain distinct. The follow-up does not authorize a new host launch or widen existing telemetry consent.
+
 ## Project capture (`dft install`)
 
 `dft install` asks `HarnessRegistry.discover` which tools exist (sessions found, or the tool's folder exists) and writes local capture for each. `--tool a,b` adds tools that were not found; an unknown id stops the install and lists the valid ones. Cursor keeps its phase 1 files (`.cursor/hooks.json`, skills, optional git hooks).

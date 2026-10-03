@@ -1,11 +1,11 @@
 {
   "schema": "dxfr-commands/v1",
-  "owner": "A01",
-  "generated": "2026-09-30T13:56+02:00",
+  "owner": "S00",
+  "generated": "2026-10-02T16:28:39+00:00",
   "repoRoot": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
   "toolchain": {
     "node": "24.18.0 (selected by .nvmrc/.prototools via proto shim; process.execPath /Users/satan/.proto/tools/node/24.18.0/bin/node)",
-    "pnpm": "host pnpm 12.4.2 runs scripts (devEngines onFail=warn prints a [WARN] line on stderr; harmless). Lockfile was produced by pnpm 11.3.0: /Users/satan/.proto/tools/pnpm/11.3.0/shims/pnpm",
+    "pnpm": "11.3.0 selected on PATH; observed pnpm --version exit 0 during S00 on 2026-10-02. No install was run.",
     "effect": "4.0.0-rc.117",
     "typescript": "7.0.2 (patched by @effect/tsgo 0.45.0)",
     "vitest": "5.0.1",
@@ -27,13 +27,18 @@
       "packages/database",
       "packages/lore"
     ],
-    "apps_web_decision": "apps/web is NOT in the workspace. No web dashboard in the candidate tree."
+    "apps_web_decision": "apps/web is not in the workspace. The existing local dashboard is hosted by apps/cli on loopback."
   },
   "rules": [
-    "Only A01 installs. Never run pnpm install/add.",
-    "Never run whole-tree formatters (no `pnpm fix`, no `oxfmt .`). Format only your own files: pnpm exec oxfmt <your files>.",
-    "Never run the whole-workspace suite; gates do.",
-    "Core package exports '@rat-stack/core/dx' -> packages/core/src/dx/index.ts (barrel owned by A02 integration)."
+    "No agent-system worker installs or changes dependencies. Historical install ownership remains A01; this follow-up requires no install.",
+    "Never run whole-tree formatters (no pnpm fix, no oxfmt .). Format only owned files with the perOwner recipe.",
+    "Only root coordinates R00/S07 full fences through one validation queue. Workers run their exact scoped test recipes.",
+    "Before any typecheck, obtain fresh TraceDecay diagnostics. Root admits package typechecks through the same validation queue.",
+    "Core package exports @rat-stack/core/dx through packages/core/src/dx/index.ts; only the sequential R00/S05 integration owner edits that barrel.",
+    "A successful vitest list exit is test discovery only. An empty listing does not prove a named test exists or passes.",
+    "Vitest list imports test modules and can create fixture scratch directories. Use the owned-temp-dir discovery recipes to isolate those outputs.",
+    "App tests and MCP audits launch existing dist files. Root must build the candidate before their results can verify current source.",
+    "All new recipes state prerequisites, observed_exit and scope. A null observed_exit means unverified pending owner tests or the root validation queue."
   ],
   "install": {
     "argv": [
@@ -43,7 +48,9 @@
     ],
     "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
     "owner": "A01 only",
-    "verified_exit": 0
+    "verified_exit": 0,
+    "observed_exit": null,
+    "verification": "Not rerun in S00; existing verified_exit is historical."
   },
   "perOwner": {
     "test_one_file": {
@@ -57,7 +64,14 @@
         "test/dx/<id>.test.ts"
       ],
       "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
-      "note": "No prebuild needed for exec vitest (sources resolve via types->src). Use it.effect/it.layer from @effect/vitest."
+      "note": "pnpm exec bypasses the package pretest build. Source-importing core tests need no product build; tests importing workspace package runtime exports require current dist files. Use it.effect/it.layer from @effect/vitest.",
+      "prerequisites": [
+        "Use the shared installed dependency tree; no install or new dependency tree.",
+        "Substitute only paths owned by the executing node."
+      ],
+      "observed_exit": null,
+      "verification": "Unverified template for this candidate; no command with placeholder paths was run.",
+      "scope": "One core test file; the concrete B36 harness verification is in agentSystem.verifiedCoreHarness."
     },
     "test_one_file_alt": {
       "argv": [
@@ -67,7 +81,14 @@
         "run",
         "test/dx/<id>.test.ts"
       ],
-      "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker/packages/core"
+      "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker/packages/core",
+      "prerequisites": [
+        "Use the shared installed dependency tree; no install or new dependency tree.",
+        "Substitute only paths owned by the executing node."
+      ],
+      "observed_exit": null,
+      "verification": "Unverified template for this candidate; no command with placeholder paths was run.",
+      "scope": "Only substituted owner files."
     },
     "typecheck_core": {
       "argv": [
@@ -82,7 +103,15 @@
       ],
       "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
       "note": "Whole core package (src+test); errors in others' files are not yours - filter output by your paths.",
-      "verified_exit": 0
+      "verified_exit": 0,
+      "prerequisites": [
+        "Fresh TraceDecay diagnostics are recorded before typecheck.",
+        "Root has admitted this command to the single validation queue.",
+        "The shared installed dependency tree is available."
+      ],
+      "observed_exit": null,
+      "verification": "Unverified pending root validation queue; historical verified_exit is retained separately.",
+      "scope": "Entire core package, including src and test. Report errors with their actual path owner."
     },
     "lint_own_files": {
       "argv": [
@@ -92,7 +121,14 @@
         "<your files>"
       ],
       "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
-      "note": "ultracite/oxlint fence with repo plugins (anti-slop, boundaries, effect-tests). Must be clean for your files."
+      "note": "ultracite/oxlint fence with repo plugins (anti-slop, boundaries, effect-tests). Must be clean for your files.",
+      "prerequisites": [
+        "Use the shared installed dependency tree; no install or new dependency tree.",
+        "Substitute only paths owned by the executing node."
+      ],
+      "observed_exit": null,
+      "verification": "Unverified template for this candidate; no command with placeholder paths was run.",
+      "scope": "Only substituted owner files."
     },
     "format_check_own_files": {
       "argv": [
@@ -102,7 +138,14 @@
         "--check",
         "<your files>"
       ],
-      "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker"
+      "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+      "prerequisites": [
+        "Use the shared installed dependency tree; no install or new dependency tree.",
+        "Substitute only paths owned by the executing node."
+      ],
+      "observed_exit": null,
+      "verification": "Unverified template for this candidate; no command with placeholder paths was run.",
+      "scope": "Only substituted owner files."
     },
     "format_own_files": {
       "argv": [
@@ -111,7 +154,14 @@
         "oxfmt",
         "<your files>"
       ],
-      "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker"
+      "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+      "prerequisites": [
+        "Use the shared installed dependency tree; no install or new dependency tree.",
+        "Substitute only paths owned by the executing node."
+      ],
+      "observed_exit": null,
+      "verification": "Unverified template for this candidate; no command with placeholder paths was run.",
+      "scope": "Only substituted owner files."
     }
   },
   "build": {
@@ -124,7 +174,14 @@
     ],
     "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
     "verified_exit": 0,
-    "artifact": "apps/cli/dist/cli.js"
+    "artifact": "apps/cli/dist/cli.js",
+    "observed_exit": null,
+    "verification": "Not rerun in S00; existing verified_exit is historical.",
+    "prerequisites": [
+      "Root schedules builds through the validation queue.",
+      "Generated build trees have an active owner and disk-guardian-artifacts registration."
+    ],
+    "scope": "Workspace build, reserved for root."
   },
   "cli": {
     "built_path": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker/apps/cli/dist/cli.js",
@@ -134,7 +191,14 @@
       "--help"
     ],
     "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
-    "verified_exit": 0
+    "verified_exit": 0,
+    "observed_exit": 0,
+    "observed_at": "2026-10-02T16:28:39+00:00",
+    "verification": "Existing build help exits 0 and exposes the Ratstack wrapper with its dx subcommand. This does not establish current source/build alignment.",
+    "prerequisites": [
+      "The existing apps/cli/dist/cli.js build is present."
+    ],
+    "scope": "Help only; no live source acquisition or user store access."
   },
   "mcp": {
     "protocol_only_launcher": {
@@ -183,6 +247,292 @@
         "load"
       ],
       "verified_exit": 0
+    },
+    "observed_exit": 0,
+    "verification": "Root fence9 passed the exact gate argv with VITEST_MAX_WORKERS=1: exit 0, all 18/18 task reports and all test reports completed and passed, 2001 passed/3 skipped. Native11 passed on the exact final source/compiled identities; root verified all identity domains unchanged after both gate and native rehearsal. Exact owned resource closure is complete. Root S07 reports acceptance fulfilled; historical failures and scope limits remain retained.",
+    "scope": "Full release fence, one root queue.",
+    "prerequisites": [
+      "All admitted owner handoffs are available.",
+      "Fresh TraceDecay diagnostics are recorded before the typecheck tasks.",
+      "Generated build trees have an active owner and disk-guardian-artifacts registration."
+    ],
+    "optional_process_env": {
+      "values": {
+        "VITEST_MAX_WORKERS": "1"
+      },
+      "optional": true,
+      "sensitive": false,
+      "scope": "One Vitest fork per active package process; package parallelism is retained. This is not a native Codex-agent cap.",
+      "argv": "Use the existing gate.argv unchanged; supply this value only in the root gate process environment.",
+      "prerequisites": [
+        "The optional positive VITEST_MAX_WORKERS declaration passes root env:check.",
+        "The Turbo test task passes through only VITEST_MAX_WORKERS while retaining strict environment mode.",
+        "Root schedules each fence through the existing single validation queue."
+      ],
+      "sourceEvidence": "Root verified installed Vitest5 positive-integer worker environment support and Turbo2.11.2 test-task passThroughEnv support. Pins, task selection, assertions and deadlines are unchanged.",
+      "observed_exit": 0,
+      "verification": "Root fence9 used one Vitest fork per active package while retaining package parallelism and strict environment mode. All required task/test reports completed and passed. Native11 and owned resource closure also passed; root S07 acceptance is fulfilled. Proposal 2 and failed/aborted fences remain historical.",
+      "history": [
+        {
+          "values": {
+            "VITEST_MAX_WORKERS": "2"
+          },
+          "optional": true,
+          "sensitive": false,
+          "scope": "Worker limit for each Vitest process launched by the Turbo test task; it does not limit native Codex agents.",
+          "argv": "Use the existing gate.argv unchanged; supply this value only in the root gate process environment.",
+          "prerequisites": [
+            "Root env:check validates the optional positive VITEST_MAX_WORKERS declaration before the gate run.",
+            "The Turbo test task passes through only VITEST_MAX_WORKERS while retaining strict environment mode.",
+            "Root schedules fence6 through the existing single validation queue."
+          ],
+          "sourceEvidence": "Root verified installed Vitest5 positive-integer worker environment support and Turbo2.11.2 test-task passThroughEnv support. Pins, task selection, assertions and deadlines are unchanged.",
+          "observed_exit": null,
+          "verification": "Unverified pending root fence6. No S00 compiler, runtime, test or gate command was run.",
+          "state": "proposed",
+          "acceptance": "not-verified",
+          "note": "Earlier VITEST_MAX_WORKERS=2 proposal was not the root fence6 execution setting."
+        }
+      ],
+      "state": "passed",
+      "completedAllTasks": true,
+      "completedAllTestReports": true,
+      "acceptance": "verified-full-fence",
+      "env_check": {
+        "reportedCommand": "env:check",
+        "observed_exit": 0,
+        "verification": "Root observed successful validation of the optional control. This is environment validation, not full-fence acceptance."
+      },
+      "recordedAt": "2026-10-02T22:20:41.383670+00:00",
+      "allRequiredPassingReports": true
+    },
+    "state": "passed",
+    "completedAllTasks": true,
+    "completedAllTestReports": true,
+    "acceptance": "verified-full-fence",
+    "finalGate": "passed",
+    "acceptanceRequirements": [
+      "A successful exit is necessary but insufficient.",
+      "All 18 required task reports must finish and pass.",
+      "All required test reports must finish and pass.",
+      "Candidate identity must remain unchanged throughout the fence.",
+      "No cancellation may occur."
+    ],
+    "executionHistory": [
+      {
+        "fence": "fence5",
+        "state": "failed",
+        "staticChecks": "passed",
+        "wallTimeouts": 9,
+        "gitChildResultFailures": 2,
+        "observed_exit": null,
+        "acceptance": "not-verified",
+        "verification": "Root reported fullfence5 static PASS but nine wall timeouts and two Git-child-result failures under load. The unchanged focused C08 later passed4/4; that focused success does not replace full-fence acceptance."
+      },
+      {
+        "fence": "fence6",
+        "processEnv": {
+          "VITEST_MAX_WORKERS": "1"
+        },
+        "packageParallelism": "retained",
+        "state": "aborted",
+        "cancellationSignal": "SIGTERM",
+        "observed_exit": 0,
+        "completedAllTasks": false,
+        "completedAllTestReports": false,
+        "acceptance": "not-verified",
+        "verification": "Cancelled/incomplete despite wrapper exit 0. Turbo shutdown summary: 16 successful/18 total, 8 cached, 17m16.305s; CLI and core Test failed. There is no complete 18/18 passing marker.",
+        "taskSummary": {
+          "successfulTasks": 16,
+          "totalTasks": 18,
+          "cachedTasks": 8,
+          "duration": "17m16.305s",
+          "emittedAfter": "Shutting down Turborepo tasks..."
+        },
+        "failedTestTaskReports": [
+          "CLI: Test failed",
+          "core: Test failed"
+        ],
+        "allRequiredPassingReports": false
+      },
+      {
+        "fence": "fence7",
+        "state": "failed",
+        "observed_exit": 1,
+        "acceptance": "not-verified",
+        "taskSummary": {
+          "successfulTasks": 16,
+          "totalTasks": 18,
+          "cachedTasks": 8,
+          "duration": "9m38.963s"
+        },
+        "cliReport": {
+          "passed": 305,
+          "failed": 2,
+          "total": 307
+        },
+        "coreReport": "Final report incomplete; 100k scale case exceeded 20s.",
+        "verification": "Root reported failed fence7 before the S05 production request/termination repair. Historical Build7 evidence did not establish acceptance."
+      },
+      {
+        "reportedBy": "root",
+        "fence": "fence9",
+        "argv": [
+          "pnpm",
+          "exec",
+          "turbo",
+          "run",
+          "check",
+          "test",
+          "build"
+        ],
+        "processEnv": {
+          "VITEST_MAX_WORKERS": "1"
+        },
+        "observed_exit": 0,
+        "state": "passed",
+        "cancelled": false,
+        "completedAllTasks": true,
+        "completedAllTestReports": true,
+        "allRequiredPassingReports": true,
+        "candidateIdentityUnchanged": true,
+        "taskSummary": {
+          "successfulTasks": 18,
+          "totalTasks": 18,
+          "cachedTasks": 9,
+          "durationSeconds": 519.182,
+          "outerDurationSeconds": 522.684
+        },
+        "testReports": {
+          "capability": {
+            "passed": 80,
+            "testFiles": 11
+          },
+          "devtools": {
+            "passed": 19,
+            "testFiles": 1
+          },
+          "core": {
+            "passed": 1581,
+            "skipped": 3,
+            "passedFiles": 132,
+            "skippedFiles": 3,
+            "testFiles": 135
+          },
+          "cli": {
+            "passed": 321,
+            "failed": 0,
+            "testFiles": 30,
+            "durationSeconds": 485.49
+          },
+          "aggregate": {
+            "passed": 2001,
+            "skipped": 3
+          }
+        },
+        "sourceIdentity": {
+          "digest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+          "files": 1058
+        },
+        "compiledIdentity": {
+          "digest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+          "files": 1820
+        },
+        "postGateIdentityEquality": "verified by root",
+        "agentContractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+        "databaseSchemaVersion": 8,
+        "acceptance": "verified-full-fence",
+        "releaseAcceptance": "accepted-root-S07",
+        "recordedAt": "2026-10-02T22:20:41.383670+00:00",
+        "releaseAcceptanceAtFenceCompletion": "pending-native11-and-resource-closure",
+        "finalClosureReceipt": "docs/execution/nodes/s07.json"
+      }
+    ],
+    "taskSummary": {
+      "successfulTasks": 18,
+      "totalTasks": 18,
+      "cachedTasks": 9,
+      "durationSeconds": 519.182,
+      "outerDurationSeconds": 522.684
+    },
+    "failedTestTaskReports": [],
+    "allRequiredPassingReports": true,
+    "currentFence": "fence9",
+    "cancelled": false,
+    "releaseAcceptance": "accepted-root-S07",
+    "testReports": {
+      "capability": {
+        "passed": 80,
+        "testFiles": 11
+      },
+      "devtools": {
+        "passed": 19,
+        "testFiles": 1
+      },
+      "core": {
+        "passed": 1581,
+        "skipped": 3,
+        "passedFiles": 132,
+        "skippedFiles": 3,
+        "testFiles": 135
+      },
+      "cli": {
+        "passed": 321,
+        "failed": 0,
+        "testFiles": 30,
+        "durationSeconds": 485.49
+      },
+      "aggregate": {
+        "passed": 2001,
+        "skipped": 3
+      }
+    },
+    "candidateIdentity": {
+      "source": {
+        "digest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+        "files": 1058
+      },
+      "compiled": {
+        "digest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+        "files": 1820
+      },
+      "unchangedAfterGate": true,
+      "unchangedAfterGateAndNative": true
+    },
+    "rootReceipt": "docs/execution/nodes/s07.json",
+    "finalClosure": {
+      "reportedBy": "root",
+      "state": "accepted",
+      "rootReceipt": "docs/execution/nodes/s07.json",
+      "native11": {
+        "state": "passed",
+        "candidateBinding": "exact final source and compiled identities",
+        "durationSeconds": 26.726,
+        "jsonRpcFrames": 14,
+        "nonJsonStdoutLines": 0,
+        "stderrBytes": 0
+      },
+      "identityEquality": {
+        "equality": true,
+        "verifiedAfter": "full fence and native11",
+        "sourceFiles": 1058,
+        "distFiles": 1820,
+        "manifests": 4,
+        "guidanceFiles": 6,
+        "assets": 3
+      },
+      "resources": {
+        "state": "closed",
+        "ownedRegistrationsReleased": 2,
+        "releaseExit": 0,
+        "scratchRemovedAt": "2026-10-02T22:22:22.038217Z",
+        "ownedExportPresent": false,
+        "knownOwnedPidsPresent": false,
+        "cleanupRemovedPreexistingTreesOrStores": false,
+        "verification": "Root verified exact owned registrations/scratch/PIDs only; cleanup left preexisting trees and stores untouched."
+      },
+      "scopeLimits": "Four reserved operation kinds and existing live-host verification limits remain; passing fixture/native acceptance does not advertise those as live support.",
+      "recordedAt": "2026-10-02T22:24:40.486223+00:00"
     }
   },
   "runtime_probes": {
@@ -194,6 +544,578 @@
       ],
       "result": "DatabaseSync + WAL + prepared insert/select + backup function present on v24.18.0, no ExperimentalWarning",
       "verified_exit": 0
+    }
+  },
+  "historicalBaseline": {
+    "owner": "A01",
+    "generated": "2026-09-30T13:56+02:00",
+    "note": "Existing verified_exit fields and baseline results are historical receipts from the original execution. They do not verify the current agent-system candidate."
+  },
+  "agentSystem": {
+    "selection": "plans/agent-system/manifest.json",
+    "observed_at": "2026-10-02T16:28:39+00:00",
+    "verification_policy": "A recipe is verified only for its observed command and candidate. Discovery, help and historical receipts do not establish passing current behavior.",
+    "nodes": {
+      "S00": {
+        "test": null,
+        "test_status": "No isolated S00 test file is assigned by the manifest. Compile-only fake consumers live in owned contracts/model paths.",
+        "validation_recipes": [
+          "perOwner.typecheck_core",
+          "perOwner.lint_own_files",
+          "perOwner.format_check_own_files"
+        ]
+      },
+      "S01": {
+        "owner": "storage owner",
+        "test": {
+          "argv": [
+            "pnpm",
+            "--filter",
+            "@rat-stack/core",
+            "exec",
+            "vitest",
+            "run",
+            "test/dx/s01.test.ts"
+          ],
+          "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+          "prerequisites": [
+            "The node owns this exact test file and its fixture directory after S00 activation.",
+            "The node dependencies and frozen contract handoff are admitted.",
+            "Create the assigned test file before running; it was absent at S00 catalog verification.",
+            "Use only labelled fixture inputs and owned fixture stores; no live private source acquisition is implied."
+          ],
+          "observed_exit": null,
+          "verification": "Unverified pending owner tests.",
+          "scope": "Only packages/core/test/dx/s01.test.ts; exec bypasses pretest build."
+        },
+        "validation_recipes": [
+          "perOwner.typecheck_core",
+          "perOwner.lint_own_files",
+          "perOwner.format_check_own_files"
+        ]
+      },
+      "S02": {
+        "owner": "query and reconciliation owner",
+        "test": {
+          "argv": [
+            "pnpm",
+            "--filter",
+            "@rat-stack/core",
+            "exec",
+            "vitest",
+            "run",
+            "test/dx/s02.test.ts"
+          ],
+          "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+          "prerequisites": [
+            "The node owns this exact test file and its fixture directory after S00 activation.",
+            "The node dependencies and frozen contract handoff are admitted.",
+            "Create the assigned test file before running; it was absent at S00 catalog verification.",
+            "Use only labelled fixture inputs and owned fixture stores; no live private source acquisition is implied."
+          ],
+          "observed_exit": null,
+          "verification": "Unverified pending owner tests.",
+          "scope": "Only packages/core/test/dx/s02.test.ts; exec bypasses pretest build."
+        },
+        "validation_recipes": [
+          "perOwner.typecheck_core",
+          "perOwner.lint_own_files",
+          "perOwner.format_check_own_files"
+        ]
+      },
+      "R00": {
+        "owner": "sequential integration and host owner, read milestone",
+        "test": {
+          "argv": [
+            "pnpm",
+            "--filter",
+            "@rat-stack/core",
+            "exec",
+            "vitest",
+            "run",
+            "test/dx/r00.test.ts"
+          ],
+          "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+          "prerequisites": [
+            "The node owns this exact test file and its fixture directory after S00 activation.",
+            "The node dependencies and frozen contract handoff are admitted.",
+            "Create the assigned test file before running; it was absent at S00 catalog verification.",
+            "Use only labelled fixture inputs and owned fixture stores; no live private source acquisition is implied."
+          ],
+          "observed_exit": null,
+          "verification": "Unverified pending owner tests.",
+          "scope": "Only packages/core/test/dx/r00.test.ts; exec bypasses pretest build."
+        },
+        "validation_recipes": [
+          "perOwner.typecheck_core",
+          "perOwner.lint_own_files",
+          "perOwner.format_check_own_files"
+        ]
+      },
+      "S03": {
+        "owner": "operation owner",
+        "test": {
+          "argv": [
+            "pnpm",
+            "--filter",
+            "@rat-stack/core",
+            "exec",
+            "vitest",
+            "run",
+            "test/dx/s03.test.ts"
+          ],
+          "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+          "prerequisites": [
+            "The node owns this exact test file and its fixture directory after S00 activation.",
+            "The node dependencies and frozen contract handoff are admitted.",
+            "Create the assigned test file before running; it was absent at S00 catalog verification.",
+            "Use only labelled fixture inputs and owned fixture stores; no live private source acquisition is implied."
+          ],
+          "observed_exit": null,
+          "verification": "Unverified pending owner tests.",
+          "scope": "Only packages/core/test/dx/s03.test.ts; exec bypasses pretest build."
+        },
+        "validation_recipes": [
+          "perOwner.typecheck_core",
+          "perOwner.lint_own_files",
+          "perOwner.format_check_own_files"
+        ]
+      },
+      "S04": {
+        "owner": "learning owner",
+        "test": {
+          "argv": [
+            "pnpm",
+            "--filter",
+            "@rat-stack/core",
+            "exec",
+            "vitest",
+            "run",
+            "test/dx/s04.test.ts"
+          ],
+          "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+          "prerequisites": [
+            "The node owns this exact test file and its fixture directory after S00 activation.",
+            "The node dependencies and frozen contract handoff are admitted.",
+            "Create the assigned test file before running; it was absent at S00 catalog verification.",
+            "Use only labelled fixture inputs and owned fixture stores; no live private source acquisition is implied."
+          ],
+          "observed_exit": null,
+          "verification": "Unverified pending owner tests.",
+          "scope": "Only packages/core/test/dx/s04.test.ts; exec bypasses pretest build."
+        },
+        "validation_recipes": [
+          "perOwner.typecheck_core",
+          "perOwner.lint_own_files",
+          "perOwner.format_check_own_files"
+        ]
+      },
+      "S05": {
+        "owner": "same sequential integration and host owner after R00",
+        "test": {
+          "argv": [
+            "pnpm",
+            "--filter",
+            "@rat-stack/core",
+            "exec",
+            "vitest",
+            "run",
+            "test/dx/s05.test.ts"
+          ],
+          "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+          "prerequisites": [
+            "The node owns this exact test file and its fixture directory after S00 activation.",
+            "The node dependencies and frozen contract handoff are admitted.",
+            "Create the assigned test file before running; it was absent at S00 catalog verification.",
+            "Use only labelled fixture inputs and owned fixture stores; no live private source acquisition is implied."
+          ],
+          "observed_exit": null,
+          "verification": "Unverified pending owner tests.",
+          "scope": "Only packages/core/test/dx/s05.test.ts; exec bypasses pretest build."
+        },
+        "validation_recipes": [
+          "perOwner.typecheck_core",
+          "perOwner.lint_own_files",
+          "perOwner.format_check_own_files"
+        ]
+      },
+      "S06": {
+        "owner": "independent system auditor",
+        "test": {
+          "argv": [
+            "pnpm",
+            "--filter",
+            "@rat-stack/core",
+            "exec",
+            "vitest",
+            "run",
+            "test/dx/s06.test.ts"
+          ],
+          "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+          "prerequisites": [
+            "The node owns this exact test file and its fixture directory after S00 activation.",
+            "The node dependencies and frozen contract handoff are admitted.",
+            "Create the assigned test file before running; it was absent at S00 catalog verification.",
+            "Use only labelled fixture inputs and owned fixture stores; no live private source acquisition is implied."
+          ],
+          "observed_exit": null,
+          "verification": "Unverified pending owner tests.",
+          "scope": "Only packages/core/test/dx/s06.test.ts; exec bypasses pretest build."
+        },
+        "validation_recipes": [
+          "perOwner.typecheck_core",
+          "perOwner.lint_own_files",
+          "perOwner.format_check_own_files"
+        ]
+      }
+    },
+    "verifiedCoreHarness": {
+      "argv": [
+        "pnpm",
+        "--filter",
+        "@rat-stack/core",
+        "exec",
+        "vitest",
+        "run",
+        "test/dx/b36.test.ts"
+      ],
+      "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+      "prerequisites": [
+        "Shared installed dependencies and committed B36 fixture files are present."
+      ],
+      "observed_exit": 0,
+      "observed_at": "2026-10-02T16:28:39+00:00",
+      "verification": "B36 passed 1 test file and 10 tests in 480 ms. No package pretest build ran.",
+      "scope": "Existing source-backed B36 fixture behavior only; not the new agent-system acceptance tests."
+    },
+    "plannedTestDiscovery": {
+      "argv": [
+        "pnpm",
+        "--filter",
+        "@rat-stack/core",
+        "exec",
+        "vitest",
+        "list",
+        "test/dx/s00.test.ts",
+        "test/dx/s01.test.ts",
+        "test/dx/s02.test.ts",
+        "test/dx/r00.test.ts",
+        "test/dx/s03.test.ts",
+        "test/dx/s04.test.ts",
+        "test/dx/s05.test.ts",
+        "test/dx/s06.test.ts"
+      ],
+      "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+      "prerequisites": [
+        "Shared installed dependencies are present."
+      ],
+      "observed_exit": 0,
+      "observed_at": "2026-10-02T16:28:39+00:00",
+      "verification": "The command printed no tests. An independent exact-path existence check found all eight paths absent; no planned test was verified.",
+      "scope": "Discovery only. S00 has no assigned test file; the other seven files are prospective owner tests."
+    },
+    "app": {
+      "discover_existing_raw": {
+        "argv": [
+          "pnpm",
+          "--filter",
+          "@rat-stack/cli",
+          "exec",
+          "vitest",
+          "list",
+          "test/dft.test.ts",
+          "test/dft-usage.test.ts",
+          "test/dft-live.test.ts",
+          "test/dft-surfaces.test.ts",
+          "test/dft-retention.test.ts"
+        ],
+        "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+        "prerequisites": [
+          "Shared installed dependencies are present.",
+          "Test imports may create scratch directories and initialise fixture Git repositories."
+        ],
+        "observed_exit": 0,
+        "observed_at": "2026-10-02T16:28:39+00:00",
+        "verification": "All five named existing app test files were discovered. No tests or pretest builds ran.",
+        "scope": "Discovery of the five named app files only; use discover_existing_owned for scratch isolation."
+      },
+      "discover_existing_owned": {
+        "argv": [
+          "/Users/satan/bin/owned-temp-dir",
+          "--run",
+          "dft-s00-app-discovery",
+          "--",
+          "node",
+          "-e",
+          "const {spawnSync}=require(\"node:child_process\"); const result=spawnSync(\"pnpm\",[\"--filter\",\"@rat-stack/cli\",\"exec\",\"vitest\",\"list\",\"test/dft.test.ts\",\"test/dft-usage.test.ts\",\"test/dft-live.test.ts\",\"test/dft-surfaces.test.ts\",\"test/dft-retention.test.ts\"],{env:{...process.env,TMPDIR:process.env.OWNED_TEMP_DIR},stdio:\"inherit\"}); if(result.error) process.stderr.write(result.error.message+\"\\n\"); process.exit(result.status??1);"
+        ],
+        "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+        "prerequisites": [
+          "The shared installed dependency tree is available.",
+          "The owned-temp-dir maintenance lock is available.",
+          "Each named test file is present. Test imports can create fixture scratch data inside the run-owned TMPDIR."
+        ],
+        "observed_exit": 0,
+        "observed_at": "2026-10-02T16:30:06+00:00",
+        "verification": "The exact catalog argv discovered all five named app files and their test names, with no stderr. No tests or pretest builds ran.",
+        "scope": "Only listed test modules are imported for discovery; no tests or pretest builds run. The helper owns and releases the scratch directory.",
+        "attempt_history": [
+          {
+            "observed_exit": 1,
+            "result": "The helper refused the earlier attempt because another maintenance operation held its lock; pnpm did not run."
+          }
+        ],
+        "cleanup_observed": "The helper reported status cleaned for its exact run-owned TMPDIR. No scratch path was retained."
+      },
+      "test_existing": {
+        "argv": [
+          "pnpm",
+          "--filter",
+          "@rat-stack/cli",
+          "exec",
+          "vitest",
+          "run",
+          "test/dft.test.ts",
+          "test/dft-usage.test.ts",
+          "test/dft-live.test.ts",
+          "test/dft-surfaces.test.ts",
+          "test/dft-retention.test.ts"
+        ],
+        "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+        "prerequisites": [
+          "Root has built the admitted candidate and its workspace package outputs; existing dist files alone do not prove alignment.",
+          "Test fixture scratch paths are owned and released, including interruption paths.",
+          "The app vitest config disables DFT_CURSOR_USAGE and DFT_PRICE_CATALOG acquisition; keep all fixture HOME/DFT_HOME paths isolated.",
+          "No live private inputs, paid model calls or cross-host CLI are required.",
+          "Live dashboard tests require the checked-in intro assets; retention requires its referenced harness fixtures and uses a 120-second timeout."
+        ],
+        "observed_exit": null,
+        "verification": "Unverified pending owner tests.",
+        "scope": "Only the five named apps/cli test files. exec bypasses the package pretest build."
+      },
+      "test_one_file": {
+        "argv": [
+          "pnpm",
+          "--filter",
+          "@rat-stack/cli",
+          "exec",
+          "vitest",
+          "run",
+          "test/<owned-file>.test.ts"
+        ],
+        "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+        "prerequisites": [
+          "Only the R00/S05 integration owner substitutes an owned app test path.",
+          "Root has built the admitted candidate and its workspace package outputs.",
+          "Fixture scratch paths are owned and released; keep live acquisition disabled."
+        ],
+        "observed_exit": null,
+        "verification": "Unverified pending owner tests.",
+        "scope": "One owned app test file; no pretest build."
+      },
+      "typecheck": {
+        "argv": [
+          "pnpm",
+          "--filter",
+          "@rat-stack/cli",
+          "exec",
+          "tsc",
+          "--noEmit",
+          "-p",
+          "tsconfig.json"
+        ],
+        "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+        "prerequisites": [
+          "Fresh TraceDecay diagnostics are recorded before typecheck.",
+          "Root admits this command to the single validation queue."
+        ],
+        "observed_exit": null,
+        "verification": "Unverified pending root validation queue; not run in S00.",
+        "scope": "Entire apps/cli package, including src and test."
+      },
+      "dft_help": {
+        "argv": [
+          "node",
+          "apps/cli/dist/dft-main.js",
+          "--help"
+        ],
+        "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+        "prerequisites": [
+          "The existing apps/cli/dist/dft-main.js build is present. apps/cli/bin/dft imports this entry."
+        ],
+        "observed_exit": 0,
+        "observed_at": "2026-10-02T16:28:39+00:00",
+        "verification": "Existing build help exits 0 and lists the dft commands. Source/build alignment was not established.",
+        "scope": "Help only; no live source acquisition or user store access."
+      }
+    },
+    "audits": {
+      "discover_historical_owned": {
+        "argv": [
+          "/Users/satan/bin/owned-temp-dir",
+          "--run",
+          "dft-s00-audit-discovery",
+          "--",
+          "node",
+          "-e",
+          "const {spawnSync}=require(\"node:child_process\"); const result=spawnSync(\"pnpm\",[\"--filter\",\"@rat-stack/core\",\"exec\",\"vitest\",\"list\",\"test/dx/audits/c01.test.ts\",\"test/dx/audits/c02.test.ts\",\"test/dx/audits/c07.test.ts\",\"test/dx/audits/c08.test.ts\",\"test/dx/audits/c10.test.ts\",\"test/dx/audits/c12.test.ts\"],{env:{...process.env,TMPDIR:process.env.OWNED_TEMP_DIR},stdio:\"inherit\"}); if(result.error) process.stderr.write(result.error.message+\"\\n\"); process.exit(result.status??1);"
+        ],
+        "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+        "prerequisites": [
+          "The shared installed dependency tree is available.",
+          "The owned-temp-dir maintenance lock is available.",
+          "Each named test file is present. Test imports can create fixture scratch data inside the run-owned TMPDIR."
+        ],
+        "observed_exit": 0,
+        "observed_at": "2026-10-02T16:30:06+00:00",
+        "verification": "The exact catalog argv listed tests from C01/C02/C07/C10/C12, with no stderr. It showed no C08 entries; protocol acceptance was not verified. No tests or pretest builds ran.",
+        "scope": "Only listed test modules are imported for discovery; no tests or pretest builds run. The helper owns and releases the scratch directory.",
+        "attempt_history": [
+          {
+            "observed_exit": 1,
+            "result": "The helper refused the earlier attempt because another maintenance operation held its lock; pnpm did not run."
+          }
+        ],
+        "cleanup_observed": "The helper reported status cleaned for its exact run-owned TMPDIR. No scratch path was retained."
+      },
+      "test_historical": {
+        "argv": [
+          "pnpm",
+          "--filter",
+          "@rat-stack/core",
+          "exec",
+          "vitest",
+          "run",
+          "test/dx/audits/c01.test.ts",
+          "test/dx/audits/c02.test.ts",
+          "test/dx/audits/c07.test.ts",
+          "test/dx/audits/c08.test.ts",
+          "test/dx/audits/c10.test.ts",
+          "test/dx/audits/c12.test.ts"
+        ],
+        "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+        "prerequisites": [
+          "The six named historical audit files and their committed fixtures are present; S00 confirmed exact-path existence.",
+          "Root has built the admitted candidate before C08 launches the built stdio MCP server.",
+          "Tests use owned fixture SQLite stores, spool files and scratch repositories. C02 kills its own child writer to simulate a crash.",
+          "Record skipped tests separately. A passing file with unavailable dist and skipped protocol tests does not verify MCP behavior.",
+          "Keep fixture scratch paths isolated and released; no live private source input is implied."
+        ],
+        "observed_exit": null,
+        "verification": "Unverified pending owner tests.",
+        "scope": "Only C01/C02/C07/C08/C10/C12 historical core audits. This does not replace S06 connected-system acceptance."
+      },
+      "agent_system": {
+        "recipe": "agentSystem.nodes.S06.test",
+        "scope": "Isolated independent connected-system audit after S05. Test and measurement outcomes remain unverified pending the S06 owner."
+      }
+    },
+    "schemaFixtureProbe": {
+      "argv": [
+        "node",
+        "--input-type=module"
+      ],
+      "cwd": "/Users/satan/workspace/bleedingdev/projects/dx-feature-tracker",
+      "stdin": "import {existsSync,readFileSync} from \"node:fs\";\nimport {registerHooks,stripTypeScriptTypes} from \"node:module\";\nimport {fileURLToPath,pathToFileURL} from \"node:url\";\nconst root = process.cwd();\nregisterHooks({\n  resolve(specifier,context,nextResolve) {\n    if (specifier.startsWith(\".\") && specifier.endsWith(\".js\") && context.parentURL?.startsWith(\"file:\")) {\n      const candidate = new URL(specifier.slice(0,-3)+\".ts\",context.parentURL);\n      if (existsSync(fileURLToPath(candidate))) return {url:candidate.href,shortCircuit:true};\n    }\n    return nextResolve(specifier,context);\n  },\n  load(url,context,nextLoad) {\n    if (url.startsWith(pathToFileURL(root+\"/packages/core/src/dx/\").href) && url.endsWith(\".ts\")) return {format:\"module\",source:stripTypeScriptTypes(readFileSync(fileURLToPath(url),\"utf8\")),shortCircuit:true};\n    return nextLoad(url,context);\n  }\n});\nconst Schema = await import(\"./packages/core/node_modules/effect/dist/Schema.js\");\nconst fixture = await import(\"./packages/core/src/dx/contracts/agent-fixtures.ts\");\nconst {AgentRequestSchema} = await import(\"./packages/core/src/dx/model/agent-common.ts\");\nconst {LearningInputSchema} = await import(\"./packages/core/src/dx/model/agent-learning.ts\");\nconst {OperationInputSchema} = await import(\"./packages/core/src/dx/model/agent-operation.ts\");\nconst {AgentQueryOutputSchema} = await import(\"./packages/core/src/dx/model/agent-query.ts\");\nSchema.decodeUnknownSync(AgentQueryOutputSchema)(fixture.agentFixtureQueryOutput);\nfor (const evaluation of [fixture.agentFixtureEvaluation,fixture.agentFixtureInvestigationEvaluation]) Schema.decodeUnknownSync(LearningInputSchema)({action:\"evaluate\",evaluation,idempotencyKey:evaluation.id});\nSchema.decodeUnknownSync(OperationInputSchema)({action:\"plan\",target:fixture.agentFixtureStore,scope:fixture.agentFixtureScope,arguments:fixture.agentFixtureOperationPlan.arguments,bounds:fixture.agentFixtureOperationPlan.bounds,purpose:\"Fixture schema validation only\"});\nconst invalidInputs = [\n  {...fixture.agentFixtureQuery.agent,profileVersion:\"unsupported\"},\n  {...fixture.agentFixtureQuery.agent,policies:{...fixture.agentFixturePolicies,acquisition:\"scan-everything\"}},\n  {...fixture.agentFixtureQuery.agent,budget:{...fixture.agentFixtureBudget,maxOutputBytes:1}},\n  {...fixture.agentFixtureQuery.agent,unrecognizedPolicy:true}\n];\nfor (const [position,invalid] of invalidInputs.entries()) {\n  let accepted = true;\n  try { Schema.decodeUnknownSync(AgentRequestSchema,{onExcessProperty:\"error\"})(invalid); } catch { accepted = false; }\n  if (accepted) throw new Error(\"Invalid profile accepted at case \"+position);\n}\nconsole.log(JSON.stringify({fixtures:\"validated\",invalidProfiles:\"rejected\",operationsExecuted:0,networkRequests:0}));\n",
+      "prerequisites": [
+        "Shared installed pinned dependencies are available.",
+        "Node24 registerHooks and stripTypeScriptTypes are present.",
+        "No build tree or scratch file is generated; TypeScript source is loaded in memory.",
+        "Use explicit onExcessProperty:error decoding for excess-key rejection."
+      ],
+      "observed_exit": 0,
+      "verification": "Source fixture imports and schema .make constructors validated; query output, lesson and investigation evaluations, and bounded operation plan input decoded. Unsupported profile/policy/too-small output budget/excess keys rejected. No operations executed and no network requests.",
+      "scope": "S00 schemas and compile-only fixture consumers only; not storage/query/operation/learning runtime behavior. Node printed an ExperimentalWarning for stripTypeScriptTypes."
+    },
+    "databaseCompatibility": {
+      "sourceSchemaVersion": 8,
+      "historicalCheckpointSchemaVersion": 7,
+      "sourceEvidence": "S01 closed/frozen: 21/21 scoped tests pass (1.52s, 2026-10-02T20:28:15Z); source/test lint/format and focused reviews clean. Controlled version7-to8 migration preserves basis/result/identity/reservation content.",
+      "migration8": {
+        "statement": "CREATE INDEX agent_operation_aliases_operation ON agent_operation_aliases(operation_id)",
+        "rewriteEventBody": null,
+        "scope": "Index only; no event-body rewrite or public schema/port change."
+      },
+      "installedSchemaVersion": 8,
+      "installedVerification": "Current candidate passed root fence9 and exact-final-source native11, with all source/dist/manifests/guidance/assets identities unchanged after both. Database schema8 remains unchanged; historical Build7/native9 exact database/index proof is retained. Root S07 acceptance and exact owned resource closure are fulfilled; live-host and reserved-kind limits remain.",
+      "agentContractVersion": "dx.agent-contracts.v1",
+      "agentContractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+      "recordedAt": "2026-10-02T22:24:40.486223+00:00",
+      "installedEvidence": {
+        "reportedBy": "root",
+        "phase": "Build8/fence9",
+        "sourceIdentity": {
+          "digest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+          "files": 1058
+        },
+        "compiledIdentity": {
+          "digest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+          "files": 1820
+        },
+        "agentContractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+        "databaseSchemaVersion": 8,
+        "databaseVerification": "Root confirms schema8 unchanged; the exact owned database/index probe is retained in historical Build7/native9 evidence.",
+        "native10": {
+          "state": "passed",
+          "candidateBinding": "same compiled identity",
+          "jsonRpcFrames": 14,
+          "nonJsonStdoutLines": 0,
+          "stderrBytes": 0
+        },
+        "native11": {
+          "state": "passed",
+          "candidateBinding": "exact final source and compiled identities",
+          "durationSeconds": 26.726,
+          "jsonRpcFrames": 14,
+          "nonJsonStdoutLines": 0,
+          "stderrBytes": 0
+        },
+        "fullReleaseGate": "passed-fence9",
+        "releaseAcceptance": "accepted-root-S07",
+        "recordedAt": "2026-10-02T22:24:40.486223+00:00",
+        "postGateAndNativeIdentityEquality": {
+          "equality": true,
+          "verifiedAfter": "full fence and native11",
+          "sourceFiles": 1058,
+          "distFiles": 1820,
+          "manifests": 4,
+          "guidanceFiles": 6,
+          "assets": 3
+        },
+        "resourceClosure": {
+          "state": "closed",
+          "ownedRegistrationsReleased": 2,
+          "releaseExit": 0,
+          "scratchRemovedAt": "2026-10-02T22:22:22.038217Z",
+          "ownedExportPresent": false,
+          "knownOwnedPidsPresent": false,
+          "cleanupRemovedPreexistingTreesOrStores": false,
+          "verification": "Root verified exact owned registrations/scratch/PIDs only; cleanup left preexisting trees and stores untouched."
+        },
+        "rootReceipt": "docs/execution/nodes/s07.json"
+      },
+      "fullReleaseGate": "passed-fence9",
+      "installedEvidenceHistory": [
+        {
+          "reportedBy": "root",
+          "phase": "Build7",
+          "packagedCandidate": 7,
+          "nativeRehearsal": "passed",
+          "databaseScope": "Root-owned rehearsal dft.db only; no existing user database claim.",
+          "readOnlyProbe": "PRAGMA user_version returned 8",
+          "sqliteVersion": "3.53.1",
+          "nodeVersion": "24.18.0",
+          "indexSql": "CREATE INDEX agent_operation_aliases_operation ON agent_operation_aliases(operation_id)",
+          "compiledDigest": "sha256:f565f505399e12d969aebf468a91d476fc533088d8d705f9d74fd671cedb6f7c",
+          "agentContractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+          "fullReleaseGate": "Historical Build7 checkpoint; S03 test fix subsequently closed. Current complete passing fence9 is recorded separately.",
+          "recordedAt": "2026-10-02T20:35:37.419201+00:00",
+          "state": "historical",
+          "nativeRun": "native9"
+        }
+      ],
+      "releaseAcceptance": "accepted-root-S07",
+      "rootReceipt": "docs/execution/nodes/s07.json"
     }
   }
 }

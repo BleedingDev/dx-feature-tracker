@@ -12,11 +12,12 @@ import {
   autoSync,
   buildRegistry,
   cachedPriceProvider,
+  defaultCostOptions,
   contextForRepo,
   dxStoreLayer,
   makeDxCapabilities,
   ensurePrivateDir,
-  metricsWithCost,
+  InvalidInput,
   rebuildUsageFacts,
   resolveDftHome,
   resolveDftStore,
@@ -25,14 +26,22 @@ import {
   tightenPrivateDir,
 } from "@rat-stack/core/dx";
 import type {
+  AgentQueryOutput,
+  AgentRequest,
+  DxUsageInputType,
   DxUsageOutputType,
   FlightHistoryRow,
   SyncReport,
   UsageDimension,
 } from "@rat-stack/core/dx";
-import { Console, Data, DateTime, Effect, Layer, Option } from "effect";
+import { Console, Data, DateTime, Effect, Layer, Option, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/unstable/cli";
 
+import {
+  installedAgentCatalog,
+  runInstalledOperation,
+  runInstalledLearning,
+} from "./dft-agent-runtime.js";
 import {
   CAPTURE_TOOL_NAMES,
   CAPTURE_TOOLS,
@@ -57,12 +66,14 @@ import {
   installChecks,
   installCursorHooks,
   installGitHooks,
+  installAgentSkills,
   installSkills,
   installText,
   installWorktree,
   otherWorktrees,
   uninstallCursorHooks,
   uninstallGitHooks,
+  uninstallAgentSkills,
   uninstallSkills,
 } from "./dft-install.js";
 import { DEFAULT_DASHBOARD_PORT, runLiveDashboard } from "./dft-live.js";
@@ -88,9 +99,11 @@ import type { AnalyzeExtras } from "./dft-render.js";
 import {
   capabilitiesFor,
   capabilityAt as capabilitiesOf,
-  costOptionsFor,
+  agentRequestFrom,
+  costSessionFor,
   providerCostOptions,
 } from "./dft-session.js";
+import type { AgentFlagValues, PriceEffects } from "./dft-session.js";
 import {
   installTelemetry,
   telemetryState,
@@ -111,7 +124,7 @@ import {
 } from "./dft-tools.js";
 import { USAGE_BY_CHOICES, usageInputOf, usageText } from "./dft-usage.js";
 import type { UsageFlagValues } from "./dft-usage.js";
-import { mcpServer } from "./surfaces.js";
+import { agentRuntimeLayer, mcpServer } from "./surfaces.js";
 import { VERSION } from "./version.js";
 
 export class CostLimitExceeded extends Data.TaggedError("CostLimitExceeded")<{
@@ -132,7 +145,79 @@ const booleanFlag = (name: string, description: string) =>
     Flag.withDescription(description)
   );
 
-const reportFlags = {
+const optionalInt = (name: string, description: string) =>
+  Flag.Int(name).pipe(
+    Flag.withDescription(description),
+    Flag.optional,
+    Flag.map(Option.getOrUndefined)
+  );
+
+const agentFlags = {
+  acquisition: optionalString(
+    "acquisition",
+    "Agent acquisition policy: recorded-only or refresh-selected"
+  ),
+  agentProfile: optionalString(
+    "agent-profile",
+    "Request the acknowledged dx.agent.v1 read profile; prints JSON"
+  ),
+  basis: optionalString("basis", "Reuse a compatible pinned analysis basis"),
+  budgetDecodedBytes: optionalInt(
+    "budget-decoded-bytes",
+    "Maximum decoded bytes in the agent query"
+  ),
+  budgetElapsedMs: optionalInt(
+    "budget-elapsed-ms",
+    "Maximum elapsed milliseconds in the agent query"
+  ),
+  budgetFacts: optionalInt(
+    "budget-facts",
+    "Maximum facts examined in the agent query"
+  ),
+  budgetItems: optionalInt(
+    "budget-items",
+    "Maximum returned items in the agent query"
+  ),
+  budgetNetworkRequests: optionalInt(
+    "budget-network-requests",
+    "Maximum permitted network requests in the agent query"
+  ),
+  budgetOutputBytes: optionalInt(
+    "budget-output-bytes",
+    "Maximum serialized bytes in the agent response"
+  ),
+  budgetSeriesBuckets: optionalInt(
+    "budget-series-buckets",
+    "Maximum series buckets in the agent query"
+  ),
+  budgetStacks: optionalInt(
+    "budget-stacks",
+    "Maximum series stacks in the agent query"
+  ),
+  cursor: optionalString(
+    "cursor",
+    "Continue an agent query using its opaque cursor"
+  ),
+  derivation: optionalString(
+    "derivation",
+    "Agent derivation policy: ready-only or bounded-refresh"
+  ),
+  detail: optionalString("detail", "Agent query detail: summary or expanded"),
+  learning: optionalString(
+    "learning",
+    "Agent learning policy: hidden or selected-scope"
+  ),
+  previousBasis: optionalString(
+    "previous-basis",
+    "Compare the new basis with this previous basis"
+  ),
+  prices: optionalString(
+    "prices",
+    "Agent price policy: pinned, cached-only or refresh-selected"
+  ),
+};
+
+const humanReportFlags = {
   allRepos: booleanFlag(
     "all-repos",
     "Include every repo dft has seen, not just this one"
@@ -164,6 +249,8 @@ const reportFlags = {
   ),
 };
 
+const reportFlags = { ...agentFlags, ...humanReportFlags };
+
 const onelineFlags = {
   ...reportFlags,
   oneline: Flag.Boolean("oneline").pipe(
@@ -173,7 +260,7 @@ const onelineFlags = {
   ),
 };
 
-export interface ReportFlags {
+export interface ReportFlags extends AgentFlagValues {
   readonly allRepos: boolean;
   readonly branch: string | undefined;
   readonly db: string | undefined;
@@ -182,6 +269,11 @@ export interface ReportFlags {
   readonly repo: string | undefined;
   readonly since: string | undefined;
   readonly verbose: boolean;
+  readonly agentUsage?: UsageFlagValues;
+  readonly evidenceIds?: readonly string[];
+  readonly asOf?: string | undefined;
+  readonly snapshotId?: string | undefined;
+  readonly probeSources?: boolean | undefined;
 }
 
 interface OnelineFlags extends ReportFlags {
@@ -201,16 +293,32 @@ export const dftPaths = (flags: Pick<ReportFlags, "db" | "repo">) => {
   };
 };
 
-const dftSession = (flags: ReportFlags) =>
+const dftSession = (flags: ReportFlags, cheap = false) =>
   Effect.gen(function* session() {
     const paths = dftPaths(flags);
-    const costOptions = yield* costOptionsFor(paths.dftHome);
+
+    const priced = cheap
+      ? {
+          costOptions: defaultCostOptions(),
+          prices: {
+            networkRequests: 0,
+            origin: "skipped",
+            reason:
+              "Price initialization is skipped for status and agent reads.",
+            refreshPermitted: false,
+          } satisfies PriceEffects,
+        }
+      : yield* costSessionFor(paths.dftHome);
+
     const now = yield* DateTime.now;
     const from = yield* resolveSince(flags.since, DateTime.toEpochMillis(now));
 
     const capabilities = capabilitiesFor({
-      costOptions,
+      costOptions: priced.costOptions,
       repo: paths.repo,
+      resolveCostOptions: cheap
+        ? () => providerCostOptions(cachedPriceProvider(paths.dftHome))
+        : undefined,
       selector: {
         allRepos: flags.allRepos,
         branch: flags.branch ?? null,
@@ -219,7 +327,12 @@ const dftSession = (flags: ReportFlags) =>
       storePath: paths.store.path,
     });
 
-    return { capabilities, costOptions, paths };
+    return {
+      capabilities,
+      costOptions: priced.costOptions,
+      paths,
+      prices: priced.prices,
+    };
   });
 
 type Session = Effect.Success<ReturnType<typeof dftSession>>;
@@ -269,8 +382,153 @@ interface RenderContext {
 interface ReportView<A, J> {
   readonly json?: (output: A) => J;
   readonly presync?: boolean;
+  readonly receipt?: (output: A) => SyncReport;
   readonly render?: (output: A, context: RenderContext) => string;
 }
+
+const capabilityAt = (session: Session) => capabilitiesOf(session.capabilities);
+
+const analyzeForHuman = (session: Session, input: { readonly repo?: string }) =>
+  capabilityAt(session).analyze.handler(input);
+
+const usageForHuman = (session: Session, input: DxUsageInputType) => {
+  const { agentQuery: _agentQuery, ...legacy } = input;
+
+  return capabilityAt(session).usage.handler(legacy);
+};
+
+type ReadCapabilities = ReturnType<typeof capabilityAt>;
+
+type AgentReadEffect =
+  | ReturnType<ReadCapabilities["status"]["handler"]>
+  | ReturnType<ReadCapabilities["analyze"]["handler"]>
+  | ReturnType<ReadCapabilities["explain"]["handler"]>
+  | ReturnType<ReadCapabilities["evidence"]["handler"]>
+  | ReturnType<ReadCapabilities["usage"]["handler"]>
+  | ReturnType<typeof usageInputOf>;
+
+type AgentReadOutput =
+  | Effect.Success<ReturnType<ReadCapabilities["status"]["handler"]>>
+  | AgentQueryOutput;
+
+const runAgentReport = (
+  name: string,
+  flags: ReportFlags,
+  session: Session,
+  agentQuery: AgentRequest
+): Effect.Effect<
+  AgentReadOutput,
+  Effect.Error<AgentReadEffect> | InvalidInput,
+  Effect.Services<AgentReadEffect>
+> => {
+  const caps = capabilityAt(session);
+
+  if (flags.cursor !== undefined && name === "status") {
+    return Effect.fail(
+      new InvalidInput({
+        field: "cursor",
+        message: "Status has no cursor continuation.",
+      })
+    );
+  }
+
+  switch (name) {
+    case "status": {
+      return flags.probeSources === true
+        ? Effect.fail(
+            new InvalidInput({
+              field: "probe-sources",
+              message:
+                "Select source inspection separately from the agent status summary.",
+            })
+          )
+        : caps.status.handler({ agentQuery });
+    }
+
+    case "analyze":
+    case "analyse": {
+      if (flags.repo !== undefined) {
+        return caps.analyze.handler({
+          agentQuery,
+          cursor: flags.cursor,
+          repo: session.paths.repo,
+        });
+      }
+
+      return flags.allRepos ||
+        agentQuery.basisId !== undefined ||
+        flags.cursor !== undefined
+        ? caps.analyze.handler({ agentQuery, cursor: flags.cursor })
+        : caps.analyze.handler({
+            agentQuery,
+            cursor: flags.cursor,
+            repo: session.paths.repo,
+          });
+    }
+
+    case "explain": {
+      return caps.explain.handler({
+        agentQuery,
+        cursor: flags.cursor,
+        limit: agentQuery.budget.maxItems,
+      });
+    }
+
+    case "evidence": {
+      return caps.evidence.handler({
+        agentQuery,
+        asOf: flags.asOf,
+        cursor: flags.cursor,
+        evidenceIds: flags.evidenceIds ?? [],
+        snapshotId: flags.snapshotId,
+      });
+    }
+
+    case "usage": {
+      return usageInputOf(
+        flags.agentUsage ?? {
+          by: "tool",
+          filters: flags.allRepos ? {} : { repo: [session.paths.repo] },
+          limit: agentQuery.budget.maxItems,
+          metrics: [],
+          since: flags.since,
+          tz: undefined,
+          until: undefined,
+        }
+      ).pipe(
+        Effect.flatMap((input) =>
+          caps.usage.handler({ ...input, agentQuery, cursor: flags.cursor })
+        )
+      );
+    }
+
+    default: {
+      return Effect.fail(
+        new InvalidInput({
+          field: "agent-profile",
+          message: `The agent read profile is unavailable for ${name}.`,
+        })
+      );
+    }
+  }
+};
+
+const jsonWithEffects = <A>(
+  output: A,
+  sync: SyncReport | null,
+  session: Session,
+  acquisitionRequested: boolean
+) => ({
+  ...output,
+  effects: {
+    acquisition: {
+      performed: sync !== null,
+      receipt: sync,
+      requested: acquisitionRequested,
+    },
+    prices: session.prices,
+  },
+});
 
 const runReport = <F extends ReportFlags, A, E, R, J = A>(
   name: string,
@@ -279,7 +537,25 @@ const runReport = <F extends ReportFlags, A, E, R, J = A>(
   view: ReportView<A, J>
 ) =>
   Effect.gen(function* report() {
-    const session = yield* dftSession(flags);
+    const agentQuery = yield* agentRequestFrom(flags);
+
+    const session = yield* dftSession(
+      flags,
+      name === "status" || name === "evidence" || agentQuery !== undefined
+    );
+
+    if (agentQuery !== undefined) {
+      const output = yield* runAgentReport(
+        name,
+        flags,
+        session,
+        agentQuery
+      ).pipe(Effect.provide(agentRuntimeLayer(session.paths)));
+
+      yield* Console.log(JSON.stringify(output));
+
+      return;
+    }
 
     yield* Effect.gen(function* withStore() {
       const sync =
@@ -288,11 +564,22 @@ const runReport = <F extends ReportFlags, A, E, R, J = A>(
           : yield* syncStep(flags, session, name === "status");
 
       const output = yield* run(flags, session);
+      const receipt = view.receipt?.(output) ?? sync;
       const now = DateTime.toEpochMillis(yield* DateTime.now);
 
       yield* printOutput(
         flags,
-        JSON.stringify(view.json?.(output) ?? output, null, 2),
+        JSON.stringify(
+          jsonWithEffects(
+            view.json?.(output) ?? output,
+            receipt,
+            session,
+            view.receipt !== undefined ||
+              (view.presync !== false && !flags.noSync)
+          ),
+          null,
+          2
+        ),
         view.render?.(output, {
           flags,
           home: session.paths.home,
@@ -301,7 +588,13 @@ const runReport = <F extends ReportFlags, A, E, R, J = A>(
           verbose: flags.verbose,
         })
       );
-    }).pipe(Effect.provide(dxStoreLayer(session.paths.store)));
+    }).pipe(
+      Effect.provide(
+        name === "status"
+          ? agentRuntimeLayer(session.paths)
+          : dxStoreLayer(session.paths.store)
+      )
+    );
   });
 
 const reportCommand = <A, E, R, J = A>(
@@ -310,8 +603,10 @@ const reportCommand = <A, E, R, J = A>(
   run: (flags: ReportFlags, session: Session) => Effect.Effect<A, E, R>,
   view: ReportView<A, J> = {}
 ) =>
-  Command.make(name, reportFlags, (flags) =>
-    runReport(name, flags, run, view)
+  Command.make(
+    name,
+    name === "explain" ? reportFlags : humanReportFlags,
+    (flags) => runReport(name, flags, run, view)
   ).pipe(Command.withDescription(description));
 
 const onelineCommand = <A, E, R, J = A>(
@@ -324,49 +619,92 @@ const onelineCommand = <A, E, R, J = A>(
     runReport(name, flags, run, view)
   ).pipe(Command.withDescription(description));
 
-const capabilityAt = (session: Session) => capabilitiesOf(session.capabilities);
+interface StatusOutput {
+  readonly base: Effect.Success<
+    ReturnType<ReadCapabilities["status"]["handler"]>
+  >;
+  readonly tools: ReturnType<typeof toolStatuses> | null;
+}
 
-const statusCommand = reportCommand(
+const statusCommand = Command.make(
   "status",
-  "Check that dft is set up: where data is stored, which sources (git, Cursor) were found, and for each other tool whether it is installed, how many sessions it has, whether project capture and user telemetry are set up and when its last event arrived. Imports new data first.",
-  (_flags, session) =>
-    Effect.gen(function* status() {
-      const base = yield* capabilityAt(session).status.handler({});
-      const found = yield* discoverTools(session.paths.home);
-      const context = contextForRepo(session.paths.repo);
-      const dirs = userToolDirs(session.paths.home, process.env);
-
-      const tools = yield* Effect.sync(() =>
-        toolStatuses(
-          found.tools,
-          context.worktreePath ?? session.paths.repo,
-          telemetryState(dirs.claudeDir, dirs.codexDir),
-          lastEventTimes(session.paths.store.path),
-          found.cursor
-        )
-      );
-
-      return { base, tools };
-    }),
   {
-    json: (output) => ({ ...output.base, tools: output.tools }),
-    render: (output, context) =>
-      [
-        statusText(output.base, context.sync, {
-          home: context.home,
-          now: context.now,
-          verbose: context.verbose,
+    ...reportFlags,
+    probeSources: booleanFlag(
+      "probe-sources",
+      "Inspect local source setup and session counts; does not import data"
+    ),
+    summary: booleanFlag(
+      "summary",
+      "Read cached readiness and store metadata; this is the default"
+    ),
+  },
+  (flags) =>
+    runReport(
+      "status",
+      flags,
+      (_flags, session) =>
+        Effect.gen(function* status() {
+          const base = yield* capabilityAt(session).status.handler({});
+
+          if (!flags.probeSources) {
+            return { base, tools: null };
+          }
+
+          if (flags.summary) {
+            return yield* new InvalidInput({
+              field: "probe-sources",
+              message: "Choose either --summary or --probe-sources.",
+            });
+          }
+
+          const found = yield* discoverTools(session.paths.home);
+          const context = contextForRepo(session.paths.repo);
+          const dirs = userToolDirs(session.paths.home, process.env);
+
+          const tools = yield* Effect.sync(() =>
+            toolStatuses(
+              found.tools,
+              context.worktreePath ?? session.paths.repo,
+              telemetryState(dirs.claudeDir, dirs.codexDir),
+              lastEventTimes(session.paths.store.path),
+              found.cursor
+            )
+          );
+
+          return { base, tools };
         }),
-        toolsText(output.tools),
-      ].join("\n\n"),
-  }
+      {
+        json: (output: StatusOutput) =>
+          output.tools === null
+            ? output.base
+            : { ...output.base, tools: output.tools },
+        presync: false,
+        render: (output: StatusOutput, context) =>
+          [
+            statusText(output.base, context.sync, {
+              home: context.home,
+              now: context.now,
+              verbose: context.verbose,
+            }),
+            ...(output.tools === null ? [] : [toolsText(output.tools)]),
+          ].join("\n\n"),
+      }
+    )
 ).pipe(
-  Command.withShortDescription("Check setup and which sources were found"),
+  Command.withDescription(
+    "Read cached module readiness and store metadata. This summary does not scan sessions, import data or initialize prices. Add --probe-sources to inspect local source setup and session counts."
+  ),
+  Command.withShortDescription("Read cached readiness and store metadata"),
   Command.withExamples([
     { command: "dft status", description: "Check setup for the current repo" },
     {
-      command: "dft status --json --no-sync",
-      description: "Machine-readable status without importing new data",
+      command: "dft status --agent-profile dx.agent.v1",
+      description: "Acknowledged agent summary with effective read policies",
+    },
+    {
+      command: "dft status --probe-sources",
+      description: "Inspect local source setup separately",
     },
   ])
 );
@@ -445,7 +783,7 @@ const analyzeExtras = (flags: ReportFlags, session: Session) =>
       tz: undefined,
       until: undefined,
     }).pipe(
-      Effect.flatMap((input) => capabilityAt(session).usage.handler(input)),
+      Effect.flatMap((input) => usageForHuman(session, input)),
       Effect.option
     );
 
@@ -488,7 +826,8 @@ const analyzeLine = (
 
 const analyzeHandler = (flags: OnelineFlags, session: Session) =>
   Effect.gen(function* analyze() {
-    const report = yield* capabilityAt(session).analyze.handler(
+    const report = yield* analyzeForHuman(
+      session,
       flags.allRepos ? {} : { repo: session.paths.repo }
     );
 
@@ -512,9 +851,7 @@ const analyzeHandler = (flags: OnelineFlags, session: Session) =>
 interface AnalyzeOutput {
   readonly extras: AnalyzeExtras | null;
   readonly line: string | null;
-  readonly report: Effect.Success<
-    ReturnType<ReturnType<typeof capabilityAt>["analyze"]["handler"]>
-  >;
+  readonly report: Effect.Success<ReturnType<typeof analyzeForHuman>>;
 }
 
 const analyzeView: ReportView<AnalyzeOutput, AnalyzeOutput["report"]> = {
@@ -599,7 +936,7 @@ const usageByFlag = (name: string, description: string) =>
 
 const runUsage = (session: Session, values: UsageFlagValues) =>
   usageInputOf(values).pipe(
-    Effect.flatMap((input) => capabilityAt(session).usage.handler(input))
+    Effect.flatMap((input) => usageForHuman(session, input))
   );
 
 type HistoryOutput =
@@ -616,7 +953,18 @@ interface HistoryFlags extends OnelineFlags {
   readonly groupBy: UsageDimension | undefined;
 }
 
-const historyRun = (flags: HistoryFlags, session: Session) =>
+type HistoryReadEffect =
+  | ReturnType<ReadCapabilities["history"]["handler"]>
+  | ReturnType<typeof runUsage>;
+
+const historyRun = (
+  flags: HistoryFlags,
+  session: Session
+): Effect.Effect<
+  HistoryOutput,
+  Effect.Error<HistoryReadEffect>,
+  Effect.Services<HistoryReadEffect>
+> =>
   flags.groupBy === undefined
     ? capabilityAt(session)
         .history.handler(historyInput(flags, session))
@@ -662,11 +1010,12 @@ const historyView: ReportView<HistoryOutput, unknown> = {
 const historyCommand = Command.make(
   "history",
   {
-    ...onelineFlags,
+    ...humanReportFlags,
     groupBy: usageByFlag(
       "group-by",
       `Group AI usage by ${USAGE_BY_LIST} instead of listing branches; same as dft usage --by`
     ),
+    oneline: onelineFlags.oneline,
   },
   (flags) => runReport("history", flags, historyRun, historyView)
 ).pipe(
@@ -699,6 +1048,7 @@ const listFlag = (name: string, description: string) =>
   Flag.String(name).pipe(Flag.withDescription(description), Flag.atLeast(0));
 
 const usageFlags = {
+  ...agentFlags,
   branch: listFlag(
     "branch",
     "Only these branches (repeat or separate with commas)"
@@ -750,7 +1100,7 @@ const usageFlags = {
   ),
 };
 
-interface UsageCommandFlags {
+interface UsageCommandFlags extends AgentFlagValues {
   readonly branch: readonly string[];
   readonly by: UsageDimension | undefined;
   readonly db: string | undefined;
@@ -790,6 +1140,8 @@ const usageCommand = Command.make("usage", usageFlags, (flags) =>
   runReport(
     "usage",
     {
+      ...flags,
+      agentUsage: usageValues(flags),
       allRepos: true,
       branch: undefined,
       db: flags.db,
@@ -904,7 +1256,7 @@ const oneTimeDashboard = (flags: DashboardCommandFlags) =>
         {
           chats: branchChatsWith(session.costOptions),
           history: capabilityAt(session).history.handler,
-          usage: capabilityAt(session).usage.handler,
+          usage: (query) => usageForHuman(session, query),
         }
       ),
     { render: (output) => dashboardText(output) }
@@ -913,13 +1265,14 @@ const oneTimeDashboard = (flags: DashboardCommandFlags) =>
 const liveDashboard = (flags: DashboardCommandFlags) =>
   Effect.gen(function* live() {
     const paths = dftPaths(flags);
-    const costOptions = yield* costOptionsFor(paths.dftHome);
+    const priced = yield* costSessionFor(paths.dftHome);
 
     return yield* runLiveDashboard({
-      costOptions,
+      costOptions: priced.costOptions,
       open: !flags.noOpen,
       paths,
       port: flags.port,
+      prices: priced.prices,
       since: flags.since,
     });
   });
@@ -975,7 +1328,7 @@ const lineCommand = reportCommand(
 );
 
 const chatsFlags = {
-  ...reportFlags,
+  ...humanReportFlags,
   allBranches: booleanFlag(
     "all-branches",
     "List chats on every branch of this repo, not just one"
@@ -1060,6 +1413,7 @@ const syncCommand = reportCommand(
     }),
   {
     presync: false,
+    receipt: (output) => output,
     render: (output, context) => syncText(output, context.verbose),
   }
 ).pipe(
@@ -1090,12 +1444,21 @@ const gitDirty = (worktree: string): boolean | null => {
 
 const persistSnapshot = (flags: ReportFlags) =>
   Effect.gen(function* snapshot() {
+    const agentQuery = yield* agentRequestFrom(flags);
+
+    if (agentQuery !== undefined) {
+      return yield* new InvalidInput({
+        field: "agent-profile",
+        message: "The agent read profile is unavailable for snapshot.",
+      });
+    }
+
     const session = yield* dftSession(flags);
     const context = contextForRepo(session.paths.repo);
     const worktree = context.worktreePath ?? session.paths.repo;
 
     const result = yield* Effect.gen(function* withStore() {
-      yield* syncStep(flags, session);
+      const sync = yield* syncStep(flags, session);
 
       const caps = capabilityAt(session);
 
@@ -1108,7 +1471,7 @@ const persistSnapshot = (flags: ReportFlags) =>
         repo: session.paths.repo,
       });
 
-      return { analyzed, row: currentRow(history.rows, context.branch) };
+      return { analyzed, row: currentRow(history.rows, context.branch), sync };
     }).pipe(Effect.provide(dxStoreLayer(session.paths.store)));
 
     const record = {
@@ -1134,7 +1497,11 @@ const persistSnapshot = (flags: ReportFlags) =>
 
     yield* printOutput(
       flags,
-      JSON.stringify(record, null, 2),
+      JSON.stringify(
+        jsonWithEffects(record, result.sync, session, !flags.noSync),
+        null,
+        2
+      ),
       snapshotLine(context.branch, result.row)
     );
 
@@ -1169,7 +1536,7 @@ const enforceMaxCost = (
 const snapshotCommand = Command.make(
   "snapshot",
   {
-    ...reportFlags,
+    ...humanReportFlags,
     maxCost: Flag.Finite("max-cost").pipe(
       Flag.withDescription(
         "Exit 1 when any one cost figure (billed, the tool's own, estimate) is over this many dollars"
@@ -1280,7 +1647,7 @@ const installDryRunText = (
             "Run it again without --dry-run to make this change."
           ),
         ]),
-    `Dry run: dft wrote nothing. Without --dry-run it also sets up Cursor hooks and skills${tools.length === 0 ? "" : ` and local capture for ${tools.map((tool) => CAPTURE_TOOL_NAMES[tool]).join(", ")}`} in ${worktree}.`,
+    `Dry run: dft wrote nothing. Without --dry-run it also sets up Cursor hooks and skills${tools.includes("codex") ? " and native Codex skills under .agents/skills" : ""}${tools.length === 0 ? "" : ` and local capture for ${tools.map((tool) => CAPTURE_TOOL_NAMES[tool]).join(", ")}`} in ${worktree}.`,
   ].join("\n\n");
 
 const installCommand = Command.make(
@@ -1339,20 +1706,30 @@ const installCommand = Command.make(
       const result = yield* Effect.sync(() => {
         const hooks = installCursorHooks(worktree, `${command} hook`);
         const skills = installSkills(worktree);
+
+        const agentSkills = tools.includes("codex")
+          ? installAgentSkills(worktree)
+          : [];
+
         const git = flags.gitHooks ? installGitHooks(worktree, command) : null;
         const others = otherWorktrees(worktree);
 
         return flags.allWorktrees
           ? {
+              agentSkills,
               git,
               hooks,
-              others: others.map((other) =>
-                installWorktree(other, `${command} hook`)
-              ),
+              others: others.map((other) => ({
+                ...installWorktree(other, `${command} hook`),
+                agentSkills: tools.includes("codex")
+                  ? installAgentSkills(other)
+                  : [],
+              })),
               skills,
               worktree,
             }
           : {
+              agentSkills,
               git,
               hooks,
               others: null,
@@ -1370,6 +1747,7 @@ const installCommand = Command.make(
           writtenUntracked(worktree, [
             result.hooks,
             ...result.skills,
+            ...result.agentSkills,
             ...(result.git ?? []),
           ])
         )
@@ -1383,7 +1761,12 @@ const installCommand = Command.make(
           )
         : null;
 
-      const steps = [result.hooks, ...result.skills, ...(result.git ?? [])];
+      const steps = [
+        result.hooks,
+        ...result.skills,
+        ...result.agentSkills,
+        ...(result.git ?? []),
+      ];
 
       if (flags.json) {
         const worktrees =
@@ -1391,7 +1774,7 @@ const installCommand = Command.make(
             ? {}
             : {
                 worktrees: result.others.map((other) => ({
-                  steps: [other.hooks, ...other.skills],
+                  steps: [other.hooks, ...other.skills, ...other.agentSkills],
                   worktree: other.worktree,
                 })),
               };
@@ -1435,6 +1818,11 @@ const installCommand = Command.make(
       );
 
       const extra = [
+        ...(result.agentSkills.length === 0
+          ? []
+          : [
+              "Native Codex guidance is installed under .agents/skills. MCP setup remains explicit: run dft mcp over stdio.",
+            ]),
         captureText(worktree, detected, tooling, { codexTrusted: trusted }),
         ...(telemetry === null
           ? []
@@ -1452,7 +1840,7 @@ const installCommand = Command.make(
     })
 ).pipe(
   Command.withDescription(
-    "Set up dft in this repo: add Cursor hooks to .cursor/hooks.json and the Cursor skills (/dx-line, /dx-analyze, /dx-history, /dx-chats, /dx-explain, /dx-dashboard), plus local capture for every other tool found on this machine: Claude Code hooks in .claude/settings.local.json, Codex hooks in .codex/hooks.json, the Pi and OMP extensions in .pi/extensions and .omp/extensions, the OpenCode plugin in .opencode/plugins and the DeepSeek Harness hook bridge in .dsh. These files stay out of git (listed in this clone's .git/info/exclude), so teammates are never affected. Existing entries are kept, and running it again only points dft's own entries at the Node and dft that ran it. Add --telemetry to also send Claude Code and Codex OpenTelemetry to dft dashboard (user settings, with a backup). Add --all-worktrees to also set up every other worktree of the repo for Cursor."
+    "Set up dft in this repo: add Cursor hooks and skills, native Codex skills under .agents/skills when Codex is selected, and local capture for selected installed tools. MCP configuration is separate; dft mcp runs the shared capabilities over stdio. Existing entries are kept. Add --telemetry to send Claude Code and Codex OpenTelemetry to the loopback dashboard with a backup. Add --all-worktrees to apply the same guidance to other worktrees."
   ),
   Command.withShortDescription(
     "Set up hooks and capture for every tool in this repo"
@@ -1522,6 +1910,10 @@ const uninstallCommand = Command.make("uninstall", captureFlags, (flags) =>
 
       return [
         ...cursor,
+        ...uninstallAgentSkills(worktree).map((item) => ({
+          ...item,
+          tool: "codex" as const,
+        })),
         ...uninstallCapture(
           worktree,
           dftCommandFor(process.execPath, entryScript())
@@ -1599,18 +1991,19 @@ const hookCommand = Command.make(
 const staticSession = () => {
   const paths = dftPaths({ db: undefined, repo: undefined });
 
-  const costOptions = providerCostOptions(
-    cachedPriceProvider(resolveDftHome(process.env, homedir()))
-  );
-
   return {
     capabilities: makeDxCapabilities({
+      agentCatalog: installedAgentCatalog,
       collectors: allCollectors,
-      costOptions,
       defaultRepo: paths.repo,
-      registry: buildRegistry(allCollectors, metricsWithCost(costOptions)),
+      learning: runInstalledLearning,
+      operation: runInstalledOperation,
+      registry: buildRegistry(allCollectors),
+      resolveCostOptions: () =>
+        providerCostOptions(cachedPriceProvider(paths.dftHome)),
       storePath: paths.store.path,
     }),
+    paths,
     store: paths.store,
   };
 };
@@ -1619,9 +2012,20 @@ const fixed = staticSession();
 
 const fixedCaps = {
   collect: fixed.capabilities[4],
-  evidence: fixed.capabilities[3],
+  learning: fixed.capabilities[10],
   mark: fixed.capabilities[5],
+  operation: fixed.capabilities[9],
 };
+
+const operationCommand = toCommand(fixedCaps.operation, {
+  name: "operation",
+  strictInput: true,
+}).pipe(Command.provide(agentRuntimeLayer(fixed.paths)));
+
+const learningCommand = toCommand(fixedCaps.learning, {
+  name: "learning",
+  strictInput: true,
+}).pipe(Command.provide(agentRuntimeLayer(fixed.paths)));
 
 const collectCommand = toCommand(fixedCaps.collect, { name: "collect" }).pipe(
   Command.provide(dxStoreLayer(fixed.store)),
@@ -1640,10 +2044,36 @@ const markCommand = toCommand(fixedCaps.mark, { name: "mark" }).pipe(
   )
 );
 
-const evidenceCommand = toCommand(fixedCaps.evidence, {
-  name: "evidence",
-}).pipe(
-  Command.provide(dxStoreLayer(fixed.store)),
+const evidenceCommand = Command.make(
+  "evidence",
+  {
+    ...reportFlags,
+    asOf: optionalString("asOf", "Read evidence as of this timestamp"),
+    evidenceIds: Flag.String("evidenceIds").pipe(
+      Flag.withSchema(Schema.fromJsonString(Schema.Array(Schema.String))),
+      Flag.withDescription("Evidence IDs as a JSON array")
+    ),
+    snapshotId: optionalString(
+      "snapshotId",
+      "Reuse a legacy evidence-selection snapshot"
+    ),
+  },
+  (flags) =>
+    runReport(
+      "evidence",
+      flags,
+      (_flags, session) =>
+        capabilityAt(session).evidence.handler({
+          asOf: flags.asOf,
+          evidenceIds: flags.evidenceIds,
+          snapshotId: flags.snapshotId,
+        }),
+      { presync: false }
+    )
+).pipe(
+  Command.withDescription(
+    "Return bounded redacted evidence by ID. Use --agent-profile dx.agent.v1 --basis to preserve the analysis basis and reference disclosures."
+  ),
   Command.withShortDescription("Advanced: look up the raw stored records")
 );
 
@@ -1691,6 +2121,8 @@ export const dftCommand = Command.make("dft").pipe(
     hookCommand,
     snapshotCommand,
     mcpCommand,
+    operationCommand,
+    learningCommand,
   ])
 );
 
@@ -1704,12 +2136,21 @@ const keepDftHomePrivate = Effect.try(() => {
   tightenPrivateDir(resolveDftHome(process.env, homedir()));
 }).pipe(Effect.ignore);
 
-export const runDft = (args: readonly string[]) =>
-  Effect.andThen(
-    keepDftHomePrivate,
+export const runDft = (args: readonly string[]) => {
+  const privacyRepair =
+    args[0] === "status" ||
+    args.some(
+      (arg) => arg === "--agent-profile" || arg.startsWith("--agent-profile=")
+    )
+      ? Effect.void
+      : keepDftHomePrivate;
+
+  return Effect.andThen(
+    privacyRepair,
     isTopLevelHelp(args)
       ? runCommand(args).pipe(
           Effect.ensuring(Console.log(`\n${enterpriseLine(stdoutColor())}`))
         )
       : runCommand(args)
   );
+};

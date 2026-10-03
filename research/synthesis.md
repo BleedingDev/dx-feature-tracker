@@ -1,5 +1,7 @@
 # dx-feature-tracker: standalone Ratstack product
 
+Historical synthesis of the 2026-09-30 research revision. Its deadline, Cursor-first scope and pending gates describe that proposal. Current direction is [VISION](../VISION.md), [product decisions](../docs/product/decisions.md) and the proposed [agent system](../docs/architecture/agent-system.md). New execution uses [the separate follow-up graph](../plans/agent-system/README.md), not the original 79-node selection. Source reports remain evidence for their dated claims; installed versions and capabilities must be checked.
+
 Revision date: 30 September 2026. User-authoritative direction: a separate tool, Ratstack, four hours, lean execution, native agents at high concurrency, and maximal credible telemetry without Enterprise access. There is no Biomem product, runtime, API, CLI, memory or promotion integration. The prior two-person/24-hour proposal and required Biomem memory loop are superseded. Original artifacts are preserved under `history/v1/`.
 
 ## Decision

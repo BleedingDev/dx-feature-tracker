@@ -1,6 +1,8 @@
 # Executable assignment index
 
-79 pending assignments: 9 foundation/integration/probe, 48 module, 17 validation/package/release, 5 root-owned phase gates. [Manifest](execution-manifest.json) and [phase gates](phase-gates.md) define dependencies and promotion. Shared integration scope has one sequential owner A02/A07/A08.
+Active follow-up: [nine agent-system plans](../plans/agent-system/README.md), with [exact selection and ownership](../plans/agent-system/manifest.json). [Execution state](../plans/agent-system/execution.json) records completed phases and accepted S07 artifact verification, with capability limits and publication tracked separately. They are separate from the table below.
+
+Historical planning selection: 79 assignments, comprising 9 foundation/integration/probe, 48 module, 17 validation/package/release and 5 root-owned gates. Their original todos remain a planning snapshot, not a current implementation inventory. [Manifest](execution-manifest.json) and [phase gates](phase-gates.md) preserve that dependency/promotion policy; [runtime receipts](../docs/execution/phases/g04.json) record actual scoped outcomes. The original integration baton was A02/A07/A08.
 
 | ID | Plan | Role | Deliverable |
 |---|---|---|---|

@@ -122,7 +122,9 @@ const dxCommandNames = {
   dx_evidence: "evidence",
   dx_explain: "explain",
   dx_history: "history",
+  dx_learning: "learning",
   dx_mark: "mark",
+  dx_operation: "operation",
   dx_status: "status",
   dx_usage: "usage",
 } as const;

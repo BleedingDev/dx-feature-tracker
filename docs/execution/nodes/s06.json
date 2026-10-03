@@ -1,0 +1,949 @@
+{
+  "schema": "dft-agent-system-audit/v1",
+  "node": "S06",
+  "status": "completed",
+  "candidate": {
+    "source": "Current producer source in shared feat/agent-system worktree",
+    "finalDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+    "historicalCandidate7SourceDigest": "sha256:ab38ecf5441b317bb51aafac206f7975bfb15c30738f970b82ef3e35786076e1",
+    "validationInput": {
+      "digest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+      "files": 1058,
+      "reportedBy": "/root",
+      "scope": "Literal current source for successful fullfence9; only the typed test-liveness wrapper differs from initial Build8/native10 inputs",
+      "acceptance": "Accepted: fullfence9, literal final-source native11, final equality and root-owned resource closure passed"
+    },
+    "artifactRepeat": "Accepted final candidate: focused native-budget48/48, fullfence9 with18/18 tasks and2001 passed/3 skipped tests, and native11 with14 frames/0 noise/0 stderr passed. Source, compiled outputs, manifests, guidance and assets remained equal after gate and native. Root-owned resources released; owned scratch/export absent and rehearsal PIDs absent.",
+    "history": [
+      {
+        "build": "Build5",
+        "digest": "sha256:e47e65e3d3bd0c31ef38bbadd4fd7cb313f0a65c1386706078b4c2383f2c5744",
+        "contractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+        "admission": "Root reported frozen source and four of four packages built successfully",
+        "disposition": "Historical after root accepted cancelled-receipt and stale-generation dashboard recovery lockouts; candidate6 pending"
+      },
+      {
+        "build": "Build7/candidate7",
+        "sourceDigest": "sha256:ab38ecf5441b317bb51aafac206f7975bfb15c30738f970b82ef3e35786076e1",
+        "compiledDigest": "sha256:f565f505399e12d969aebf468a91d476fc533088d8d705f9d74fd671cedb6f7c",
+        "disposition": "Historical after root-confirmed native-command budget repair; native9 and isolated C08 remain valid observations of that checkpoint"
+      }
+    ],
+    "compiledDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+    "digestSource": "Root verified final source3cdab2\u2026e1edc/1058 and compiled931ee6\u2026d9d00/1820 unchanged after the complete gate and native11. These are the final accepted audit candidate hashes; root-owned resource closure is complete.",
+    "validationInputHistory": [
+      {
+        "digest": "sha256:a26e14ba872701a6a3de6a0426e6105781be162c480d50cb8fd7ed1eaf10150d",
+        "files": 1058,
+        "reportedBy": "/root",
+        "scope": "Current validation inputs after the SSE test and worker configuration updates",
+        "acceptance": "unverified; final gate unfinished"
+      },
+      {
+        "digest": "sha256:93276235d115aed4a4104c9e6d3ef53a22985bcde10f36c72b21926edf7377a2",
+        "reportedBy": "/root",
+        "scope": "Current validation inputs after SSE test failure-metadata update; root reports no runtime production change",
+        "acceptance": "unverified; fullfence7 running"
+      }
+    ],
+    "currentSourceDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+    "compiledFiles": 1820,
+    "postGateArtifactEquality": {
+      "verified": true,
+      "reportedBy": "/root",
+      "compiledDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+      "compiledFiles": 1820
+    },
+    "finalCompiledDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+    "postGateAndNativeEquality": {
+      "reportedBy": "/root",
+      "verified": true,
+      "sourceFiles": 1058,
+      "compiledFiles": 1820,
+      "manifests": 4,
+      "guidanceFiles": 6,
+      "assets": 3
+    }
+  },
+  "contract": {
+    "version": "dx.agent-contracts.v1",
+    "digest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+    "source": "Final S00 exact ten defining-source freeze; all three independently spawned built public API children reported this runtime digest on 2026-10-02",
+    "history": [
+      {
+        "digest": "sha256:8d6d14ccdacd103ecc340cb8c59cb5d58ca18fc61e99f03cfd34c5b55b337684",
+        "status": "Accepted source24 checkpoint"
+      },
+      {
+        "digest": "sha256:ecb827e05b7724ea2687cb1985528e2928a3900aadc261b45c542880dfe1e0be",
+        "status": "Accepted additive reviewed-plan/measured-basis checkpoint"
+      },
+      {
+        "digest": "sha256:6733f9edb06d60779cefa0a3e5c8970a9481485cd4130e466c914cd378f29e4e",
+        "status": "Provisional measured result metadata, superseded before artifact gate"
+      }
+    ]
+  },
+  "scope": {
+    "origin": "fixture",
+    "fixtureId": "s06-connected-agent-audit",
+    "stores": "Owned dft-s06-* throwaway replay SQLite stores, closed and released on completion",
+    "realInput": "Root native11 on literal final source observed one separately selected actual live Git identity context, pinned CLI/MCP, verified metadata export and fresh-process recovery. Git history, live AI usage/charges and causal savings are not asserted.",
+    "sourceChanges": "None; production changes remained with assigned owners"
+  },
+  "validation": [
+    {
+      "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/s06.test.ts",
+      "exit": 0,
+      "tests": 24,
+      "durationMs": 10490,
+      "observedAt": "2026-10-02T17:44:05Z",
+      "scope": "Historical source-backed SQLite, services and capability composition; helper children used approved in-memory source loader"
+    },
+    {
+      "command": "pnpm exec oxlint packages/core/test/dx/s06.test.ts packages/core/test/dx/fixtures/s06/scenario.ts packages/core/test/dx/fixtures/s06/measure.ts packages/core/test/dx/fixtures/s06/process.ts packages/core/test/dx/fixtures/s06/recovery.mjs packages/core/test/dx/fixtures/s06/operation-process.mjs",
+      "exit": 0,
+      "scope": "All owned TypeScript and fresh-process helper files"
+    },
+    {
+      "command": "pnpm exec oxfmt --check <all owned S06 tests, fixtures and node receipt>",
+      "exit": 0,
+      "scope": "All matched owned files; check exit0 on 2026-10-02T17:51:41Z"
+    },
+    {
+      "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/s06.test.ts",
+      "exit": 1,
+      "tests": 27,
+      "passed": 24,
+      "failed": 3,
+      "durationMs": 20350,
+      "scope": "Source-only during measured cursor port transition; new status, historical reviewed-plan recovery and compatible evicted-view reconstruction pass. Three continuation cases awaited real readCursor implementation."
+    },
+    {
+      "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/s06.test.ts",
+      "exit": 0,
+      "tests": 27,
+      "durationMs": 14670,
+      "observedAt": "2026-10-02T18:49:49Z",
+      "scope": "Coherent final4f source and real SQLite; child invocations explicitly use approved source loader. Built artifact repeat remains pending."
+    },
+    {
+      "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/s06.test.ts",
+      "exit": 0,
+      "tests": 27,
+      "durationMs": 22540,
+      "observedAt": "2026-10-02T18:56:33Z",
+      "scope": "Final4f source and SQLite, including all child loaded-module digest assertions. Only schema field ordering changed afterward."
+    },
+    {
+      "command": "pnpm exec oxlint <all six owned S06 TypeScript/MJS files>",
+      "exit": 0,
+      "scope": "Final scoped owned lint after spacing, schema ordering and complexity repairs"
+    },
+    {
+      "command": "pnpm exec oxfmt --check <all six owned S06 TypeScript/MJS files and node receipt>",
+      "exit": 0,
+      "scope": "All matched owned code files; JSON receipt is formatted separately because the configured formatter ignores it"
+    },
+    {
+      "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/s06.test.ts",
+      "exit": 0,
+      "tests": 27,
+      "durationMs": 3130,
+      "observedAt": "2026-10-02T19:09:25Z",
+      "scope": "Source-only after compiler8 process boundary repair; real child PID, live-owner protection and SIGKILL recovery unchanged."
+    },
+    {
+      "command": "pnpm exec oxlint packages/core/test/dx/fixtures/s06/process.ts",
+      "exit": 0,
+      "scope": "Tagged child-process errors and exact wall-clock watchdog boundary directives"
+    },
+    {
+      "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/s06.test.ts",
+      "exit": 0,
+      "tests": 27,
+      "durationMs": 3540,
+      "startedAt": "2026-10-02T19:24:37Z",
+      "observedAt": "2026-10-02T19:25:19Z",
+      "scope": "After root Build3 exit 0: main Vitest cases import source; three independently spawned helpers use default built public @rat-stack/core/dx. Each parses loader literal built and checks runtime frozen 4f contract digest. Real live-owner and SIGKILL recovery pass."
+    },
+    {
+      "command": "pnpm exec oxlint packages/core/test/dx/s06.test.ts packages/core/test/dx/fixtures/s06/scenario.ts packages/core/test/dx/fixtures/s06/measure.ts packages/core/test/dx/fixtures/s06/process.ts packages/core/test/dx/fixtures/s06/recovery.mjs packages/core/test/dx/fixtures/s06/operation-process.mjs",
+      "exit": 0,
+      "observedAt": "2026-10-02T19:25:19Z",
+      "scope": "All six owned code files after default built-loader transition"
+    },
+    {
+      "command": "pnpm exec oxfmt --check packages/core/test/dx/s06.test.ts packages/core/test/dx/fixtures/s06/scenario.ts packages/core/test/dx/fixtures/s06/measure.ts packages/core/test/dx/fixtures/s06/process.ts packages/core/test/dx/fixtures/s06/recovery.mjs packages/core/test/dx/fixtures/s06/operation-process.mjs",
+      "exit": 0,
+      "observedAt": "2026-10-02T19:25:19Z",
+      "scope": "All six matched owned code files after default built-loader transition; JSON receipt serialized separately"
+    },
+    {
+      "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/audits/c08.test.ts",
+      "exit": 0,
+      "tests": 4,
+      "durationMs": 75740,
+      "startedAt": "2026-10-02T20:46:22Z",
+      "scope": "Root expressly authorized only this existing audit against unchanged built candidate7 after its full-fence case failure. All four pass, including protocol-only writes/reads/errors/malformed calls. No test/source/deadline/compiler/build changes."
+    },
+    {
+      "label": "fullfence9",
+      "reportedBy": "/root",
+      "commandAdmission": "Root sole full gate with unchanged prescribed pnpm argv and worker cap1",
+      "exit": 0,
+      "durationMs": 519182,
+      "tasksPassed": 18,
+      "tasksTotal": 18,
+      "cachedTasks": 9,
+      "passedTests": 2001,
+      "skippedTests": 3,
+      "scope": "Complete workspace gate includes all current core and CLI tests, including the27-case S06 suite and three built public API child probes. Final native11 and resource closure remain separately pending."
+    }
+  ],
+  "verified": [
+    "Explicit scoped SQLite pages obey work caps and pin watermark under concurrent import; selector reuse rejects",
+    "Same-repository foreign worktrees, tools and sources remain excluded from timeline and evidence",
+    "Every requested ref retains cold/warm resolution; wrong version invalid, foreign repository withheld, stale generation distinct",
+    "Output item truncation preserves complete aggregates; actual input exhaustion remains partial and offers continuation",
+    "A tiny retained-page work budget rejects as work exhaustion; a six-fact/128-KiB warm page advances without full basis/result/event reads",
+    "Full pinned basis survives changed Git context, prices, metric definitions and appended events; missing incompatible historical views reject",
+    "Incomplete-query restart retains original price interpretation; current fallback price change appears in basis difference",
+    "Partial source coverage gaps survive exact scope capture and orientation output fitting",
+    "Concurrent same-key operation applies one effect; exact known resource fields survive while actual elapsed is measured separately",
+    "Stale preconditions reject before effects; cancellation preserves committed complete records",
+    "Live foreign operation owner remains running: same-key call returns existing receipt and foreign ordinary CAS rejects",
+    "Actual SIGKILL of owned child retains committed first step, marks running second indeterminate, probes and executes only absent second step",
+    "Restore invalidates reviewed mutable authority even when immutable generation is compatible; reset rejects old same-ID learning handle",
+    "A distinct PID recovers basis/result/cursor/operation/learning handles, versions, digests, window and evaluations from the same SQLite store",
+    "Learning retries preserve one authored record; instruction-like prose stays inert and changed definitions make lessons inapplicable",
+    "Two independent valid conflicting lesson evaluations survive concurrent domain-service append; contradiction wins over newer support",
+    "Caller-declared live origin cannot promote fixture basis evidence into live learning support",
+    "Public fixture capability loop retains provisional equal-candidate account association, observed charge remainder, branch/path separation, redacted evidence, reviewed incremental import, verification difference and resumable investigation",
+    "Compatible analyze/explain views reconstruct after explicit derived-view eviction, changed Git context, changed current prices and appended evidence; unavailable historical definitions reject after eviction",
+    "Historical operation get retains original scope, bounds and digest across reset/restore receipt aliases without reviving apply authority; missing reviewed plan returns explicit reason",
+    "Cold status reports fact and decoded-byte coverage limits honestly, keeps exact omitted count and directs a larger or narrower metadata read",
+    "The connected fixture account ledger conserves observed2USD as0USD allocated and2USD remainder; service-level distinct-PID recovery resumes the same investigation and original reviewed operation",
+    "All three helper subprocesses load built public @rat-stack/core/dx, report built loader and frozen 4f runtime module contract; generic handle recovery, connected investigation restart and actual SIGKILL recovery pass"
+  ],
+  "openFindings": [],
+  "closedFindings": [
+    {
+      "owner": "S02/S01",
+      "finding": "Scope leakage into timeline/evidence",
+      "disposition": "Exact SQL scope and defensive projection guards; independent narrow-selection test passes"
+    },
+    {
+      "owner": "S02/S00/S01",
+      "finding": "Warm ref version resolution differed from cold",
+      "disposition": "Retained authoritative resolutions and indexed pages; independent cold/warm test passes"
+    },
+    {
+      "owner": "S02",
+      "finding": "Tiny work bound misleadingly reported output exhaustion",
+      "disposition": "Typed work-budget reason; bounded advancing-page case passes"
+    },
+    {
+      "owner": "S01",
+      "finding": "Scoped coverage dropped essential partial missing-source gap",
+      "disposition": "Schema6 exact event/source association metadata; independent gap tests pass"
+    },
+    {
+      "owner": "S03",
+      "finding": "Known resource accumulation started from null baseline",
+      "disposition": "Known values retained, elapsed actual; independent idempotent operation passes"
+    },
+    {
+      "owner": "S05",
+      "finding": "Orientation byte count +1 and mandatory gaps trimmed for output fit",
+      "disposition": "Exact JSON byte accounting and essential context preserved; S05 test and S06 orientation tests pass"
+    },
+    {
+      "owner": "S05",
+      "finding": "Dashboard export POST created a fresh plan and key instead of recovering a reviewed export",
+      "disposition": "Read-only source review confirms guarded preview captures basis/destination/plan and a fixed key. Exact retained review, unchanged retry body and replacement guards pass aligned bridge/page proof and the accepted final CLI suite in fullfence9."
+    },
+    {
+      "owner": "S05",
+      "finding": "Cancelled metadata export receipt blocks an explicit replacement preview",
+      "evidence": "Read-only final page review: rememberExportReceipt only permits replacement when recovery is replan. Production OperationService produces cancelled with recovery none, and same-key retry returns that terminal receipt.",
+      "paths": [
+        "apps/cli/src/dft-live-page.ts:529",
+        "apps/cli/src/dft-live-page.ts:531",
+        "packages/core/src/dx/operations/service.ts:374",
+        "packages/core/src/dx/operations/service.ts:1410"
+      ],
+      "disposition": "S05 reports aligned Build7 focused bridge/page24 passed. Cancellation and stale-generation explicitly permit replacement; exact consumed old export review recovers original effects/artifact through shared historical get/apply. Stale unconsumed reviews and different keys deny; page historical proof rejects unrelated/missing evidence.",
+      "state": "closed-by-aligned-producer-runtime-proof"
+    },
+    {
+      "owner": "S05",
+      "finding": "Store reset or restore leaves a retained export review blocked after typed stale-generation",
+      "evidence": "Bridge apply reads the original generation-bound plan; SQLite assertHandle rejects stale generation. HTTP forwards the typed failure, while saveExport only recognizes plan-stale and blocks replacement after marking the attempt.",
+      "paths": [
+        "apps/cli/src/dft-live-page.ts:532",
+        "apps/cli/src/dft-agent-live-bridge.ts:457",
+        "packages/core/src/dx/storage/sqlite-agent-operations.ts:322",
+        "apps/cli/src/dft-live.ts:1312"
+      ],
+      "disposition": "S05 reports aligned Build7 focused bridge/page24 passed. Cancellation and stale-generation explicitly permit replacement; exact consumed old export review recovers original effects/artifact through shared historical get/apply. Stale unconsumed reviews and different keys deny; page historical proof rejects unrelated/missing evidence.",
+      "state": "closed-by-aligned-producer-runtime-proof"
+    },
+    {
+      "owner": "S05",
+      "finding": "Dashboard ordinary-plan prelookup blocks exact consumed export receipt recovery after reset or restore",
+      "evidence": "S01 confirms getOperationPlan validates the old plan generation before lookup, while OperationService reserveOperation recovers an exact consumed handle/digest/key before mutable-authority checks. Root accepted actual lost-reply/reset/same-key recovery as required.",
+      "paths": [
+        "apps/cli/src/dft-agent-live-bridge.ts:457",
+        "packages/core/src/dx/storage/sqlite-agent-operations.ts:322",
+        "packages/core/src/dx/storage/sqlite-agent-operations.ts:699",
+        "apps/cli/src/dft-live-page.ts:531"
+      ],
+      "pageBinding": "The already-reviewed page demands returned receipt generation equal the original reviewed-plan generation; legitimate aliased current-generation receipts must instead be validated through their original immutable plan/digest/key binding without accepting unrelated replies.",
+      "disposition": "S05 reports aligned Build7 focused bridge/page24 passed. Cancellation and stale-generation explicitly permit replacement; exact consumed old export review recovers original effects/artifact through shared historical get/apply. Stale unconsumed reviews and different keys deny; page historical proof rejects unrelated/missing evidence.",
+      "state": "closed-by-aligned-producer-runtime-proof"
+    },
+    {
+      "owner": "S05",
+      "finding": "Root-confirmed local Git native-request bypass and execFileSync hard-timeout gap",
+      "evidence": "Root reported a newly confirmed production gap after fullfence7 and assigned parallel repairs",
+      "reportedBy": "/root",
+      "state": "closed-by-built-focused-validation-and-full-fence",
+      "scopeLimit": "Root-reported finding; S06 performed no additional source exploration or runtime reproduction.",
+      "disposition": "S05 frozen v2 adapters admit and count every native attempt, bound combined stdout/stderr, force termination with awaited exit, and reject unused old plans before target resolution. Root aligned focused48/48 and fullfence9 passed; compiled artifact equality verified.",
+      "proofs": [
+        "Zero native-request quota launches no child",
+        "Cumulative request counts include failed attempts and retain privacy",
+        "Unused old plans reject before further work; mismatched recovery probes remain indeterminate",
+        "Owned ready children with SIGTERM handlers are force-killed and reaped; the main fixture observed an actual ignored SIGTERM"
+      ]
+    }
+  ],
+  "measurementPolicy": {
+    "baseline": "Same labelled fixture store; each warm lane retains its same query basis or operation key. Cold/warm orientation has identical canonical scope and warm explicitly resumes the retained timeline window.",
+    "limitsEstablishedBeforeRun": {
+      "maxFacts": 100,
+      "maxDecodedBytes": 1048576,
+      "maxNetworkRequests": 0,
+      "maxOutputBytes": 131072,
+      "maxElapsedMs": 10000
+    },
+    "calls": "calls count the instrumented event-page, full-basis, both legacy and measured basis metadata, measured matching/direct result metadata, measured cursor, retained page, learning/evaluation, coverage and recent-basis ports. Each named sample invokes one public capability handler; operation journal calls outside this subset are not counted.",
+    "unknowns": "Learning examined-row/decoded-byte telemetry and task-attributable peak memory remain unavailable. The shared Vitest process cannot attribute memory peaks to individual tasks.",
+    "interpretation": "One sample per lane is an observation, not a universal latency benchmark. Warm retained expanded detail can decode more bytes than cold raw input; no general decoded-work or productivity-saving claim is made."
+  },
+  "measurements": [
+    {
+      "decodedBytes": 278,
+      "examinedRows": 1,
+      "requests": 0,
+      "cache": "cold",
+      "calls": 2,
+      "capabilityCalls": 1,
+      "elapsedMs": 27.998415999999906,
+      "outputBytes": 4088,
+      "peakMemory": null,
+      "peakMemoryReason": "The shared Vitest process does not provide a task-attributable memory peak.",
+      "task": "orient"
+    },
+    {
+      "decodedBytes": 3276,
+      "examinedRows": 2,
+      "requests": 0,
+      "cache": "cold",
+      "calls": 1,
+      "capabilityCalls": 1,
+      "elapsedMs": 63.93037499999991,
+      "outputBytes": 30443,
+      "peakMemory": null,
+      "peakMemoryReason": "The shared Vitest process does not provide a task-attributable memory peak.",
+      "task": "branch summary"
+    },
+    {
+      "decodedBytes": 29739,
+      "examinedRows": 6,
+      "requests": 0,
+      "cache": "warm",
+      "calls": 3,
+      "capabilityCalls": 1,
+      "elapsedMs": 1.0270410000002812,
+      "outputBytes": 30444,
+      "peakMemory": null,
+      "peakMemoryReason": "The shared Vitest process does not provide a task-attributable memory peak.",
+      "task": "branch summary"
+    },
+    {
+      "decodedBytes": 6182,
+      "examinedRows": 4,
+      "requests": 0,
+      "cache": "cold",
+      "calls": 1,
+      "capabilityCalls": 1,
+      "elapsedMs": 42.568667000000005,
+      "outputBytes": 59543,
+      "peakMemory": null,
+      "peakMemoryReason": "The shared Vitest process does not provide a task-attributable memory peak.",
+      "task": "disputed-charge drilldown"
+    },
+    {
+      "decodedBytes": 57655,
+      "examinedRows": 11,
+      "requests": 0,
+      "cache": "warm",
+      "calls": 3,
+      "capabilityCalls": 1,
+      "elapsedMs": 2.1636250000001382,
+      "outputBytes": 59544,
+      "peakMemory": null,
+      "peakMemoryReason": "The shared Vitest process does not provide a task-attributable memory peak.",
+      "task": "disputed-charge drilldown"
+    },
+    {
+      "decodedBytes": 4755,
+      "examinedRows": 5,
+      "requests": 0,
+      "cache": "cold",
+      "calls": 4,
+      "capabilityCalls": 1,
+      "elapsedMs": 1.3279169999996157,
+      "outputBytes": 5165,
+      "peakMemory": null,
+      "peakMemoryReason": "The shared Vitest process does not provide a task-attributable memory peak.",
+      "task": "next timeline page"
+    },
+    {
+      "decodedBytes": 4755,
+      "examinedRows": 5,
+      "requests": 0,
+      "cache": "warm",
+      "calls": 4,
+      "capabilityCalls": 1,
+      "elapsedMs": 1.4342910000000302,
+      "outputBytes": 5165,
+      "peakMemory": null,
+      "peakMemoryReason": "The shared Vitest process does not provide a task-attributable memory peak.",
+      "task": "next timeline page"
+    },
+    {
+      "decodedBytes": 1753,
+      "examinedRows": 1,
+      "requests": 0,
+      "cache": "cold",
+      "calls": 0,
+      "capabilityCalls": 1,
+      "elapsedMs": 7.4984159999999065,
+      "outputBytes": 1324,
+      "peakMemory": null,
+      "peakMemoryReason": "The shared Vitest process does not provide a task-attributable memory peak.",
+      "task": "incremental import"
+    },
+    {
+      "decodedBytes": 0,
+      "examinedRows": 0,
+      "requests": 0,
+      "cache": "warm",
+      "calls": 0,
+      "capabilityCalls": 1,
+      "elapsedMs": 0.11458300000003874,
+      "outputBytes": 1323,
+      "peakMemory": null,
+      "peakMemoryReason": "The shared Vitest process does not provide a task-attributable memory peak.",
+      "task": "incremental import"
+    },
+    {
+      "decodedBytes": null,
+      "examinedRows": null,
+      "requests": 0,
+      "cache": "cold",
+      "calls": 2,
+      "capabilityCalls": 1,
+      "elapsedMs": 0.8364999999998872,
+      "outputBytes": 3122,
+      "peakMemory": null,
+      "peakMemoryReason": "The shared Vitest process does not provide a task-attributable memory peak.",
+      "task": "investigation resume"
+    },
+    {
+      "decodedBytes": null,
+      "examinedRows": null,
+      "requests": 0,
+      "cache": "warm",
+      "calls": 2,
+      "capabilityCalls": 1,
+      "elapsedMs": 0.5304580000001806,
+      "outputBytes": 3122,
+      "peakMemory": null,
+      "peakMemoryReason": "The shared Vitest process does not provide a task-attributable memory peak.",
+      "task": "investigation resume"
+    },
+    {
+      "decodedBytes": 2309,
+      "examinedRows": 1,
+      "requests": 0,
+      "cache": "warm",
+      "calls": 1,
+      "capabilityCalls": 1,
+      "elapsedMs": 0.5301249999997708,
+      "outputBytes": 4572,
+      "peakMemory": null,
+      "peakMemoryReason": "The shared Vitest process does not provide a task-attributable memory peak.",
+      "task": "orient"
+    }
+  ],
+  "remaining": [],
+  "verdict": "Accepted. All known findings are closed. Focused native-budget48/48, fullfence9 with18/18 tasks and2001 passed/3 skipped tests, and native11 on literal final source passed. Final source/artifact equality and root-owned resource closure are verified.",
+  "measurementComparisons": [
+    {
+      "task": "orient",
+      "warmOverColdDecodedBytes": 8.305755,
+      "warmOverColdOutputBytes": 1.118395,
+      "interpretation": "One sample per lane; retained expanded detail and measured headers/cursor may decode more than raw cold inputs. No general latency, work or productivity inference."
+    },
+    {
+      "task": "branch summary",
+      "warmOverColdDecodedBytes": 9.077839,
+      "warmOverColdOutputBytes": 1.000033,
+      "interpretation": "One sample per lane; retained expanded detail and measured headers/cursor may decode more than raw cold inputs. No general latency, work or productivity inference."
+    },
+    {
+      "task": "disputed-charge drilldown",
+      "warmOverColdDecodedBytes": 9.32627,
+      "warmOverColdOutputBytes": 1.000017,
+      "interpretation": "One sample per lane; retained expanded detail and measured headers/cursor may decode more than raw cold inputs. No general latency, work or productivity inference."
+    },
+    {
+      "task": "next timeline page",
+      "warmOverColdDecodedBytes": 1,
+      "warmOverColdOutputBytes": 1,
+      "interpretation": "One sample per lane; retained expanded detail and measured headers/cursor may decode more than raw cold inputs. No general latency, work or productivity inference."
+    },
+    {
+      "task": "incremental import",
+      "warmOverColdDecodedBytes": 0,
+      "warmOverColdOutputBytes": 0.999245,
+      "interpretation": "Same-key retry avoids adapter input decoding and event insertion."
+    },
+    {
+      "task": "investigation resume",
+      "warmOverColdDecodedBytes": null,
+      "warmOverColdOutputBytes": 1,
+      "interpretation": "Learning decoded work remains unavailable; no inferred zero."
+    }
+  ],
+  "measurementRun": {
+    "scope": "Source-importing fixture capability samples from the 27-case run with three built public API child probes; no whole-artifact performance or causal savings claim",
+    "tests": 27,
+    "startedAt": "2026-10-02T19:24:37Z",
+    "observedAt": "2026-10-02T19:25:19Z"
+  },
+  "limitations": [
+    "Fixture behavior and source composition do not establish installed CLI/MCP/dashboard parity or native host registration.",
+    "Root observed one separately selected live Git identity context; S06 has no live history, private tool sessions, paid account observations or causal savings evidence.",
+    "Only metadata export is advertised by the current adapter inventory; redacted evidence and selected-learning exports require an enabled adapter.",
+    "Git, HTTP and SQLite physical I/O and task-attributable memory remain unavailable; logical decoded/captured byte bounds do not claim those measurements.",
+    "Restarted work with an unreconstructable remaining allowance requires replanning.",
+    "Historical view reconstruction requires retained inputs and a compatible implementation; missing incompatible definitions return a typed limitation.",
+    "Reference kinds without indexed resolvers return explicit missing or bounded-resolution reasons.",
+    "Detailed changed references and unchanged counts require a separately bounded evidence comparison; v1 basis metadata comparison does not invent them.",
+    "Causal lesson support is unavailable; fixture-origin evidence cannot support live lessons."
+  ],
+  "acceptanceEvidence": [
+    {
+      "area": "Connected fixture loop, scope, handles, receipts, restart, pinned replay and work bounds",
+      "owner": "S06",
+      "state": "Historical independent27-case Build3 checkpoint preserved; root complete fullfence9 passes the current core suite including all27 S06 cases and three built public API child probes."
+    },
+    {
+      "area": "Actual measured metadata/cursor SQL guards and durable recovery bindings",
+      "owner": "S01",
+      "state": "Historical final4f source19 checkpoint preserved; root complete fullfence9 passes current core storage and durable recovery behavior."
+    },
+    {
+      "area": "Distinct-key sharing, incompatible bounds and independently denied caller",
+      "owner": "S03",
+      "state": "Historical focused source119 checkpoint preserved; root complete fullfence9 passes current operations and source parity cases."
+    },
+    {
+      "area": "Concurrent evaluations, revision isolation, historical revision recovery, production evidence deletion and withheld metadata",
+      "owner": "S04",
+      "state": "S04 updated receipt confirms 39/39 cases plus scoped lint/format exit0, with no production changes. Additional exact transitions now pass against real replay SQLite and actual EventStore source replacement.",
+      "receipt": "docs/execution/nodes/s04.json",
+      "namedTests": [
+        {
+          "name": "keeps supporting evaluations bound to the authored lesson revision after a CAS update",
+          "evidence": "A compatible authored claim update retains target revision0 evaluation but current revision1 recall is proposed."
+        },
+        {
+          "name": "reads the exact historical authored revision from the production replay store after reopening",
+          "evidence": "An explicit revision0 reference retrieves original fields after SQLite reopen while the current revision1 retains its changed fields."
+        },
+        {
+          "name": "invalidates supported recall when production source replacement deletes its cited event",
+          "evidence": "Actual EventStore append with empty replacement deletes the isolated cited event and tombstones its captured basis. Both citations become missing; generation stays unchanged, authored lesson and evaluation remain, recall becomes proposed and canonical origin/coverage metadata is cleared."
+        }
+      ]
+    },
+    {
+      "area": "CLI/MCP/dashboard/native discovery and separately selected real observations",
+      "owner": "S05/root",
+      "state": "Accepted. All scoped recovery and native-budget findings are closed; focused48/48, fullfence9, literal final-source native11, final equality and owned-resource closure passed."
+    }
+  ],
+  "processBoundary": {
+    "failure": "S06ProcessProbeError with message and preserved defect cause",
+    "watchdogMs": 20000,
+    "clock": "Native wall time protects child startup and actual exit independently of the parent's paused test clock",
+    "kill": "SIGKILL only for the owned child PID; actual exit is awaited",
+    "diagnostics": "Only two exact setTimeout call sites disable globalTimersInEffect with their process boundary reason"
+  },
+  "builtChildEvidence": {
+    "admission": "Root reported Build3 exit 0 for all four workspace packages before this scoped run",
+    "module": "@rat-stack/core/dx",
+    "loader": "built",
+    "contractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+    "probes": [
+      "Generic persisted handle recovery in a distinct PID",
+      "Connected investigation and original reviewed operation service get after restart",
+      "Live-owner journal protection, actual owned child SIGKILL and absent-step recovery"
+    ],
+    "assertions": "All three decode loader as literal built and independently compare runtime module AGENT_CONTRACT_DIGEST against the frozen contract",
+    "sourceFallback": "None; callers omit --source and helper default directly imports public package export",
+    "scopeLimit": "Main Vitest domain tests import source; only the child probes verify built package behavior. Root owns final runtime digest and full artifact fence.",
+    "checkpoint": "Historical Build3, still valid for the exact observed built modules; not the final revised-candidate release verdict"
+  },
+  "nativeRehearsal": {
+    "source": "Root native11 result reported to S06; no S06 runtime rerun",
+    "attempt": 11,
+    "status": "passed",
+    "durationMs": 26726,
+    "candidateRuntimeSourceDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+    "candidateCompiledDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+    "actualSelectedLiveGitIdentityEvents": 1,
+    "protocolFrames": 14,
+    "nonProtocolStdoutFrames": 0,
+    "stderrBytes": 0,
+    "postGateAndNativeEqualityVerified": true,
+    "rehearsalExportAbsent": true,
+    "observed": [
+      "Production CLI and stdio MCP preserve pinned semantics on literal final source",
+      "Reviewed metadata export succeeded and verified",
+      "Fresh-process investigation and learning recovery passed",
+      "Native guidance install/edit/uninstall preserves user edits"
+    ],
+    "reportedIdentifiers": {
+      "basisAsReported": "Basis_d1960192a18085dc141ee4a036b400d35bbeaa041187ed39",
+      "resultDigest": "c5d834ac2b784f96f24f43105bdda30d1cddde3f3285e64fa9d520ba640c388b",
+      "operationExecutionState": "succeeded",
+      "operationVerificationState": "verified",
+      "operation": "operation-8b7d0a1d7bd0f5257049f8256aefbeab3a2f6d414510d752e58315c665732b4c",
+      "initialOperationAbbreviation": "8b7d\u2026b4c"
+    },
+    "notObserved": [
+      "Live AI usage or charges",
+      "Native current-turn MCP registration",
+      "Actual Cursor host",
+      "Git history or causal savings"
+    ],
+    "releaseLimit": "Final code, behavior, equality and owned-resource predicates accepted by root. Observations remain limited to the stated native rehearsal scope.",
+    "remainingOwnedRehearsalChildren": 0
+  },
+  "releasePredicates": {
+    "contract": "Frozen 4f contract unchanged",
+    "learning": "S04 source39 plus lint/format passed with no production changes",
+    "pageRecovery": "Closed by aligned Build7 focused bridge/page24, including actual SQLite reset recovery and strict page historical proof",
+    "revisedArtifact": "Final source3cdab2\u2026e1edc/1058 and compiled931ee6\u2026d9d00/1820 unchanged after gate and native11; all4 manifests,6 guidance files and3 assets also match.",
+    "fullFence": "Fullfence9 passed exit0,18/18 tasks9 cached,2001 tests passed3 skipped in519.182s. Prior failures and cancelled incomplete gates remain historical.",
+    "completionInvariant": "Successful process exit is necessary but insufficient. Every required task must finish and provide its passing task/test reports. Cancellation or incomplete required reports leaves the release gate unverified even when a wrapper exits0.",
+    "finalVerdict": "Accepted after fullfence9, literal final-source native11, final equality and completed owned-resource closure.",
+    "rootReportedProductionRepair": "Closed by frozen S05 v2 repair, root aligned48/48 focused runtime, complete fullfence9 and verified compiled equality.",
+    "nativeFinal": "Native11 passed on literal final source in26.726s with14 protocol frames/0 noise/0 stderr and verified metadata export; own rehearsal export absent.",
+    "ownedResourceClosure": "Completed2026-10-02T22:22:22.038217Z: both exact registered scratch/build release commands exit0; identity verified, only owned scratch removed, scratch/export absent and captured fence/native PIDs absent."
+  },
+  "sourceReview": {
+    "mode": "Read-only; no source/test changes or runtime reruns",
+    "scope": [
+      "apps/cli/src/dft-live.ts",
+      "apps/cli/src/dft-agent-live-bridge.ts",
+      "apps/cli/src/dft-live-page.ts",
+      "apps/cli/test/dft-agent-live-bridge.test.ts",
+      "apps/cli/test/dft-live.test.ts",
+      "apps/cli/test/dft-live-page.test.ts"
+    ],
+    "outcome": "All scoped recovery findings closed after sole S05 owner reported aligned Build7 focused24 runtime proof; no additional source/runtime work performed by S06",
+    "confirmed": [
+      "Guarded preview fixes basis, destination, shared reviewed plan and dashboard export key before apply",
+      "Apply consumes exact retained review without reanalysis, rejects replacement targets and changed key",
+      "Identity checks reject unrelated receipts before page state mutation",
+      "Matching cancelled receipt disables old save and permits only an explicit new preview",
+      "Typed plan-stale or stale-generation allows explicit replacement review",
+      "Unknown save reply retains original reviewed pair and blocks a replacement until receipt recovery"
+    ],
+    "runtimeCasesRequired": [
+      "allows an explicit new export after a matched cancellation from apply or receipt lookup",
+      "requires an explicit new preview after a stale plan or store generation",
+      "recovers an ignored export reply with the same review and key and returns its fixed plan through the shared API"
+    ],
+    "evidenceLimit": "Source inspection is distinct from root-reported runtime proof. Final focused, full-fence and native acceptance is recorded separately."
+  },
+  "s05RecoveryValidation": {
+    "reportedBy": "/root/r00_s05_integration",
+    "command": "pnpm --filter @rat-stack/cli exec vitest run test/dft-agent-live-bridge.test.ts test/dft-live-page.test.ts",
+    "exit": 0,
+    "files": 2,
+    "tests": 24,
+    "candidate": "Historical aligned Build7 checkpoint; accepted final artifact is recorded in candidate",
+    "behavior": [
+      "Actual SQLite completed export with lost reply, ordinary reset and same-review retry recovers the same operation, original effects and unchanged artifact",
+      "Unused stale review and different key denied",
+      "Page accepts alias only after shared get proves historical plan ID/digest/store/original generation, metadata arguments, scope and consent",
+      "Invalid or missing historical proof retains the original review and key",
+      "Known matched cancellation and stale-generation permit only explicit replacement review"
+    ],
+    "scopeLimit": "Historical producer-reported focused bridge/page run. Root's accepted fullfence9 and native11 separately provide final real HTTP, S06, native and complete release-gate evidence."
+  },
+  "nativeRehearsalHistory": [
+    {
+      "source": "Root native rehearsal attempt7 result reported to S06; S06 did not rerun it",
+      "candidate": "sha256:e47e65e3d3bd0c31ef38bbadd4fd7cb313f0a65c1386706078b4c2383f2c5744",
+      "checkpoint": "Historical Build5 after page recovery findings; final candidate6 gate pending",
+      "result": "passed",
+      "actualSelectedLiveGitIdentityEvents": 1,
+      "protocolFrames": 14,
+      "nonProtocolStdoutFrames": 0,
+      "stderrBytes": 0,
+      "observed": [
+        "Same pinned basis/result across fresh CLI and stdio MCP",
+        "Expanded redacted evidence",
+        "Reviewed metadata export succeeded and verified",
+        "Fresh-process get recovers reviewed plan and learning resume",
+        "Installer preserves existing edits",
+        "Nested unknown input rejected with JSON-RPC -32602"
+      ],
+      "notObserved": [
+        "Live AI usage or charges",
+        "Native current-turn MCP registration",
+        "Actual Cursor host",
+        "Causal savings"
+      ]
+    },
+    {
+      "source": "Root candidate7 native rehearsal attempt9 reported to S06; no S06 runtime rerun",
+      "candidateCompiledDigest": "sha256:f565f505399e12d969aebf468a91d476fc533088d8d705f9d74fd671cedb6f7c",
+      "candidateRuntimeSourceDigest": "sha256:ab38ecf5441b317bb51aafac206f7975bfb15c30738f970b82ef3e35786076e1",
+      "result": "passed",
+      "actualSelectedLiveGitIdentityEvents": 1,
+      "protocolFrames": 14,
+      "nonProtocolStdoutFrames": 0,
+      "stderrBytes": 0,
+      "remainingOwnedRehearsalChildren": 0,
+      "rehearsalExportCleanup": "Root reports its verified export was removed",
+      "observed": [
+        "Production CLI and stdio MCP preserve the same pinned semantics",
+        "Reviewed metadata export succeeded and verified",
+        "Fresh process get returns reviewed plan and learning resume",
+        "Install/edit/uninstall preserves user edits"
+      ],
+      "handles": {
+        "basis": "basis_b7ca1c4f00f518f90e9192e01b9f15de40c944098db56393",
+        "reportedResult": "9a3a08f1cae526f66ba1496f648583cee238d9fe20d6f2433e54c45017ff088d",
+        "operation": "operation-0348976c3919db82ee8f677d1252e4668be08f913eb1c053ae5058549d752e38",
+        "investigation": "s07-real-git-investigation"
+      },
+      "notObserved": [
+        "Live AI usage or charges",
+        "Native current-turn MCP registration",
+        "Actual Cursor host",
+        "Causal savings"
+      ],
+      "releaseLimit": "Historical Build7/candidate7 native9 observation. Fullfence7 failed and root confirmed a new S05 production gap. Revised Build8/native10, complete passing reports and final source/artifact equality remain pending."
+    }
+  ],
+  "rootFullFenceHistory": [
+    {
+      "label": "fullfence5",
+      "reportedBy": "/root",
+      "exit": 1,
+      "durationMs": 391000,
+      "tasksPassed": 16,
+      "tasksTotal": 18,
+      "staticChecks": "All passed",
+      "appTests": {
+        "passed": 296,
+        "failed": 11,
+        "total": 307
+      },
+      "appFailureReport": "Nine wall-timeouts, one hook Git context null, one enterprise history exit1 whose helper omitted stderr; root owns dispositions",
+      "coreTests": "Interrupted after app failure; C08 had one named case failure without raw assertion summary",
+      "c08Followup": "Unchanged candidate7 isolated audit passed4/4 in75740ms. Strict-input error shape is accepted by the existing helper; deterministic protocol regression was not reproduced. Causality remains unproven."
+    },
+    {
+      "label": "fullfence6",
+      "reportedBy": "/root",
+      "wrapperExit": 0,
+      "cancelled": true,
+      "termination": "SIGTERM",
+      "requiredTaskReportsComplete": false,
+      "testReportsComplete": false,
+      "shutdownSummary": {
+        "tasks": "16/18",
+        "cachedTasks": 8,
+        "durationMs": 1036305
+      },
+      "acceptance": "unverified",
+      "report": "Root cancelled after timing failures under reported host load286. All known owned gate PIDs were absent afterward; one daemon restart exceeded20s and read-only verification remained pending.",
+      "scopeLimit": "No completed all-task/test report or passing release verdict. Host pressure is observed context, not a proven cause of individual failures."
+    },
+    {
+      "label": "fullfence7",
+      "reportedBy": "/root",
+      "status": "failed",
+      "validationInputDigest": "sha256:93276235d115aed4a4104c9e6d3ef53a22985bcde10f36c72b21926edf7377a2",
+      "workerCapPerVitestProcess": 1,
+      "commandAdmission": "Root reports exact prescribed pnpm argv with environment worker cap1",
+      "requiredTasks": 18,
+      "requiredTaskReportsComplete": false,
+      "acceptance": "false",
+      "partialReports": {
+        "coreC08": {
+          "passed": 4,
+          "total": 4,
+          "durationMs": 38991
+        },
+        "capability": {
+          "passed": 80
+        },
+        "devtools": {
+          "passed": 19
+        }
+      },
+      "scopeLimit": "Failed gate. Passing individual reports do not establish complete acceptance; root-confirmed production repair is separately required.",
+      "exit": 1,
+      "durationMs": 578963,
+      "tasksPassed": 16,
+      "tasksTotal": 18,
+      "cachedTasks": 8,
+      "appTests": {
+        "passed": 305,
+        "failed": 2,
+        "total": 307,
+        "files": 30
+      },
+      "appFailureReport": "Old five-CLI usage case and2MiB guidance comparison each hit unchanged30s; root reports both test repairs frozen.",
+      "liveTests": {
+        "passed": 18,
+        "total": 18,
+        "sseCaseDurationMs": 9191
+      },
+      "coreFailureReport": "The100k scale case failed its unchanged20s; the gate interruption left no final core report. Root owns an isolated unchanged-scale follow-up."
+    },
+    {
+      "label": "fullfence9",
+      "reportedBy": "/root",
+      "status": "passed",
+      "exit": 0,
+      "durationMs": 519182,
+      "tasksPassed": 18,
+      "tasksTotal": 18,
+      "cachedTasks": 9,
+      "requiredTaskReportsComplete": true,
+      "testReportsComplete": true,
+      "sourceDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+      "compiledDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+      "postGateArtifactEqualityVerified": true,
+      "capabilityTests": {
+        "passed": 80
+      },
+      "devtoolsTests": {
+        "passed": 19
+      },
+      "coreTests": {
+        "passed": 1581,
+        "skipped": 3,
+        "files": 135
+      },
+      "appTests": {
+        "passed": 321,
+        "failed": 0,
+        "files": 30
+      },
+      "aggregate": {
+        "passed": 2001,
+        "skipped": 3
+      },
+      "scopeLimit": "Complete fence passed; final root acceptance still requires literal current-source native11 and owned-resource closure."
+    }
+  ],
+  "rootCheckpointHistory": [
+    {
+      "area": "Named SSE readiness case",
+      "reportedBy": "/root",
+      "tests": 1,
+      "passed": 1,
+      "durationMs": 33180,
+      "timeoutsUnchanged": "Original10s/30s",
+      "scopeLimit": "Named checkpoint only; does not establish full app acceptance."
+    }
+  ],
+  "nativeBudgetReview": {
+    "mode": "S06 read-only production review; no runtime, tests, edits or additional agents",
+    "sourceFiles": [
+      "apps/cli/src/dft-agent-adapters.ts",
+      "apps/cli/src/dft-agent-cursor-hooks.ts"
+    ],
+    "outcome": "No concrete new budget, cancellation, cleanup, recovery or version defect found in the frozen repair",
+    "sourceBasis": "Installed Effect AGENTS, child-process example, ChildProcessSpawner API and pinned Node shared spawner lifecycle",
+    "checked": [
+      "Per-attempt request admission and count before spawn",
+      "Combined stdout and stderr byte cap and remaining elapsed timeout",
+      "Cumulative work settlement on failed or interrupted outcomes",
+      "Scoped detached-process-group termination and awaited leader exit",
+      "v2 unused-plan guards before target resolution and indeterminate incompatible probes"
+    ],
+    "runtimeProof": {
+      "reportedBy": "/root and S05 receipt",
+      "receipt": "docs/execution/nodes/s05.json",
+      "compiledDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+      "tests": 48,
+      "passed": 48,
+      "failed": 0,
+      "testFiles": [
+        "apps/cli/test/dft-agent-adapters.test.ts",
+        "apps/cli/test/dft-agent-cursor-hooks.test.ts"
+      ]
+    },
+    "scopeLimit": "Git internal physical I/O remains unavailable; scoped source review and root-reported runtime evidence are distinguished."
+  },
+  "accepted": true,
+  "rootReleasePredicateCompletionAt": "2026-10-02T22:22:22.038217Z",
+  "finalResourceClosure": {
+    "reportedBy": "/root",
+    "completedAt": "2026-10-02T22:22:22.038217Z",
+    "record": "docs/execution/phases/s07.json resources.finalCleanup",
+    "registeredReleaseCommands": {
+      "count": 2,
+      "exits": [
+        0,
+        0
+      ]
+    },
+    "identityVerified": [
+      "owner",
+      "device",
+      "inode",
+      "UID",
+      "marker"
+    ],
+    "scratchRemovalScope": "Only root-owned scratch",
+    "scratchAbsent": true,
+    "ownedExportAbsent": true,
+    "capturedFence9AndNative11PidsAbsent": true,
+    "preserved": [
+      "preexisting dependencies",
+      "dist",
+      ".turbo",
+      "durable stores",
+      "other users"
+    ],
+    "scopeLimit": "Root-reported identity-bound cleanup; S06 performed no independent destructive action or runtime rerun."
+  }
+}

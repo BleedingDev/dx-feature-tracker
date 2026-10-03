@@ -1,0 +1,338 @@
+{
+  "schema": "dft.agent-system.handoff.v1",
+  "node": "S03",
+  "status": "complete",
+  "deliverable": "Reviewed tracker operations, durable step recovery, cumulative work budgets and live acquisition adapters",
+  "agentContractVersion": "dx.agent-contracts.v1",
+  "agentContractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+  "storeSchemaVersion": 8,
+  "integration": {
+    "service": "OperationService.layer(adapters) captures the existing AgentStore; makeOperationService(store, adapters) builds one scoped coordinator.",
+    "entry": "runOperation(OperationInput) implements plan/apply/get/cancel through the same schemas on all projections.",
+    "lifecycle": "Declared XState Effect actors own preparing, selecting, recovering, executing, committing, cancelling and finalizing phases; the persisted journal remains authoritative.",
+    "budget": "One OperationWorkBudget spans each apply authorization, validation, recovery probe, effect and verification. Planning has a separate bounded read-only budget.",
+    "writer": "Live administration, event commits and harness cursor CAS share the opened SQLite writer; live polling receives the same long-lived operation service through its acquisition executor.",
+    "administration": "makeAdministrationBackend({home, store, agentStore}) supplies headless store administration without starting discovery or collection."
+  },
+  "verifiedBehavior": [
+    "Exact plan digest and idempotency binding; concurrent same-key apply returns one durable execution. Historical get returns the original reviewed scope, arguments and digest across reset/restore aliases without authorizing new apply.",
+    "Compatible distinct-key acquisition coalesces only after each caller independently authorizes; a cancelled follower detaches, the owner continues, and incompatible bounds acquire separately.",
+    "Committed, duplicate, unavailable, staged, rejected, partial and interrupted work remain distinct. Cancellation retains committed and staged progress; timeout recovery probes uncertain effects before replay.",
+    "Exact source, cursor, parser, configuration and deletion preconditions reject stale reviewed inputs. Approved source append growth and unrelated ledger appends do not silently change reviewed scope.",
+    "Real selected native-file, Git, hook, Cursor saved-session/database, OpenCode database and compressed-file conversion fixtures exercise bounded capture and durable commits. Synthetic observations retain fixture origin.",
+    "Native scope without attribution proof appends nothing and retains the checkpoint. Directory source inputs disclose exact captured files and sidecars; excessive disclosure is refused before effects.",
+    "Reset and restore invalidate unused pending plans while preserving consumed-operation recovery receipts and original reviewed plans across generation aliases.",
+    "One cumulative budget constrains authorization, validation, probes, effects and verification. Known zero and unknown measurements stay distinct; later stages cannot reset earlier work.",
+    "Idle live acquisition reuses verified completion only after matching scope, bounds, source proof and current store revision. Null directory timestamps require a bounded native fingerprint; changes invalidate the cache without creating an idle journal."
+  ],
+  "checks": [
+    {
+      "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/s03.test.ts",
+      "exit": 0,
+      "tests": 119,
+      "durationSeconds": 6.1,
+      "scope": "Coordinator, real SQLite administration and recovery, native source conversion fixtures, source/cursor scope guards, cumulative budgets, independent caller coalescing and live idle cache. Fixture source rows remain fixture observations. Rerun after final Effect Path dependency capture substitutions.",
+      "previousPassingRun": {
+        "tests": 119,
+        "durationSeconds": 11.67,
+        "exit": 0
+      }
+    },
+    {
+      "command": "pnpm exec oxlint packages/core/src/dx/operations packages/core/src/dx/live/engine.ts packages/core/src/dx/live/home.ts packages/core/src/dx/live/store-admin.ts packages/core/src/dx/registry/sync.ts packages/core/test/dx/s03.test.ts packages/core/test/dx/fixtures/s03 packages/core/test/dx/live-engine.test.ts packages/core/test/dx/restore-old-backup.test.ts",
+      "exit": 0,
+      "scope": "All 31 owned and root-extended TypeScript source/fixture files after release-fence closure."
+    },
+    {
+      "command": "pnpm exec oxfmt --check packages/core/src/dx/operations packages/core/src/dx/live/engine.ts packages/core/src/dx/live/home.ts packages/core/src/dx/live/store-admin.ts packages/core/src/dx/registry/sync.ts packages/core/test/dx/s03.test.ts packages/core/test/dx/fixtures/s03 packages/core/test/dx/live-engine.test.ts packages/core/test/dx/restore-old-backup.test.ts",
+      "exit": 0,
+      "scope": "All 31 owned and root-extended TypeScript source/fixture files after release-fence closure."
+    },
+    {
+      "command": "Root-admitted core package compiler9",
+      "exit": 1,
+      "typescriptErrors": 0,
+      "scope": "Root reported no TypeScript errors. Redundant directive warnings TS377000 were removed in the eight exact owned locations; root is diagnosing compiler exit behavior and owns the next compiler admission.",
+      "historical": true,
+      "supersededBy": "Root fullfence9 successful compiler/check/test/build evidence."
+    },
+    {
+      "command": "Owned fixture scratch inventory",
+      "exit": 0,
+      "remainingDirectories": [],
+      "scope": "Exact S03 scratch prefixes; no dependency or build trees created by this worker."
+    },
+    {
+      "command": "Scoped lint/format after eight redundant directive removals",
+      "exit": 0,
+      "scope": "Four production files plus main/fixtures checks passed. Only diagnostic directives changed; imports and runtime behavior are unchanged, so the passing 119-case behavior run was not repeated."
+    },
+    {
+      "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/s03.test.ts test/dx/live-engine.test.ts test/dx/restore-old-backup.test.ts",
+      "exit": 0,
+      "tests": 129,
+      "durationSeconds": 37.88,
+      "scope": "All S03 cases plus the root-assigned live administration and genuine legacy-v1 restore files after release-fence closure."
+    },
+    {
+      "command": "TMPDIR=/tmp pnpm --filter @rat-stack/core exec vitest run test/dx/s03.test.ts -t 'stops Git stdout at the cumulative maxRecords limit before importing a batch'",
+      "exit": 0,
+      "tests": 1,
+      "skipped": 118,
+      "durationSeconds": 3.39,
+      "scope": "Exact short-temporary-path failure trigger from the root fence. Strict fixed argv, residual bound checks, child stop and zero imported events remain asserted."
+    },
+    {
+      "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/restore-old-backup.test.ts",
+      "exit": 0,
+      "tests": 1,
+      "durationSeconds": 20.22,
+      "scope": "After fullfence4 TS377037, SQLite unknown row decoding is yielded with Schema.decodeUnknownEffect. Actual-v1 fixture and all restored-event/association assertions remain intact. Exact test file lint and formatting also passed."
+    },
+    {
+      "command": "pnpm exec turbo run check test build",
+      "owner": "root",
+      "attempt": 9,
+      "processEnvironment": {
+        "VITEST_MAX_WORKERS": "1"
+      },
+      "exit": 0,
+      "successfulTasks": 18,
+      "totalTasks": 18,
+      "cachedTasks": 9,
+      "durationSeconds": 519.182,
+      "reports": {
+        "capability": {
+          "passed": 80,
+          "filesPassed": 11
+        },
+        "devtools": {
+          "passed": 19,
+          "filesPassed": 1
+        },
+        "core": {
+          "passed": 1581,
+          "skipped": 3,
+          "total": 1584,
+          "filesPassed": 132,
+          "filesSkipped": 3,
+          "totalFiles": 135,
+          "report": "Complete cached report from same frozen core preflight."
+        },
+        "cli": {
+          "passed": 321,
+          "failed": 0,
+          "filesPassed": 30,
+          "durationMs": 485490
+        }
+      },
+      "aggregate": {
+        "passed": 2001,
+        "skipped": 3,
+        "failed": 0
+      },
+      "scope": "Complete required check/test/build reports on frozen inputs. Core report is a complete same-input cached preflight; optional live-host skips remain disclosed. Root subsequently accepted S07 after final native11, identity equality and exact owned resource closure."
+    }
+  ],
+  "pending": [],
+  "limitations": [
+    "Enabled kinds depend on installed effect adapters. Missing adapters return disabled descriptors with a reason; callers cannot use arbitrary evidence, learned prose or consent strings as execution authority.",
+    "Operation maxRequests and receipt requests count bounded native command and HTTP invocations. Query maxNetworkRequests remains network-only.",
+    "Git output, HTTP body and SQLite selected/captured bytes use the disclosed logical boundary. Physical subprocess, network, parser and SQLite internal I/O measurements remain unavailable.",
+    "Node/macOS source checks reject observed symlink, identity and rotation changes but do not provide directory-relative openat protection against an adversarial ancestor swap between checks.",
+    "Native hooks and Cursor database/saved-session imports cannot invent flight or branch attribution. Unsupported explicit filters require a typed scope/replan outcome.",
+    "A reopened process may retrieve the original reviewed plan, but effects needing an unreconstructable remaining cumulative allowance require replanning. Ambiguous external effects or destructive account migration are probed or remain indeterminate; they are not blindly replayed.",
+    "Complete acquisition budgets retain bounded snapshots for possible recovery. The coordinator bounds the number of retained entries, but there is no separate process-wide aggregate byte quota.",
+    "No universal exactly-once process effect is claimed. Full workspace acceptance and genuine killed-process recovery checks are owned by root and S06.",
+    "Retained alias history and reset work grow with recovery metadata. Individual receipt size is bounded, but there is no aggregate alias-count/byte cap or automatic journal eviction; deleted source/basis/result bodies remain deleted."
+  ],
+  "adapterInventory": [
+    {
+      "factory": "makePlannedSourceOperationAdapter",
+      "kind": "collect",
+      "inputs": "Explicit selected local session files for Claude Code, Codex, Cursor transcripts, Pi, OMP and DeepSeek. Bounded hook and compressed snapshot dispatch preserves native source identity and cursors."
+    },
+    {
+      "factory": "boundedHookSnapshotHarness",
+      "kind": "collect",
+      "inputs": "Claude Code and Codex hook channels; Pi, OMP, DeepSeek and OpenCode extension channels. Native flight attribution remains unavailable."
+    },
+    {
+      "factory": "makeBoundedGitOperationAdapter",
+      "kind": "collect",
+      "inputs": "collector.git-history, collector.git-observation and collector.git-identity. Fixed argv commands have capped captured output, logical request count and wall time."
+    },
+    {
+      "factory": "makeBoundedAccountOperationAdapter",
+      "kind": "collect",
+      "inputs": "collector.cursor-usage-api. Persisted reviewed opt-in, fixed endpoint, bounded indexed credential read, streamed response capture and same-writer bounded replacement."
+    },
+    {
+      "factory": "makeBoundedCursorHookOperationAdapter",
+      "kind": "collect",
+      "inputs": "collector.cursor-hooks. Native spool directories/files, recorded scope checks, durable partial outcomes and same-writer cursor CAS."
+    },
+    {
+      "factory": "makeBoundedCursorOperationAdapter",
+      "kind": "collect",
+      "inputs": "cursor-local-db and collector/cursor-cli. Bounded immutable database/metadata captures use existing native mappers and prove repository attribution before append."
+    },
+    {
+      "factory": "makeBoundedOpencodeOperationAdapter",
+      "kind": "collect",
+      "inputs": "Selected harness.opencode local-db. Bounded database/WAL/SHM snapshots, selected SQL payload and normalized event admission."
+    },
+    {
+      "factory": "makeLiveAdministrationAdapters",
+      "kind": [
+        "configure",
+        "delete",
+        "reset",
+        "restore"
+      ],
+      "inputs": "Injected existing live or headless administration backend. Exact reviewed configuration/deletion scope, typed confirmation, backup receipts and store invalidation share the existing writer."
+    },
+    {
+      "factory": "makeLiveOperationAcquisitionExecutor",
+      "kind": "collect",
+      "inputs": "Installed live selected-source routes use one long-lived OperationService. composeCollectionOperationAdapters dispatches exact source/parser combinations; makeLiveSelectedSourceCatalog preserves native references."
+    }
+  ],
+  "productionComposition": {
+    "enabledKinds": [
+      "collect",
+      "configure",
+      "delete",
+      "reset",
+      "restore",
+      "export"
+    ],
+    "configuration": "Existing tracked-repository/account settings plus injected native Codex guidance and Cursor hook installation adapters.",
+    "export": "Metadata-only retained-basis export under the selected current repository. Redacted evidence and selected-learning exports remain unavailable.",
+    "disabledKinds": [
+      "derive-usage",
+      "refresh-prices",
+      "live-start",
+      "live-stop"
+    ],
+    "availability": "Descriptors depend on installed adapters; each input still requires supported selected scope, consent, preconditions and sufficient budget. Query derivation is separate from an operation adapter.",
+    "owner": "S05 composition verified in root fullfence9, final same-source/same-artifact native11 rehearsal and accepted root S07 release."
+  },
+  "sourceSnapshot": {
+    "algorithm": "SHA-256 of sorted relative-path TAB sha256:file-content-hash LF entries; handoff documents excluded.",
+    "fileCount": 31,
+    "digest": "sha256:61a335b425d40f2bb68a6b94c6d5a85d8042c1776b03b99bb7015617eb9f18db",
+    "files": {
+      "packages/core/src/dx/live/engine.ts": "sha256:d1494802fe4b7595d5303686a25afd3e0c46f0ccd14263e21d61f09a9ad4717a",
+      "packages/core/src/dx/live/home.ts": "sha256:4e84ae5d77bc160cac518bb23c27420297b5206abe706d83268994ecd695ed95",
+      "packages/core/src/dx/live/store-admin.ts": "sha256:a6a8e252b2eca8aaa71a3257b289903ae783b05594d711b562a2ab93fd25d07b",
+      "packages/core/src/dx/operations/account.ts": "sha256:83772801be5987b82d2da8e278b426ec5f6791bc55b6a4fb32f7f1fe66cc0c9f",
+      "packages/core/src/dx/operations/budget.ts": "sha256:9e9d65df793f43096a15f15209bc332140359dfbd42a707a94178a1746dc1004",
+      "packages/core/src/dx/operations/collector.ts": "sha256:14089d2f4b6b5a87ca76a8a6e7c88588a67762a7acf98bf2f4df67c983213ebb",
+      "packages/core/src/dx/operations/cursor-hooks.ts": "sha256:aa18f1060219f3c39c8a4029db0e233815bd1e91412e060aae1cc69918153dcf",
+      "packages/core/src/dx/operations/cursor.ts": "sha256:b9651a97ee6010005e47eaee61d96851a8227c07f1c66fcb7b17325dcd81e8fe",
+      "packages/core/src/dx/operations/decompression.ts": "sha256:455658dd2c5b3e6c0c71bce0ed3d07ab089202ad559bc37a7fa15f48dea02426",
+      "packages/core/src/dx/operations/digest.ts": "sha256:b64b3117b9d37eba9b5e2bfcf13f4fef4c5adbe69ea63b2e03981401d1877156",
+      "packages/core/src/dx/operations/git.ts": "sha256:344d7f51e7380a55e9d44ff95d56bf17aad10c0c18872b8344a9dbb50f35414f",
+      "packages/core/src/dx/operations/hooks.ts": "sha256:f496a98a2ff99b551ee2c61d18cbb4003cd81f1c675d8927a9148637f97f25dc",
+      "packages/core/src/dx/operations/live-acquisition.ts": "sha256:897a61b0877205fbe0343a0bf70b1218544aa11a8f8e564c5d5e0bc78cdf00d4",
+      "packages/core/src/dx/operations/live.ts": "sha256:d2e6dcc10edf92dc2e4aadb0a63935cdb19b318280718a30c293f43a09b53880",
+      "packages/core/src/dx/operations/machine.ts": "sha256:b6f162b969cdc7d6e953804b6e4abadfe798159a31e5e95f23f22f4d46c4d511",
+      "packages/core/src/dx/operations/opencode.ts": "sha256:a37f9686ac4c6256e7897200f8d01e2efcf9805096a4499ac8cfa91d81280034",
+      "packages/core/src/dx/operations/ports.ts": "sha256:104129fa18ab5544190b9b7073c8bb0a0ebd9f27c0f414cc0e1efb8fe275e3d6",
+      "packages/core/src/dx/operations/service.ts": "sha256:e5675996ef261b541d389a63aa3f7f27672c77f251c975705baee82392255df1",
+      "packages/core/src/dx/registry/sync.ts": "sha256:a192dc3ee1ebc5c98bafe66ddd79d71795fe6c5b26ef68a5e6f70b4709e01369",
+      "packages/core/test/dx/fixtures/s03/account-suite.ts": "sha256:4931b1bc834bfc0ff373f39e8729a14322d2244c023563a7d431e397696a3995",
+      "packages/core/test/dx/fixtures/s03/cursor-hooks-suite.ts": "sha256:734c1546ed63d0e699a79dd2f1f06a09717ecc242e1f3b4453bf5ca3f3051b2d",
+      "packages/core/test/dx/fixtures/s03/cursor-suite.ts": "sha256:7527a2258152d60db1f4881f207fa23da66f3f8c6b04881afdc105d33f72aa21",
+      "packages/core/test/dx/fixtures/s03/decompression-suite.ts": "sha256:fcfce90e40a8fa93787366e55c2546f1785f4b08d5d105cc14bad078f03d9fb7",
+      "packages/core/test/dx/fixtures/s03/git-operation-fixture.ts": "sha256:53b1c1cbcea926c0bceddc0f8e0a8f64f9de0f0a3bf34971117b1f08053904f1",
+      "packages/core/test/dx/fixtures/s03/git-suite.ts": "sha256:9348000d3a6a2a6189082dffe908a7ef1fdc3e7611d481c7c3ff73d4fb3e4a23",
+      "packages/core/test/dx/fixtures/s03/hooks-suite.ts": "sha256:0a793730a8d282785d81d24ecd3325df4c4565c411b9e8d5d40dc01c2e8b6ef6",
+      "packages/core/test/dx/fixtures/s03/live-acquisition-suite.ts": "sha256:ff1b55d1ab7baddd3f73b57b9a9ecd6be0a41ee562b5c5edf0644bfab83bbc62",
+      "packages/core/test/dx/fixtures/s03/opencode-suite.ts": "sha256:71dc4299848fcc2ef92cd95c514901e608366dab7e0c0abefc57e278e3a494e1",
+      "packages/core/test/dx/live-engine.test.ts": "sha256:3afdd34504ccafb4edcebd9bd1fbb954aa8e3963fb898886c980dd7c9c4ea188",
+      "packages/core/test/dx/restore-old-backup.test.ts": "sha256:a633a162c93fb03c512ba53ba23972827f4b764318e45d438a0049fcb9c09755",
+      "packages/core/test/dx/s03.test.ts": "sha256:3f5be08415414cdad07ee42c4882eadfe1f8fcd1972a0ceea2a8f5c36faeb9bf"
+    }
+  },
+  "releaseFenceFollowup": {
+    "rootFailure": "Full fence3 reported duplicate restore associations, legacy upgrade duplicate trigger, reset hook count cascade and a path-length-dependent synthetic Git limit.",
+    "productionChange": "Restore clears but does not copy the derived agent_source_associations table. The existing event insert trigger rebuilds it from restored event envelopes inside the same restore transaction.",
+    "preservedBehavior": "Recovery table/store_meta exclusions and invalidateAgentState preserveOperationId are unchanged. The restored association count equals event count, with zero seq/adapter/repo/branch/flight/worktree/tool mismatches.",
+    "fixtureCorrections": [
+      "The old-backup fixture removes post-v1 objects and creates an actual version-1 schema before exercising the real production upgrade.",
+      "Reset creates native hook data in an isolated fixture home and retains exact hook/reset/backup/restore assertions. Engine code is unchanged.",
+      "The Git overflow fixture derives its strict ref-query limit from the reviewed residual allowance instead of assuming every temporary root leaves 200 records. No production bound was widened."
+    ],
+    "storageCoordination": "S01 confirmed source associations are derived and migration invariants need no weakening; no storage-owned path was edited.",
+    "scratch": "No S03 scratch directories remain. Legacy file afterAll cleanup completed; observed legacy-prefix directories predate this run by more than twelve hours and were preserved.",
+    "effectDiagnostic": "Fullfence4 identified synchronous Schema decoding inside the Effect generator in the assigned legacy restore test. Row capture/close remains unchanged; decoding now uses yielded Schema.decodeUnknownEffect. This is test-only; the nativecandidate7 compiled product artifact is unchanged."
+  },
+  "storeSchemaHistory": [
+    {
+      "version": 7,
+      "scope": "Historical 129-case release-fence closure checkpoint before terminal-consumed alias migration."
+    },
+    {
+      "version": 8,
+      "scope": "Root observed PRAGMA user_version 8 in the owned nativecandidate7 SQLite 3.53.1 database, with the exact operation-alias index. Terminal historical aliases and indexed flattening are S01-owned; no public contract digest change."
+    }
+  ],
+  "completionScope": "S03 producer implementation, owned checks and handoff are complete. Root S07 release acceptance is now complete after final same-source/same-artifact native11 rehearsal, identity equality and owned resource closure.",
+  "ownedWorkRemaining": [],
+  "finalRootEvidence": {
+    "phaseReceipt": "docs/execution/phases/s07.json",
+    "runtimeSourceContentDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+    "runtimeSourceFileCount": 1058,
+    "compiledArtifactDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+    "compiledFileCount": 1820,
+    "contractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+    "storeSchemaVersion": 8,
+    "sourceScope": "Whole frozen validation input; distinct from the retained 31-file owned checkpoint digest.",
+    "nativeAdapterRepair": {
+      "owner": "S05",
+      "passed": 48,
+      "exit": 0,
+      "scope": "Native request admission/counts and hard child termination; no S03 production change."
+    },
+    "nativeRehearsal": {
+      "priorAttempt": 10,
+      "priorExit": 0,
+      "sameCompiledCandidate": true,
+      "protocolFrames": 14,
+      "nonProtocolLines": 0,
+      "stderrBytes": 0,
+      "priorProof": "Verified operation receipt and fresh-process learning/investigation recovery. One separately selected real Git context; no live AI usage or charges. Preserved historical native10 evidence.",
+      "final": {
+        "attempt": 11,
+        "exit": 0,
+        "durationSeconds": 26.726,
+        "runtimeSourceContentDigest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+        "compiledArtifactDigest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+        "protocolFrames": 14,
+        "nonProtocolLines": 0,
+        "stderrBytes": 0,
+        "postGateIdentityEquality": true,
+        "postRehearsalIdentityEquality": true,
+        "owner": "root"
+      }
+    },
+    "releaseAccepted": true,
+    "releaseState": "accepted-by-root-S07",
+    "releaseEvidence": "docs/execution/phases/s07.json",
+    "resourceClosure": {
+      "releasedExactOwnedRegistrations": 2,
+      "releaseExits": [
+        0,
+        0
+      ],
+      "ownedScratchRemoved": true,
+      "ownedTemporaryExportAbsent": true,
+      "verifiedAtUTC": "2026-10-02T22:22:22.038217Z",
+      "knownCapturedOwnedPIDsAbsent": true,
+      "preexistingDependenciesDistTurboAndStoresPreserved": true,
+      "owner": "root"
+    }
+  }
+}

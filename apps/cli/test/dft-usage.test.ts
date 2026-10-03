@@ -12,7 +12,7 @@ import type {
   DxUsageOutputType,
   HarnessId,
 } from "@rat-stack/core/dx";
-import { Effect, Schema } from "effect";
+import { Effect, Layer, Schema } from "effect";
 
 import { usageText } from "../src/dft-usage.js";
 
@@ -193,79 +193,96 @@ const UsageJson = Schema.fromJsonString(
 
 const decodeUsage = Schema.decodeUnknownSync(UsageJson);
 
-describe("dft usage", () => {
-  it.effect("groups every tool's requests and narrows by tool", () =>
-    Effect.gen(function* usage() {
-      yield* seed;
+it.layer(Layer.effectDiscard(seed).pipe(Layer.provide(NodeServices.layer)))(
+  "dft usage",
+  (test) => {
+    test.effect("groups every tool's requests", () =>
+      Effect.sync(() => {
+        const byTool = dft(["usage", "--by", "tool", "--json", "--tz", "UTC"]);
 
-      const byTool = dft(["usage", "--by", "tool", "--json", "--tz", "UTC"]);
+        expect(byTool.status).toBe(0);
+        expect(
+          decodeUsage(byTool.stdout).groups.map((group) => [
+            group.key,
+            group.values.requests,
+            group.values.tokens,
+          ])
+        ).toEqual([
+          ["claude-code", 2, 2150],
+          ["codex", 1, 1010],
+        ]);
+      })
+    );
 
-      expect(byTool.status).toBe(0);
+    test.effect("narrows requests by tool", () =>
+      Effect.sync(() => {
+        const codex = dft(["usage", "--by", "model", "--tool", "codex"]);
+
+        expect(codex.status).toBe(0);
+        expect(codex.stdout).toContain("gpt-5.5");
+        expect(codex.stdout).not.toContain("claude-sonnet-5");
+        expect(codex.stdout).toMatch(/^Total\s+1k\s+1\s/mu);
+        expect(codex.stdout).not.toMatch(/[–—]/u);
+      })
+    );
+
+    test.effect("groups requests by day in the asked time zone", () =>
+      Effect.sync(() => {
+        const prague = dft([
+          "usage",
+          "--by",
+          "day",
+          "--tz",
+          "Europe/Prague",
+          "--metric",
+          "requests",
+          "--json",
+        ]);
+
+        expect(
+          decodeUsage(prague.stdout).groups.map((group) => [
+            group.key,
+            group.values.requests,
+          ])
+        ).toEqual([["2026-09-30", 3]]);
+      })
+    );
+
+    test.effect("narrows requests by the UTC window", () =>
+      Effect.sync(() => {
+        const window = dft([
+          "usage",
+          "--since",
+          "2026-09-30",
+          "--until",
+          "2026-10-01",
+          "--tz",
+          "UTC",
+          "--json",
+        ]);
+
+        expect(decodeUsage(window.stdout).total.values.requests).toBe(2);
+      })
+    );
+
+    test.effect("rejects an invalid time zone", () =>
+      Effect.sync(() => {
+        const badZone = dft(["usage", "--tz", "Mars/Olympus"]);
+
+        expect(badZone.status).not.toBe(0);
+      })
+    );
+
+    test("answers dft history --group-by with the usage query of this repo", () => {
+      const history = dft(["history", "--group-by", "model", "--json"]);
+
+      expect(history.status).toBe(0);
       expect(
-        decodeUsage(byTool.stdout).groups.map((group) => [
-          group.key,
-          group.values.requests,
-          group.values.tokens,
-        ])
-      ).toEqual([
-        ["claude-code", 2, 2150],
-        ["codex", 1, 1010],
-      ]);
-
-      const codex = dft(["usage", "--by", "model", "--tool", "codex"]);
-
-      expect(codex.status).toBe(0);
-      expect(codex.stdout).toContain("gpt-5.5");
-      expect(codex.stdout).not.toContain("claude-sonnet-5");
-      expect(codex.stdout).toMatch(/^Total\s+1k\s+1\s/mu);
-      expect(codex.stdout).not.toMatch(/[–—]/u);
-
-      const prague = dft([
-        "usage",
-        "--by",
-        "day",
-        "--tz",
-        "Europe/Prague",
-        "--metric",
-        "requests",
-        "--json",
-      ]);
-
-      expect(
-        decodeUsage(prague.stdout).groups.map((group) => [
-          group.key,
-          group.values.requests,
-        ])
-      ).toEqual([["2026-09-30", 3]]);
-
-      const window = dft([
-        "usage",
-        "--since",
-        "2026-09-30",
-        "--until",
-        "2026-10-01",
-        "--tz",
-        "UTC",
-        "--json",
-      ]);
-
-      expect(decodeUsage(window.stdout).total.values.requests).toBe(2);
-
-      const badZone = dft(["usage", "--tz", "Mars/Olympus"]);
-
-      expect(badZone.status).not.toBe(0);
-    }).pipe(Effect.provide(NodeServices.layer))
-  );
-
-  it("answers dft history --group-by with the usage query of this repo", () => {
-    const history = dft(["history", "--group-by", "model", "--json"]);
-
-    expect(history.status).toBe(0);
-    expect(
-      decodeUsage(history.stdout).groups.map((group) => group.key)
-    ).toEqual(["claude-sonnet-5", "claude-opus-5", "gpt-5.5"]);
-  });
-});
+        decodeUsage(history.stdout).groups.map((group) => group.key)
+      ).toEqual(["claude-sonnet-5", "claude-opus-5", "gpt-5.5"]);
+    });
+  }
+);
 
 const row = (key: string, tokens: number | null, billed: number | null) => ({
   facts: 1,

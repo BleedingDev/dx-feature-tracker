@@ -12,6 +12,7 @@ import type {
   HookWorktree,
 } from "../collectors/cursor-hooks/handler.js";
 import { cursorSpoolDirFor } from "../collectors/cursor-hooks/spool-dirs.js";
+import type { AgentStore } from "../contracts/agent-store.js";
 import type { EventStore } from "../contracts/event-store.js";
 import type { StoreFailure } from "../contracts/services.js";
 import { parseWorktreePorcelain } from "../correlation/repo/worktree-map.js";
@@ -28,8 +29,9 @@ import type { SelectorResolver } from "../mcp/handlers/deps.js";
 import type { FlightContext } from "../model/event.js";
 import { FlightIdSchema } from "../model/ids.js";
 import type { SnapshotSelector } from "../model/snapshot.js";
-import { HarnessCursors } from "../storage/harness-cursors.js";
-import { SqliteEventStoreLayer } from "../storage/sqlite-event-store.js";
+import type { BoundedEventReplacement } from "../storage/agent-append-bounds.js";
+import type { HarnessCursors } from "../storage/harness-cursors.js";
+import { SqliteAgentStoreLayer } from "../storage/sqlite-event-store.js";
 import { resolveStorePath } from "../storage/store-path.js";
 import type { ResolvedStorePath } from "../storage/store-path.js";
 import { UsageFactStore } from "../usage/store.js";
@@ -46,13 +48,17 @@ export const resolveDxStore = (options: DxStoreOptions): ResolvedStorePath =>
 
 export const dxStoreLayer = (
   resolved: ResolvedStorePath
-): Layer.Layer<EventStore | UsageFactStore | HarnessCursors, StoreFailure> =>
-  Layer.mergeAll(
-    UsageFactStore.sqlite(resolved.path),
-    HarnessCursors.sqlite(resolved.path)
-  ).pipe(
+): Layer.Layer<
+  | EventStore
+  | AgentStore
+  | UsageFactStore
+  | HarnessCursors
+  | BoundedEventReplacement,
+  StoreFailure
+> =>
+  UsageFactStore.sqlite(resolved.path).pipe(
     Layer.provideMerge(
-      SqliteEventStoreLayer({ kind: resolved.kind, path: resolved.path })
+      SqliteAgentStoreLayer({ kind: resolved.kind, path: resolved.path })
     )
   );
 

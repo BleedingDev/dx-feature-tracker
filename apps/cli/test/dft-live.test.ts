@@ -8,15 +8,21 @@ import { DatabaseSync } from "node:sqlite";
 
 import { NodeServices } from "@effect/platform-node";
 import { afterAll, describe, expect, it } from "@effect/vitest";
-import { runCursorHook, startLiveEngine } from "@rat-stack/core/dx";
-import { DateTime, Effect, Schema } from "effect";
+import {
+  OperationOutputSchema,
+  OperationPlanSchema,
+  runCursorHook,
+  startLiveEngine,
+} from "@rat-stack/core/dx";
+import { Clock, DateTime, Effect, Predicate, Schema } from "effect";
 
+import { DashboardOperationReviewSchema } from "../src/dft-agent-live-bridge.js";
 import { dashboardStateKit } from "../src/dft-dashboard-state.js";
 import type { UsageViewState } from "../src/dft-dashboard-state.js";
 import { branchUsageQuery, serveDashboard } from "../src/dft-live.js";
 import type { LiveServer } from "../src/dft-live.js";
 import { MAX_OTLP_BODY } from "../src/dft-otlp.js";
-import { costOptionsFor } from "../src/dft-session.js";
+import { costSessionFor } from "../src/dft-session.js";
 import { claudeLogsJson, gzip } from "./otlp-payloads.js";
 
 const scratch = fs.realpathSync(
@@ -187,19 +193,66 @@ const MessageReply = Schema.fromJsonString(
 
 const decodeMessage = Schema.decodeUnknownSync(MessageReply);
 
+const decodeReceipt = Schema.decodeUnknownSync(
+  Schema.fromJsonString(
+    Schema.Struct({ receipt: OperationOutputSchema.members[1].fields.receipt })
+  )
+);
+
+const ReviewedPlanReply = Schema.Struct({
+  confirmText: Schema.String,
+  review: DashboardOperationReviewSchema,
+});
+
+const decodeReviewedPlan = Schema.decodeUnknownSync(
+  Schema.fromJsonString(ReviewedPlanReply)
+);
+
 const PlanReply = Schema.fromJsonString(
   Schema.Struct({
-    confirmText: Schema.String,
+    ...ReviewedPlanReply.fields,
     totals: Schema.Struct({ events: Schema.Number }),
   })
 );
 
 const decodePlan = Schema.decodeUnknownSync(PlanReply);
 
+const decodeExportPlan = Schema.decodeUnknownSync(
+  Schema.fromJsonString(
+    Schema.Struct({
+      ...ReviewedPlanReply.fields,
+      basisId: Schema.String,
+      context: Schema.Struct({ basisId: Schema.NullOr(Schema.String) }),
+      destination: Schema.String,
+      idempotencyKey: Schema.String,
+      plan: OperationPlanSchema,
+    })
+  )
+);
+
+const decodeOperationGet = Schema.decodeUnknownSync(
+  Schema.fromJsonString(OperationOutputSchema.members[2])
+);
+
+const exportDirectory = path.join(repo, ".dft", "exports");
+
+const exportSnapshot = () =>
+  fs.existsSync(exportDirectory)
+    ? fs
+        .readdirSync(exportDirectory)
+        .toSorted()
+        .map((name) => ({
+          body: fs.readFileSync(path.join(exportDirectory, name), "utf-8"),
+          name,
+        }))
+    : [];
+
 const decodeSetup = Schema.decodeUnknownSync(
   Schema.fromJsonString(
     Schema.Struct({
-      backups: Schema.Array(Schema.Struct({ text: Schema.String })),
+      backups: Schema.Array(
+        Schema.Struct({ id: Schema.String, text: Schema.String })
+      ),
     })
   )
 );
@@ -224,10 +277,10 @@ const withDashboard = <A, E>(
       yield* engine.addRepo(repo);
       yield* engine.ready;
 
-      const costOptions = yield* costOptionsFor(dftHome);
+      const priced = yield* costSessionFor(dftHome);
 
       const server = yield* serveDashboard({
-        costOptions,
+        costOptions: priced.costOptions,
         engine,
         paths: {
           dftHome,
@@ -236,6 +289,7 @@ const withDashboard = <A, E>(
           store: { kind: "live", path: storePath, source: "env" },
         },
         port: 0,
+        prices: priced.prices,
         since: undefined,
         ...extra,
       });
@@ -257,6 +311,33 @@ const hook = (generation: string) =>
     DateTime.toDateUtc(DateTime.makeUnsafe("2026-09-30T12:00:00.000Z")),
     dftHome
   );
+
+class SseFixtureError extends Schema.TaggedError<SseFixtureError>()(
+  "SseFixtureError",
+  {
+    message: Schema.String,
+    stage: Schema.Literals(["request", "response", "closed", "hook"]),
+  }
+) {}
+
+interface SseFixturePhases {
+  changeEventHeaders: number;
+  engineChanges: number;
+  engineSyncAtMs: number | null;
+  engineSyncChanges: number;
+  engineSyncInserted: number | null;
+  helloAtMs: number | null;
+  hookCompletedAtMs: number | null;
+  hookOutcome: "not-invoked" | "recorded" | "spooled" | "skipped";
+  hookReason: string | null;
+  hookStartedAtMs: number | null;
+  responseAtMs: number | null;
+  responseBytes: number;
+  responseChunks: number;
+  responseStatus: number | null;
+  spoolPath: string | null;
+  syncTextAtMs: number | null;
+}
 
 describe("dft dashboard live server", () => {
   it.live(
@@ -407,33 +488,234 @@ describe("dft dashboard live server", () => {
   );
 
   it.live("pushes a change event after a hook file lands in the spool", () =>
-    withDashboard((server) =>
+    withDashboard((server, engine) =>
       Effect.gen(function* events() {
-        const received = yield* Effect.callback<string>((resume) => {
-          let text = "";
+        const clock = yield* Clock.Clock;
+        const baseline = yield* engine.status;
+        const started = clock.monotonicTimeNanosUnsafe();
 
-          const req = request(
-            {
-              host: "127.0.0.1",
-              path: "/events",
-              port: server.port,
-            },
-            (res) => {
-              res.on("data", (chunk: Buffer) => {
-                text += chunk.toString("utf-8");
+        const elapsedMs = () =>
+          Number(clock.monotonicTimeNanosUnsafe() - started) / 1_000_000;
 
-                if (text.includes(`"reason":"sync"`)) {
-                  req.destroy();
-                  resume(Effect.succeed(text));
-                }
+        const phases: SseFixturePhases = {
+          changeEventHeaders: 0,
+          engineChanges: 0,
+          engineSyncAtMs: null,
+          engineSyncChanges: 0,
+          engineSyncInserted: null,
+          helloAtMs: null,
+          hookCompletedAtMs: null,
+          hookOutcome: "not-invoked",
+          hookReason: null,
+          hookStartedAtMs: null,
+          responseAtMs: null,
+          responseBytes: 0,
+          responseChunks: 0,
+          responseStatus: null,
+          spoolPath: null,
+          syncTextAtMs: null,
+        };
+
+        const received = yield* Effect.acquireUseRelease(
+          Effect.sync(() =>
+            engine.subscribe((change) => {
+              phases.engineChanges += 1;
+
+              if (change.reason === "sync" && change.repo === repo) {
+                phases.engineSyncChanges += 1;
+                phases.engineSyncAtMs = elapsedMs();
+                phases.engineSyncInserted = change.inserted;
+              }
+            })
+          ),
+          () =>
+            Effect.callback<string, SseFixtureError>((resume) => {
+              let text = "";
+              let wroteHook = false;
+              let finished = false;
+
+              const req = request({
+                host: "127.0.0.1",
+                path: "/events",
+                port: server.port,
               });
-            }
-          );
 
-          req.end(() => {
-            expect(hook("gen-live-1").outcome.state).toBe("spooled");
-          });
-        }).pipe(Effect.timeout("10 seconds"));
+              const finish = (
+                result: Effect.Effect<string, SseFixtureError>
+              ) => {
+                if (finished) {
+                  return;
+                }
+
+                finished = true;
+                req.destroy();
+                resume(result);
+              };
+
+              const fail = (
+                stage: SseFixtureError["stage"],
+                message: string
+              ) => {
+                finish(Effect.fail(new SseFixtureError({ message, stage })));
+              };
+
+              req.once("error", (error) => {
+                fail("request", error.message);
+              });
+              req.once("response", (res) => {
+                phases.responseAtMs = elapsedMs();
+                phases.responseStatus = res.statusCode ?? null;
+                res.once("error", (error) => {
+                  fail("response", error.message);
+                });
+                res.once("aborted", () => {
+                  fail("closed", "SSE response aborted before the sync event.");
+                });
+                res.once("end", () => {
+                  fail("closed", "SSE response ended before the sync event.");
+                });
+                res.once("close", () => {
+                  fail("closed", "SSE response closed before the sync event.");
+                });
+                res.on("data", (chunk: Buffer) => {
+                  if (finished) {
+                    return;
+                  }
+
+                  phases.responseChunks += 1;
+                  phases.responseBytes += chunk.length;
+                  text += chunk.toString("utf-8");
+
+                  if (!wroteHook) {
+                    if (!text.includes("event: hello\ndata: {}\n\n")) {
+                      return;
+                    }
+
+                    wroteHook = true;
+                    phases.helloAtMs = elapsedMs();
+                    text = "";
+                    phases.hookStartedAtMs = elapsedMs();
+
+                    try {
+                      const { outcome } = hook("gen-live-1");
+
+                      phases.hookCompletedAtMs = elapsedMs();
+                      phases.hookOutcome = outcome.state;
+
+                      if (outcome.state === "skipped") {
+                        phases.hookReason = outcome.reason;
+                      } else {
+                        phases.spoolPath = outcome.path;
+                      }
+
+                      expect(outcome.state).toBe("spooled");
+                    } catch (error) {
+                      phases.hookCompletedAtMs = elapsedMs();
+                      fail(
+                        "hook",
+                        error instanceof Error ? error.message : String(error)
+                      );
+                    }
+
+                    return;
+                  }
+
+                  phases.changeEventHeaders = [
+                    ...text.matchAll(/event: change\n/gu),
+                  ].length;
+
+                  if (text.includes(`"reason":"sync"`)) {
+                    phases.syncTextAtMs = elapsedMs();
+                    finish(Effect.succeed(text));
+                  }
+                });
+              });
+              req.end();
+
+              return Effect.sync(() => {
+                finished = true;
+                req.destroy();
+              });
+            }).pipe(
+              Effect.timeout("10 seconds"),
+              Effect.tapError((error) =>
+                Effect.gen(function* evidence() {
+                  const failedAtMs = elapsedMs();
+                  const observed = { ...phases };
+                  const status = yield* engine.status;
+
+                  const before = baseline.repos.find(
+                    (entry) => entry.repo === repo
+                  );
+
+                  const current = status.repos.find(
+                    (entry) => entry.repo === repo
+                  );
+
+                  yield* Effect.logError(
+                    "SSE fixture failure phase evidence",
+                    JSON.stringify({
+                      acquisitionBudget: {
+                        reason:
+                          "LiveStatus does not expose operation budget snapshots.",
+                        state: "unavailable",
+                      },
+                      acquisitionReceipts: {
+                        reason:
+                          "LiveStatus does not expose acquisition receipt handles.",
+                        state: "unavailable",
+                      },
+                      baseline:
+                        before === undefined
+                          ? null
+                          : {
+                              lastInserted: before.lastInserted,
+                              lastSyncAt: before.lastSyncAt,
+                              syncs: before.syncs,
+                            },
+                      engine: {
+                        repository:
+                          current === undefined
+                            ? null
+                            : {
+                                lastError: current.lastError,
+                                lastInserted: current.lastInserted,
+                                lastSyncAt: current.lastSyncAt,
+                                sources: current.sources.map((source) => ({
+                                  duplicates: source.duplicates,
+                                  eventsRead: source.eventsRead ?? null,
+                                  inserted: source.inserted,
+                                  reason: source.reason,
+                                  recordsRead: source.recordsRead ?? null,
+                                  rejected: source.rejected ?? null,
+                                  source: source.source,
+                                  state: source.state ?? null,
+                                  status: source.status,
+                                  unavailableReasons:
+                                    source.unavailableReasons ?? null,
+                                  unsettled: source.unsettled ?? null,
+                                })),
+                                syncing: current.syncing,
+                                syncs: current.syncs,
+                              },
+                        running: status.running,
+                      },
+                      failedAtMs,
+                      failureStage: Predicate.isTagged(error, "SseFixtureError")
+                        ? error.stage
+                        : "timeout",
+                      failureTag: error._tag,
+                      phases: observed,
+                      sourceCountersUnavailableReason:
+                        "Null or absent counters were not reported by LiveStatus.",
+                      statusReadAtMs: elapsedMs(),
+                    })
+                  );
+                })
+              )
+            ),
+          (unsubscribe) => Effect.sync(unsubscribe)
+        );
 
         expect(received).toContain('"reason":"sync"');
         expect(received).toContain(`"repo":${JSON.stringify(repo)}`);
@@ -441,7 +723,7 @@ describe("dft dashboard live server", () => {
     )
   );
 
-  it.live("rejects actions without the token or from another origin", () =>
+  it.live("guards actions and operation reviews with the dashboard token", () =>
     withDashboard((server) =>
       Effect.gen(function* guard() {
         const body = JSON.stringify({ action: "usage", enabled: false });
@@ -469,6 +751,28 @@ describe("dft dashboard live server", () => {
 
         expect(viaGet.status).toBe(404);
 
+        const planWithoutToken = yield* call(server, "/api/plan?kind=reset", {
+          headers: { origin: own(server).origin },
+        });
+
+        expect(planWithoutToken.status).toBe(403);
+
+        const foreignPlan = yield* call(server, "/api/plan?kind=reset", {
+          headers: {
+            origin: "http://evil.example",
+            "x-dft-token": server.token,
+          },
+        });
+
+        expect(foreignPlan.status).toBe(403);
+
+        const trustedPlan = yield* call(server, "/api/plan?kind=reset", {
+          headers: { "x-dft-token": server.token },
+        });
+
+        expect(trustedPlan.status).toBe(200);
+        expect(decodeReviewedPlan(trustedPlan.body).review.kind).toBe("reset");
+
         const allowed = yield* postAction(server, body, own(server));
 
         expect(allowed.status).toBe(200);
@@ -480,19 +784,236 @@ describe("dft dashboard live server", () => {
   );
 
   it.live(
+    "previews metadata exports without artifacts and rejects foreign reviews or replacement destinations",
+    () =>
+      withDashboard((server) =>
+        Effect.gen(function* reviewExport() {
+          const before = exportSnapshot();
+
+          const unauthenticated = yield* call(server, "/api/plan?kind=export");
+
+          expect(unauthenticated.status).toBe(403);
+
+          const foreignOrigin = yield* call(server, "/api/plan?kind=export", {
+            headers: { ...own(server), origin: "http://evil.example" },
+          });
+
+          expect(foreignOrigin.status).toBe(403);
+
+          const planned = yield* call(server, "/api/plan?kind=export", {
+            headers: own(server),
+          });
+
+          expect(planned.status).toBe(200);
+          const preview = decodeExportPlan(planned.body);
+
+          expect(preview.review.kind).toBe("export");
+          expect(preview.plan.arguments).toMatchObject({
+            basisId: preview.basisId,
+            destination: preview.destination,
+            disclosure: "metadata-only",
+            kind: "export",
+          });
+          expect(preview.context.basisId).toBe(preview.basisId);
+          expect(preview.idempotencyKey).toBe(
+            `dashboard:export:${preview.plan.id}`
+          );
+          expect(preview.confirmText).toBe(
+            `EXPORT METADATA ${preview.plan.consent.scopeDigest}`
+          );
+          expect(path.dirname(preview.destination)).toBe(exportDirectory);
+          expect(fs.existsSync(preview.destination)).toBe(false);
+          expect(exportSnapshot()).toEqual(before);
+
+          const body = {
+            action: "export",
+            confirm: preview.confirmText,
+            idempotencyKey: preview.idempotencyKey,
+            review: preview.review,
+          };
+
+          const foreignDestination = path.join(scratch, "foreign-export.json");
+
+          const replacement = yield* postAction(
+            server,
+            JSON.stringify({ ...body, path: foreignDestination }),
+            own(server)
+          );
+
+          expect(replacement.status).toBe(400);
+          expect(decodeError(replacement.body).error).toContain(
+            "destination retained in their review"
+          );
+
+          const foreignReview = yield* postAction(
+            server,
+            JSON.stringify({
+              ...body,
+              review: {
+                ...preview.review,
+                expectedDigest: "foreign-reviewed-digest",
+              },
+            }),
+            own(server)
+          );
+
+          expect(foreignReview.status).toBe(409);
+          expect(decodeError(foreignReview.body).error).toContain(
+            "does not match the retained operation plan"
+          );
+          expect(fs.existsSync(foreignDestination)).toBe(false);
+          expect(fs.existsSync(preview.destination)).toBe(false);
+          expect(exportSnapshot()).toEqual(before);
+        })
+      )
+  );
+
+  it.live(
+    "recovers an ignored export reply with the same review and key and returns its fixed plan through the shared API",
+    () =>
+      withDashboard((server) =>
+        Effect.gen(function* recoverExport() {
+          const before = exportSnapshot();
+
+          const planned = yield* call(server, "/api/plan?kind=export", {
+            headers: own(server),
+          });
+
+          expect(planned.status).toBe(200);
+          const preview = decodeExportPlan(planned.body);
+
+          const body = JSON.stringify({
+            action: "export",
+            confirm: preview.confirmText,
+            idempotencyKey: preview.idempotencyKey,
+            review: preview.review,
+          });
+
+          yield* postAction(server, body, own(server));
+
+          const afterIgnoredReply = exportSnapshot();
+
+          expect(afterIgnoredReply.map((file) => file.name)).toEqual(
+            [
+              ...before.map((file) => file.name),
+              path.basename(preview.destination),
+            ].toSorted()
+          );
+          expect(fs.existsSync(preview.destination)).toBe(true);
+
+          const retried = yield* postAction(server, body, own(server));
+
+          expect(retried.status).toBe(200);
+          const { receipt } = decodeReceipt(retried.body);
+
+          expect(receipt).toMatchObject({
+            executionState: "succeeded",
+            idempotencyKey: preview.idempotencyKey,
+            planDigest: preview.plan.planDigest,
+            planId: preview.plan.id,
+            verificationState: "verified",
+          });
+          expect(receipt.effects.exportArtifacts).toEqual([
+            expect.objectContaining({
+              basisId: preview.basisId,
+              destination: preview.destination,
+              disclosure: "metadata-only",
+            }),
+          ]);
+          expect(receipt.effects.exports).toEqual([preview.destination]);
+          expect(exportSnapshot()).toEqual(afterIgnoredReply);
+
+          const repeated = yield* postAction(server, body, own(server));
+
+          expect(repeated.status).toBe(200);
+          expect(decodeReceipt(repeated.body).receipt).toMatchObject({
+            id: receipt.id,
+            idempotencyKey: receipt.idempotencyKey,
+            planId: receipt.planId,
+          });
+
+          const changedKey = yield* postAction(
+            server,
+            JSON.stringify({
+              action: "export",
+              confirm: preview.confirmText,
+              idempotencyKey: `${preview.idempotencyKey}-different`,
+              review: preview.review,
+            }),
+            own(server)
+          );
+
+          expect(changedKey.status).toBe(409);
+          expect(exportSnapshot()).toEqual(afterIgnoredReply);
+
+          const recovered = yield* call(
+            server,
+            "/api/agent?capability=dx_operation",
+            {
+              body: JSON.stringify({
+                request: {
+                  action: "get",
+                  operation: {
+                    id: receipt.id,
+                    storeGeneration: receipt.storeGeneration,
+                    storeId: receipt.storeId,
+                  },
+                },
+              }),
+              headers: { "content-type": "application/json", ...own(server) },
+              method: "POST",
+            }
+          );
+
+          expect(recovered.status).toBe(200);
+          const retained = decodeOperationGet(recovered.body);
+
+          expect(retained.receipt.id).toBe(receipt.id);
+          expect(retained.receipt.idempotencyKey).toBe(preview.idempotencyKey);
+          expect(retained.receipt.effects.exportArtifacts).toEqual(
+            receipt.effects.exportArtifacts
+          );
+          expect(retained.reviewedPlan).toEqual(preview.plan);
+          expect(retained.reviewedPlanUnavailableReason).toBeNull();
+          expect(exportSnapshot()).toEqual(afterIgnoredReply);
+        })
+      )
+  );
+
+  it.live(
     "deletes a repo's data only with the exact confirmation and keeps a backup",
     () =>
       withDashboard((server) =>
         Effect.gen(function* remove() {
           const planned = yield* call(
             server,
-            `/api/plan?kind=delete&repo=${encodeURIComponent(repo)}`
+            `/api/plan?kind=delete&repo=${encodeURIComponent(repo)}`,
+            { headers: { "x-dft-token": server.token } }
           );
+
+          expect(planned.status).toBe(200);
 
           const plan = decodePlan(planned.body);
 
           expect(plan.confirmText).toBe("app");
           expect(plan.totals.events).toBeGreaterThan(0);
+
+          const mismatchedDelete = yield* postAction(
+            server,
+            JSON.stringify({
+              action: "delete",
+              confirm: plan.confirmText,
+              path: scratch,
+              review: plan.review,
+            }),
+            own(server)
+          );
+
+          expect(mismatchedDelete.status).toBe(409);
+          expect(decodeError(mismatchedDelete.body).error).toContain(
+            "selected target does not match"
+          );
+          expect(fs.existsSync(path.join(dftHome, "backups"))).toBe(false);
 
           const wrong = yield* postAction(
             server,
@@ -504,15 +1025,29 @@ describe("dft dashboard live server", () => {
           expect(decodeError(wrong.body).error).not.toBe("");
           expect(fs.existsSync(path.join(dftHome, "backups"))).toBe(false);
 
-          const done = yield* postAction(
-            server,
-            JSON.stringify({ action: "delete", confirm: "app", path: repo }),
-            own(server)
-          );
+          const reviewedDelete = JSON.stringify({
+            action: "delete",
+            confirm: plan.confirmText,
+            path: repo,
+            review: plan.review,
+          });
+
+          const done = yield* postAction(server, reviewedDelete, own(server));
 
           expect(done.status).toBe(200);
           expect(decodeMessage(done.body).message).toMatch(
             /Backup \S+ can restore/u
+          );
+
+          const replayed = yield* postAction(
+            server,
+            reviewedDelete,
+            own(server)
+          );
+
+          expect(replayed.status).toBe(200);
+          expect(decodeReceipt(replayed.body).receipt.id).toBe(
+            decodeReceipt(done.body).receipt.id
           );
 
           const setup = decodeSetup((yield* call(server, "/api/setup")).body);
@@ -520,10 +1055,45 @@ describe("dft dashboard live server", () => {
           expect(setup.backups).toHaveLength(1);
           expect(setup.backups[0]?.text).toContain("before delete of app");
 
+          for (const backup of setup.backups) {
+            const restoreReview = yield* call(
+              server,
+              `/api/plan?kind=restore&backup=${encodeURIComponent(backup.id)}`,
+              { headers: { "x-dft-token": server.token } }
+            );
+
+            expect(restoreReview.status).toBe(200);
+
+            const restorePlan = decodeReviewedPlan(restoreReview.body);
+
+            const mismatchedRestore = yield* postAction(
+              server,
+              JSON.stringify({
+                action: "restore",
+                confirm: restorePlan.confirmText,
+                id: `${backup.id}-different`,
+                review: restorePlan.review,
+              }),
+              own(server)
+            );
+
+            expect(mismatchedRestore.status).toBe(409);
+            expect(decodeError(mismatchedRestore.body).error).toContain(
+              "selected target does not match"
+            );
+          }
+
+          const unchanged = decodeSetup(
+            (yield* call(server, "/api/setup")).body
+          );
+
+          expect(unchanged.backups).toHaveLength(1);
+
           const after = decodePlan(
             (yield* call(
               server,
-              `/api/plan?kind=delete&repo=${encodeURIComponent(repo)}`
+              `/api/plan?kind=delete&repo=${encodeURIComponent(repo)}`,
+              { headers: { "x-dft-token": server.token } }
             )).body
           );
 

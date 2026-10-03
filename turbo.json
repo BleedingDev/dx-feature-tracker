@@ -11,7 +11,8 @@
     },
     "test": {
       "dependsOn": ["build"],
-      "outputs": []
+      "outputs": [],
+      "passThroughEnv": ["VITEST_MAX_WORKERS"]
     },
     "//#lint": {
       "outputs": []

@@ -1,0 +1,198 @@
+{
+  "schema": "dft.agent-system.handoff.v1",
+  "node": "S01",
+  "status": "complete",
+  "followUp": "All twenty-one behavior cases pass. Exact consumed terminal receipts recover without replay across ordinary reset/restore and eighteen generation changes; deleted source content and unused authority remain unavailable.",
+  "createdAt": "2026-10-02T20:28:31Z",
+  "deliverable": "Durable agent bases, ordered result pages, operation recovery and authored learning on the existing SQLite writer",
+  "agentContractVersion": "dx.agent-contracts.v1",
+  "agentContractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+  "storeSchemaVersion": 8,
+  "sourceSnapshotDigest": "sha256:008cf11775b1defeea3344f6f106bf9ddc540d3c5ff9597d14df1f7150b4a7a2",
+  "acceptanceHistory": [
+    {
+      "storeSchemaVersion": 7,
+      "sourceSnapshotDigest": "sha256:73f0a1f2c918a54d78d6334439437a798305651af3ae41b4f89718712512397e",
+      "agentContractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+      "tests": 19,
+      "observedAt": "2026-10-02T18:55:40Z",
+      "directiveCleanupObservedAt": "2026-10-02T19:14:23Z",
+      "scope": "Historical schema 7 acceptance before ordinary reset terminal recovery was added"
+    }
+  ],
+  "ownedChangedPaths": [
+    "packages/core/src/dx/storage/agent-db.ts",
+    "packages/core/src/dx/storage/agent-append-bounds.ts",
+    "packages/core/src/dx/storage/agent-invalidation.ts",
+    "packages/core/src/dx/storage/agent-ref-resolver.ts",
+    "packages/core/src/dx/storage/agent-writer-owner.ts",
+    "packages/core/src/dx/storage/harness-cursors.ts",
+    "packages/core/src/dx/storage/migrations.ts",
+    "packages/core/src/dx/storage/sqlite-agent-bases.ts",
+    "packages/core/src/dx/storage/sqlite-agent-coverage.ts",
+    "packages/core/src/dx/storage/sqlite-agent-learning.ts",
+    "packages/core/src/dx/storage/sqlite-agent-operations.ts",
+    "packages/core/src/dx/storage/sqlite-agent-store.ts",
+    "packages/core/src/dx/storage/sqlite-event-store.ts",
+    "packages/core/test/dx/s01.test.ts",
+    "packages/core/test/dx/fixtures/s01/events.json"
+  ],
+  "runtime": {
+    "node": "24.18.0",
+    "pnpm": "11.3.0",
+    "effect": "4.0.0-rc.117",
+    "typescript": "7.0.2",
+    "vitest": "5.0.1"
+  },
+  "integration": {
+    "productionLayer": "SqliteAgentStoreLayer(options): Layer<EventStore | AgentStore | HarnessCursors | BoundedEventReplacement, StoreFailure>",
+    "fixtureConstructor": "openSqliteEventStore(options) returns {service: EventStoreService, agentService: AgentStoreService, cursorService: HarnessCursorsApi, appendBounded, close}",
+    "writer": "Both services share one existing node:sqlite DatabaseSync connection; AgentStore mutations use its serialized IMMEDIATE transaction and owner close is one atomic metadata update.",
+    "legacy": "EventStore signatures and mocks are unchanged; SqliteEventStoreLayer still provides only EventStore.",
+    "cursor": "cursorService is bound to the same native connection. Optional putIfCurrent(ref,expected,next) compares every StoredCursor field in one write transaction; memory uses Ref.modify.",
+    "replacement": "appendBounded(batch,{maxRemovedRecords,maxRemovedBytes,maxElapsedMs}) verifies bounded old-row metadata and exact body bytes before replacement in the same append transaction. Returns exact removal count, up to 500 IDs with an omission count, canonical body digest and measured work.",
+    "measuredMetadata": "readBasisMetadata(handle,cap), readLatestBasisMetadataForScope(scope,cap), readResultMetadata(handle,cap) and readMatchingResultMetadata(basis,capability,digest,cap) return actual stored UTF8 header bytes and inspected header rows. Cap refusal is null/0/1; missing is null/0/0. Latest/matching use indexed selections. Compatibility getters retain typed failures.",
+    "measuredCursor": "readCursor(handle,cap) checks persisted cursor bytes before materialization, returns actual admitted bytes and one inspected row, and validates identity/generation/epoch/basis/result/digest/projection/axis/positions through indexed scalar fields without decoding analysis headers. Cap refusal is null/0/1; missing is null/0/0. Legacy getCursor remains available.",
+    "pageBudget": "readResultPage counts one mandatory header fact, gates the combined persisted summary/disclosures/resolutions bytes in SQL before materialization, and counts every admitted or refused candidate. A one-fact budget does not advance item or series positions.",
+    "historicalPlan": "getOperationPlanForReceipt(operation) validates the recovered receipt, original reservation and retained immutable plan through primary-key lookups. Historical validity is presentation only; original args/scope/digest remain unchanged and apply checks are not relaxed.",
+    "terminalRecovery": "Ordinary reset/restore retains only exact consumed terminal bindings and the explicitly preserved administration operation. Receipt rebinding changes top-level store identity/generation and owner metadata while preserving original state, revision, timestamps, steps and effects. Recovery-only reservations cannot create fresh authority; all invalidated active0 reservations and unused planned bindings deny apply.",
+    "migration8": "CREATE INDEX agent_operation_aliases_operation ON agent_operation_aliases(operation_id). No event body, analysis input, semantic version, policy or contract digest is rewritten. Controlled v7-to-v8 reopen preserves identity, basis, result and original reservation.",
+    "aliasWork": "Existing aliases for a retained operation point directly to its current receipt after each generation move. Flattening uses the operation_id index; reservation guards use primary-key lookups and bounded alias verification. Invalidation streams capped receipt bodies, but total metadata work grows with retained receipt/alias history and physical SQLite I/O is not measured.",
+    "admin": [
+      "invalidateAgentState(db, reset | restore | replacement, {preserveOperationId?}) runs inside the existing admin transaction.",
+      "AGENT_RECOVERY_TABLES excludes operation plans, receipts, steps, reservations, aliases and writer owners from destructive restore copying.",
+      "tombstoneAgentScope(db,repoId) removes retained source details and continuations while preserving authored learning.",
+      "tombstoneReplacedAgentEvents(db,adapterId,fromOccurredAt) prevents source replacement from redirecting retained references."
+    ]
+  },
+  "supportedBehavior": [
+    "Migration from pre-agent stores, reopen identity, half-open indexed source selection and immutable captured watermark/coverage/scope binding.",
+    "Full retained analysis inputs, exact captured prices and policy/version metadata, immutable canonical digest binding and indexed ordered result rows.",
+    "Metadata getters check optional decoded-byte caps in SQL before body decoding; exact-scope latest basis uses a canonical scope index.",
+    "Measured basis/result/cursor reads report actual admitted stored bytes, including noncanonical JSON encoding, and report a refused matching row before decoding it.",
+    "Cursor validation uses indexed scalar bindings without hidden analysis-header JSON reads; page budgets include the mandatory retained header and gate all its JSON fields before materialization.",
+    "Current coverage uses indexed latest rows and observed source placements, preserving recorded gaps and explicitly disclosing unresolved branch/tool/worktree placement.",
+    "Harness cursor updates use atomic compare-and-set on the same store writer, preventing cross-process token-offset overwrites even when file metadata is unchanged.",
+    "Bounded replacement uses an adapter/time range index and LIMIT maxRemovedRecords+1, refuses record/byte/time limits without durable effects, and preserves prior observations when no replacement selector is supplied.",
+    "Operation plans, exact idempotency reservations, revision-and-owner CAS, append-only step journals and cancellation that preserves execution ownership; failed execution state is terminal and cannot resume through raw receipt CAS.",
+    "Reset/restore invalidates mutable plans and continuations; exact consumed terminal reservations and preserved active administration receipts recover through direct generation aliases without replay, including more than sixteen generation changes.",
+    "Receipt-bound historical reviewed plans survive reset/restore aliases without granting stale plan authority; missing retained plans return null while the receipt remains available.",
+    "Each writer open records a random session nonce, PID and process start identity. Reopen interrupts only a closed, absent or reused-PID owner; active or unverified owners are preserved.",
+    "Authored investigations/lessons retain immutable revision history; evaluation append is independent of parent CAS and idempotent, with indexed exact evaluation retrieval.",
+    "References check store identity, generation, scope and historical learning revision; missing evidence remains unavailable.",
+    "Index-only schema 8 migration preserves compatible v1 analysis interpretation and immutable retained inputs."
+  ],
+  "retention": {
+    "maxBasisRecordBytes": 67108864,
+    "maxProjectionBytes": 33554432,
+    "maxLearningRecordBytes": 65536,
+    "maxOperationRecordBytes": 262144,
+    "sourceCaptureRecords": 1024,
+    "aliasPolicy": "Recovery aliases retain origin metadata for durable consumed bindings. Metadata history grows with retained operations and generation changes; aliases are flattened for bounded recovery lookup. No deleted event, basis or result bodies are preserved by terminal recovery.",
+    "projectionPolicy": "Oldest projections and indexed rows are evicted at the cap; stable metadata survives and content reads return basis-content-unavailable.",
+    "authoredPolicy": "No implicit eviction of authored learning, evaluations or operation journals. Per-record byte bounds apply."
+  },
+  "checks": [
+    {
+      "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/s01.test.ts",
+      "exit": 0,
+      "tests": 21,
+      "observedAt": "2026-10-02T20:28:17Z",
+      "durationSeconds": 1.52,
+      "evidence": "Isolated labelled fixture stores verify the historical nineteen cases plus unchanged v7-to-v8 identity/basis/result/reservation and immutable succeeded-export/failed-no-effects recovery through eighteen ordinary source-deleting resets and compatible restore. Exact old tuple retries/get remain read-only; wrong digest, fresh keys and unused pending authority deny, and failed-to-running receipt CAS is rejected."
+    },
+    {
+      "command": "pnpm exec oxlint packages/core/src/dx/storage",
+      "exit": 0,
+      "scope": "Historical schema 7 full storage check; unchanged source carries forward and the three modified schema 8 files are checked below"
+    },
+    {
+      "command": "pnpm exec oxlint packages/core/test/dx/s01.test.ts",
+      "exit": 0,
+      "observedAt": "2026-10-02T20:28:22Z",
+      "scope": "Final owned twenty-one-case S01 test"
+    },
+    {
+      "command": "pnpm exec oxfmt --check packages/core/src/dx/storage",
+      "exit": 0,
+      "files": 18,
+      "scope": "Historical schema 7 storage source; the three modified schema 8 files are checked below"
+    },
+    {
+      "command": "pnpm exec oxfmt --check packages/core/test/dx/s01.test.ts packages/core/test/dx/fixtures/s01/events.json",
+      "exit": 0,
+      "files": 2,
+      "observedAt": "2026-10-02T20:28:22Z",
+      "scope": "Owned final twenty-one-case test and fixture. Repository Oxfmt config excludes docs/execution handoffs; their JSON was parsed separately."
+    },
+    {
+      "command": "pnpm exec oxfmt --check packages/core/test/dx/s01.test.ts",
+      "exit": 0,
+      "files": 1,
+      "observedAt": "2026-10-02T19:14:23Z",
+      "scope": "Owned S01 test after obsolete directive cleanup; no executable behavior changed and no worker compiler/build ran"
+    },
+    {
+      "command": "pnpm exec oxlint packages/core/src/dx/storage/agent-invalidation.ts packages/core/src/dx/storage/sqlite-agent-operations.ts packages/core/src/dx/storage/migrations.ts",
+      "exit": 0,
+      "scope": "Three modified schema 8 storage files after all focused review fixes"
+    },
+    {
+      "command": "pnpm exec oxfmt --check packages/core/src/dx/storage/agent-invalidation.ts packages/core/src/dx/storage/sqlite-agent-operations.ts packages/core/src/dx/storage/migrations.ts",
+      "exit": 0,
+      "files": 3,
+      "scope": "Three modified schema 8 storage files"
+    },
+    {
+      "command": "Root queued core compiler7",
+      "exit": 1,
+      "evidence": "Root reported zero storage/S00/S02/R00 errors and accepted current 4f1c contract types. Unrelated S03/S06 errors were routed to their owners. No worker compiler/build ran; final workspace acceptance remains with root."
+    },
+    {
+      "command": "Root Build7 and final workspace fence",
+      "exit": null,
+      "evidence": "Root admitted Build7 on frozen schema 8 source while the final owned test gate finished. Packaged runtime and full workspace acceptance remain root-owned; no worker compiler/build/full-suite ran."
+    }
+  ],
+  "measurements": {
+    "fixtureId": "s01-isolated-agent-storage",
+    "itemPageFactsExamined": 3,
+    "itemPageDecodedBytes": 311,
+    "seriesPageFactsExamined": 2,
+    "seriesPageDecodedBytes": 308,
+    "projectionBytes": 247,
+    "retainedProjectionPeakBytes": 616,
+    "fixtureProjectionCapBytes": 800,
+    "boundedRemovedRecords": 2,
+    "boundedRemovedFactsExamined": 2,
+    "boundedRemovedDecodedBytes": 1530,
+    "metadataStoredHeaderBytes": 2492,
+    "metadataCanonicalHeaderBytes": 1787,
+    "metadataHeaderFactsExamined": 1,
+    "metadataRefusedDecodedBytes": 0,
+    "resultMetadataStoredHeaderBytes": 974,
+    "resultMetadataCanonicalHeaderBytes": 614,
+    "resultMetadataHeaderFactsExamined": 1,
+    "resultMetadataRefusedDecodedBytes": 0,
+    "cursorStoredBodyBytes": 628,
+    "cursorCanonicalBodyBytes": 325,
+    "cursorFactsExamined": 1,
+    "cursorRefusedDecodedBytes": 0,
+    "terminalRecoveryResetCycles": 18,
+    "terminalRecoveryReceipts": 2,
+    "terminalRecoveryReceiptKinds": ["succeeded-export", "failed-no-effects"],
+    "networkRequests": 0,
+    "liveSourcesAcquired": 0,
+    "dependencyTreesCreated": 0,
+    "buildTreesCreated": 0
+  },
+  "limitations": [
+    "Whole workspace release validation is owned by root/S06. Historical S06 killed-owner/live-owner audits are preserved separately; current schema 8 packaged acceptance follows root Build7 and its full validation fence.",
+    "OS process checks inspect only PID liveness and start time. Unknown ownership remains running rather than being stolen; schema5 running receipts with no owner cannot be safely assumed abandoned.",
+    "Current coverage and learning count/search queries inspect indexed metadata; bounded decoded rows do not imply constant SQL planning work. Physical SQLite I/O is not measured by decoded-byte counters.",
+    "Reset/restore terminal recovery streams capped receipt bodies and uses indexed reservation/alias metadata. Total invalidation work and retained metadata history grow with operations and generation changes; no constant total-time or implicit journal-eviction claim is made.",
+    "Unindexed request/metric/finding/attribution references return explicit missing or bounded-resolution reasons; no ambient identity guesses are made.",
+    "Pinned content evicted or tombstoned by explicit retention/deletion returns a typed limitation; metadata does not imply source content remains available.",
+    "TraceDecay daemon availability varied; installed Effect source and exact owned paths supplied the final implementation evidence."
+  ]
+}

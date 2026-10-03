@@ -1,5 +1,6 @@
 import { Schema } from "effect";
 
+import { AgentResponseContextSchema } from "./agent-query.js";
 import {
   IsoTimestampSchema,
   OriginSchema,
@@ -15,6 +16,7 @@ import { SnapshotManifestSchema } from "./snapshot.js";
 export const REPORT_SCHEMA_VERSION = "dx.report.v1" as const;
 
 export const AnalyzeReportSchema = Schema.Struct({
+  context: Schema.optional(AgentResponseContextSchema),
   coverage: Schema.Array(SourceCoverageSchema),
   findings: Schema.Array(FindingCandidateSchema),
   flightId: Schema.NullOr(FlightIdSchema),
@@ -41,6 +43,8 @@ export const TimelineEntrySchema = Schema.Struct({
 export type TimelineEntry = typeof TimelineEntrySchema.Type;
 
 export const ExplainTimelineSchema = Schema.Struct({
+  context: Schema.optional(AgentResponseContextSchema),
+  disclosures: Schema.optional(Schema.Array(Schema.String)),
   entries: Schema.Array(TimelineEntrySchema),
   lanes: Schema.Array(Schema.String),
   nextCursor: Schema.NullOr(Schema.String),
@@ -62,6 +66,7 @@ export const EvidenceItemSchema = Schema.Struct({
 export type EvidenceItem = typeof EvidenceItemSchema.Type;
 
 export const StatusReportSchema = Schema.Struct({
+  context: Schema.optional(AgentResponseContextSchema),
   contractDigest: Schema.String,
   contractVersion: Schema.String,
   descriptors: Schema.Array(ModuleDescriptorSchema),

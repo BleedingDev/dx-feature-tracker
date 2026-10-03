@@ -1,8 +1,11 @@
 // @effect-diagnostics nodeBuiltinImport:off -- dft install edits project files (.cursor/hooks.json, skills, git hooks) at the process boundary with synchronous node:fs calls.
+import { Buffer } from "node:buffer";
 import { execFileSync } from "node:child_process";
 import {
   chmodSync,
+  copyFileSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   readdirSync,
   readFileSync,
@@ -14,15 +17,24 @@ import {
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
-import { Option, Result, Schema } from "effect";
+import { AgentError } from "@rat-stack/core/dx";
+import {
+  Array as EffectArray,
+  Option,
+  Predicate,
+  Result,
+  Schema,
+} from "effect";
 
 import { enterpriseLine } from "./dft-render.js";
 import {
   RELEASED_SKILL_DIGESTS,
+  isReleasedSkillBody,
   loadSkills,
   skillDigest,
   skillsSourceDir,
 } from "./dft-skills.js";
+import type { DftSkill } from "./dft-skills.js";
 
 export const CURSOR_HOOK_EVENTS = [
   "sessionStart",
@@ -160,33 +172,475 @@ export interface InstallStep {
   readonly path: string;
 }
 
+export interface PreparedOwnershipInstallation {
+  readonly maxOwnershipBytes?: number;
+  readonly onOwnershipWrite?: (
+    file: string,
+    body: string | null,
+    phase: "before" | "after"
+  ) => void;
+}
+
+export interface PreparedSkillInstallation extends PreparedOwnershipInstallation {
+  readonly ownershipPath: string;
+  readonly readFile?: PreparedInstallationReader;
+  readonly skills: readonly DftSkill[];
+}
+
+export type PreparedInstallationReader = (
+  file: string,
+  purpose: "text" | "binary"
+) => Uint8Array | null;
+
+export interface PreparedHookInstallation extends PreparedOwnershipInstallation {
+  readonly ownershipPath: string;
+  readonly readFile: PreparedInstallationReader;
+  readonly refresh: boolean;
+}
+
+const InstallOwnershipSchema = Schema.Struct({
+  createdHookEvents: Schema.optional(Schema.Array(Schema.String)),
+  hookFileCreated: Schema.Boolean,
+  hooks: Schema.Record(Schema.String, Schema.Array(HookEntrySchema)),
+  schema: Schema.Literal("dft.install.ownership.v1"),
+  skills: Schema.Record(Schema.String, Schema.String),
+});
+
+type InstallOwnership = typeof InstallOwnershipSchema.Type;
+
+type OwnershipJson =
+  | null
+  | undefined
+  | string
+  | number
+  | boolean
+  | readonly OwnershipJson[]
+  | { readonly [key: string]: OwnershipJson };
+
+const safeInstallPath = (
+  root: string,
+  file: string,
+  finalKind: "file" | "directory" = "file"
+): boolean => {
+  const relative = path.relative(root, file);
+
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    return false;
+  }
+
+  const parts = relative.split(path.sep).filter((part) => part.length > 0);
+
+  return parts.every((_, index) => {
+    const current = path.join(root, ...parts.slice(0, index + 1));
+    const stat = lstatSync(current, { throwIfNoEntry: false });
+
+    return (
+      stat === undefined ||
+      (!stat.isSymbolicLink() &&
+        (index === parts.length - 1 && finalKind === "file"
+          ? stat.isFile()
+          : stat.isDirectory()))
+    );
+  });
+};
+
+const decodeInstallOwnership = Schema.decodeUnknownOption(
+  Schema.fromJsonString(InstallOwnershipSchema)
+);
+
+const ownershipFile = (worktree: string, installation: string): string => {
+  const name = `${skillDigest(installation).slice(0, 16)}.json`;
+
+  try {
+    return path.resolve(
+      worktree,
+      execFileSync("git", ["rev-parse", "--git-path", `dft-install/${name}`], {
+        cwd: worktree,
+        encoding: "utf-8",
+        stdio: ["ignore", "pipe", "ignore"],
+      }).trim()
+    );
+  } catch {
+    return path.join(worktree, installation, "dft-install.ownership.json");
+  }
+};
+
+const readInstallText = (
+  file: string,
+  readFile?: PreparedInstallationReader
+): string | null => {
+  if (readFile === undefined) {
+    return existsSync(file) ? readFileSync(file, "utf-8") : null;
+  }
+
+  const body = readFile(file, "text");
+
+  return body === null ? null : Buffer.from(body).toString("utf-8");
+};
+
+const readInstallOwnership = (
+  file: string,
+  readFile?: PreparedInstallationReader
+): InstallOwnership | null => {
+  if (!safeInstallPath(path.dirname(path.dirname(file)), file)) {
+    return null;
+  }
+
+  const body = readInstallText(file, readFile);
+
+  if (body === null) {
+    return {
+      hookFileCreated: false,
+      hooks: {},
+      schema: "dft.install.ownership.v1",
+      skills: {},
+    };
+  }
+
+  return Option.getOrNull(decodeInstallOwnership(body));
+};
+
+const OWNERSHIP_SHORT_ESCAPES: ReadonlySet<number> = new Set([
+  8, 9, 10, 12, 13, 34, 92,
+]);
+
+const ownershipStringBytes = (value: string, remaining: number): number => {
+  let bytes = 2;
+
+  for (const character of value) {
+    if (bytes > remaining) {
+      break;
+    }
+
+    const code = character.codePointAt(0) ?? 0;
+
+    if (OWNERSHIP_SHORT_ESCAPES.has(code)) {
+      bytes += 2;
+    } else if (code < 32 || (code >= 0xd8_00 && code <= 0xdf_ff)) {
+      bytes += 6;
+    } else if (code < 128) {
+      bytes += 1;
+    } else if (code < 2048) {
+      bytes += 2;
+    } else if (code < 65_536) {
+      bytes += 3;
+    } else {
+      bytes += 4;
+    }
+  }
+
+  return bytes;
+};
+
+const checkOwnershipBytes = (
+  ownership: InstallOwnership,
+  maxBytes: number
+): void => {
+  const pending: { readonly value: OwnershipJson; readonly depth: number }[] = [
+    { depth: 0, value: ownership },
+  ];
+
+  let bytes = 0;
+
+  const addBytes = (count: number): void => {
+    bytes += count;
+
+    if (!Number.isSafeInteger(maxBytes) || maxBytes < 0 || bytes > maxBytes) {
+      throw new AgentError({
+        code: "budget-exhausted",
+        currentRevision: null,
+        expectedRevision: null,
+        message: "The serialized installer ownership exceeds its byte bound.",
+        recovery: { action: "replan", ref: null },
+        ref: null,
+        retryable: false,
+      });
+    }
+  };
+
+  addBytes(1);
+
+  while (pending.length > 0) {
+    const item = pending.pop();
+
+    if (item === undefined) {
+      break;
+    }
+
+    const { depth, value } = item;
+
+    if (Predicate.isString(value)) {
+      addBytes(ownershipStringBytes(value, maxBytes - bytes));
+    } else if (Predicate.isObject(value)) {
+      const entries = EffectArray.isArray<OwnershipJson>(value)
+        ? Array.from(value, (entry) => ({ key: null, value: entry }))
+        : Object.entries<OwnershipJson>(value)
+            .filter(([, entry]) => entry !== undefined)
+            .map(([key, entry]) => ({ key, value: entry }));
+
+      addBytes(2);
+
+      if (entries.length > 0) {
+        addBytes(2 + depth * 2 + (entries.length - 1) * 2);
+
+        for (const entry of entries) {
+          addBytes((depth + 1) * 2);
+
+          if (entry.key !== null) {
+            addBytes(ownershipStringBytes(entry.key, maxBytes - bytes) + 2);
+          }
+
+          pending.push({ depth: depth + 1, value: entry.value });
+        }
+      }
+    } else if (Predicate.isNumber(value)) {
+      addBytes(Number.isFinite(value) ? String(value).length : 4);
+    } else if (Predicate.isBoolean(value)) {
+      addBytes(value ? 4 : 5);
+    } else {
+      addBytes(4);
+    }
+  }
+};
+
+const serializeInstallOwnership = (
+  ownership: InstallOwnership,
+  maxBytes?: number
+): string | null => {
+  if (
+    Object.keys(ownership.hooks).length === 0 &&
+    Object.keys(ownership.skills).length === 0
+  ) {
+    return null;
+  }
+
+  if (maxBytes !== undefined) {
+    checkOwnershipBytes(ownership, maxBytes);
+  }
+
+  return `${JSON.stringify(ownership, null, 2)}\n`;
+};
+
+const writeInstallOwnershipBody = (file: string, body: string | null): void => {
+  if (body === null) {
+    rmSync(file, { force: true });
+
+    return;
+  }
+
+  mkdirSync(path.dirname(file), { recursive: true });
+  writeFileSync(file, body);
+};
+
+const writeInstallOwnership = (
+  file: string,
+  ownership: InstallOwnership
+): void => {
+  writeInstallOwnershipBody(file, serializeInstallOwnership(ownership));
+};
+
+const prepareInstallOwnershipWrite = (
+  file: string,
+  ownership: InstallOwnership,
+  prepared?: PreparedOwnershipInstallation
+): (() => void) => {
+  const body = serializeInstallOwnership(
+    ownership,
+    prepared?.maxOwnershipBytes
+  );
+
+  prepared?.onOwnershipWrite?.(file, body, "before");
+
+  return () => {
+    writeInstallOwnershipBody(file, body);
+    prepared?.onOwnershipWrite?.(file, body, "after");
+  };
+};
+
+const backupInstallFile = (
+  file: string,
+  stateFile: string,
+  readFile?: PreparedInstallationReader
+): string => {
+  const body =
+    readFile === undefined ? readFileSync(file) : readFile(file, "binary");
+
+  if (body === null) {
+    throw new Error("Installer file disappeared before its backup");
+  }
+
+  const dir = path.join(path.dirname(stateFile), "backups");
+
+  const copy = path.join(
+    dir,
+    `${skillDigest(file).slice(0, 16)}-${skillDigest(body)}.backup`
+  );
+
+  if (!safeInstallPath(path.dirname(stateFile), copy)) {
+    throw new Error("Refusing to back up through a linked installer path");
+  }
+
+  mkdirSync(dir, { recursive: true });
+
+  if (readFile === undefined) {
+    if (!existsSync(copy)) {
+      copyFileSync(file, copy, 1);
+    }
+  } else {
+    const previous = readFile(copy, "binary");
+
+    if (previous === null) {
+      writeFileSync(copy, body, { flag: "wx" });
+    } else if (skillDigest(previous) !== skillDigest(body)) {
+      throw new Error(
+        "Existing installer backup differs from its content digest"
+      );
+    }
+  }
+
+  return copy;
+};
+
+const sameHook = (left: HookEntry, right: HookEntry): boolean =>
+  JSON.stringify(left) === JSON.stringify(right);
+
+const ownedHookEntries = (
+  current: readonly HookEntry[],
+  installed: readonly HookEntry[],
+  command: string,
+  refresh: boolean
+) => {
+  const previous = [...installed];
+  const owned: HookEntry[] = [];
+  let refreshed = false;
+
+  const entries = current.map((entry) => {
+    const index = previous.findIndex((old) => sameHook(old, entry));
+
+    if (index === -1) {
+      return entry;
+    }
+
+    previous.splice(index, 1);
+
+    const replacement = refresh ? { ...entry, command } : entry;
+
+    owned.push(replacement);
+    refreshed ||= replacement.command !== entry.command;
+
+    return replacement;
+  });
+
+  return { entries, owned, refreshed };
+};
+
+const prepareCursorHookInstallation = (
+  worktree: string,
+  prepared?: PreparedHookInstallation
+) =>
+  prepared ?? {
+    ownershipPath: ownershipFile(worktree, ".cursor"),
+    readFile: undefined,
+    refresh: !gitTracks(worktree, path.join(".cursor", "hooks.json")),
+  };
+
 export const installCursorHooks = (
   worktree: string,
-  command: string
+  command: string,
+  prepared?: PreparedHookInstallation
 ): InstallStep => {
   const file = path.join(worktree, ".cursor", "hooks.json");
-  const exists = existsSync(file);
 
-  const parsed = exists
-    ? parseHooksFile(readFileSync(file, "utf-8"))
-    : { version: 1 };
-
-  if (parsed === null) {
+  if (!safeInstallPath(worktree, file)) {
     return {
       action: "skipped",
-      detail:
-        "existing hooks.json is not valid Cursor hooks JSON; left untouched",
+      detail: "linked or conflicting Cursor config path; kept it",
       path: file,
     };
   }
 
-  const merged = mergeCursorHooks(
-    parsed,
-    command,
-    !gitTracks(worktree, path.join(".cursor", "hooks.json"))
+  const {
+    ownershipPath: stateFile,
+    readFile,
+    refresh,
+  } = prepareCursorHookInstallation(worktree, prepared);
+
+  const body = readInstallText(file, readFile);
+  const exists = body !== null;
+  const parsed = body === null ? { version: 1 } : parseHooksFile(body);
+
+  const ownership = readInstallOwnership(stateFile, readFile);
+
+  if (parsed === null || ownership === null) {
+    return {
+      action: "skipped",
+      detail:
+        "existing hooks.json or dft ownership record is invalid; left untouched",
+      path: file,
+    };
+  }
+
+  const hooks = { ...parsed.hooks };
+  const owned: Record<string, readonly HookEntry[]> = {};
+  const createdHookEvents = new Set(ownership.createdHookEvents);
+  const added: string[] = [];
+  const refreshed: string[] = [];
+
+  for (const event of CURSOR_HOOK_EVENTS) {
+    const {
+      entries: next,
+      owned: kept,
+      refreshed: changed,
+    } = ownedHookEntries(
+      hooks[event] ?? [],
+      ownership.hooks[event] ?? [],
+      command,
+      refresh
+    );
+
+    if (changed) {
+      refreshed.push(event);
+    }
+
+    if (!next.some((entry) => isDftHookCommand(entry.command))) {
+      const entry = { command };
+
+      next.push(entry);
+      kept.push(entry);
+      added.push(event);
+
+      if (parsed.hooks?.[event] === undefined) {
+        createdHookEvents.add(event);
+      }
+    }
+
+    hooks[event] = next;
+
+    if (kept.length > 0) {
+      owned[event] = kept;
+    }
+  }
+
+  const merged = {
+    added,
+    file: { ...parsed, hooks, version: parsed.version ?? 1 },
+    refreshed,
+  };
+
+  const writeOwnership = prepareInstallOwnershipWrite(
+    stateFile,
+    {
+      ...ownership,
+      createdHookEvents: [...createdHookEvents],
+      hookFileCreated: ownership.hookFileCreated || !exists,
+      hooks: owned,
+    },
+    prepared
   );
 
   if (merged.added.length === 0 && merged.refreshed.length === 0) {
+    writeOwnership();
+
     return {
       action: "unchanged",
       detail: "every Cursor hook event already calls dft hook",
@@ -195,41 +649,43 @@ export const installCursorHooks = (
   }
 
   mkdirSync(path.dirname(file), { recursive: true });
+
+  if (exists) {
+    backupInstallFile(file, stateFile, readFile);
+  }
+
   writeFileSync(file, `${JSON.stringify(merged.file, null, 2)}\n`);
+  writeOwnership();
 
   return {
     action: exists ? "updated" : "created",
-    detail: [
-      ...(merged.added.length === 0
-        ? []
-        : [`added dft hook to ${merged.added.join(", ")}`]),
-      ...(merged.refreshed.length === 0
-        ? []
-        : [
-            `pointed the dft hook in ${String(merged.refreshed.length)} events at this node and dft`,
-          ]),
-    ].join("; "),
+    detail: `added hooks for ${String(merged.added.length)} events; refreshed ${String(merged.refreshed.length)} owned entries`,
     path: file,
   };
 };
 
 export const installSkills = (
   worktree: string,
-  source: string = skillsSourceDir()
+  source: string = skillsSourceDir(),
+  installation = ".cursor",
+  prepared?: PreparedSkillInstallation
 ): readonly InstallStep[] => {
-  const skills = loadSkills(source);
+  const skills = prepared?.skills ?? loadSkills(source);
 
   if (skills.length === 0) {
     return [
       {
         action: "skipped",
-        detail: "no Cursor skills found next to this dft build",
+        detail: "no dft skills found next to this build",
         path: source,
       },
     ];
   }
 
-  if (path.resolve(source) === path.resolve(worktree, ".cursor", "skills")) {
+  if (
+    prepared === undefined &&
+    path.resolve(source) === path.resolve(worktree, installation, "skills")
+  ) {
     return [
       {
         action: "unchanged",
@@ -240,23 +696,70 @@ export const installSkills = (
     ];
   }
 
-  return skills.map((skill) => {
+  const stateFile =
+    prepared?.ownershipPath ?? ownershipFile(worktree, installation);
+
+  const ownership = readInstallOwnership(stateFile, prepared?.readFile);
+
+  if (ownership === null) {
+    return [
+      {
+        action: "skipped",
+        detail: "invalid dft ownership record; skills left untouched",
+        path: stateFile,
+      },
+    ];
+  }
+
+  const owned = { ...ownership.skills };
+
+  const writes: {
+    readonly backup: boolean;
+    readonly body: string;
+    readonly file: string;
+  }[] = [];
+
+  const steps = skills.map((skill): InstallStep => {
     const file = path.join(
       worktree,
-      ".cursor",
+      installation,
       "skills",
       skill.name,
       "SKILL.md"
     );
 
-    const exists = existsSync(file);
-
-    if (exists && readFileSync(file, "utf-8") === skill.body) {
-      return { action: "unchanged", detail: skill.name, path: file };
+    if (!safeInstallPath(worktree, file)) {
+      return {
+        action: "skipped",
+        detail: `${skill.name} has a linked or conflicting path; kept it`,
+        path: file,
+      };
     }
 
-    mkdirSync(path.dirname(file), { recursive: true });
-    writeFileSync(file, skill.body);
+    const body = readInstallText(file, prepared?.readFile);
+    const exists = body !== null;
+
+    if (body !== null) {
+      const digest = skillDigest(body);
+
+      if (body === skill.body) {
+        return { action: "unchanged", detail: skill.name, path: file };
+      }
+
+      if (
+        owned[skill.name] === undefined ||
+        (owned[skill.name] !== digest && !isReleasedSkillBody(skill.name, body))
+      ) {
+        return {
+          action: "skipped",
+          detail: `${skill.name} is unowned or edited; kept your file`,
+          path: file,
+        };
+      }
+    }
+
+    writes.push({ backup: exists, body: skill.body, file });
+    owned[skill.name] = skillDigest(skill.body);
 
     return {
       action: exists ? "updated" : "created",
@@ -264,7 +767,33 @@ export const installSkills = (
       path: file,
     };
   });
+
+  const writeOwnership = prepareInstallOwnershipWrite(
+    stateFile,
+    { ...ownership, skills: owned },
+    prepared
+  );
+
+  for (const write of writes) {
+    if (write.backup) {
+      backupInstallFile(write.file, stateFile, prepared?.readFile);
+    }
+
+    mkdirSync(path.dirname(write.file), { recursive: true });
+    writeFileSync(write.file, write.body);
+  }
+
+  writeOwnership();
+
+  return steps;
 };
+
+export const installAgentSkills = (
+  worktree: string,
+  source: string = skillsSourceDir(),
+  prepared?: PreparedSkillInstallation
+): readonly InstallStep[] =>
+  installSkills(worktree, source, ".agents", prepared);
 
 const samePath = (file: string): string => {
   try {
@@ -665,9 +1194,7 @@ const hooksLine = (result: InstallResult): Outcome => {
   const where = rel(worktree, hooks.path);
 
   if (hooks.action === "skipped") {
-    return skippedLine(
-      `${where} is not valid JSON, so dft left it alone. Fix or delete it, then run \`dft install\` again.`
-    );
+    return skippedLine(`${where}: ${hooks.detail}`);
   }
 
   return doneRow(
@@ -695,6 +1222,10 @@ const skillsLine = (result: InstallResult): Outcome => {
 
   if (first?.action === "unchanged") {
     return doneRow("Cursor skills", "already in this repo");
+  }
+
+  if (first?.action === "skipped") {
+    return { done: null, skipped: null };
   }
 
   return skippedLine(
@@ -849,6 +1380,12 @@ export const installText = (
     }
   }
 
+  skipped.push(
+    ...result.skills
+      .filter((step) => step.action === "skipped")
+      .map((step) => `${rel(result.worktree, step.path)}: ${step.detail}`)
+  );
+
   const git = gitLines(result);
 
   if (git.done !== null) {
@@ -945,8 +1482,8 @@ const isEmptyDir = (dir: string): boolean => {
   }
 };
 
-const removeEmptyDir = (dir: string): void => {
-  if (isEmptyDir(dir)) {
+const removeEmptyDir = (dir: string, root: string): void => {
+  if (safeInstallPath(root, dir, "directory") && isEmptyDir(dir)) {
     rmdirSync(dir);
   }
 };
@@ -956,13 +1493,25 @@ export const uninstallCursorHooks = (
 ): readonly RemovalStep[] => {
   const file = path.join(worktree, ".cursor", "hooks.json");
 
+  if (!safeInstallPath(worktree, file)) {
+    return [
+      {
+        action: "skipped",
+        detail: "linked or conflicting Cursor config path; kept it",
+        path: file,
+      },
+    ];
+  }
+
   if (!existsSync(file)) {
     return [];
   }
 
   const parsed = parseHooksFile(readFileSync(file, "utf-8"));
+  const stateFile = ownershipFile(worktree, ".cursor");
+  const ownership = readInstallOwnership(stateFile);
 
-  if (parsed === null) {
+  if (parsed === null || ownership === null) {
     return [];
   }
 
@@ -970,18 +1519,35 @@ export const uninstallCursorHooks = (
   const kept: Record<string, readonly HookEntry[]> = {};
 
   for (const [event, entries] of Object.entries(parsed.hooks ?? {})) {
-    const rest = entries.filter((entry) => !isDftHookCommand(entry.command));
+    const owned = [...(ownership.hooks[event] ?? [])];
+
+    const rest = entries.filter((entry) => {
+      const index = owned.findIndex((old) => sameHook(old, entry));
+
+      if (index === -1) {
+        return true;
+      }
+
+      owned.splice(index, 1);
+
+      return false;
+    });
 
     if (rest.length !== entries.length) {
       removed.push(event);
     }
 
-    if (rest.length > 0) {
+    if (
+      rest.length > 0 ||
+      !(ownership.createdHookEvents ?? []).includes(event)
+    ) {
       kept[event] = rest;
     }
   }
 
   if (removed.length === 0) {
+    writeInstallOwnership(stateFile, { ...ownership, hooks: {} });
+
     return [];
   }
 
@@ -989,8 +1555,16 @@ export const uninstallCursorHooks = (
     (key) => key !== "hooks" && key !== "version"
   );
 
-  if (Object.keys(kept).length === 0 && others.length === 0) {
+  backupInstallFile(file, stateFile);
+
+  if (
+    ownership.hookFileCreated &&
+    parsed.version === 1 &&
+    Object.keys(kept).length === 0 &&
+    others.length === 0
+  ) {
     rmSync(file);
+    writeInstallOwnership(stateFile, { ...ownership, hooks: {} });
 
     return [
       { action: "removed", detail: "only dft hooks were in it", path: file },
@@ -1001,6 +1575,7 @@ export const uninstallCursorHooks = (
     file,
     `${JSON.stringify({ ...parsed, hooks: kept }, null, 2)}\n`
   );
+  writeInstallOwnership(stateFile, { ...ownership, hooks: {} });
 
   return [
     {
@@ -1014,48 +1589,94 @@ export const uninstallCursorHooks = (
 export const uninstallSkills = (
   worktree: string,
   source: string = skillsSourceDir(),
-  released: ReadonlySet<string> = RELEASED_SKILL_DIGESTS
+  released: ReadonlySet<string> = RELEASED_SKILL_DIGESTS,
+  installation = ".cursor"
 ): readonly RemovalStep[] => {
-  if (path.resolve(source) === path.resolve(worktree, ".cursor", "skills")) {
+  if (path.resolve(source) === path.resolve(worktree, installation, "skills")) {
     return [];
   }
 
-  const steps = loadSkills(source).flatMap((skill): readonly RemovalStep[] => {
-    const file = path.join(
-      worktree,
-      ".cursor",
-      "skills",
-      skill.name,
-      "SKILL.md"
-    );
+  const stateFile = ownershipFile(worktree, installation);
+  const ownership = readInstallOwnership(stateFile);
+
+  if (ownership === null) {
+    return [
+      {
+        action: "skipped",
+        detail: "invalid dft ownership record; skills left untouched",
+        path: stateFile,
+      },
+    ];
+  }
+
+  const names = new Set([
+    ...loadSkills(source).map((skill) => skill.name),
+    ...Object.keys(ownership.skills),
+  ]);
+
+  const steps = [...names].flatMap((name): readonly RemovalStep[] => {
+    if (
+      name.length === 0 ||
+      path.basename(name) !== name ||
+      name === "." ||
+      name === ".."
+    ) {
+      return [];
+    }
+
+    const file = path.join(worktree, installation, "skills", name, "SKILL.md");
+
+    if (!safeInstallPath(worktree, file)) {
+      return [
+        {
+          action: "skipped",
+          detail: `${name} has a linked or conflicting path; kept it`,
+          path: file,
+        },
+      ];
+    }
 
     if (!existsSync(file)) {
       return [];
     }
 
     const body = readFileSync(file, "utf-8");
+    const digest = skillDigest(body);
+    const installed = ownership.skills[name];
 
-    if (body !== skill.body && !released.has(skillDigest(body))) {
+    if (
+      installed === undefined ||
+      (digest !== installed && !isReleasedSkillBody(name, body, released))
+    ) {
       return [
         {
           action: "skipped",
-          detail: `${skill.name} differs from every skill dft shipped, so it may hold your changes; dft kept it. Delete it yourself if you do not need it.`,
+          detail: `${name} is unowned or edited, so dft kept it.`,
           path: file,
         },
       ];
     }
 
+    backupInstallFile(file, stateFile);
     rmSync(file);
-    removeEmptyDir(path.dirname(file));
+    removeEmptyDir(path.dirname(file), worktree);
 
-    return [{ action: "removed", detail: skill.name, path: file }];
+    return [{ action: "removed", detail: name, path: file }];
   });
 
-  removeEmptyDir(path.join(worktree, ".cursor", "skills"));
-  removeEmptyDir(path.join(worktree, ".cursor"));
+  writeInstallOwnership(stateFile, { ...ownership, skills: {} });
+  removeEmptyDir(path.join(worktree, installation, "skills"), worktree);
+  removeEmptyDir(path.join(worktree, installation), worktree);
 
   return steps;
 };
+
+export const uninstallAgentSkills = (
+  worktree: string,
+  source: string = skillsSourceDir(),
+  released: ReadonlySet<string> = RELEASED_SKILL_DIGESTS
+): readonly RemovalStep[] =>
+  uninstallSkills(worktree, source, released, ".agents");
 
 export const uninstallGitHooks = (worktree: string): readonly RemovalStep[] => {
   if (!isGitRepo(worktree) || lefthookConfig(worktree) !== null) {

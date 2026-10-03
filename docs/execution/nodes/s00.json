@@ -1,0 +1,488 @@
+{
+  "schema": "dft.agent-system.handoff.v1",
+  "node": "S00",
+  "status": "complete",
+  "baseline": {
+    "branch": "main",
+    "commit": "eddcedb29c3900a1e5e365dc3999bf6f7fdcfd7b"
+  },
+  "activeBranch": "feat/agent-system",
+  "ownershipActivation": "Root confirmed historical owners idle and recorded manifest/execution activation before source writes.",
+  "createdAt": "2026-10-02T17:00:17.595918+00:00",
+  "ownedChangedPaths": [
+    "packages/core/src/dx/contracts/agent.ts",
+    "packages/core/src/dx/contracts/agent-store.ts",
+    "packages/core/src/dx/contracts/agent-version.ts",
+    "packages/core/src/dx/contracts/error-agent.ts",
+    "packages/core/src/dx/contracts/fake-agent-store.ts",
+    "packages/core/src/dx/contracts/agent-fixtures.ts",
+    "packages/core/src/dx/contracts/capabilities.ts",
+    "packages/core/src/dx/model/agent-common.ts",
+    "packages/core/src/dx/model/agent-query.ts",
+    "packages/core/src/dx/model/agent-operation.ts",
+    "packages/core/src/dx/model/agent-learning.ts",
+    "packages/core/src/dx/model/report.ts",
+    "docs/execution/contracts-v1.md",
+    "docs/execution/commands.json"
+  ],
+  "agentContractVersion": "dx.agent-contracts.v1",
+  "agentContractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+  "digestDefiningPaths": [
+    "contracts/agent-store.ts",
+    "contracts/agent.ts",
+    "contracts/capabilities.ts",
+    "contracts/error-agent.ts",
+    "model/agent-common.ts",
+    "model/agent-learning.ts",
+    "model/agent-operation.ts",
+    "model/agent-query.ts",
+    "model/report.ts",
+    "usage/contract.ts"
+  ],
+  "digestAlgorithm": "SHA256 over sorted relative dx paths: == <path>\\n followed by exact source bytes; version/fakes excluded.",
+  "legacyCompatibility": "Legacy CONTRACT_VERSION/DIGEST remain the historical checkpoint. Existing EventStore ports/mocks unchanged. Legacy omission preserved; additive optional agentQuery selects the separately versioned response/profile.",
+  "producerAdmission": "Exact schema exports and AgentStore signatures shared with S01-S04 and R00/S05; implementations proceed concurrently using fake ports.",
+  "storagePorts": "Separate AgentStore on the same production SQLite connection. Bounded events/current coverage/indexed retained result pages, measured bounded basis/result headers and scoped latest basis; immutable bases/results; durable operation reservation/CAS/journal/cancellation; learning CAS/history and independent idempotent evaluations/direct replay; typed scoped ref resolution.",
+  "runtime": {
+    "node": "24.18.0",
+    "pnpm": "11.3.0",
+    "effect": "4.0.0-rc.117",
+    "typescript": "7.0.2",
+    "vitest": "5.0.1"
+  },
+  "checks": [
+    {
+      "command": "perOwner.lint_own_files",
+      "scope": "S00 source files",
+      "exit": 0,
+      "result": "Final 12 owned source files scoped lint exit0."
+    },
+    {
+      "command": "perOwner.format_check_own_files",
+      "scope": "S00 source files",
+      "exit": 0,
+      "result": "Final 12 owned source files scoped oxfmt --check exit0."
+    },
+    {
+      "command": "agentSystem.schemaFixtureProbe",
+      "exit": 0,
+      "result": "Schema fixture constructors and decoded query, bounded operation, lesson/investigation evaluations validated; invalid profile/policy/small output cap/excess input under explicit strict decoding rejected. Zero tracker operations and network requests. Final metadata/cursor/page/descriptor/retained result .make consumers also imported and validated."
+    },
+    {
+      "command": "root queued perOwner.typecheck_core",
+      "exit": 1,
+      "result": "First evolving-candidate scan had no defining contract/model/fake errors; producer/integration failures routed to their owners. Final fixture/additive-port scan still pending."
+    },
+    {
+      "command": "agentSystem.verifiedCoreHarness",
+      "exit": 0,
+      "result": "Existing B36 passed 10 tests; command harness only, not new behavior."
+    },
+    {
+      "command": "agentSystem.app.discover_existing_owned",
+      "exit": 0,
+      "result": "Five named app test files discovered; no test acceptance or source/dist alignment claimed."
+    },
+    {
+      "command": "agentSystem.audits.discover_historical_owned",
+      "exit": 0,
+      "result": "Historical C01/C02/C07/C10/C12 discovered; C08 had no listed entries; MCP acceptance remains unverified."
+    },
+    {
+      "command": "digest recompute and catalog JSON parse",
+      "exit": 0,
+      "result": "Exact ten defining-file bytes match agent digest; command catalog parses."
+    },
+    {
+      "command": "git diff --check for owned paths",
+      "exit": 0
+    },
+    {
+      "command": "in-memory Effect Schema public transport derivation probe",
+      "scope": "dx_status/dx_analyze/dx_explain/dx_evidence/dx_operation/dx_learning input+output codecs",
+      "exit": 0,
+      "result": "All six public contract inputs and outputs derive JSON Schema documents from Effect Schema; no hand-written transport schema or generated file."
+    },
+    {
+      "command": "root queued core compile2",
+      "exit": 1,
+      "scope": "Entire evolving core candidate, filtered to S00 defining contracts/model/fakes",
+      "result": "Root confirmed zero errors in S00 contracts/model/fake paths, including final compact learning and bounded metadata signatures. Remaining producer adaptation errors routed to owners."
+    }
+  ],
+  "supportedSchemaStates": {
+    "query": "Explicit profile/policies/caps, immutable basis/view identity, typed resolutions, independent item/series/work continuation, measured work, honest completeness.",
+    "operation": "Consent/validity/execution/verification are distinct; no arbitrary command field; typed bounded plan/apply/get/cancel; exact removal/artifact metadata.",
+    "learning": "Scoped authored records, generic lesson/investigation evaluation target, revision-bound append-only evaluations, applicability/visibility and supersession."
+  },
+  "resourceEvidence": {
+    "operationsExecuted": 0,
+    "networkRequests": 0,
+    "dependencyTreesCreated": 0,
+    "buildTreesCreated": 0,
+    "schemaProbeTemporaryFilesCreated": 0,
+    "sourceMirror": "Pinned source mirror absent; read installed exact-version Effect AGENTS and source.",
+    "fixtureScope": "Compile-only vocabulary is explicitly fixture-labelled and never merged with live observations."
+  },
+  "remaining": [],
+  "acceptedBy": "Root S07 reports acceptance fulfilled: complete fence9, exact-final-source native11, identity equality after both, and exact owned resource closure passed. Public contract4f/schema8 are unchanged. Historical evidence, four reserved operation kinds and live-host verification limits remain. Root receipt: docs/execution/nodes/s07.json.",
+  "freezeHistory": [
+    {
+      "agentContractVersion": "dx.agent-contracts.v1",
+      "agentContractDigest": "sha256:8d6d14ccdacd103ecc340cb8c59cb5d58ca18fc61e99f03cfd34c5b55b337684",
+      "status": "root-accepted-original-freeze",
+      "evidence": "Scoped root compiler scans, source lint/format/schema probes and read-only exact ten-file digest audit passed before this additive follow-up.",
+      "supersededBy": "sha256:ecb827e05b7724ea2687cb1985528e2928a3900aadc261b45c542880dfe1e0be"
+    },
+    {
+      "agentContractVersion": "dx.agent-contracts.v1",
+      "agentContractDigest": "sha256:ecb827e05b7724ea2687cb1985528e2928a3900aadc261b45c542880dfe1e0be",
+      "status": "root-accepted-intermediate-freeze",
+      "evidence": "Root accepted the additive historical-plan and measured basis-header freeze. Scoped source/schema/fake checks and exact defining digest passed; S01 separately verified actual noncanonical persisted header bytes.",
+      "supersededBy": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535"
+    }
+  ],
+  "additiveFollowup": {
+    "authorization": "Root requested receipt-bound historical reviewed-plan recovery and exact measured metadata reads.",
+    "versionCompatibility": "Agent/profile/operation/contract versions unchanged; output additions and internal service ports only. Existing apply input and authorization checks unchanged.",
+    "changedDefiningPaths": [
+      "model/agent-operation.ts",
+      "contracts/agent-store.ts"
+    ],
+    "recoveryOutput": "OperationOutput get requires reviewedPlan:OperationPlan|null and reviewedPlanUnavailableReason:string|null alongside receipt.",
+    "historicalReadPort": "getOperationPlanForReceipt(operation:AgentHandle) -> OperationPlan|null; only matching retained receipt/reservation original plan/store/generation/digest. It cannot authorize apply or bypass active-generation validation.",
+    "measuredMetadataPorts": [
+      "readBasisMetadata(handle,maxDecodedBytes)",
+      "readLatestBasisMetadataForScope(scope,maxDecodedBytes)"
+    ],
+    "measuredMetadataShape": "AgentBasisMetadataRead = {metadata:AnalysisBasisMetadata|null,decodedBytes:number,factsExamined:number}. Missing is null/0/0; cap refusal after header inspection is null/0/1; successful read is admitted actual stored header bytes/1.",
+    "fakeBehavior": "Missing historical plan returns null; empty measured reads return null/0/0. Retained and unavailable get fixture variants both use explicit null counterparts.",
+    "compilerAndRuntimeEvidence": "No compiler or build run by S00 for this follow-up. Storage/coordinator implementation and final artifact gate remain with assigned owners/root.",
+    "updatedAt": "2026-10-02T18:22:53.432637+00:00",
+    "checks": [
+      {
+        "command": "perOwner.lint_own_files",
+        "exit": 0,
+        "scope": "Four changed S00 source files"
+      },
+      {
+        "command": "perOwner.format_check_own_files",
+        "exit": 0,
+        "scope": "Four changed S00 source files"
+      },
+      {
+        "command": "in-memory source schema/fake recovery probe",
+        "exit": 0,
+        "result": "Both operation get variants decode, absent explicit fields reject, fake historical plan remains null, empty measured metadata reads report null/0/0, operation output derives JSON Schema. Existing fixture/profile smoke also passes. Zero tracker operations and network requests."
+      },
+      {
+        "command": "exact ten-file defining digest recompute",
+        "exit": 0,
+        "result": "Current ecb827e digest matches source/version/receipt and prior8d6 freeze remains preserved."
+      },
+      {
+        "command": "git diff --check on owned follow-up paths",
+        "exit": 0
+      }
+    ],
+    "coordinatorDigestCoordination": "S03 confirmed canonical plan digest normalizes mutable validity to the original valid state, preserving prior reviewed digests. Historical stale presentation does not erase reviewed context; apply still checks current validity and expiry independently. Production behavior tests remain S03/S01/root evidence."
+  },
+  "resultMetadataFollowup": {
+    "authorization": "Root approved verified result-header and cursor-body accounting seams after S02 confirmed retained page counters omit separately decoded raw result headers and legacy cursor validation loads hidden header bodies.",
+    "changedDefiningPaths": [
+      "contracts/agent-store.ts"
+    ],
+    "versionCompatibility": "Internal read-only ports only; existing wire schemas, profile versions and get/find metadata APIs unchanged.",
+    "ports": [
+      "readResultMetadata(handle:AgentHandle,maxDecodedBytes:number)",
+      "readMatchingResultMetadata(basis:AgentHandle,capability:AgentResult[\"capability\"],queryDigest:string,maxDecodedBytes:number)",
+      "readCursor(handle:AgentHandle,maxDecodedBytes:number)"
+    ],
+    "shape": "AgentResultMetadataRead = {metadata:AgentResultMetadata|null,decodedBytes:number,factsExamined:number}.",
+    "semantics": "Missing header=null/0/0; selected header refused beforedecode=null/0/1; success=actual persisted raw header bytes/1. Facts count the selected result header; the matching indexed basis existence guard decodes no JSON. Stale/tombstoned handles retain typed errors.",
+    "fakeBehavior": "No retained content: measured result metadata and cursor fake ports return null/0/0. Retaining overrides must count their actual synthetic serialized bytes and admit the cap before decoding.",
+    "checks": [
+      {
+        "command": "perOwner.lint_own_files",
+        "scope": "Changed agent-store.ts, fake-agent-store.ts and literal version digest",
+        "exit": 0
+      },
+      {
+        "command": "perOwner.format_check_own_files",
+        "scope": "Changed agent-store.ts, fake-agent-store.ts and literal version digest",
+        "exit": 0
+      },
+      {
+        "command": "source schema/fake metadata and cursor probe",
+        "exit": 0,
+        "result": "All existing fixture/profile smoke passed. Both measured result fake reads and measured cursor read returned missing null/0/0, with zero retained content decoded, zero tracker operations and zero network requests."
+      },
+      {
+        "command": "exact ten-file defining digest recompute",
+        "exit": 0,
+        "result": "Final digest matches exact source bytes; accepted original8d6 and intermediateecb freezes remain in history."
+      },
+      {
+        "command": "git diff --check on owned follow-up paths",
+        "exit": 0,
+        "result": "No whitespace errors on the scoped source/version/docs/receipt paths."
+      }
+    ],
+    "compilerAndRuntimeEvidence": "No compiler or build run by S00. S01/S02 own actual raw-header measurements and total query-budget behavior; root owns final artifact gate.",
+    "updatedAt": "2026-10-02T18:46:50.196802+00:00",
+    "cursorShape": "AgentCursorRead = {cursor:AgentCursor|null,decodedBytes:number,factsExamined:number}.",
+    "cursorSemantics": "Missing cursor=null/0/0; selected cursor refused before decoding=null/0/1; success=actual persisted raw cursor bytes/1. Indexed scalar binding guards avoid hidden basis/result header decoding. Existing typed expiry/stale/mismatch errors and legacy getCursor remain."
+  },
+  "databaseCompatibilityReconciliation": {
+    "authorization": "Root assigned read-only/doc-only reconciliation for the approved internal migration8 and consumed-terminal binding repair.",
+    "inspectedPaths": [
+      "docs/execution/contracts-v1.md",
+      "docs/execution/commands.json",
+      "docs/execution/nodes/s00.json",
+      "docs/execution/nodes/s00.md"
+    ],
+    "priorDatabaseVersion7ClaimsFound": [],
+    "legacyCheckpointMeaning": "The existing dx.event.v1 and legacy contract checkpoint are historical public schemas, not database schemaVersion7 claims. The node:sqlite catalog probe records API/toolchain availability, not an installed DB format guarantee.",
+    "sourceSchemaVersion": 8,
+    "historicalCheckpointSchemaVersion": 7,
+    "migration8Statement": "CREATE INDEX agent_operation_aliases_operation ON agent_operation_aliases(operation_id)",
+    "rewriteEventBody": null,
+    "bindingRepair": "Retained aliases are flattened directly; consumed terminal bindings are recovery-only. Original receipt proof and state remain preserved; failed-to-running and unused active0 authority remain denied.",
+    "publicCompatibility": "No defining source, public schema, port, wire version or frozen digest change in this documentation pass.",
+    "agentContractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+    "sourceEvidence": "S01 closed/frozen: 21/21 scoped tests pass (1.52s, 2026-10-02T20:28:15Z); source/test lint/format and focused reviews clean. Controlled version7-to8 migration preserves basis/result/identity/reservation content.",
+    "installedSchemaVersion": 8,
+    "installedVerification": "Current candidate passed root fence9 and exact-final-source native11, with all source/dist/manifests/guidance/assets identities unchanged after both. Database schema8 remains unchanged; historical Build7/native9 exact database/index proof is retained. Root S07 acceptance and exact owned resource closure are fulfilled; live-host and reserved-kind limits remain.",
+    "checks": {
+      "documentationJsonParse": "pass",
+      "compilerRuns": 0,
+      "buildRuns": 0,
+      "testRuns": 0
+    },
+    "recordedAt": "2026-10-02T22:24:40.486223+00:00",
+    "installedEvidence": {
+      "reportedBy": "root",
+      "phase": "Build8/fence9",
+      "sourceIdentity": {
+        "digest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+        "files": 1058
+      },
+      "compiledIdentity": {
+        "digest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+        "files": 1820
+      },
+      "agentContractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+      "databaseSchemaVersion": 8,
+      "databaseVerification": "Root confirms schema8 unchanged; the exact owned database/index probe is retained in historical Build7/native9 evidence.",
+      "native10": {
+        "state": "passed",
+        "candidateBinding": "same compiled identity",
+        "jsonRpcFrames": 14,
+        "nonJsonStdoutLines": 0,
+        "stderrBytes": 0
+      },
+      "native11": {
+        "state": "passed",
+        "candidateBinding": "exact final source and compiled identities",
+        "durationSeconds": 26.726,
+        "jsonRpcFrames": 14,
+        "nonJsonStdoutLines": 0,
+        "stderrBytes": 0
+      },
+      "fullReleaseGate": "passed-fence9",
+      "releaseAcceptance": "accepted-root-S07",
+      "recordedAt": "2026-10-02T22:24:40.486223+00:00",
+      "postGateAndNativeIdentityEquality": {
+        "equality": true,
+        "verifiedAfter": "full fence and native11",
+        "sourceFiles": 1058,
+        "distFiles": 1820,
+        "manifests": 4,
+        "guidanceFiles": 6,
+        "assets": 3
+      },
+      "resourceClosure": {
+        "state": "closed",
+        "ownedRegistrationsReleased": 2,
+        "releaseExit": 0,
+        "scratchRemovedAt": "2026-10-02T22:22:22.038217Z",
+        "ownedExportPresent": false,
+        "knownOwnedPidsPresent": false,
+        "cleanupRemovedPreexistingTreesOrStores": false,
+        "verification": "Root verified exact owned registrations/scratch/PIDs only; cleanup left preexisting trees and stores untouched."
+      },
+      "rootReceipt": "docs/execution/nodes/s07.json"
+    },
+    "fullReleaseGate": "passed-fence9",
+    "installedEvidenceHistory": [
+      {
+        "reportedBy": "root",
+        "phase": "Build7",
+        "packagedCandidate": 7,
+        "nativeRehearsal": "passed",
+        "databaseScope": "Root-owned rehearsal dft.db only; no existing user database claim.",
+        "readOnlyProbe": "PRAGMA user_version returned 8",
+        "sqliteVersion": "3.53.1",
+        "nodeVersion": "24.18.0",
+        "indexSql": "CREATE INDEX agent_operation_aliases_operation ON agent_operation_aliases(operation_id)",
+        "compiledDigest": "sha256:f565f505399e12d969aebf468a91d476fc533088d8d705f9d74fd671cedb6f7c",
+        "agentContractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+        "fullReleaseGate": "Historical Build7 checkpoint; S03 test fix subsequently closed. Current complete passing fence9 is recorded separately.",
+        "recordedAt": "2026-10-02T20:35:37.419201+00:00",
+        "state": "historical",
+        "nativeRun": "native9"
+      }
+    ],
+    "releaseAcceptance": "accepted-root-S07",
+    "rootReceipt": "docs/execution/nodes/s07.json"
+  },
+  "finalFenceEvidence": {
+    "reportedBy": "root",
+    "fence": "fence9",
+    "argv": [
+      "pnpm",
+      "exec",
+      "turbo",
+      "run",
+      "check",
+      "test",
+      "build"
+    ],
+    "processEnv": {
+      "VITEST_MAX_WORKERS": "1"
+    },
+    "observed_exit": 0,
+    "state": "passed",
+    "cancelled": false,
+    "completedAllTasks": true,
+    "completedAllTestReports": true,
+    "allRequiredPassingReports": true,
+    "candidateIdentityUnchanged": true,
+    "taskSummary": {
+      "successfulTasks": 18,
+      "totalTasks": 18,
+      "cachedTasks": 9,
+      "durationSeconds": 519.182,
+      "outerDurationSeconds": 522.684
+    },
+    "testReports": {
+      "capability": {
+        "passed": 80,
+        "testFiles": 11
+      },
+      "devtools": {
+        "passed": 19,
+        "testFiles": 1
+      },
+      "core": {
+        "passed": 1581,
+        "skipped": 3,
+        "passedFiles": 132,
+        "skippedFiles": 3,
+        "testFiles": 135
+      },
+      "cli": {
+        "passed": 321,
+        "failed": 0,
+        "testFiles": 30,
+        "durationSeconds": 485.49
+      },
+      "aggregate": {
+        "passed": 2001,
+        "skipped": 3
+      }
+    },
+    "sourceIdentity": {
+      "digest": "sha256:3cdab23477c0be40fef2d626b22e6d351c37830360584852f3d759814e6e1edc",
+      "files": 1058
+    },
+    "compiledIdentity": {
+      "digest": "sha256:931ee62fc6a83e8cdc08220a4b551376a82a5f6afda9b87205f42efcda3d9d00",
+      "files": 1820
+    },
+    "postGateIdentityEquality": "verified by root",
+    "agentContractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+    "databaseSchemaVersion": 8,
+    "acceptance": "verified-full-fence",
+    "releaseAcceptance": "accepted-root-S07",
+    "recordedAt": "2026-10-02T22:20:41.383670+00:00",
+    "finalClosure": {
+      "reportedBy": "root",
+      "state": "accepted",
+      "rootReceipt": "docs/execution/nodes/s07.json",
+      "native11": {
+        "state": "passed",
+        "candidateBinding": "exact final source and compiled identities",
+        "durationSeconds": 26.726,
+        "jsonRpcFrames": 14,
+        "nonJsonStdoutLines": 0,
+        "stderrBytes": 0
+      },
+      "identityEquality": {
+        "equality": true,
+        "verifiedAfter": "full fence and native11",
+        "sourceFiles": 1058,
+        "distFiles": 1820,
+        "manifests": 4,
+        "guidanceFiles": 6,
+        "assets": 3
+      },
+      "resources": {
+        "state": "closed",
+        "ownedRegistrationsReleased": 2,
+        "releaseExit": 0,
+        "scratchRemovedAt": "2026-10-02T22:22:22.038217Z",
+        "ownedExportPresent": false,
+        "knownOwnedPidsPresent": false,
+        "cleanupRemovedPreexistingTreesOrStores": false,
+        "verification": "Root verified exact owned registrations/scratch/PIDs only; cleanup left preexisting trees and stores untouched."
+      },
+      "scopeLimits": "Four reserved operation kinds and existing live-host verification limits remain; passing fixture/native acceptance does not advertise those as live support.",
+      "recordedAt": "2026-10-02T22:24:40.486223+00:00"
+    },
+    "rootReceipt": "docs/execution/nodes/s07.json"
+  },
+  "finalAcceptance": {
+    "reportedBy": "root",
+    "state": "accepted",
+    "rootReceipt": "docs/execution/nodes/s07.json",
+    "native11": {
+      "state": "passed",
+      "candidateBinding": "exact final source and compiled identities",
+      "durationSeconds": 26.726,
+      "jsonRpcFrames": 14,
+      "nonJsonStdoutLines": 0,
+      "stderrBytes": 0
+    },
+    "identityEquality": {
+      "equality": true,
+      "verifiedAfter": "full fence and native11",
+      "sourceFiles": 1058,
+      "distFiles": 1820,
+      "manifests": 4,
+      "guidanceFiles": 6,
+      "assets": 3
+    },
+    "resources": {
+      "state": "closed",
+      "ownedRegistrationsReleased": 2,
+      "releaseExit": 0,
+      "scratchRemovedAt": "2026-10-02T22:22:22.038217Z",
+      "ownedExportPresent": false,
+      "knownOwnedPidsPresent": false,
+      "cleanupRemovedPreexistingTreesOrStores": false,
+      "verification": "Root verified exact owned registrations/scratch/PIDs only; cleanup left preexisting trees and stores untouched."
+    },
+    "scopeLimits": "Four reserved operation kinds and existing live-host verification limits remain; passing fixture/native acceptance does not advertise those as live support.",
+    "recordedAt": "2026-10-02T22:24:40.486223+00:00"
+  },
+  "historicalScopeNotes": [
+    "Implementation behavior and installed availability remain producer/integration/release responsibilities.",
+    "TraceDecay MCP not exposed to this scoped child; CLI fallback searches were attempted but daemon became unreachable. Exact handed files used; no direct database queries.",
+    "Effect4 excess-key parsing requires explicit decoder options at the negotiated projection boundary; schemas reject unsupported literal values. Root is assigning boundary behavior."
+  ],
+  "limitations": [
+    "Four operation kinds remain reserved and retain their advertised disabled availability.",
+    "Existing live-host verification limits remain; accepted fixture/native evidence does not claim unperformed real-host workflows."
+  ]
+}

@@ -114,12 +114,29 @@ describe("sync reads tools from the home it is given", () => {
           )
         ).toStrictEqual([
           {
+            coverage: null,
             duplicates: null,
+            eventsRead: null,
+            gaps: [
+              {
+                code: "sync.unavailable",
+                message: CURSOR_ACCOUNT_OFF_REASON,
+              },
+            ],
             input: CURSOR_ACCOUNT_SOURCE.input,
             inserted: null,
+            lastEventId: null,
+            readCursor: null,
             reason: CURSOR_ACCOUNT_OFF_REASON,
+            recordsRead: null,
+            rejected: null,
+            safeCursor: null,
             source: CURSOR_ACCOUNT_SOURCE.source,
+            spooledRefs: [],
+            state: "unavailable",
             status: "unavailable",
+            unavailableReasons: [CURSOR_ACCOUNT_OFF_REASON],
+            unsettled: null,
           },
         ]);
       }).pipe(Effect.provide(NodeServices.layer))

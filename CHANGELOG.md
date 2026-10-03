@@ -2,6 +2,28 @@
 
 Release notes for `dft` (dx-feature-tracker). Versions before 0.2.0 are described on the [GitHub releases page](https://github.com/BleedingDev/dx-feature-tracker/releases).
 
+## 0.3.0
+
+dft gives agents explicit control over what they read and change, with retained evidence for checking their results later.
+
+### New
+
+- Agent queries through the CLI and stdio MCP use `dx.agent.v1`, explicit acquisition and price policies, and limits on work and output. Retained analysis bases keep their selected observations, Git attribution, prices and interpretation versions for replay and comparison.
+- Reviewed operations use plan, apply, get and cancel calls, durable request keys, progress and verification receipts. The available operations are collect, configure, metadata export, delete, reset and restore.
+- Investigations and lessons keep evidence references, revision history and separate evaluations. Agents can resume an investigation and search retained lessons. The tool does not execute lesson text or treat an authored conclusion as measured savings.
+- The loopback dashboard shows agent queries and reviewed operations. CLI, MCP and dashboard calls share the same capability contracts.
+- Codex guidance installation preserves edited skills and unrelated files. Cursor guidance describes the agent query and operation workflow.
+
+### Upgrading
+
+The local SQLite store migrates to schema 8 with additive agent tables and indexes. Existing observations remain intact. Existing human report commands remain available. MCP registration is manual.
+
+### Known limits
+
+- Agent-profile acquisition refresh and price refresh are unavailable. Use recorded observations and cached or pinned prices.
+- `derive-usage`, `refresh-prices`, `live-start` and `live-stop` operation kinds are reserved and disabled. Existing human live commands remain available.
+- Agent export contains metadata only. Missing measurements remain unavailable with a reason. Operation receipts do not promise universal exactly-once execution or prove causal savings.
+
 ## 0.2.1
 
 A fix release: numbers that were counted twice or put on the wrong branch, and secrets that could slip past redaction.

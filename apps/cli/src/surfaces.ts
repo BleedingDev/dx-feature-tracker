@@ -17,7 +17,7 @@ import {
   cachedPriceProvider,
   dxStoreLayer,
   makeDxCapabilities,
-  metricsWithCost,
+  harnessRegistryFor,
   resolveDftHome,
   resolveDftStore,
   resolveDxStore,
@@ -28,6 +28,12 @@ import { McpProtocol, McpServer } from "effect/unstable/ai";
 import { HttpRouter } from "effect/unstable/http";
 import { HttpApiBuilder, HttpApiScalar } from "effect/unstable/httpapi";
 
+import {
+  AgentApplication,
+  installedAgentCatalog,
+  runInstalledOperation,
+  runInstalledLearning,
+} from "./dft-agent-runtime.js";
 import { providerCostOptions } from "./dft-session.js";
 import { VERSION } from "./version.js";
 
@@ -47,26 +53,46 @@ export const dxStore = legacyStore
     })
   : resolveDftStore({ db: null, env: dxEnv, home: homedir() });
 
-const dxCostOptions = providerCostOptions(
-  cachedPriceProvider(resolveDftHome(dxEnv, homedir()))
-);
-
-export const dxRegistry = buildRegistry(
-  allCollectors,
-  metricsWithCost(dxCostOptions)
-);
+export const dxRegistry = buildRegistry(allCollectors);
 
 export const dxCapabilities = makeDxCapabilities({
+  agentCatalog: installedAgentCatalog,
   collectors: allCollectors,
-  costOptions: dxCostOptions,
   defaultRepo: dxEnv.DX_REPO ?? process.cwd(),
+  learning: runInstalledLearning,
+  operation: runInstalledOperation,
   registry: dxRegistry,
+  resolveCostOptions: () =>
+    providerCostOptions(cachedPriceProvider(resolveDftHome(dxEnv, homedir()))),
   storePath: dxStore.path,
 });
 
-export const dxStoreLive = dxStoreLayer(dxStore);
+export const agentRuntimeLayer = (options: {
+  readonly repo: string;
+  readonly dftHome: string;
+  readonly home: string;
+  readonly store: typeof dxStore;
+}) =>
+  AgentApplication.layer({
+    dftHome: options.dftHome,
+    home: options.home,
+    repo: options.repo,
+    storePath: options.store.path,
+  }).pipe(
+    Layer.provideMerge(harnessRegistryFor(options.home)),
+    Layer.provideMerge(dxStoreLayer(options.store))
+  );
 
-const dxTools = toToolkit([...capabilities, ...dxCapabilities]);
+export const dxStoreLive = agentRuntimeLayer({
+  dftHome: resolveDftHome(dxEnv, homedir()),
+  home: homedir(),
+  repo: dxEnv.DX_REPO ?? process.cwd(),
+  store: dxStore,
+});
+
+const dxTools = toToolkit([...capabilities, ...dxCapabilities], {
+  strictInput: true,
+});
 
 export const tools = toToolkit(capabilities);
 

@@ -1,7 +1,10 @@
 import { defineContract } from "@rat-stack/capability/contract";
 import { Schema } from "effect";
 
+import { AgentError } from "../contracts/error-agent.js";
 import { QueryFailureSchema } from "../contracts/errors.js";
+import { AgentRequestSchema } from "../model/agent-common.js";
+import { AgentQueryOutputSchema } from "../model/agent-query.js";
 import { IsoTimestampSchema } from "../model/common.js";
 import { USAGE_DIMENSIONS, USAGE_METRICS } from "./query.js";
 
@@ -22,6 +25,7 @@ const valuesOf = (description: string) =>
 
 export const DxUsageInput = Schema.Struct({
   agent: valuesOf("Agent types or ids"),
+  agentQuery: Schema.optional(AgentRequestSchema),
   attribution: valuesOf(
     "How the branch was found (harness-recorded, hook, git-at-time, session-recorded, tool-calls, cwd-inferred, subagent-split, unassigned)"
   ),
@@ -32,6 +36,12 @@ export const DxUsageInput = Schema.Struct({
     })
   ),
   channel: valuesOf("Channels (session-file, hooks, usage-api, ...)"),
+  cursor: Schema.optional(
+    Schema.String.annotate({
+      description:
+        "Opaque retained page or work continuation; requires the negotiated agentQuery profile.",
+    })
+  ),
   effort: valuesOf("Reasoning effort levels"),
   groupBy: Schema.optional(
     UsageDimensionSchema.annotate({ description: "One dimension to group by" })
@@ -160,11 +170,18 @@ export const DxUsageOutput = Schema.Struct({
 
 export type DxUsageOutputType = typeof DxUsageOutput.Type;
 
+export const NegotiatedUsageOutput = Schema.Union([
+  DxUsageOutput,
+  AgentQueryOutputSchema,
+]);
+
+export type NegotiatedUsageOutputType = typeof NegotiatedUsageOutput.Type;
+
 export const dxUsageContract = defineContract("dx_usage", {
   annotations: { idempotent: true, readOnly: true },
   description:
     "AI usage across tools, one deduplicated row per request: filter by tool, provider, via, model, effort, repo, branch, worktree or session, group by one of them or by day, week or month, and read tokens, requests and each money ledger (estimate, billed, tool's figure) separately",
-  failure: QueryFailureSchema,
+  failure: Schema.Union([QueryFailureSchema, AgentError]),
   input: DxUsageInput,
-  output: DxUsageOutput,
+  output: NegotiatedUsageOutput,
 });

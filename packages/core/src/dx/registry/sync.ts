@@ -6,6 +6,10 @@ import path from "node:path";
 import { Console, Effect, Option } from "effect";
 
 import { runCollect, runHarnessRead } from "../cli/commands/collect.js";
+import type {
+  CollectResult,
+  HarnessReadResult,
+} from "../cli/commands/collect.js";
 import type { DxCommandEnv } from "../cli/commands/context.js";
 import { LEGACY_SPOOL_FOLDER } from "../collectors/cursor-hooks/spool.js";
 import {
@@ -25,8 +29,17 @@ import type {
 import type { HarnessId } from "../harness/ids.js";
 import { harnessAdapterId } from "../harness/pending.js";
 import { HarnessRegistry, harnessRegistryFor } from "../harness/registry.js";
+import type {
+  CollectCursor,
+  SourceCoverage,
+  SourceGap,
+} from "../model/coverage.js";
 import type { FlightContext } from "../model/event.js";
 import { HarnessCursors, unchangedRef } from "../storage/harness-cursors.js";
+import type {
+  HarnessCursorsApi,
+  StoredCursor,
+} from "../storage/harness-cursors.js";
 import type { DxCollectorServices, RegisteredCollector } from "./registry.js";
 import {
   contextForRepo,
@@ -41,7 +54,30 @@ export {
   transcriptDirFor,
 } from "../harness/cursor/sources.js";
 
-export interface SyncStep {
+export type SyncStepState =
+  | "unchanged"
+  | "duplicate"
+  | "committed"
+  | "spooled"
+  | "partial"
+  | "unavailable";
+
+export interface SyncStepDetails {
+  readonly coverage: SourceCoverage | null;
+  readonly eventsRead: number | null;
+  readonly gaps: readonly SourceGap[];
+  readonly lastEventId: string | null;
+  readonly readCursor: CollectCursor | null;
+  readonly recordsRead: number | null;
+  readonly rejected: number | null;
+  readonly safeCursor: CollectCursor | null;
+  readonly spooledRefs: readonly string[];
+  readonly state: SyncStepState;
+  readonly unavailableReasons: readonly string[];
+  readonly unsettled: boolean | null;
+}
+
+export interface SyncStep extends Partial<SyncStepDetails> {
   readonly duplicates: number | null;
   readonly input: string | null;
   readonly inserted: number | null;
@@ -301,10 +337,140 @@ export const idleBranchSources = (
     }));
 };
 
-interface StepCounts {
+interface StepReceipt extends SyncStepDetails {
   readonly duplicates: number;
   readonly inserted: number;
 }
+
+interface CursorRead {
+  readonly gap: SourceGap | null;
+  readonly stored: StoredCursor | null;
+}
+
+interface CursorWrite {
+  readonly gap: SourceGap | null;
+  readonly safeCursor: CollectCursor | null;
+}
+
+interface HarnessReceiptDetails {
+  readonly gaps: readonly SourceGap[];
+  readonly lastEventId: string | null;
+  readonly readCursor: CollectCursor | null;
+  readonly safeCursor: CollectCursor | null;
+  readonly unsettled: boolean;
+}
+
+const collectedState = (
+  result: CollectResult,
+  harnessGaps: readonly SourceGap[],
+  unsettled: boolean
+): SyncStepState => {
+  if (result.spooledTo !== null) {
+    return "spooled";
+  }
+
+  if (unsettled || harnessGaps.length > 0) {
+    return "partial";
+  }
+
+  if (
+    result.events === 0 &&
+    result.coverage.state !== "complete" &&
+    result.coverage.state !== "partial"
+  ) {
+    return "unavailable";
+  }
+
+  if (result.coverage.state !== "complete") {
+    return "partial";
+  }
+
+  return result.events > 0 &&
+    result.inserted === 0 &&
+    result.duplicates === result.events
+    ? "duplicate"
+    : "committed";
+};
+
+const collectedReceipt = (
+  result: CollectResult,
+  harness?: HarnessReceiptDetails
+): StepReceipt => {
+  const gaps = [...result.coverage.gaps, ...(harness?.gaps ?? [])];
+  const unsettled = harness?.unsettled ?? null;
+  const state = collectedState(result, harness?.gaps ?? [], unsettled === true);
+
+  const unavailableReasons =
+    state === "unavailable" ? gaps.map((gap) => gap.message) : [];
+
+  if (state === "unavailable" && unavailableReasons.length === 0) {
+    unavailableReasons.push(
+      `source reported ${result.coverage.state} coverage`
+    );
+  }
+
+  return {
+    coverage: result.coverage,
+    duplicates: result.duplicates,
+    eventsRead: result.events,
+    gaps,
+    inserted: result.inserted,
+    lastEventId: harness?.lastEventId ?? null,
+    readCursor: harness?.readCursor ?? null,
+    recordsRead: result.coverage.observedItems,
+    rejected: null,
+    safeCursor: harness?.safeCursor ?? null,
+    spooledRefs: result.spooledTo === null ? [] : [result.spooledTo],
+    state,
+    unavailableReasons,
+    unsettled,
+  };
+};
+
+const unavailableDetails = (reason: string): SyncStepDetails => ({
+  coverage: null,
+  eventsRead: null,
+  gaps: [{ code: "sync.unavailable", message: reason }],
+  lastEventId: null,
+  readCursor: null,
+  recordsRead: null,
+  rejected: null,
+  safeCursor: null,
+  spooledRefs: [],
+  state: "unavailable",
+  unavailableReasons: [reason],
+  unsettled: null,
+});
+
+const writeHarnessCursor = Effect.fn("writeHarnessCursor")(
+  function* persistCursor(
+    cursors: HarnessCursorsApi | null,
+    ref: SessionRef,
+    result: HarnessReadResult,
+    stored: StoredCursor | null
+  ): Effect.fn.Return<CursorWrite> {
+    if (cursors === null || result.spooledTo !== null) {
+      return { gap: null, safeCursor: stored?.cursor ?? null };
+    }
+
+    return yield* cursors
+      .put(ref, {
+        cursor: result.cursor,
+        lastEventId: result.lastEventId ?? stored?.lastEventId ?? null,
+        mtimeMs: result.unsettled ? null : ref.mtimeMs,
+        size: result.unsettled ? null : ref.size,
+      })
+      .pipe(
+        Effect.as<CursorWrite>({ gap: null, safeCursor: result.cursor }),
+        Effect.catch((error) =>
+          Effect.succeed<CursorWrite>({
+            gap: { code: "cursor.write-failed", message: error.message },
+            safeCursor: stored?.cursor ?? null,
+          })
+        )
+      );
+  }
+);
 
 const readHarnessRef = (
   env: DxCommandEnv,
@@ -315,12 +481,37 @@ const readHarnessRef = (
   Effect.gen(function* readRef() {
     const cursors = yield* Effect.serviceOption(HarnessCursors);
 
-    const stored = Option.isSome(cursors)
-      ? yield* cursors.value.get(ref).pipe(Effect.orElseSucceed(() => null))
-      : null;
+    const cursorRead: CursorRead = Option.isSome(cursors)
+      ? yield* cursors.value.get(ref).pipe(
+          Effect.map((stored): CursorRead => ({ gap: null, stored })),
+          Effect.catch((error) =>
+            Effect.succeed<CursorRead>({
+              gap: { code: "cursor.read-failed", message: error.message },
+              stored: null,
+            })
+          )
+        )
+      : { gap: null, stored: null };
+
+    const { stored } = cursorRead;
 
     if (unchangedRef(stored, ref)) {
-      return { duplicates: 0, inserted: 0 } satisfies StepCounts;
+      return {
+        coverage: null,
+        duplicates: 0,
+        eventsRead: 0,
+        gaps: [],
+        inserted: 0,
+        lastEventId: stored?.lastEventId ?? null,
+        readCursor: null,
+        recordsRead: 0,
+        rejected: 0,
+        safeCursor: stored?.cursor ?? null,
+        spooledRefs: [],
+        state: "unchanged",
+        unavailableReasons: [],
+        unsettled: false,
+      } satisfies StepReceipt;
     }
 
     const result = yield* runHarnessRead(env, {
@@ -330,18 +521,32 @@ const readHarnessRef = (
       ref,
     });
 
-    if (Option.isSome(cursors) && result.spooledTo === null) {
-      yield* cursors.value
-        .put(ref, {
-          cursor: result.cursor,
-          lastEventId: result.lastEventId ?? stored?.lastEventId ?? null,
-          mtimeMs: result.unsettled ? null : ref.mtimeMs,
-          size: result.unsettled ? null : ref.size,
-        })
-        .pipe(Effect.ignore);
-    }
+    const cursorWrite = yield* writeHarnessCursor(
+      Option.getOrNull(cursors),
+      ref,
+      result,
+      stored
+    );
 
-    return { duplicates: result.duplicates, inserted: result.inserted };
+    return collectedReceipt(result, {
+      gaps: [
+        ...(cursorRead.gap === null ? [] : [cursorRead.gap]),
+        ...(cursorWrite.gap === null ? [] : [cursorWrite.gap]),
+        ...(result.unsettled
+          ? [
+              {
+                code: "sync.unsettled",
+                message:
+                  "Source records remain unsettled and need a later read.",
+              },
+            ]
+          : []),
+      ],
+      lastEventId: result.lastEventId ?? stored?.lastEventId ?? null,
+      readCursor: result.cursor,
+      safeCursor: cursorWrite.safeCursor,
+      unsettled: result.unsettled,
+    });
   });
 
 export const runPlannedStep = (
@@ -352,6 +557,7 @@ export const runPlannedStep = (
   Effect.gen(function* runStep() {
     if (step.unavailable !== null) {
       return {
+        ...unavailableDetails(step.unavailable),
         duplicates: null,
         input: step.input,
         inserted: null,
@@ -365,7 +571,7 @@ export const runPlannedStep = (
     const harness = step.harness === null ? null : registry.get(step.harness);
 
     const collected: Effect.Effect<
-      StepCounts,
+      StepReceipt,
       { readonly message: string },
       DxCollectorServices
     > =
@@ -374,20 +580,20 @@ export const runPlannedStep = (
             context: step.context,
             input: step.input,
             source: step.source,
-          })
+          }).pipe(Effect.map((result) => collectedReceipt(result)))
         : readHarnessRef(env, harness, step.context, step.ref);
 
     return yield* collected.pipe(
       Effect.map((result): SyncStep => ({
-        duplicates: result.duplicates,
+        ...result,
         input: step.input,
-        inserted: result.inserted,
         reason: null,
         source: step.source,
         status: "synced",
       })),
       Effect.catch((error) =>
         Effect.succeed<SyncStep>({
+          ...unavailableDetails(error.message),
           duplicates: null,
           input: step.input,
           inserted: null,

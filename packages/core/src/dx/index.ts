@@ -24,7 +24,12 @@ export {
   transcriptDirFor,
 } from "./registry/sync.js";
 
-export type { AutoSyncOptions, SyncReport, SyncStep } from "./registry/sync.js";
+export type {
+  AutoSyncOptions,
+  PlannedSource,
+  SyncReport,
+  SyncStep,
+} from "./registry/sync.js";
 
 export { makeDxHistoryCapability } from "./history/capability.js";
 
@@ -214,16 +219,20 @@ export type {
 
 export {
   LIVE_DEFAULTS,
+  makeAdministrationBackend,
   startLiveEngine,
   USAGE_INPUT,
   USAGE_SOURCE,
 } from "./live/engine.js";
 
 export type {
+  AdministrationBackend,
   LiveChange,
   LiveChangeReason,
   LiveEngine,
   LiveEngineOptions,
+  LiveAcquisitionEnvironment,
+  LiveAcquisitionExecutor,
   LiveListener,
   LiveRepoStatus,
   LiveSignal,
@@ -338,3 +347,246 @@ export {
 } from "./model/event.js";
 
 export type { EventBatch } from "./model/event.js";
+
+export { AgentStore } from "./contracts/agent-store.js";
+
+export { makeFakeAgentStore } from "./contracts/fake-agent-store.js";
+
+export type {
+  AgentBasisMetadataRead,
+  AgentResultMetadataRead,
+  AgentStoreService,
+  AgentStoreFailure,
+} from "./contracts/agent-store.js";
+
+export {
+  AGENT_PROFILE_VERSION,
+  AgentRequestSchema,
+  AgentBudgetSchema,
+  AgentRefSchema,
+} from "./model/agent-common.js";
+
+export type {
+  AgentRequest,
+  AgentBudget,
+  AgentRef,
+  AgentScope,
+} from "./model/agent-common.js";
+
+export {
+  AgentQueryInputSchema,
+  AgentQueryOutputSchema,
+  AgentResponseContextSchema,
+} from "./model/agent-query.js";
+
+export type {
+  AgentQueryInput,
+  AgentQueryOutput,
+  AgentResponseContext,
+} from "./model/agent-query.js";
+
+export { AgentError } from "./contracts/error-agent.js";
+
+export { InvalidInput } from "./contracts/error-invalid-input.js";
+
+export { dxOperationContract, dxLearningContract } from "./contracts/agent.js";
+
+export {
+  OperationService,
+  makeOperationService,
+  runOperation,
+} from "./operations/service.js";
+
+export type { OperationServiceApi } from "./operations/service.js";
+
+export { operationStep } from "./operations/ports.js";
+
+export type {
+  OperationAdapter,
+  OperationPlanInput,
+  OperationApplyInput,
+  OperationPreparation,
+  OperationEffectResult,
+  OperationProbe,
+  OperationExecutionContext,
+  OperationWorkContext,
+} from "./operations/ports.js";
+
+export type {
+  OperationWorkBudget,
+  OperationWorkUsage,
+  OperationWorkReservation,
+} from "./operations/budget.js";
+
+export { createOperationWorkBudget } from "./operations/budget.js";
+
+export { BoundedEventReplacement } from "./storage/agent-append-bounds.js";
+
+export type {
+  BoundedAppendLimits,
+  BoundedAppendResult,
+  BoundedReplacementProof,
+} from "./storage/agent-append-bounds.js";
+
+export {
+  makeBoundedGitOperationAdapter,
+  makeBoundedGitCommitChecker,
+  makeBoundedGitWorktreeLister,
+  makeBoundedGitTargetResolver,
+  BOUNDED_GIT_OPERATION_VERSION,
+  BOUNDED_GIT_SOURCES,
+} from "./operations/git.js";
+
+export type { BoundedGitOperationOptions } from "./operations/git.js";
+
+export {
+  makeBoundedAccountOperationAdapter,
+  makeBoundedAccountReplacement,
+  ACCOUNT_OPERATION_SOURCE,
+  ACCOUNT_OPERATION_VERSION,
+  ACCOUNT_OPERATION_BOUNDS,
+  accountOperationArguments,
+  accountOperationScope,
+} from "./operations/account.js";
+
+export type { BoundedAccountOperationOptions } from "./operations/account.js";
+
+export { HarnessCursors } from "./storage/harness-cursors.js";
+
+export type { HarnessCursorsApi } from "./storage/harness-cursors.js";
+
+export { operationDigest, operationScopeDigest } from "./operations/digest.js";
+
+export { makeLiveAdministrationAdapters } from "./operations/live.js";
+
+export type {
+  LiveAdministrationTarget,
+  LiveAdministrationTargetResolver,
+  LiveAdministrationBackend,
+} from "./operations/live.js";
+
+export {
+  makePlannedSourceOperationAdapter,
+  nativeBoundedSnapshotHarness,
+} from "./operations/collector.js";
+
+export { makeExplicitSelectedSourceCatalog } from "./operations/collector.js";
+
+export type {
+  PlannedSourceOperationAdapterOptions,
+  PlannedSourceSelection,
+  SelectedSourceRequest,
+  ExplicitSourceMapping,
+  CollectionEnrollmentRequest,
+  SelectedSourceSnapshot,
+  SnapshotHarness,
+} from "./operations/collector.js";
+
+export {
+  composeCollectionOperationAdapters,
+  makeLiveOperationAcquisitionExecutor,
+  makeLiveSelectedSourceCatalog,
+} from "./operations/live-acquisition.js";
+
+export type {
+  CollectionOperationRoute,
+  LiveOperationAcquisitionOptions,
+  LiveSelectedSourceCatalog,
+  LiveSelectedSourceCatalogOptions,
+} from "./operations/live-acquisition.js";
+
+export {
+  BOUNDED_HOOK_PARSER_VERSION,
+  boundedHookSnapshotHarness,
+} from "./operations/hooks.js";
+
+export {
+  boundedCompressedSnapshotHarness,
+  operationSnapshotEncoding,
+} from "./operations/decompression.js";
+
+export {
+  BOUNDED_OPENCODE_OPERATION_VERSION,
+  makeBoundedOpencodeOperationAdapter,
+} from "./operations/opencode.js";
+
+export type { BoundedOpencodeOperationOptions } from "./operations/opencode.js";
+
+export {
+  BOUNDED_CURSOR_OPERATION_SOURCES,
+  BOUNDED_CURSOR_OPERATION_VERSION,
+  makeBoundedCursorOperationAdapter,
+} from "./operations/cursor.js";
+
+export type { BoundedCursorOperationOptions } from "./operations/cursor.js";
+
+export {
+  BOUNDED_CURSOR_HOOK_OPERATION_VERSION,
+  CURSOR_HOOK_OPERATION_SOURCE,
+  makeBoundedCursorHookOperationAdapter,
+  makeBoundedCursorHookIdentityProbe,
+} from "./operations/cursor-hooks.js";
+
+export type {
+  BoundedCursorHookIdentityOptions,
+  BoundedCursorHookOperationOptions,
+} from "./operations/cursor-hooks.js";
+
+export { cursorStateDbPath } from "./collectors/cursor-usage-api/session.js";
+
+export {
+  OperationInputSchema,
+  OperationPlanSchema,
+  OperationOutputSchema,
+  OperationDescriptorSchema,
+} from "./model/agent-operation.js";
+
+export type {
+  OperationInput,
+  OperationOutput,
+  OperationPlan,
+  OperationReceipt,
+  OperationStep,
+  OperationBounds,
+  OperationArguments,
+  OperationDescriptor,
+} from "./model/agent-operation.js";
+
+export {
+  LearningService,
+  makeLearningService,
+  runLearning,
+  learningRecordRef,
+} from "./learning/service.js";
+
+export type { LearningServiceOptions } from "./learning/service.js";
+
+export type {
+  LearningServiceApi,
+  LearningContext,
+} from "./learning/service.js";
+
+export {
+  LearningInputSchema,
+  LearningOutputSchema,
+} from "./model/agent-learning.js";
+
+export type { LearningInput, LearningOutput } from "./model/agent-learning.js";
+
+export type { AnalysisBasisMetadata } from "./model/agent-query.js";
+
+export { AgentHandleSchema, AgentScopeSchema } from "./model/agent-common.js";
+
+export type { AgentHandle, StoreIdentity } from "./model/agent-common.js";
+
+export { configurationContentDigest } from "./live/store-admin.js";
+
+export type {
+  LiveAdministrationPreview,
+  LiveAdministrationRequest,
+} from "./live/store-admin.js";
+
+export {
+  AGENT_CONTRACT_DIGEST,
+  AGENT_CONTRACT_VERSION,
+} from "./contracts/agent-version.js";

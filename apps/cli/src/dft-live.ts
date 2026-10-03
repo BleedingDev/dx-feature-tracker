@@ -1,5 +1,5 @@
 // @effect-diagnostics nodeBuiltinImport:off -- The live dashboard serves one local page over node:http on 127.0.0.1 and runs the engine's Effects through a captured runtime at the process boundary.
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { existsSync } from "node:fs";
 import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
@@ -7,23 +7,33 @@ import path from "node:path";
 
 import {
   HarnessRegistry,
-  dxStoreLayer,
+  AGENT_PROFILE_VERSION,
+  AgentError,
+  AgentQueryOutputSchema,
+  AgentStore,
+  EventStore,
   harnessRegistryFor,
   resolveGitRepo,
   resolveSince,
   startLiveEngine,
 } from "@rat-stack/core/dx";
 import type {
+  AgentScope,
+  AgentStoreFailure,
+  OperationArguments,
   DxUsageInputType,
   DxUsageOutputType,
   FlightHistoryRow,
   LiveChange,
   LiveEngine,
+  OperationReceipt,
   SyncStep,
+  dxStoreLayer,
 } from "@rat-stack/core/dx";
 import {
   Cause,
   Console,
+  Context,
   Data,
   DateTime,
   Effect,
@@ -32,14 +42,20 @@ import {
   Predicate,
   Schedule,
   Schema,
+  Struct,
+  Layer,
 } from "effect";
 
+import { writeAgentDashboardCapability } from "./dft-agent-dashboard-write.js";
+import { readAgentDashboardQuery } from "./dft-agent-dashboard.js";
 import {
-  hasCapture,
-  ignoreCaptureFiles,
-  isCaptureTool,
-  writtenUntracked,
-} from "./dft-capture.js";
+  DASHBOARD_OPERATION_BOUNDS,
+  DashboardOperationBridge,
+  DashboardOperationReviewSchema,
+} from "./dft-agent-live-bridge.js";
+import type { DashboardOperationReview } from "./dft-agent-live-bridge.js";
+import { AgentApplication, agentScopeFor } from "./dft-agent-runtime.js";
+import { hasCapture, isCaptureTool } from "./dft-capture.js";
 import {
   baseName,
   branchChatsWith,
@@ -47,14 +63,8 @@ import {
   openInBrowser,
   repoName,
   repoPathOf,
-  writeDashboard,
 } from "./dft-dashboard.js";
-import {
-  dftInvocation,
-  hasDftHooks,
-  installCursorHooks,
-  installSkills,
-} from "./dft-install.js";
+import { hasDftHooks } from "./dft-install.js";
 import {
   INTRO_ROUTE,
   introAssetsDir,
@@ -75,7 +85,7 @@ import {
   tokenShares,
 } from "./dft-render.js";
 import { capabilitiesFor, capabilityAt } from "./dft-session.js";
-import type { CostOptions } from "./dft-session.js";
+import type { CostOptions, PriceEffects } from "./dft-session.js";
 import { telemetryState, userToolDirs } from "./dft-telemetry.js";
 import type { TelemetryState } from "./dft-telemetry.js";
 import { lastEventTimes } from "./dft-tools.js";
@@ -99,6 +109,7 @@ export interface LivePaths {
 
 export interface LiveServerOptions {
   readonly costOptions: CostOptions;
+  readonly prices: PriceEffects;
   readonly engine: LiveEngine;
   readonly introDir?: string;
   readonly paths: LivePaths;
@@ -109,6 +120,7 @@ export interface LiveServerOptions {
 export interface LiveServer {
   readonly port: number;
   readonly token: string;
+  readonly trackCurrentRepo: Effect.Effect<string, AgentStoreFailure>;
   readonly url: string;
 }
 
@@ -346,14 +358,16 @@ const ActionSchema = Schema.Struct({
   confirm: Schema.optional(Schema.String),
   enabled: Schema.optional(Schema.Boolean),
   id: Schema.optional(Schema.String),
+  idempotencyKey: Schema.optional(Schema.String),
   path: Schema.optional(Schema.String),
-  titles: Schema.optional(Schema.Boolean),
+  review: Schema.optional(DashboardOperationReviewSchema),
 });
 
 type Action = typeof ActionSchema.Type;
 
 const decodeAction = Schema.decodeUnknownOption(
-  Schema.fromJsonString(ActionSchema)
+  Schema.fromJsonString(ActionSchema),
+  { onExcessProperty: "error" }
 );
 
 const MAX_BODY = 64 * 1024;
@@ -393,10 +407,16 @@ const sendJson = (response: ServerResponse, status: number, text: string) =>
     response.end(text);
   });
 
-const requireString = (value: string | undefined, name: string) =>
-  value === undefined || value.trim() === ""
+const requireString = (value: string | null | undefined, name: string) =>
+  value === undefined || value === null || value.trim() === ""
     ? fail(400, `Missing ${name}.`)
     : Effect.succeed(value);
+
+const receiptMessage = (receipt: OperationReceipt, success: string): string =>
+  receipt.executionState === "succeeded" &&
+  receipt.verificationState === "verified"
+    ? success
+    : `Operation ${receipt.id} is ${receipt.executionState}; verification is ${receipt.verificationState}. Review its receipt before continuing.`;
 
 export const serveDashboard = (options: LiveServerOptions) =>
   Effect.gen(function* serve() {
@@ -416,16 +436,53 @@ export const serveDashboard = (options: LiveServerOptions) =>
 
     let { port } = options;
 
+    const applicationLayer = AgentApplication.layer({
+      dftHome: paths.dftHome,
+      engine,
+      home: paths.home,
+      repo: paths.repo,
+      storePath: paths.store.path,
+    }).pipe(
+      Layer.provideMerge(
+        Layer.mergeAll(
+          Layer.succeed(EventStore, engine.store),
+          Layer.succeed(AgentStore, engine.agentStore),
+          harnessRegistryFor(paths.home)
+        )
+      )
+    );
+
+    const services = yield* Layer.build(
+      DashboardOperationBridge.layer({ currentRepo: paths.repo, engine }).pipe(
+        Layer.provideMerge(applicationLayer)
+      )
+    );
+
+    const bridge = Context.get(services, DashboardOperationBridge);
+    const application = Context.get(services, AgentApplication);
+
+    yield* engine.setAcquisitionExecutor(application.acquire);
+
+    const reviews = new Map<string, DashboardOperationReview>();
+
     const provideStore = <A, E, R>(effect: Effect.Effect<A, E, R>) =>
-      effect.pipe(Effect.provide(dxStoreLayer(paths.store)));
+      effect.pipe(Effect.provide(services));
 
     const liveChats = branchChatsWith(options.costOptions);
 
-    const capsFor = (
-      repo: string,
-      branch: string | null,
-      since: string | undefined
-    ) =>
+    const withReadEffects = <A>(output: A) => ({
+      ...output,
+      effects: {
+        acquisition: {
+          performed: false,
+          receipt: null,
+          requested: false,
+        },
+        prices: options.prices,
+      },
+    });
+
+    const capsFor = (repo: string, branch: string | null, since?: string) =>
       Effect.gen(function* caps() {
         const now = yield* DateTime.now;
         const from = yield* resolveSince(since, DateTime.toEpochMillis(now));
@@ -456,7 +513,10 @@ export const serveDashboard = (options: LiveServerOptions) =>
       Effect.gen(function* usage() {
         const caps = yield* capsFor(paths.repo, null, options.since);
 
-        return yield* provideStore(caps.usage.handler(input)).pipe(
+        return yield* provideStore(
+          caps.usage.handler(Struct.omit(input, ["agentQuery"]))
+        ).pipe(
+          Effect.map(withReadEffects),
           Effect.catchTag("InvalidInput", (error) =>
             Effect.fail(
               new DashboardServerError({ message: error.message, status: 400 })
@@ -511,7 +571,10 @@ export const serveDashboard = (options: LiveServerOptions) =>
         );
 
         const caps = yield* capsFor(repo, name, since);
-        const report = yield* provideStore(caps.analyze.handler({ repo }));
+
+        const report = withReadEffects(
+          yield* provideStore(caps.analyze.handler({ repo }))
+        );
 
         const chats = yield* provideStore(
           liveChats(withSince({ branch: name, repo }, since))
@@ -603,60 +666,279 @@ export const serveDashboard = (options: LiveServerOptions) =>
       };
     });
 
+    const applyReviewed = (action: Action) =>
+      Effect.gen(function* applyReview() {
+        if (
+          action.action !== "delete" &&
+          action.action !== "reset" &&
+          action.action !== "restore"
+        ) {
+          return yield* fail(400, "Select a destructive operation.");
+        }
+
+        let target: string | undefined;
+
+        if (action.action === "delete") {
+          target = action.path;
+        } else if (action.action === "restore") {
+          target = action.id;
+        }
+
+        const review =
+          action.review ?? reviews.get(`${action.action}:${target ?? ""}`);
+
+        if (review === undefined || review.kind !== action.action) {
+          return yield* fail(
+            400,
+            "Review this exact operation before applying it."
+          );
+        }
+
+        const retained = yield* engine.agentStore.getOperationPlan(review.plan);
+
+        if (
+          (action.action === "delete" &&
+            retained.scope.worktreeId !== path.resolve(target ?? paths.repo)) ||
+          (action.action === "restore" &&
+            (retained.arguments.kind !== "restore" ||
+              retained.arguments.backupId !== target))
+        ) {
+          return yield* fail(
+            409,
+            "The selected target does not match the reviewed operation."
+          );
+        }
+
+        return yield* bridge.apply(
+          review,
+          action.confirm ?? "",
+          action.idempotencyKey ?? `dashboard:${review.plan.id}`
+        );
+      });
+
+    const applyLocalOperation = (
+      arguments_: OperationArguments,
+      scope: AgentScope,
+      confirmationPrefix: string
+    ) =>
+      Effect.gen(function* applyLocal() {
+        const caps = yield* capsFor(paths.repo, null);
+        const target = yield* engine.agentStore.identity;
+
+        const planned = yield* provideStore(
+          caps.operation.handler({
+            request: {
+              action: "plan",
+              arguments: arguments_,
+              bounds: DASHBOARD_OPERATION_BOUNDS,
+              purpose: `Apply the explicitly selected dashboard ${arguments_.kind} action.`,
+              scope,
+              target,
+            },
+          })
+        );
+
+        if (planned.action !== "plan") {
+          return yield* fail(400, "The operation did not return a plan.");
+        }
+
+        const applied = yield* provideStore(
+          caps.operation.handler({
+            request: {
+              action: "apply",
+              confirmation: `${confirmationPrefix} ${planned.plan.consent.scopeDigest}`,
+              consentReceiptIds: [],
+              expectedDigest: planned.plan.planDigest,
+              idempotencyKey: randomUUID(),
+              plan: {
+                id: planned.plan.id,
+                storeGeneration: planned.plan.storeGeneration,
+                storeId: planned.plan.storeId,
+              },
+            },
+          })
+        );
+
+        if (applied.action !== "apply") {
+          return yield* fail(
+            400,
+            "The operation did not return an application receipt."
+          );
+        }
+
+        return applied.receipt;
+      });
+
+    const previewMetadataExport = Effect.gen(function* previewMetadataExport() {
+      const caps = yield* capsFor(paths.repo, null, options.since);
+
+      const output = yield* provideStore(
+        caps.analyze.handler({
+          agentQuery: {
+            budget: {
+              maxDecodedBytes: 67_108_864,
+              maxElapsedMs: 60_000,
+              maxFacts: 100_000,
+              maxItems: 20,
+              maxNetworkRequests: 0,
+              maxOutputBytes: 1_048_576,
+              maxSeriesBuckets: 32,
+              maxStacks: 8,
+            },
+            detail: "summary",
+            policies: {
+              acquisition: "recorded-only",
+              derivation: "bounded-refresh",
+              learning: "hidden",
+              prices: "cached-only",
+            },
+            profileVersion: AGENT_PROFILE_VERSION,
+          },
+        })
+      );
+
+      const analysis = yield* Schema.decodeUnknownEffect(
+        AgentQueryOutputSchema
+      )(output).pipe(
+        Effect.mapError(
+          () =>
+            new DashboardServerError({
+              message:
+                "The recorded analysis did not return an exportable basis.",
+              status: 400,
+            })
+        )
+      );
+
+      const { basisId } = analysis.context;
+
+      if (basisId === null) {
+        return yield* fail(
+          400,
+          "Complete the bounded recorded analysis before exporting its metadata."
+        );
+      }
+
+      const destination = path.join(
+        paths.repo,
+        ".dft",
+        "exports",
+        `analysis-${randomUUID()}.json`
+      );
+
+      const prepared = yield* bridge.previewExport({
+        basisId,
+        destination,
+        scope: analysis.context.scope,
+      });
+
+      return {
+        ...prepared,
+        context: analysis.context,
+      };
+    });
+
+    const applyMetadataExport = (action: Action) =>
+      Effect.gen(function* applyExportReview() {
+        if (action.path !== undefined || action.id !== undefined) {
+          return yield* fail(
+            400,
+            "Metadata exports apply only the destination retained in their review."
+          );
+        }
+
+        if (action.review?.kind !== "export") {
+          return yield* fail(
+            400,
+            "Preview this exact metadata export before applying it."
+          );
+        }
+
+        const idempotencyKey = yield* requireString(
+          action.idempotencyKey,
+          "reviewed export idempotency key"
+        );
+
+        const confirmation = yield* requireString(
+          action.confirm,
+          "reviewed export confirmation"
+        );
+
+        const receipt = yield* bridge.apply(
+          action.review,
+          confirmation,
+          idempotencyKey
+        );
+
+        const destination = receipt.effects.exportArtifacts[0]?.destination;
+
+        return {
+          message: receiptMessage(
+            receipt,
+            destination === undefined
+              ? "Saved the reviewed metadata export."
+              : `Saved ${destination}`
+          ),
+          receipt,
+        };
+      });
+
     const planView = (url: URL) =>
       Effect.gen(function* plan() {
         const kind = url.searchParams.get("kind");
 
-        if (kind === "reset") {
-          const reset = yield* engine.planResetStore;
-
-          return {
-            confirmText: reset.confirmText,
-            repos: reset.repos.length,
-            totals: reset.totals,
-          };
+        if (kind === "export") {
+          return yield* previewMetadataExport;
         }
 
-        const target = yield* requireString(
-          url.searchParams.get("repo") ?? undefined,
-          "repo"
-        );
+        if (kind !== "delete" && kind !== "reset" && kind !== "restore") {
+          return yield* fail(400, "Select delete, reset, restore or export.");
+        }
 
-        const repoPlan = yield* engine.planDeleteRepoData(target);
+        let target: string | undefined;
 
-        return {
-          branches: repoPlan.branches.length,
-          confirmText: repoPlan.confirmText,
-          repos: 1,
-          totals: repoPlan.totals,
-        };
+        if (kind === "delete") {
+          target = yield* requireString(url.searchParams.get("repo"), "repo");
+        } else if (kind === "restore") {
+          target = yield* requireString(
+            url.searchParams.get("backup"),
+            "backup"
+          );
+        }
+
+        const prepared = yield* bridge.plan(kind, target);
+
+        reviews.set(`${kind}:${target ?? ""}`, prepared.review);
+
+        return prepared;
       });
 
     const act = (action: Action) =>
       Effect.gen(function* perform() {
         switch (action.action) {
           case "track": {
-            const result = yield* engine.addRepo(
-              yield* requireString(action.path, "folder")
-            );
+            const target = yield* requireString(action.path, "folder");
+            const receipt = yield* bridge.configure("track", target);
 
             return {
-              message: result.added
-                ? `Now tracking ${result.repo.name}.`
-                : `${result.repo.name} was already tracked.`,
+              message: receiptMessage(
+                receipt,
+                `Now tracking ${baseName(target)}.`
+              ),
+              receipt,
             };
           }
 
           case "untrack": {
-            const result = yield* engine.removeRepo(
-              yield* requireString(action.path, "folder")
-            );
+            const target = yield* requireString(action.path, "folder");
+            const receipt = yield* bridge.configure("untrack", target);
 
             return {
-              message:
-                result.removed.length === 0
-                  ? "That repo was not tracked."
-                  : `Stopped tracking ${baseName(result.removed[0] ?? "")}. Its data stays until you delete it.`,
+              message: receiptMessage(
+                receipt,
+                `Stopped tracking ${baseName(target)}. Its data stays until you delete it.`
+              ),
+              receipt,
             };
           }
 
@@ -668,92 +950,80 @@ export const serveDashboard = (options: LiveServerOptions) =>
               return yield* fail(400, "That folder is not a git repo.");
             }
 
-            const command = dftInvocation(
-              process.execPath,
-              process.argv[1] ?? "dft"
+            const receipt = yield* applyLocalOperation(
+              {
+                expectedContentDigest: "current",
+                kind: "configure",
+                path: path.join(repo.root, ".cursor", "hooks.json"),
+                settings: { action: "install-hooks", host: "cursor" },
+              },
+              agentScopeFor(repo.root),
+              "INSTALL CURSOR HOOKS"
             );
 
-            yield* Effect.sync(() => {
-              const hooks = installCursorHooks(repo.root, `${command} hook`);
-              const skills = installSkills(repo.root);
-
-              ignoreCaptureFiles(
-                repo.root,
-                writtenUntracked(repo.root, [hooks, ...skills])
-              );
-            });
-
             return {
-              message: `Cursor hooks and skills are set up in ${repo.name}.`,
+              message: receiptMessage(
+                receipt,
+                `Cursor hooks and skills are set up in ${repo.name}.`
+              ),
+              receipt,
             };
           }
 
           case "usage": {
             const enabled = action.enabled === true;
-
-            yield* engine.setCursorUsageImport(enabled);
+            const receipt = yield* bridge.configure("usage", enabled);
 
             return {
-              message: enabled
-                ? "Cursor usage import is on."
-                : "Cursor usage import is off.",
+              message: receiptMessage(
+                receipt,
+                enabled
+                  ? "Cursor usage import is on."
+                  : "Cursor usage import is off."
+              ),
+              receipt,
             };
           }
 
           case "export": {
-            const written = yield* provideStore(
-              Effect.gen(function* exportPage() {
-                const caps = yield* capsFor(paths.repo, null, options.since);
-
-                return yield* writeDashboard(
-                  {
-                    dftHome: paths.dftHome,
-                    open: false,
-                    repo: paths.repo,
-                    scope: "all",
-                    since: options.since,
-                    titles: action.titles === true,
-                  },
-                  {
-                    chats: liveChats,
-                    history: caps.history.handler,
-                    usage: caps.usage.handler,
-                  }
-                );
-              })
-            );
-
-            return { message: `Saved ${written.path}` };
+            return yield* applyMetadataExport(action);
           }
 
           case "delete": {
-            const target = yield* requireString(action.path, "repo");
-
-            const result = yield* engine.deleteRepoData(
-              target,
-              action.confirm ?? ""
-            );
+            const receipt = yield* applyReviewed(action);
+            const removed = receipt.effects.removedCount;
+            const [backup] = receipt.effects.backupIds;
 
             return {
-              message: `Deleted ${formatCount(result.plan.totals.events)} events. Backup ${result.backup.id} can restore them.`,
+              message: receiptMessage(
+                receipt,
+                `Deleted ${removed === null ? "the reviewed" : formatCount(removed)} events. Backup ${backup ?? "unavailable"} can restore them.`
+              ),
+              receipt,
             };
           }
 
           case "reset": {
-            const result = yield* engine.resetStore(action.confirm ?? "");
+            const receipt = yield* applyReviewed(action);
 
             return {
-              message: `The store is empty. Backup ${result.backup.id} can restore it.`,
+              message: receiptMessage(
+                receipt,
+                `The store is empty. Backup ${receipt.effects.backupIds[0] ?? "unavailable"} can restore it.`
+              ),
+              receipt,
             };
           }
 
           case "restore": {
-            const result = yield* engine.restoreBackup(
-              yield* requireString(action.id, "backup")
-            );
+            const receipt = yield* applyReviewed(action);
 
             return {
-              message: `Restored ${result.restored.id}. The data from before is in backup ${result.safety.id}.`,
+              message: receiptMessage(
+                receipt,
+                `Restored ${action.id ?? "the reviewed backup"}. The data from before is in backup ${receipt.effects.backupIds[0] ?? "unavailable"}.`
+              ),
+              receipt,
             };
           }
 
@@ -842,6 +1112,96 @@ export const serveDashboard = (options: LiveServerOptions) =>
       });
     };
 
+    const agentQueryView = (url: URL) =>
+      Effect.gen(function* agentView() {
+        const capability = yield* requireString(
+          url.searchParams.get("capability"),
+          "capability"
+        );
+
+        const input = yield* requireString(
+          url.searchParams.get("input"),
+          "input"
+        );
+
+        const caps = yield* capsFor(paths.repo, null);
+
+        return yield* provideStore(
+          readAgentDashboardQuery(caps, capability, input)
+        ).pipe(
+          Effect.catchTag("InvalidInput", (error) => fail(400, error.message))
+        );
+      });
+
+    const authorizeDashboardAction = (
+      request: IncomingMessage,
+      allowMissingOrigin = false
+    ) =>
+      Effect.gen(function* authorizeAction() {
+        if (
+          !originAllowed(request) &&
+          !(allowMissingOrigin && request.headers.origin === undefined)
+        ) {
+          return yield* fail(
+            403,
+            "This request did not come from the dashboard page."
+          );
+        }
+
+        if (request.headers["x-dft-token"] !== token) {
+          return yield* fail(
+            403,
+            "Missing or wrong dashboard token. Reload the page."
+          );
+        }
+
+        return yield* Effect.void;
+      });
+
+    const postAction = (
+      request: IncomingMessage,
+      response: ServerResponse,
+      url: URL
+    ) =>
+      Effect.gen(function* postActionRequest() {
+        if (url.pathname !== "/api/action" && url.pathname !== "/api/agent") {
+          return yield* fail(404, "Not found.");
+        }
+
+        yield* authorizeDashboardAction(request);
+
+        const body = yield* readBody(request);
+
+        if (url.pathname === "/api/agent") {
+          const capability = yield* requireString(
+            url.searchParams.get("capability"),
+            "capability"
+          );
+
+          const caps = yield* capsFor(paths.repo, null);
+
+          const output = yield* provideStore(
+            writeAgentDashboardCapability(caps, capability, body)
+          ).pipe(
+            Effect.catchTag("InvalidInput", (error) => fail(400, error.message))
+          );
+
+          return yield* sendJson(response, 200, JSON.stringify(output));
+        }
+
+        const action = decodeAction(body);
+
+        if (Option.isNone(action)) {
+          return yield* fail(400, "Unknown action.");
+        }
+
+        return yield* sendJson(
+          response,
+          200,
+          JSON.stringify(yield* act(action.value))
+        );
+      });
+
     const route = (request: IncomingMessage, response: ServerResponse) =>
       Effect.gen(function* handle() {
         if (!hostAllowed(request)) {
@@ -863,36 +1223,7 @@ export const serveDashboard = (options: LiveServerOptions) =>
         }
 
         if (method === "POST") {
-          if (url.pathname !== "/api/action") {
-            return yield* fail(404, "Not found.");
-          }
-
-          if (!originAllowed(request)) {
-            return yield* fail(
-              403,
-              "This request did not come from the dashboard page."
-            );
-          }
-
-          if (request.headers["x-dft-token"] !== token) {
-            return yield* fail(
-              403,
-              "Missing or wrong dashboard token. Reload the page."
-            );
-          }
-
-          const body = yield* readBody(request);
-          const action = decodeAction(body);
-
-          if (Option.isNone(action)) {
-            return yield* fail(400, "Unknown action.");
-          }
-
-          return yield* sendJson(
-            response,
-            200,
-            JSON.stringify(yield* act(action.value))
-          );
+          return yield* postAction(request, response, url);
         }
 
         if (method !== "GET") {
@@ -942,7 +1273,17 @@ export const serveDashboard = (options: LiveServerOptions) =>
             );
           }
 
+          case "/api/query": {
+            return yield* sendJson(
+              response,
+              200,
+              JSON.stringify(yield* agentQueryView(url))
+            );
+          }
+
           case "/api/plan": {
+            yield* authorizeDashboardAction(request, true);
+
             return yield* sendJson(
               response,
               200,
@@ -968,8 +1309,15 @@ export const serveDashboard = (options: LiveServerOptions) =>
             JSON.stringify({ error: failure.message })
           )
         ),
-        Effect.catchTag("LiveActionError", (failure) =>
-          sendJson(response, 400, JSON.stringify({ error: failure.message }))
+        Effect.catchTag("AgentError", (failure) =>
+          sendJson(
+            response,
+            failure.code === "plan-stale" ||
+              failure.code === "idempotency-conflict"
+              ? 409
+              : 400,
+            JSON.stringify({ error: failure.message, failure })
+          )
         ),
         Effect.catchCause((cause) => {
           const error = Cause.squash(cause);
@@ -1052,12 +1400,31 @@ export const serveDashboard = (options: LiveServerOptions) =>
     return {
       port,
       token,
+      trackCurrentRepo: bridge.configure("track", paths.repo).pipe(
+        Effect.flatMap((receipt) =>
+          receipt.executionState === "succeeded" &&
+          receipt.verificationState === "verified"
+            ? Effect.succeed(baseName(paths.repo))
+            : Effect.fail(
+                new AgentError({
+                  code: "source-unavailable",
+                  currentRevision: receipt.afterRevision,
+                  expectedRevision: receipt.beforeRevision,
+                  message: `Tracking was not verified. ${receiptMessage(receipt, baseName(paths.repo))} Receipt: ${receipt.id}.`,
+                  recovery: { action: "replan", ref: null },
+                  ref: null,
+                  retryable: false,
+                })
+              )
+        )
+      ),
       url: `http://127.0.0.1:${String(port)}/`,
     } satisfies LiveServer;
   });
 
 export interface LiveDashboardOptions {
   readonly costOptions: CostOptions;
+  readonly prices: PriceEffects;
   readonly open: boolean;
   readonly paths: LivePaths;
   readonly port: number;
@@ -1068,22 +1435,24 @@ export const runLiveDashboard = (options: LiveDashboardOptions) =>
   Effect.scoped(
     Effect.gen(function* live() {
       const engine = yield* startLiveEngine({
+        deferAcquisitionUntilConfigured: true,
         dftHome: options.paths.dftHome,
         home: options.paths.home,
         signals: [],
         storePath: options.paths.store.path,
       });
 
-      const tracked = yield* engine.addRepo(options.paths.repo).pipe(
-        Effect.map((result) => result.repo.name),
-        Effect.catchTag("LiveActionError", (error) =>
+      const server = yield* serveDashboard({ ...options, engine });
+
+      const tracked = yield* server.trackCurrentRepo.pipe(
+        Effect.catchTag("AgentError", (error) =>
           Console.error(
             `dft: not tracking this folder (${error.message})`
           ).pipe(Effect.as(null))
         )
       );
 
-      const server = yield* serveDashboard({ ...options, engine });
+      yield* engine.ready;
 
       yield* Console.log(
         [

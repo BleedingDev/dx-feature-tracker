@@ -71,8 +71,8 @@ const other = makeRepo("other");
 
 const decodeCount = Schema.decodeUnknownSync(Schema.Struct({ n: Schema.Int }));
 
-const eventsFor = (repo: string): number => {
-  const db = new DatabaseSync(home.storePath, { readOnly: true });
+const eventsFor = (repo: string, storePath = home.storePath): number => {
+  const db = new DatabaseSync(storePath, { readOnly: true });
 
   try {
     return decodeCount(
@@ -85,7 +85,7 @@ const eventsFor = (repo: string): number => {
   }
 };
 
-const hook = (generation: string) =>
+const hook = (generation: string, selectedDftHome = dftHome) =>
   runCursorHook(
     JSON.stringify({
       conversation_id: "conv-live",
@@ -96,18 +96,18 @@ const hook = (generation: string) =>
     }),
     app,
     DateTime.toDateUtc(DateTime.makeUnsafe("2026-09-30T12:00:00.000Z")),
-    dftHome
+    selectedDftHome
   );
 
 const HOOK_DAY = "2026-09-30T13:00:00.000Z";
 
 const claudeHookDay = hookSpoolFile(dftHome, "claude-code", HOOK_DAY);
 
-const claudeHook = (repo: string) =>
+const claudeHook = (repo: string, selectedDftHome = dftHome) =>
   recordHook({
     cwd: repo,
     decoder: HOOK_DECODERS["claude-code"],
-    dftHome,
+    dftHome: selectedDftHome,
     event: "UserPromptSubmit",
     now: DateTime.toDateUtc(DateTime.makeUnsafe(HOOK_DAY)),
     resolveGit: () => ({
@@ -437,44 +437,72 @@ describe("live engine", () => {
   it.live(
     "reset needs the word reset, keeps a backup, and restore brings everything back",
     () =>
-      withEngine((engine) =>
-        Effect.gen(function* resetAll() {
-          const hookNotes = hookLinesOf(claudeHookDay);
-          const appEvents = eventsFor(app);
-          const otherEvents = eventsFor(other);
-          const plan = yield* engine.planResetStore;
+      Effect.gen(function* isolatedReset() {
+        const resetDftHome = path.join(scratch, "reset-dft-home");
+        const resetHome = liveHome(resetDftHome);
 
-          expect(hookNotes).toHaveLength(2);
-          expect(plan.hookFiles).toEqual([claudeHookDay]);
+        const resetHookDay = hookSpoolFile(
+          resetDftHome,
+          "claude-code",
+          HOOK_DAY
+        );
 
-          expect(plan.totals.events).toBeGreaterThanOrEqual(
-            appEvents + otherEvents
-          );
+        yield* setCursorUsageImport(resetHome, false);
+        yield* addRepo(resetHome, app);
+        yield* addRepo(resetHome, other);
 
-          const refused = yield* Effect.flip(engine.resetStore("yes"));
+        expect(claudeHook(app, resetDftHome).outcome.state).toBe("recorded");
+        expect(claudeHook(other, resetDftHome).outcome.state).toBe("recorded");
+        expect(hook("gen-reset", resetDftHome).outcome.state).toBe("spooled");
 
-          expect(refused.reason).toBe("confirmation");
-          expect(eventsFor(app)).toBe(appEvents);
+        return yield* withEngine(
+          (engine) =>
+            Effect.gen(function* resetAll() {
+              const hookNotes = hookLinesOf(resetHookDay);
+              const appEvents = eventsFor(app, resetHome.storePath);
+              const otherEvents = eventsFor(other, resetHome.storePath);
+              const plan = yield* engine.planResetStore;
 
-          const done = yield* engine.resetStore("reset");
+              expect(hookNotes).toHaveLength(2);
+              expect(plan.hookFiles).toEqual([resetHookDay]);
+              expect(appEvents).toBeGreaterThan(0);
+              expect(otherEvents).toBeGreaterThan(0);
+              expect(plan.totals.events).toBeGreaterThanOrEqual(
+                appEvents + otherEvents
+              );
 
-          expect(eventsFor(app)).toBe(0);
-          expect(eventsFor(other)).toBe(0);
-          expect(fs.readdirSync(path.join(dftHome, "spool"))).toEqual([]);
-          expect(fs.existsSync(claudeHookDay)).toBe(false);
+              const refused = yield* Effect.flip(engine.resetStore("yes"));
 
-          const missing = yield* Effect.flip(engine.restoreBackup("../dft"));
+              expect(refused.reason).toBe("confirmation");
+              expect(eventsFor(app, resetHome.storePath)).toBe(appEvents);
 
-          expect(missing.reason).toBe("unknown-backup");
+              const done = yield* engine.resetStore("reset");
 
-          yield* engine.restoreBackup(done.backup.id);
+              expect(eventsFor(app, resetHome.storePath)).toBe(0);
+              expect(eventsFor(other, resetHome.storePath)).toBe(0);
+              expect(fs.readdirSync(path.join(resetDftHome, "spool"))).toEqual(
+                []
+              );
+              expect(fs.existsSync(resetHookDay)).toBe(false);
 
-          expect(eventsFor(app)).toBe(appEvents);
-          expect(eventsFor(other)).toBe(otherEvents);
-          expect(fs.readdirSync(hookSpoolDirFor(app, dftHome))).toHaveLength(1);
-          expect(hookLinesOf(claudeHookDay)).toEqual(hookNotes);
-        })
-      )
+              const missing = yield* Effect.flip(
+                engine.restoreBackup("../dft")
+              );
+
+              expect(missing.reason).toBe("unknown-backup");
+
+              yield* engine.restoreBackup(done.backup.id);
+
+              expect(eventsFor(app, resetHome.storePath)).toBe(appEvents);
+              expect(eventsFor(other, resetHome.storePath)).toBe(otherEvents);
+              expect(
+                fs.readdirSync(hookSpoolDirFor(app, resetDftHome))
+              ).toHaveLength(1);
+              expect(hookLinesOf(resetHookDay)).toEqual(hookNotes);
+            }),
+          { dftHome: resetDftHome }
+        );
+      })
   );
 
   it.live("backs off when the Cursor usage import keeps failing", () =>

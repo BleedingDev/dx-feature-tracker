@@ -186,7 +186,7 @@ describe("dft install for every tool", () => {
         readFileSync(path.join(home, ".codex", "config.toml"), "utf-8")
       ).toContain("[otel]");
 
-      const status = dft("status", "--json", "--no-sync");
+      const status = dft("status", "--json", "--no-sync", "--probe-sources");
 
       expect(status.status).toBe(0);
       expect(
@@ -207,7 +207,7 @@ describe("dft install for every tool", () => {
         ["deepseek", true, true, null, null],
       ]);
 
-      expect(dft("status", "--no-sync").stdout).toContain(
+      expect(dft("status", "--no-sync", "--probe-sources").stdout).toContain(
         "project capture yes, telemetry yes, last event never"
       );
 
@@ -270,6 +270,56 @@ describe("dft install for every tool", () => {
     expect(actions(install("pi").stdout)).toEqual([["pi", ["created"]]]);
   });
 
+  it("installs Codex guidance and preserves edited skills and unrelated agent files", () => {
+    const project = path.join(root, "codex-guidance-repo");
+
+    const ownSkill = path.join(
+      project,
+      ".agents",
+      "skills",
+      "my-skill",
+      "SKILL.md"
+    );
+
+    execFileSync("git", ["init", "-q", "-b", "main", project]);
+    mkdirSync(path.dirname(ownSkill), { recursive: true });
+    writeFileSync(ownSkill, "# user skill fixture\n");
+
+    const run = (...args: readonly string[]) =>
+      spawnSync(process.execPath, [dftMain, ...args], {
+        cwd: project,
+        encoding: "utf-8",
+        env,
+      });
+
+    expect(run("install", "--tool", "codex", "--json").status).toBe(0);
+
+    const installed = path.join(
+      project,
+      ".agents",
+      "skills",
+      "dx-analyze",
+      "SKILL.md"
+    );
+
+    expect(readFileSync(installed, "utf-8")).toContain("dx.agent.v1");
+    writeFileSync(installed, "# user changed this guidance fixture\n");
+    expect(run("install", "--tool", "codex", "--json").status).toBe(0);
+    expect(readFileSync(installed, "utf-8")).toBe(
+      "# user changed this guidance fixture\n"
+    );
+    expect(run("uninstall").status).toBe(0);
+    expect(readFileSync(installed, "utf-8")).toBe(
+      "# user changed this guidance fixture\n"
+    );
+    expect(readFileSync(ownSkill, "utf-8")).toBe("# user skill fixture\n");
+    expect(
+      existsSync(
+        path.join(project, ".agents", "skills", "dx-explain", "SKILL.md")
+      )
+    ).toBe(false);
+  });
+
   it("dft install --dry-run writes nothing in the repo or HOME", () => {
     const fresh = path.join(root, "dry-repo");
     const dryHome = path.join(root, "dry-home");
@@ -329,7 +379,7 @@ describe("dft install for every tool", () => {
       )
     );
 
-    expect(run("status", "--no-sync").stdout).toContain(
+    expect(run("status", "--no-sync", "--probe-sources").stdout).toContain(
       "project capture broken (its hooks call missing /old/node/24.18.0/bin/node"
     );
 

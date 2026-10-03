@@ -17,3 +17,17 @@ This revision changes prior proposed decisions; previous implementation todos we
 ## Phase validation revision
 
 User requested stoppable phases and a Factory Opus 5.5 review. The read-only review completed; all H1–H12 and S1–S6 dispositions are in reviews/feedback-dispositions.md. Active graph changed from70/309 to79/145 with explicit phase gates, sequential integration, real source/client checks and unblocked core release. Runtime tests remain pending.
+
+## Agent-system revision, 2026-10-02
+
+The user requested a deep revision of the entire system for agent intuition, ergonomic control, cumulative understanding and low resource use. Apply this as design authorization across documents and plans. It does not claim the resulting capabilities are implemented.
+
+| Direction | Disposition | Propagation |
+| --- | --- | --- |
+| Treat the product as one connected system | Apply | Shared vocabulary and traceable evidence/fact/basis/finding/operation/learning flow in agent-system design |
+| Enable accurate agent understanding and control | Apply with current-code evidence | Explicit read policies, full interpretation binding, progressive views, source disagreements, planned effects and verifiable receipts |
+| Make understanding accumulate across sessions | Apply | Scoped investigations, hypotheses and append-only evaluations, with provenance, contradiction and applicability |
+| Minimize resource expenditure | Apply | Cheap cached orientation, indexed bounded reads, incremental acquisition, coalescing, measured work and selective recall |
+| Revise the requisite documents and plans | Apply | Current authority map, product refinements, architecture links, nine-node follow-up graph with an independent read gate and explicit ownership activation |
+
+Historical plans, manifests, validation results and G00-G04 receipts retain their original contents/statuses. Later multi-tool product decisions are distinguished from the initial scope. New implementation todos start pending. No source code, dependency install or runtime release validation is performed by this document revision.

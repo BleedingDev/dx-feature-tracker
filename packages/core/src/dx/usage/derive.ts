@@ -22,12 +22,20 @@ import {
 } from "../model/attribution.js";
 import type { AiAttribution } from "../model/attribution.js";
 import type { DxEventEnvelope } from "../model/event.js";
+import { EventIdSchema } from "../model/ids.js";
 import type {
+  AccountAllocation,
+  AccountAssociation,
+  AccountAssociationCandidate,
+  AgentDerivedUsageRows,
   DerivedRow,
   DerivedRows,
   DerivedUsage,
   UsageDisagreement,
+  UsageExplanation,
+  UsageExplanationValue,
   UsageFact,
+  UsageFieldExplanation,
   UsageScope,
 } from "./fact.js";
 import { NO_REPO, USAGE_DERIVATION_VERSION } from "./fact.js";
@@ -1101,7 +1109,8 @@ interface RequestGrouping extends PairedGroups {
 }
 
 const requestGrouping = (
-  events: readonly DxEventEnvelope[]
+  events: readonly DxEventEnvelope[],
+  pairAccounts = true
 ): RequestGrouping => {
   const replacements = replacementsOf(events);
 
@@ -1122,6 +1131,32 @@ const requestGrouping = (
       isSplitShare(event) || !requestKeys(event).some((key) => split.has(key))
   );
 
+  if (!pairAccounts) {
+    const accounts = unique.filter(
+      (event) => isAccountBucket(event) || isUnkeyedAccountRow(event)
+    );
+
+    const accountIds = new Set(accounts.map((event) => event.eventId));
+
+    const grouped = groupRequests(
+      unique.filter((event) => !accountIds.has(event.eventId))
+    );
+
+    const accountGroups = groupRequests(accounts);
+
+    return {
+      groups: [
+        ...grouped.groups,
+        ...accountGroups.groups,
+        ...accountGroups.unkeyed.map((event) => [event]),
+      ]
+        .map((group) => group.toSorted(byPrecedence))
+        .toSorted((a, b) => factIdOf(a).localeCompare(factIdOf(b))),
+      joins: new Map(),
+      unkeyed: grouped.unkeyed,
+    };
+  }
+
   const { groups, unkeyed } = groupRequests(unique);
 
   return { ...pairAccountRows(groups), unkeyed };
@@ -1131,10 +1166,26 @@ export const accountRowJoins = (
   events: readonly DxEventEnvelope[]
 ): ReadonlyMap<string, string> => requestGrouping(events).joins;
 
-export const deriveUsageRows = (
-  events: readonly DxEventEnvelope[]
+const hasSessionPlacement = (event: DxEventEnvelope): boolean =>
+  event.payload.sessionJoin !== null && event.payload.sessionJoin !== undefined;
+
+const agentAccountFact = (
+  fact: UsageFact,
+  group: readonly DxEventEnvelope[]
+): UsageFact => ({
+  ...fact,
+  ...placementOf(
+    group.filter((event) => !hasSessionPlacement(event)).toSorted(byPrecedence)
+  ),
+  requests: 0,
+  scope: "account-bucket",
+});
+
+const usageRowsFromGrouping = (
+  events: readonly DxEventEnvelope[],
+  { groups, unkeyed }: RequestGrouping,
+  agent = false
 ): DerivedRows => {
-  const { groups, unkeyed } = requestGrouping(events);
   const readings = keyedReadings(groups);
   const sessionRows = sessionFigureFacts(events);
   const onSessionLedger = sessionLedger(sessionRows);
@@ -1143,7 +1194,16 @@ export const deriveUsageRows = (
   const unresolved: string[] = [];
 
   for (const group of groups) {
-    const fact = onSessionLedger(factOf(group));
+    const reconciled = onSessionLedger(factOf(group));
+
+    const fact =
+      agent &&
+      group.every(
+        (event) => isAccountBucket(event) || isUnkeyedAccountRow(event)
+      )
+        ? agentAccountFact(reconciled, group)
+        : reconciled;
+
     rows.push({ fact, sources: group.map((member) => member.eventId) });
     disagreements.push(...disagreementsOf(fact, group));
   }
@@ -1161,7 +1221,609 @@ export const deriveUsageRows = (
     }
   }
 
-  return { disagreements, rows, unresolved };
+  return agent
+    ? {
+        disagreements: disagreements.toSorted(
+          (a, b) =>
+            a.factId.localeCompare(b.factId) || a.field.localeCompare(b.field)
+        ),
+        rows: rows
+          .map((row) => ({ ...row, sources: row.sources.toSorted() }))
+          .toSorted((a, b) => a.fact.factId.localeCompare(b.fact.factId)),
+        unresolved: unresolved.toSorted(),
+      }
+    : { disagreements, rows, unresolved };
+};
+
+export const deriveUsageRows = (
+  events: readonly DxEventEnvelope[]
+): DerivedRows => usageRowsFromGrouping(events, requestGrouping(events));
+
+type ExplanationReader = (
+  event: DxEventEnvelope
+) => UsageExplanationValue | undefined;
+
+const FIELD_PRECEDENCE_RULE =
+  "first-present-by-harness-channel-rank-then-token-total-descending-then-event-id";
+
+const TOKEN_PRECEDENCE_RULE =
+  "whole-token-object-by-harness-channel-rank-then-token-total-descending-then-event-id";
+
+const explanationSemantics = (
+  field: string,
+  value: UsageExplanationValue,
+  winner: DxEventEnvelope | null,
+  known: number
+): UsageFieldExplanation["semantics"] => {
+  if (value === null || winner === null) {
+    return "unavailable";
+  }
+
+  if (
+    hasSessionPlacement(winner) &&
+    ["attribution", "branch", "repo", "worktree"].includes(field)
+  ) {
+    return "provisional";
+  }
+
+  return known > 1 ? "reconciled" : "observed";
+};
+
+const fieldExplanation = (
+  field: string,
+  read: ExplanationReader,
+  value: UsageExplanationValue,
+  winner: DxEventEnvelope | null,
+  members: readonly DxEventEnvelope[],
+  rule: string
+): UsageFieldExplanation => {
+  const candidates = members.map((member) => ({
+    channel: channelLabel(member),
+    eventId: member.eventId,
+    value: read(member) ?? null,
+  }));
+
+  const known = candidates.filter((candidate) => candidate.value !== null);
+
+  return {
+    candidates,
+    disagreement: new Set(known.map((candidate) => candidate.value)).size > 1,
+    field,
+    rule,
+    semantics: explanationSemantics(field, value, winner, known.length),
+    value,
+    winnerEventId: winner?.eventId ?? null,
+  };
+};
+
+const firstReporting = (
+  members: readonly DxEventEnvelope[],
+  read: ExplanationReader
+): DxEventEnvelope | null =>
+  members.find((member) => {
+    const value = read(member);
+
+    return value !== null && value !== undefined;
+  }) ?? null;
+
+const EXPLANATION_READERS: readonly (readonly [
+  string,
+  ExplanationReader,
+  (fact: UsageFact) => UsageExplanationValue,
+])[] = [
+  ["model", (event) => event.ai?.model, (fact) => fact.model],
+  ["modelRaw", (event) => event.ai?.modelRaw, (fact) => fact.modelRaw],
+  ["effort", (event) => event.ai?.effort, (fact) => fact.effort],
+  ["harness", (event) => event.ai?.harness, (fact) => fact.harness],
+  [
+    "harnessVersion",
+    (event) => event.ai?.harnessVersion,
+    (fact) => fact.harnessVersion,
+  ],
+  [
+    "agent",
+    (event) => event.ai?.agentType ?? event.ai?.agentId,
+    (fact) => fact.agent,
+  ],
+  [
+    "parentSession",
+    (event) => event.ai?.parentSessionId,
+    (fact) => fact.parentSession,
+  ],
+  ["session", sessionOf, (fact) => fact.session],
+  ["via", (event) => event.ai?.via, (fact) => fact.via],
+  ["occurredAt", (event) => event.occurredAt, (fact) => fact.occurredAt],
+  [
+    "requestKey",
+    (event) => event.usage?.requestKey ?? event.identity.requestId,
+    (fact) => fact.requestKey,
+  ],
+  [
+    "serviceTier",
+    (event) => event.usage?.serviceTier,
+    (fact) => fact.serviceTier,
+  ],
+  ["speed", (event) => event.usage?.speed, (fact) => fact.speed],
+  [
+    "premiumRequests",
+    (event) => event.usage?.premiumRequests,
+    (fact) => fact.premiumRequests,
+  ],
+  [
+    "webSearchRequests",
+    (event) => event.usage?.webSearchRequests,
+    (fact) => fact.webSearchRequests,
+  ],
+];
+
+const placementExplanations = (
+  fact: UsageFact,
+  ordered: readonly DxEventEnvelope[]
+): UsageFieldExplanation[] => {
+  const placementMembers =
+    fact.scope === "account-bucket"
+      ? ordered.filter((event) => !hasSessionPlacement(event))
+      : ordered;
+
+  const placed = branchMember(placementMembers);
+
+  const fields = [
+    fieldExplanation(
+      "attribution",
+      (event) =>
+        event.context.branch === null
+          ? null
+          : (event.ai?.branchSource ?? "cwd-inferred"),
+      fact.attribution,
+      placed,
+      ordered,
+      "branch-source-order"
+    ),
+  ];
+
+  for (const [field, read, value] of [
+    ["branch", (event: DxEventEnvelope) => event.context.branch, fact.branch],
+    [
+      "repo",
+      (event: DxEventEnvelope) => event.context.repoCommonDir,
+      fact.repo,
+    ],
+    [
+      "worktree",
+      (event: DxEventEnvelope) => event.context.worktreePath,
+      fact.worktree,
+    ],
+  ] as const) {
+    const winner =
+      field === "branch" || (placed !== null && read(placed) !== null)
+        ? placed
+        : firstReporting(placementMembers, read);
+
+    fields.push(
+      fieldExplanation(
+        field,
+        read,
+        value,
+        winner,
+        ordered,
+        "branch-source-order-then-first-present-placement"
+      )
+    );
+  }
+
+  return fields;
+};
+
+const moneyExplanations = (
+  fact: UsageFact,
+  ordered: readonly DxEventEnvelope[]
+): UsageFieldExplanation[] => {
+  const fields: UsageFieldExplanation[] = [];
+
+  for (const [field, read, value] of [
+    [
+      "billed.amount",
+      (event: DxEventEnvelope) => billedFigureOf(event)?.amount,
+      fact.billed?.amount ?? null,
+    ],
+    [
+      "billed.currency",
+      (event: DxEventEnvelope) => billedFigureOf(event)?.currency,
+      fact.billed?.currency ?? null,
+    ],
+    [
+      "billed.kind",
+      (event: DxEventEnvelope) => billedFigureOf(event)?.kind,
+      fact.billed?.kind ?? null,
+    ],
+    [
+      "toolFigure.amount",
+      (event: DxEventEnvelope) => toolOwnFigureOf(event)?.amount,
+      fact.toolFigure?.amount ?? null,
+    ],
+    [
+      "toolFigure.currency",
+      (event: DxEventEnvelope) => toolOwnFigureOf(event)?.currency,
+      fact.toolFigure?.currency ?? null,
+    ],
+    [
+      "toolFigure.kind",
+      (event: DxEventEnvelope) => toolOwnFigureOf(event)?.kind,
+      fact.toolFigure?.kind ?? null,
+    ],
+  ] as const) {
+    fields.push(
+      fieldExplanation(
+        field,
+        read,
+        value,
+        value === null ? null : firstReporting(ordered, read),
+        ordered,
+        "separate-observed-money-ledgers-by-source-precedence"
+      )
+    );
+  }
+
+  return fields;
+};
+
+const providerRead = (event: DxEventEnvelope) =>
+  event.ai === null || event.ai.provider === "unknown"
+    ? null
+    : event.ai.provider;
+
+const channelRead = (event: DxEventEnvelope) => event.ai?.channel;
+
+const sessionExplanations = (
+  fact: UsageFact,
+  members: readonly DxEventEnvelope[],
+  fields: readonly UsageFieldExplanation[]
+): readonly UsageFieldExplanation[] => {
+  const [event] = members;
+
+  if (members.length !== 1 || event?.kind !== "ai.session") {
+    return fields;
+  }
+
+  const cost = modelCosts(event)?.find(([raw]) => raw === fact.modelRaw);
+  const split = cost !== undefined && fact.factId !== factOf([event]).factId;
+
+  return fields.map((field) => {
+    if (field.field.startsWith("tokens.")) {
+      return {
+        ...field,
+        rule: "session-money-ledger-excludes-request-tokens",
+        winnerEventId: null,
+      };
+    }
+
+    if (!split || cost === undefined) {
+      return field;
+    }
+
+    const [raw, amount] = cost;
+
+    if (
+      field.field === "model" ||
+      field.field === "modelRaw" ||
+      field.field === "toolFigure.amount"
+    ) {
+      const sourceValue = field.field === "toolFigure.amount" ? amount : raw;
+
+      return {
+        ...field,
+        candidates: [
+          {
+            channel: channelLabel(event),
+            eventId: event.eventId,
+            value: sourceValue,
+          },
+        ],
+        disagreement: false,
+        rule: "validated-session-model-cost-breakdown-with-model-normalization",
+        semantics: "reconciled" as const,
+        winnerEventId: event.eventId,
+      };
+    }
+
+    if (
+      (field.field === "provider" || field.field === "via") &&
+      field.value !== null &&
+      field.winnerEventId === null
+    ) {
+      return {
+        ...field,
+        rule: "served-model-context-or-inference-from-session-model-name",
+        semantics: "reconciled" as const,
+        winnerEventId: event.eventId,
+      };
+    }
+
+    return field;
+  });
+};
+
+const explanationOf = (
+  row: DerivedRow,
+  members: readonly DxEventEnvelope[]
+): UsageExplanation => {
+  const ordered = members.toSorted(byPrecedence);
+  const { fact } = row;
+
+  const fields = EXPLANATION_READERS.map(([field, read, readFact]) =>
+    fieldExplanation(
+      field,
+      read,
+      readFact(fact),
+      firstReporting(ordered, read),
+      ordered,
+      FIELD_PRECEDENCE_RULE
+    )
+  );
+
+  const tokenSource =
+    ordered.find(
+      (member) => member.usage !== null && hasKnownTokens(member.usage.tokens)
+    ) ?? null;
+
+  for (const field of AI_TOKEN_FIELDS) {
+    fields.push(
+      fieldExplanation(
+        `tokens.${field}`,
+        (event) => event.usage?.tokens[field],
+        fact.tokens[field],
+        tokenSource,
+        ordered,
+        TOKEN_PRECEDENCE_RULE
+      )
+    );
+  }
+
+  fields.push(
+    fieldExplanation(
+      "channel",
+      channelRead,
+      fact.channel,
+      tokenSource?.ai?.channel !== null &&
+        tokenSource?.ai?.channel !== undefined
+        ? tokenSource
+        : firstReporting(ordered, channelRead),
+      ordered,
+      "token-object-source-channel-then-first-present-channel"
+    ),
+    fieldExplanation(
+      "provider",
+      providerRead,
+      fact.provider,
+      firstReporting(ordered, providerRead),
+      ordered,
+      "first-known-provider-by-source-precedence"
+    ),
+    ...placementExplanations(fact, ordered),
+    ...moneyExplanations(fact, ordered)
+  );
+
+  return {
+    factId: fact.factId,
+    fields: sessionExplanations(fact, ordered, fields),
+    sources: row.sources.toSorted(),
+  };
+};
+
+const isObservedAccount = (event: DxEventEnvelope): boolean =>
+  event.ai?.channel === "usage-api" || isAccountBucket(event);
+
+interface AccountAssociationDetails {
+  readonly allocated: readonly AccountAllocation[];
+  readonly associations: readonly AccountAssociation[];
+}
+
+const associationReason = (
+  ambiguous: boolean,
+  selected: boolean,
+  candidates: number
+): string => {
+  if (ambiguous) {
+    return "Equally near local turns leave this account observation unallocated.";
+  }
+
+  if (selected) {
+    return "Timing reconstructs a provisional share; it does not establish request identity.";
+  }
+
+  return candidates > 0
+    ? "Candidate turns were assigned to other account observations."
+    : "No local turn in the same harness and session falls within the 60000 ms window.";
+};
+
+const associationDetails = (
+  groups: readonly (readonly DxEventEnvelope[])[]
+): AccountAssociationDetails => {
+  const pairings = accountPairings(groups).toSorted(
+    (a, b) =>
+      a.gap - b.gap ||
+      a.distance - b.distance ||
+      a.account - b.account ||
+      a.turn - b.turn
+  );
+
+  const byAccount = new Map<number, AccountPairing[]>();
+
+  for (const pairing of pairings) {
+    byAccount.set(pairing.account, [
+      ...(byAccount.get(pairing.account) ?? []),
+      pairing,
+    ]);
+  }
+
+  const ambiguous = new Set(
+    [...byAccount].flatMap(([account, candidates]) => {
+      const [firstCandidate, next] = candidates;
+
+      return firstCandidate !== undefined &&
+        next !== undefined &&
+        firstCandidate.gap === next.gap &&
+        firstCandidate.distance === next.distance
+        ? [account]
+        : [];
+    })
+  );
+
+  const selected = new Map<number, number>();
+  const taken = new Set<number>();
+
+  for (const pairing of pairings) {
+    if (
+      !ambiguous.has(pairing.account) &&
+      !selected.has(pairing.account) &&
+      !taken.has(pairing.turn)
+    ) {
+      selected.set(pairing.account, pairing.turn);
+      taken.add(pairing.turn);
+    }
+  }
+
+  const associations: AccountAssociation[] = [];
+  const allocated: AccountAllocation[] = [];
+
+  for (const [account, group] of groups.entries()) {
+    if (
+      !group.every(
+        (event) => isUnkeyedAccountRow(event) || isAccountBucket(event)
+      )
+    ) {
+      continue;
+    }
+
+    const selectedTurn = selected.get(account);
+    const accountEventIds = group.map((event) => event.eventId).toSorted();
+
+    const candidates: AccountAssociationCandidate[] = (
+      byAccount.get(account) ?? []
+    ).flatMap((pairing) => {
+      const turn = groups[pairing.turn];
+      const window = turn === undefined ? null : turnWindowOf(turn);
+
+      return turn === undefined || window === null
+        ? []
+        : [
+            {
+              distanceMs: pairing.distance,
+              endMs: window.end,
+              eventIds: turn.map((event) => event.eventId).toSorted(),
+              gapMs: pairing.gap,
+              selected: selectedTurn === pairing.turn,
+              startMs: window.start,
+              turnFactId: factIdOf(turn),
+            },
+          ];
+    });
+
+    const turn = selectedTurn === undefined ? undefined : groups[selectedTurn];
+
+    associations.push({
+      accountEventIds,
+      accountFactId: factIdOf(group),
+      candidates,
+      method: "same-harness-session-window",
+      reason: associationReason(
+        ambiguous.has(account),
+        turn !== undefined,
+        candidates.length
+      ),
+      selectedTurnFactId: turn === undefined ? null : factIdOf(turn),
+      semantics: "provisional",
+    });
+
+    if (turn !== undefined) {
+      const fact = factOf(turn);
+
+      allocated.push({
+        accountEventIds,
+        branch: fact.branch,
+        method: "same-harness-session-window",
+        repo: fact.repo,
+        semantics: "provisional",
+        turnEventIds: turn.map((event) => event.eventId).toSorted(),
+        turnFactId: fact.factId,
+        worktree: fact.worktree,
+      });
+    }
+  }
+
+  return { allocated, associations };
+};
+
+export const deriveAgentUsageRows = (
+  events: readonly DxEventEnvelope[]
+): AgentDerivedUsageRows => {
+  const unique = [
+    ...new Map(events.map((event) => [event.eventId, event])).values(),
+  ].toSorted((a, b) => a.eventId.localeCompare(b.eventId));
+
+  const grouping = requestGrouping(unique, false);
+  const derived = usageRowsFromGrouping(unique, grouping, true);
+  const { associations, allocated } = associationDetails(grouping.groups);
+
+  const exactAllocations = grouping.groups.flatMap(
+    (group): AccountAllocation[] => {
+      const accounts = group.filter(isObservedAccount);
+      const turns = group.filter((event) => !isObservedAccount(event));
+
+      if (accounts.length === 0 || turns.length === 0) {
+        return [];
+      }
+
+      const fact = factOf(group);
+
+      return [
+        {
+          accountEventIds: accounts.map((event) => event.eventId).toSorted(),
+          branch: fact.branch,
+          method: "request-identity",
+          repo: fact.repo,
+          semantics: "reconciled",
+          turnEventIds: turns.map((event) => event.eventId).toSorted(),
+          turnFactId: fact.factId,
+          worktree: fact.worktree,
+        },
+      ];
+    }
+  );
+
+  const allAllocations = [...exactAllocations, ...allocated];
+
+  const assigned = new Set(
+    allAllocations.flatMap((allocation) => allocation.accountEventIds)
+  );
+
+  const active = [...grouping.groups.flat(), ...grouping.unkeyed];
+
+  const observed = active
+    .filter(isObservedAccount)
+    .toSorted((a, b) => a.eventId.localeCompare(b.eventId));
+
+  const byId = new Map(unique.map((event) => [event.eventId, event]));
+
+  return {
+    accountLedger: {
+      allocated: allAllocations,
+      observed,
+      remainder: observed.filter((event) => !assigned.has(event.eventId)),
+    },
+    associations,
+    derived,
+    explanations: derived.rows.map((row) =>
+      explanationOf(
+        row,
+        row.sources.flatMap((id) => {
+          const event = byId.get(EventIdSchema.make(id));
+
+          return event === undefined ? [] : [event];
+        })
+      )
+    ),
+  };
 };
 
 export const usageOfRows = (derived: DerivedRows): DerivedUsage => ({

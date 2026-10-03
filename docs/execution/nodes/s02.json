@@ -1,0 +1,140 @@
+{
+  "id": "S02",
+  "status": "complete",
+  "deliverable": "Bounded recorded query views with retained analysis inputs and stable result references",
+  "ownedFiles": [
+    "packages/core/src/dx/reports/agent/basis.ts",
+    "packages/core/src/dx/reports/agent/comparison.ts",
+    "packages/core/src/dx/reports/agent/projection.ts",
+    "packages/core/src/dx/reports/agent/query.ts",
+    "packages/core/src/dx/reports/agent/response.ts",
+    "packages/core/src/dx/reports/analyze/select.ts",
+    "packages/core/src/dx/usage/contract.ts",
+    "packages/core/src/dx/usage/derive.ts",
+    "packages/core/src/dx/usage/fact.ts",
+    "packages/core/test/dx/s02.test.ts",
+    "packages/core/test/dx/branch-switch.test.ts"
+  ],
+  "versions": {
+    "profile": "dx.agent.v1",
+    "contract": "dx.agent-contracts.v1",
+    "contractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+    "basis": "dx.basis.v1",
+    "result": "dx.result.v1",
+    "projection": "dx.projection.v1",
+    "attribution": "recorded-context.v1",
+    "reconciliation": "dx.usage.agent.v1"
+  },
+  "validationHistory": [
+    {
+      "phase": "Initial query freeze",
+      "contractDigest": "sha256:8d6d14ccdacd103ecc340cb8c59cb5d58ca18fc61e99f03cfd34c5b55b337684",
+      "ownedTests": 10,
+      "legacyTests": 119,
+      "compiler": "Root compiler4 reported zero S02 source/test errors.",
+      "lintAndFormat": "All owned source/test checks passed."
+    },
+    {
+      "phase": "Cumulative metadata and cursor accounting addendum",
+      "intermediateBasisDigest": "sha256:ecb827e05b7724ea2687cb1985528e2928a3900aadc261b45c542880dfe1e0be",
+      "contractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+      "measuredReads": ["readCursor", "readBasisMetadata", "readResultMetadata", "readMatchingResultMetadata", "readResultPage"],
+      "ownedTests": 11,
+      "lintAndFormat": "Changed query and test files passed scoped lint and format checks.",
+      "fixture": "Pretty-printed cursor and metadata codecs report admitted raw bytes; a total cap one byte short refuses the next header before decoding it or reading a result page.",
+      "compiler9Cleanup": "Removed only the unused node:os diagnostic directive at the compiler9 fixture warning; runtime behavior unchanged.",
+      "compiler": "No worker compiler/build was run; additive release checks belong to root."
+    },
+    {
+      "phase": "Captured repository root alias replay",
+      "contractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+      "ownedTests": 12,
+      "fixture": "A pinned ready-only analyze call accepts the exact worktree root paired with its stored canonical repository ID. It preserves the digest/scope/window despite changed ambient context and rejects other repositories, broader scope and changed worktrees.",
+      "publicCompiledProbe": "Root must rebuild and repeat the same CLI flags; no worker compiler/build was run."
+    },
+    {
+      "phase": "Legacy raw evidence replay fixture alignment",
+      "contractDigest": "sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535",
+      "ownedTests": 12,
+      "legacyBranchSwitchTests": 3,
+      "fixture": "The existing branch-switch fake retains raw events and manifests, not derived branch selection or historical attribution. Pinned replay equals that stored raw snapshot, reports unavailable attribution and evidence-selection-only reproduction, and remains unchanged after the actual fixture checkout changes to main. All latest analyze/history/chat branch and token assertions remain.",
+      "sourceChange": "Test-only correction; no production, contract or storage changes.",
+      "lintAndFormat": "The exact extended-owned branch-switch test passed Oxlint and Oxfmt checks.",
+      "compiler": "No worker compiler/build/full suite was run."
+    }
+  ],
+  "exports": {
+    "packages/core/src/dx/reports/agent/query.ts": ["runAgentQuery", "AgentQueryDependencies", "agentViewQueryDigest"],
+    "packages/core/src/dx/reports/agent/basis.ts": ["createAgentBasis", "resolveAgentSelection", "normalizedAgentBasisFilters", "capturedCostOptions", "canonicalAgentJson", "agentDigest"],
+    "packages/core/src/dx/reports/agent/comparison.ts": ["compareAgentBases"],
+    "packages/core/src/dx/usage/derive.ts": ["deriveAgentUsageRows"],
+    "packages/core/src/dx/usage/fact.ts": ["AGENT_USAGE_DERIVATION_VERSION"]
+  },
+  "queryViews": ["dx_analyze", "dx_usage", "dx_explain", "dx_evidence"],
+  "orientation": "S05 handles dx_status through cheap metadata; runAgentQuery rejects dx_status.",
+  "checks": [
+    {
+      "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/s02.test.ts",
+      "exit": 0,
+      "tests": 10,
+      "evidence": "Initial frozen acceptance: real isolated SQLite stores and labelled fixture observations; no live acquisition or network."
+    },
+    {
+      "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/s02.test.ts",
+      "exit": 0,
+      "tests": 11,
+      "evidence": "Final measured cursor/header addendum accepted after S01 production ports landed. Synthetic codec fixtures verify cumulative raw-byte admission, alongside real-store pinned queries."
+    },
+    {
+      "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/s02.test.ts",
+      "exit": 0,
+      "tests": 12,
+      "evidence": "Captured canonical-repo/worktree-root alias replay passes; explicit scope changes remain rejected."
+    },
+    {
+      "command": "pnpm --filter @rat-stack/core exec vitest run test/dx/branch-switch.test.ts test/dx/s02.test.ts",
+      "exit": 0,
+      "tests": 15,
+      "evidence": "Twelve S02 cases and all three branch-switch cases pass. Legacy replay checks raw stored observations, unavailable attribution, weaker disclosures and stable output after the fixture checkout changes; latest branch split and token assertions remain intact."
+    },
+    {
+      "command": "Root-admitted usage/account-usage/usage-incremental/price-book/price-book-metric/b36/b37 scoped behavior files",
+      "exit": 0,
+      "tests": 119,
+      "evidence": "Root reported the seven legacy behavior files passed."
+    },
+    {
+      "command": "Exact owned-file Oxlint and Oxfmt checks",
+      "exit": 0,
+      "evidence": "Each source owner and S02 test owner checked their final files."
+    },
+    {
+      "command": "Root-admitted core compiler4",
+      "exit": null,
+      "evidence": "Root reported zero errors in S02 source/tests; unrelated release validation remains with the root queue."
+    }
+  ],
+  "integration": {
+    "call": "runAgentQuery(input: AgentQueryInput, deps: AgentQueryDependencies) -> Effect<AgentQueryOutput, AgentStoreFailure>",
+    "dependencies": ["store", "metrics?", "descriptors?", "costOptions?", "defaultScope?", "now?"],
+    "input": "Legacy wrappers use optional agentQuery and map top-level cursor to generic input.cursor. Explicit policies and profile are mandatory in the negotiated request.",
+    "preserve": ["context", "result", "view", "resolutions", "difference", "view.disclosures", "view.nextCursor", "view.nextSeriesCursor", "context.resources.continuation"],
+    "cursor": "Output cursors bind semantic view selectors; repeat groupBy/metrics/stackBy and other view selectors when resuming. Detail mode and page budgets do not affect result digest."
+  },
+  "resourceSemantics": {
+    "input": "Bounded atomic event selection with scoped source filters, measured facts and UTF8 decoded bytes.",
+    "warm": "Actual admitted cursor/basis/result header bytes and record counts are charged cumulatively before the next decode. Indexed result page bytes/counts then consume the remainder; no full retained event or price-sheet decode.",
+    "output": "Exact whole serialized response bytes, independent item/series/stack limits and non-stalling cursors.",
+    "workContinuation": "Explicit bounded restart of the same source watermark, captured prices and resolved window.",
+    "effects": "Recorded-only cached/pinned reads perform zero acquisition and network; bounded basis/result/cursor writes are reported."
+  },
+  "limitations": [
+    "Workspace release acceptance and candidate build are separate root gates; this receipt records S02 ownership acceptance.",
+    "Missing historical views require the pinned implementation versions; unsupported reconstruction fails with a typed reason.",
+    "Legacy snapshots retain evidence-selection-only reproduction and never reattribute through current Git.",
+    "Metadata basis differences classify revisions; changed reference lists and unchanged counts are explicitly unavailable without a separate bounded evidence comparison.",
+    "Timeline entries beyond the legacy 500-entry uncertainty analysis retain conservative uncertainty flags with a disclosure.",
+    "Stack details may be omitted while complete bucket totals remain visible; omittedStacks reports the exact count.",
+    "Live source acquisition and price refresh require selected operations; the recorded query runner does not execute them."
+  ]
+}

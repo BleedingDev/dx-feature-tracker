@@ -2,6 +2,8 @@
 
 Settled with the product owner on 2026-09-30. Phase 1 is local tracking of Cursor in one Git branch or worktree. Later phases build on it.
 
+Read phase 1 and phase 2 as the decision chronology. D26 supersedes the earlier D10 money headline; later multi-tool and dashboard choices supersede the initial Cursor-only scope. Current implementation is described in the architecture docs and verified code. The agent-system direction below has passed S07 artifact verification. [Execution state](../../plans/agent-system/execution.json) records completed checks, remaining capability limits and publication separately.
+
 | # | Topic | Decision |
 | --- | --- | --- |
 | D1 | Data intake | Hooks capture always. Every report command first runs an incremental import of the pull sources (Cursor local DB, transcripts, CLI streams, usage CSV); `--no-sync` skips it. A background daemon may come later. |
@@ -10,9 +12,9 @@ Settled with the product owner on 2026-09-30. Phase 1 is local tracking of Curso
 | D4 | Git hooks | Pre-commit/pre-push runs `dft` to persist a snapshot of all current data and results, and prints the cost lines from D3. It never blocks by default. |
 | D5 | CLI | Binary `dft`. Verbs: `install`, `status`, `analyze` (alias `analyse`), `explain`, `history`, `chats`, and possibly `mark` (under review). Time filters follow `--since 7d`. Every command supports `--json` for agents. |
 | D6 | Chat traceability | Locally show chat title, model, subagent tree, and per-chat cost/tokens/time. Models can change within one chat and differ per subagent, so model and reasoning level are recorded per request/turn, not per chat. Exports strip titles unless asked. No prompt text. |
-| D8 | Retroactive analysis | Everything works backwards from data already on disk, with no manual marks: past AI activity is attributed to the branch that was checked out in that worktree at that moment (HEAD reflog, then commit history). The headline is the branch total ("this branch burned XYZ"). Backfill covers everything on disk, and every event is labelled by how it was attributed: reflog (exact), commit history (inferred) or unassigned. Splitting into episodes comes in a later phase. No manual marks: `mark` is dropped. |
+| D8 | Retroactive analysis | Use available selected on-disk evidence without requiring manual marks. Label branch attribution by its method and uncertainty: tool/hook observation, checkout-history reconstruction, inference or unassigned. Reflog ambiguity, expiry and removed worktrees limit coverage; backfill is not a promise to recover everything. The headline is the branch view with those limits. Splitting episodes comes later. The normal workflow requires no manual marks. |
 | D9 | Snapshot storage | Pre-commit snapshots live in `~/.dft`. Git notes (`refs/notes/dft`) are opt-in. |
-| D10 | Money headline | The headline is real API money: tokens x the model's public per-token price. Plan-share or limit-percentage figures are out of scope, since later phases add Claude Code, Codex, Pi and others. |
+| D10 | Money headline | Historical wording, refined by D26: tokens x public price is an estimate of API-equivalent money, not a real bill. Plan-share and limit-percentage figures remain out of scope. |
 | D11 | Prices and usage import | Model prices come automatically from a public price catalog, cached and versioned. Cursor usage (the data behind the dashboard CSV) is imported automatically; nothing manual. If the real model behind Auto can't be inferred, show "Auto" or "Default". |
 | D12 | Installing hooks | `dft install` adds only project Cursor hooks and the skill. Git hooks need `--git-hooks` and never overwrite or mutate existing hooks. |
 | D13 | History view | `dft history` defaults to the last 30 days in the current repo, one row per branch. |
@@ -56,3 +58,20 @@ Research: [multi-harness-research.md](multi-harness-research.md).
 | D43 | Naming | "Tool" in UI and CLI flags (`--tool`), "harness" in code. |
 | D44 | README | Edit it directly to cover all tools; approved. |
 | D45 | Release | One fully tested and validated release, 0.2.0, containing all of the above. |
+
+## Agent system direction (requested 2026-10-02)
+
+These requirements define the operative follow-up design. [Agent system](../architecture/agent-system.md) defines the shared vocabulary and boundaries; [the exact plans](../../plans/agent-system/README.md) and execution receipts record implemented behavior and remaining limits. Installed capability discovery determines availability. Existing defaults remain available while new agent behavior is explicitly negotiated.
+
+| # | Topic | Direction |
+| --- | --- | --- |
+| D46 | Coherence | Evidence, reconciled facts, pinned bases, findings, operation receipts and scoped learning form one traceable investigation loop. Each layer explains its interpretation through references to the layer below. |
+| D47 | Agent reads | Use an acknowledged agent profile with independent acquisition, price and derivation policies. Recorded-only acquisition plus cached/pinned prices prevents network access. Existing human auto-sync reports disclose their effects. |
+| D48 | Reproducibility | Pin normalized scope/window/timezone, event selection/coverage, attribution inputs/policies, definitions and price/config versions. Each computed view has its own digest and completeness. Legacy snapshot IDs retain their actual, weaker guarantee. |
+| D49 | Uncertainty | Preferred sources and deterministic timing joins do not prove truth. Preserve field winners, candidates, disagreements, provisional allocations and unexplained remainder. This constrains D27/D37 precision and reconciliation. |
+| D50 | Resource limits | Compact orientation and focused drilldowns come first. Bound selection/decoding/acquisition as well as output. Reuse unchanged bases, projections, complete-record cursors and compatible shared work. |
+| D51 | Control | One operation capability plans, applies, recovers and cancels dft-owned changes with explicit authority, relevant preconditions, idempotency and durable verification receipts. Preserve destructive confirmation and backups. |
+| D52 | Resume | Basis/query/operation/investigation handles carry store identity/generation and validate after interruption or restore. Concurrent agents do not share an implicit mutable current scope. |
+| D53 | Learning | Retain local evidence-linked investigations, hypotheses and evaluated lessons with applicability, contradiction and supersession. No prompt transcripts or external memory dependency. Learning cannot silently change policy or execute actions. |
+| D54 | Shared behavior | CLI, MCP and the existing loopback dashboard project the same domain contracts, ledgers, uncertainty and receipts. Add two public capability families, operations and learning, rather than one per internal module. |
+| D55 | Release proof | Validate the whole orient/inspect/plan/apply/verify/compare/resume/learn loop and measured resource bounds. A partial read milestone is useful but cannot be presented as complete implementation of this direction. |

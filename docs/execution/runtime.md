@@ -42,3 +42,9 @@ Core export frozen for DX: `@rat-stack/core/dx` → `packages/core/src/dx/index.
 
 - Fence receipt: `pnpm exec turbo run check test build` → 18/18 successful, exit 0 at 13:55:51 (tree included A03's in-progress contracts/model at that moment).
 - `pnpm` 11.3.0 is not the default binary on PATH; use the absolute path in commands.json for installs.
+
+## Agent-system runtime verification
+
+Verified 2026-10-02 for the active follow-up on `feat/agent-system`: Node resolves to `v24.18.0` and pnpm resolves to `11.3.0`. The historical A01 toolchain observations above remain unchanged. Current compiler, source checks and artifact gates are recorded in [execution state](../../plans/agent-system/execution.json); the historical baseline fence does not validate this implementation. The current owned rehearsal used Git `2.56.0`, SQLite `3.53.1` and store schema `8`. Migration 8 adds the operation-alias index without rewriting event bodies. The frozen agent contract is `dx.agent-contracts.v1` with digest `sha256:4f1c6fb18975c5595e21f4b097f7b095cf245697d94cf3f12002472fd7cf0535`.
+
+The packaged candidate passed native Codex exec driving the production CLI and stdio MCP, including a selected Git context, retained basis and investigation handles, metadata export, same-key receipt recovery and installation preserving user edits. These observations do not establish live AI usage or charges, automatic MCP host registration or actual Cursor-host capture. The current [S07 receipt](phases/s07.json) records accepted artifact verification and its limits; publication is tracked separately. A cancelled fence remains unverified even when its wrapper exits zero; every required task and test report must finish and pass.

@@ -1,6 +1,8 @@
 # Standalone Ratstack implementation contract
 
-Authoritative scope: separate dx-feature-tracker, Ratstack, four-hour execution deadline, agent-owned parallel lanes, no Enterprise requirement. This is a proposed build specification. No application code exists as a result of this planning session.
+Historical scope: the original standalone Ratstack build proposal dated 2026-09-30, with a four-hour proposed deadline and agent-owned lanes. Later product changes include multiple harnesses, usage facts, automatic human-report sync and a CLI-hosted local dashboard. Read [product decisions](../docs/product/decisions.md) for that chronology and [agent system](../docs/architecture/agent-system.md) for the implemented follow-up contract and accepted artifact's limits. The original selection/deadline below is not authority for new execution; use [the new plans](../plans/agent-system/README.md).
+
+The proposed snapshot-only read semantics and full reproducibility below were design requirements, not proof of today's executable. Current CLI/MCP acquisition and price/derivation effects differ. The new query contract resolves those differences explicitly while preserving compatibility. Historical module ownership is transferred only through the follow-up activation rule.
 
 ## Upstream and proposed files
 

@@ -33,12 +33,14 @@ export const loadSkills = (
   }
 };
 
-export const skillDigest = (body: string): string =>
+export const skillDigest = (body: string | Uint8Array): string =>
   createHash("sha256").update(body).digest("hex");
 
 export const RELEASED_SKILL_DIGESTS: ReadonlySet<string> = new Set([
   "1456a2d72b016fd7b20eccd84db9d84b5b8ba497ad9631520189048b0a2d3a43",
+  "1774457e23264f7dcf3b22877b8e65beb903cb8f6540b3275b1cf5804c9c41b6",
   "204952d779666c57e9c4c7e71db27215a92df4245fe71999fb8661a9f2f7e485",
+  "255f45396331850eb922a85b9a4e119eeb8a509999239a8ae4c8b076e2805995",
   "2b9393c62396f02a2ae9a3d79c368a9b0ebc9e734f699875437438eec71c6005",
   "34db4480e333e2c0f3e059a9c5aa2783402b7338d48c32f79d0059066f1e0aba",
   "36a8844fe0d10800f13a055172df07b185802fa02d5048b8ebc746c1f6cbe5f1",
@@ -49,3 +51,18 @@ export const RELEASED_SKILL_DIGESTS: ReadonlySet<string> = new Set([
   "bc5c197c2b5b88a89fc4d0ff64e64397f8588d1338d7d186a53cc23a24bdab36",
   "de115f6145f35407d9d038b22b96e6b44a9f4c1abf017a91f94622415de1f5eb",
 ]);
+
+export const isReleasedSkillBody = (
+  name: string,
+  body: string,
+  released: ReadonlySet<string> = RELEASED_SKILL_DIGESTS
+): boolean => {
+  if (!released.has(skillDigest(body))) {
+    return false;
+  }
+
+  const header = /^---\r?\n(?<header>[\s\S]*?)\r?\n---(?:\r?\n|$)/u.exec(body)
+    ?.groups?.header;
+
+  return header?.split(/\r?\n/u).includes(`name: ${name}`) === true;
+};

@@ -60,6 +60,45 @@ const withStore = <A, E>(
 
 const downgradeToV1 = (file: string): void => {
   const db = new DatabaseSync(file);
+
+  const tables = new Set([
+    "coverage",
+    "events",
+    "snapshot_events",
+    "snapshots",
+    "store_meta",
+  ]);
+
+  const indexes = new Set([
+    "coverage_adapter",
+    "events_branch",
+    "events_flight",
+    "events_time",
+    "snapshots_selector",
+  ]);
+
+  const ObjectSchema = Schema.Struct({
+    name: Schema.String,
+    type: Schema.Literals(["index", "table", "trigger"]),
+  });
+
+  for (const raw of db
+    .prepare(
+      "SELECT type,name FROM sqlite_master WHERE type IN ('index','table','trigger') AND name NOT LIKE 'sqlite_%' ORDER BY CASE type WHEN 'trigger' THEN 0 WHEN 'index' THEN 1 ELSE 2 END,name"
+    )
+    .all()) {
+    const object = Schema.decodeUnknownSync(ObjectSchema)(raw);
+
+    if (
+      object.type === "trigger" ||
+      (object.type === "table" && !tables.has(object.name)) ||
+      (object.type === "index" && !indexes.has(object.name))
+    ) {
+      db.exec(`DROP ${object.type} "${object.name.replaceAll('"', '""')}"`);
+    }
+  }
+
+  db.exec("DELETE FROM store_meta WHERE key GLOB 'agent_*'");
   const update = db.prepare("UPDATE events SET body = ? WHERE seq = ?");
   const RowSchema = Schema.Struct({ body: Schema.String, seq: Schema.Int });
 
@@ -119,7 +158,34 @@ describe("restoring a backup made before the v2 store", () => {
         store.snapshot(emptySelector)
       );
 
+      const associationRows = yield* Effect.sync(() => {
+        const db = new DatabaseSync(home.storePath, { readOnly: true });
+
+        try {
+          return db
+            .prepare(
+              "SELECT (SELECT COUNT(*) FROM agent_source_associations) AS associations,(SELECT COUNT(*) FROM events) AS events,(SELECT COUNT(*) FROM events e LEFT JOIN agent_source_associations a ON a.event_seq=e.seq WHERE a.event_seq IS NULL OR a.adapter_id IS NOT e.adapter_id OR a.repo_id IS NOT COALESCE(e.repo_common_dir,'') OR a.branch IS NOT COALESCE(e.branch,'') OR a.flight_id IS NOT COALESCE(e.flight_id,'') OR a.worktree_id IS NOT COALESCE(json_extract(e.body,'$.context.worktreePath'),'') OR a.tool IS NOT COALESCE(json_extract(e.body,'$.ai.harness'),'')) AS mismatches"
+            )
+            .get();
+        } finally {
+          db.close();
+        }
+      });
+
+      const associations = yield* Schema.decodeUnknownEffect(
+        Schema.Struct({
+          associations: Schema.Int,
+          events: Schema.Int,
+          mismatches: Schema.Int,
+        })
+      )(associationRows);
+
       expect(byId(restored.events)).toStrictEqual(byId(events));
+      expect(associations).toStrictEqual({
+        associations: events.length,
+        events: events.length,
+        mismatches: 0,
+      });
       expect(
         readdirSync(path.dirname(reset.backup.path)).filter((name) =>
           name.startsWith(".upgrade-")

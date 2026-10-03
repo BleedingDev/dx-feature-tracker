@@ -4,13 +4,19 @@ import { createHash } from "node:crypto";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
-import { DateTime, Effect, Layer, Schema } from "effect";
+import { Context, DateTime, Effect, Layer, Schema } from "effect";
 
+import { AgentStore } from "../contracts/agent-store.js";
+import type {
+  AgentStoreFailure,
+  AgentStoreService,
+} from "../contracts/agent-store.js";
 import { SnapshotNotFound } from "../contracts/error-snapshot-not-found.js";
 import { StoreBusy } from "../contracts/error-store-busy.js";
 import { StoreError } from "../contracts/error-store-error.js";
 import { EventStore } from "../contracts/event-store.js";
 import type {
+  AppendResult,
   EventStoreService,
   StoreFailure,
   StoreSnapshot,
@@ -25,15 +31,31 @@ import { SnapshotIdSchema } from "../model/ids.js";
 import type { SnapshotId } from "../model/ids.js";
 import { SnapshotManifestSchema } from "../model/snapshot.js";
 import type { SnapshotManifest, SnapshotSelector } from "../model/snapshot.js";
+import {
+  BoundedEventReplacement,
+  inspectBoundedReplacement,
+} from "./agent-append-bounds.js";
+import type {
+  BoundedAppendLimits,
+  BoundedAppendResult,
+} from "./agent-append-bounds.js";
+import { agentDbContext, agentError } from "./agent-db.js";
+import type { AgentRetentionOptions } from "./agent-db.js";
+import { tombstoneReplacedAgentEvents } from "./agent-invalidation.js";
+import { registerAgentWriter } from "./agent-writer-owner.js";
+import { HarnessCursors, sqliteHarnessCursors } from "./harness-cursors.js";
+import type { HarnessCursorsApi } from "./harness-cursors.js";
 import { STORE_MIGRATIONS, STORE_SCHEMA_VERSION } from "./migrations.js";
 import {
   ensurePrivateDir,
   tightenPrivateFile,
   writePrivateFile,
 } from "./private-files.js";
+import { sqliteAgentMethods } from "./sqlite-agent-store.js";
 import type { StoreKind } from "./store-path.js";
 
 export interface SqliteEventStoreOptions {
+  readonly agentRetention?: AgentRetentionOptions;
   readonly busyTimeoutMs?: number;
   readonly kind: StoreKind;
   readonly path: string;
@@ -114,9 +136,17 @@ const decodeStringList = Schema.decodeUnknownSync(
 const isSqliteError = Schema.is(Schema.Struct({ errcode: Schema.Int }));
 
 export interface OpenedEventStore {
+  readonly appendBounded: (
+    batch: EventBatch,
+    limits: BoundedAppendLimits
+  ) => Effect.Effect<BoundedAppendResult, AgentStoreFailure>;
+  readonly agentService: AgentStoreService;
   readonly close: () => void;
+  readonly cursorService: HarnessCursorsApi;
   readonly service: EventStoreService;
 }
+
+export type { BoundedAppendResult } from "./agent-append-bounds.js";
 
 const sha256 = (text: string): string =>
   createHash("sha256").update(text).digest("hex");
@@ -296,9 +326,11 @@ export const makeSqliteEventStore = (
   options: SqliteEventStoreOptions
 ): OpenedEventStore => {
   const db = openDatabase(options);
+  let writer: ReturnType<typeof registerAgentWriter>;
 
   try {
     migrate(db, options.kind);
+    writer = registerAgentWriter(db);
   } catch (error) {
     db.close();
     throw error;
@@ -334,7 +366,22 @@ export const makeSqliteEventStore = (
   ): Effect.Effect<A, StoreFailure> =>
     Effect.try({
       catch: (cause) => toFailure(operation, cause),
-      try: body,
+      try: () => {
+        db.exec("BEGIN DEFERRED");
+
+        try {
+          const result = body();
+          db.exec("COMMIT");
+
+          return result;
+        } catch (error) {
+          if (db.isTransaction) {
+            db.exec("ROLLBACK");
+          }
+
+          throw error;
+        }
+      },
     });
 
   const selectEvents = (selector: SnapshotSelector): Selection => {
@@ -450,63 +497,90 @@ export const makeSqliteEventStore = (
     "INSERT INTO coverage (adapter_id, flight_ids, repos, branches, body) VALUES (?, ?, ?, ?, ?)"
   );
 
+  const appendBatch = (batch: EventBatch): AppendResult => {
+    let inserted = 0;
+
+    if (batch.replace !== undefined) {
+      const { adapterId, fromOccurredAt } = batch.replace;
+
+      tombstoneReplacedAgentEvents(db, adapterId, fromOccurredAt);
+
+      const stale =
+        "SELECT event_id FROM events WHERE adapter_id = ? AND occurred_at >= ?";
+
+      db.prepare(
+        `DELETE FROM snapshots WHERE snapshot_id IN (SELECT snapshot_id FROM snapshot_events WHERE event_id IN (${stale}))`
+      ).run(adapterId, fromOccurredAt);
+
+      db.prepare(
+        `DELETE FROM snapshot_events WHERE snapshot_id NOT IN (SELECT snapshot_id FROM snapshots)`
+      ).run();
+
+      db.prepare(
+        "DELETE FROM events WHERE adapter_id = ? AND occurred_at >= ?"
+      ).run(adapterId, fromOccurredAt);
+    }
+
+    for (const event of batch.events) {
+      const result = insertEvent.run(
+        event.eventId,
+        event.adapterId,
+        event.kind,
+        event.origin,
+        event.context.flightId,
+        event.context.repoCommonDir,
+        event.context.branch,
+        event.occurredAt,
+        event.observedAt,
+        JSON.stringify(event)
+      );
+
+      inserted += Number(result.changes);
+    }
+
+    insertCoverage.run(
+      batch.coverage.adapterId,
+      JSON.stringify(
+        uniqueNonNull(batch.events.map((e) => e.context.flightId))
+      ),
+      JSON.stringify(
+        uniqueNonNull(batch.events.map((e) => e.context.repoCommonDir))
+      ),
+      JSON.stringify(uniqueNonNull(batch.events.map((e) => e.context.branch))),
+      JSON.stringify(batch.coverage)
+    );
+
+    const coverageSeq = decodeSeqBodyRow(
+      db
+        .prepare("SELECT seq,body FROM coverage ORDER BY seq DESC LIMIT 1")
+        .get()
+    ).seq;
+
+    const scopes =
+      batch.events.length === 0
+        ? [{ branch: null, flightId: null, repoCommonDir: null }]
+        : batch.events.map((event) => event.context);
+
+    const upsertCoverage = db.prepare(
+      "INSERT OR REPLACE INTO agent_coverage_latest(adapter_id,flight_id,repo_id,branch,seq,body) VALUES (?,?,?,?,?,?)"
+    );
+
+    for (const scope of scopes) {
+      upsertCoverage.run(
+        batch.coverage.adapterId,
+        scope.flightId ?? "",
+        scope.repoCommonDir ?? "",
+        scope.branch ?? "",
+        coverageSeq,
+        JSON.stringify(batch.coverage)
+      );
+    }
+
+    return { duplicates: batch.events.length - inserted, inserted };
+  };
+
   const service: EventStoreService = {
-    append: (batch: EventBatch) =>
-      write("append", () => {
-        let inserted = 0;
-
-        if (batch.replace !== undefined) {
-          const { adapterId, fromOccurredAt } = batch.replace;
-
-          const stale =
-            "SELECT event_id FROM events WHERE adapter_id = ? AND occurred_at >= ?";
-
-          db.prepare(
-            `DELETE FROM snapshots WHERE snapshot_id IN (SELECT snapshot_id FROM snapshot_events WHERE event_id IN (${stale}))`
-          ).run(adapterId, fromOccurredAt);
-
-          db.prepare(
-            `DELETE FROM snapshot_events WHERE snapshot_id NOT IN (SELECT snapshot_id FROM snapshots)`
-          ).run();
-
-          db.prepare(
-            "DELETE FROM events WHERE adapter_id = ? AND occurred_at >= ?"
-          ).run(adapterId, fromOccurredAt);
-        }
-
-        for (const event of batch.events) {
-          const result = insertEvent.run(
-            event.eventId,
-            event.adapterId,
-            event.kind,
-            event.origin,
-            event.context.flightId,
-            event.context.repoCommonDir,
-            event.context.branch,
-            event.occurredAt,
-            event.observedAt,
-            JSON.stringify(event)
-          );
-
-          inserted += Number(result.changes);
-        }
-
-        insertCoverage.run(
-          batch.coverage.adapterId,
-          JSON.stringify(
-            uniqueNonNull(batch.events.map((e) => e.context.flightId))
-          ),
-          JSON.stringify(
-            uniqueNonNull(batch.events.map((e) => e.context.repoCommonDir))
-          ),
-          JSON.stringify(
-            uniqueNonNull(batch.events.map((e) => e.context.branch))
-          ),
-          JSON.stringify(batch.coverage)
-        );
-
-        return { duplicates: batch.events.length - inserted, inserted };
-      }),
+    append: (batch) => write("append", () => appendBatch(batch)),
     coverage: (selector) => read("coverage", () => selectCoverage(selector)),
     getSnapshot: (snapshotId) =>
       Effect.flatMap(
@@ -649,10 +723,43 @@ export const makeSqliteEventStore = (
     storePath: options.path,
   };
 
+  const agentContext = agentDbContext(db, writer.id, options.agentRetention);
+
   return {
+    agentService: sqliteAgentMethods(agentContext),
+    appendBounded: (batch, limits) =>
+      Effect.suspend(() => {
+        const startedAt = performance.now();
+
+        return agentContext.write("appendBounded", () => {
+          const proof = inspectBoundedReplacement(
+            agentContext,
+            batch,
+            limits,
+            startedAt
+          );
+
+          const result = appendBatch(batch);
+          const elapsedMs = Math.ceil(performance.now() - startedAt);
+
+          if (elapsedMs > limits.maxElapsedMs) {
+            throw agentError(
+              "budget-exhausted",
+              "The bounded append exceeded its elapsed limit and was rolled back"
+            );
+          }
+
+          return { ...proof, ...result, elapsedMs };
+        });
+      }),
     close: () => {
-      db.close();
+      try {
+        writer.close();
+      } finally {
+        db.close();
+      }
     },
+    cursorService: sqliteHarnessCursors(db),
     service,
   };
 };
@@ -677,5 +784,29 @@ export const SqliteEventStoreLayer = (
         })
       ),
       (store) => store.service
+    )
+  );
+
+export const SqliteAgentStoreLayer = (
+  options: SqliteEventStoreOptions
+): Layer.Layer<
+  EventStore | AgentStore | HarnessCursors | BoundedEventReplacement,
+  StoreFailure
+> =>
+  Layer.effectContext(
+    Effect.map(
+      Effect.acquireRelease(openSqliteEventStore(options), (store) =>
+        Effect.sync(() => {
+          store.close();
+        })
+      ),
+      (store) =>
+        Context.make(EventStore, store.service).pipe(
+          Context.add(AgentStore, store.agentService),
+          Context.add(HarnessCursors, store.cursorService),
+          Context.add(BoundedEventReplacement, {
+            appendBounded: store.appendBounded,
+          })
+        )
     )
   );

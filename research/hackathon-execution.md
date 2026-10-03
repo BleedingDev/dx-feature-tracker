@@ -1,6 +1,8 @@
 # Four-hour execution with presentable stopping points
 
-dx-feature-tracker is a separate Ratstack tool. Four hours is a hard deadline, not a task estimate. No human team size is assumed. Implementation and every runtime gate remain pending.
+Historical execution proposal for the original 79-node selection. Its pending states and four-hour cuts are preserved as planning history; the original execution used a later deadline override and has [scoped receipts](../docs/execution/phases/g04.json). New agent-system work uses [a separate graph and admission policy](../plans/agent-system/README.md). No historical deadline is carried forward automatically.
+
+The original proposal treated four hours as a hard deadline, not an effort estimate, with no assumed human team size. Its policies below must not be used to infer today's implementation status.
 
 ## Phases and validation
 
@@ -46,7 +48,7 @@ G03 requires a passed G02. If v1 has not passed at freeze, disable optional admi
 
 ## Executable plan graph
 
-[79 assignments](plan-index.md) and the [canonical manifest](execution-manifest.json) (the plan files are in [`/plans`](/plans)). All tasks remain pending. Strict graph validation passed with no warnings or errors: 79 plans, 145 edges ([validation summary](phase-plan-validation.json), [Mermaid DAG](dag.mmd)).
+[79 historical assignments](plan-index.md) and their [manifest](execution-manifest.json), in `plans/dxfr-rat-*.plan.md`. The original planning snapshot left their todos pending. Strict graph validation then passed with no warnings or errors: 79 plans, 145 edges ([validation summary](phase-plan-validation.json), [Mermaid DAG](dag.mmd)). Runtime receipts, rather than this original todo snapshot, record execution evidence.
 
 ## Demonstration
 

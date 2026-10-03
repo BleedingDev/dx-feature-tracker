@@ -25,6 +25,11 @@ export interface HarnessCursorsApi {
     ref: SessionRef,
     entry: StoredCursor
   ) => Effect.Effect<void, StoreFailure>;
+  readonly putIfCurrent?: (
+    ref: SessionRef,
+    expected: StoredCursor | null,
+    next: StoredCursor
+  ) => Effect.Effect<boolean, StoreFailure>;
 }
 
 export const CURSOR_GENERATION = 2;
@@ -73,7 +78,27 @@ const attempt = <A>(
     try: body,
   });
 
-const sqliteCursors = (db: DatabaseSync): HarnessCursorsApi => {
+const sameStoredCursor = (
+  current: StoredCursor | null,
+  expected: StoredCursor | null
+): boolean => {
+  if (current === null || expected === null) {
+    return current === expected;
+  }
+
+  return (
+    current.lastEventId === expected.lastEventId &&
+    current.mtimeMs === expected.mtimeMs &&
+    current.size === expected.size &&
+    (current.cursor === null
+      ? expected.cursor === null
+      : expected.cursor !== null &&
+        current.cursor.adapterId === expected.cursor.adapterId &&
+        current.cursor.value === expected.cursor.value)
+  );
+};
+
+export const sqliteHarnessCursors = (db: DatabaseSync): HarnessCursorsApi => {
   const select = db.prepare(
     "SELECT cursor, last_event_id, mtime_ms, size, (last_event_id IS NULL OR EXISTS (SELECT 1 FROM events WHERE event_id = last_event_id)) AS kept FROM harness_cursors WHERE ref_key = ?"
   );
@@ -82,43 +107,76 @@ const sqliteCursors = (db: DatabaseSync): HarnessCursorsApi => {
     "INSERT OR REPLACE INTO harness_cursors (ref_key, harness, path, mtime_ms, size, cursor, last_event_id, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
   );
 
-  return {
-    get: (ref) =>
-      attempt("cursor.get", () => {
-        const raw = select.get(cursorKey(ref));
+  const current = (ref: SessionRef): StoredCursor | null => {
+    const raw = select.get(cursorKey(ref));
 
-        if (raw === undefined) {
-          return null;
+    if (raw === undefined) {
+      return null;
+    }
+
+    const row = decodeRow(raw);
+
+    return row.kept === 1
+      ? {
+          cursor:
+            row.cursor === null
+              ? null
+              : Option.getOrNull(decodeCursor(row.cursor)),
+          lastEventId: row.last_event_id,
+          mtimeMs: row.mtime_ms,
+          size: row.size,
         }
+      : null;
+  };
 
-        const row = decodeRow(raw);
+  const write = (
+    ref: SessionRef,
+    entry: StoredCursor,
+    updatedAt: string
+  ): void => {
+    upsert.run(
+      cursorKey(ref),
+      ref.harness,
+      ref.path,
+      entry.mtimeMs,
+      entry.size,
+      entry.cursor === null ? null : encodeCursor(entry.cursor),
+      entry.lastEventId,
+      updatedAt
+    );
+  };
 
-        return row.kept === 1
-          ? {
-              cursor:
-                row.cursor === null
-                  ? null
-                  : Option.getOrNull(decodeCursor(row.cursor)),
-              lastEventId: row.last_event_id,
-              mtimeMs: row.mtime_ms,
-              size: row.size,
-            }
-          : null;
-      }),
+  return {
+    get: (ref) => attempt("cursor.get", () => current(ref)),
     put: (ref, entry) =>
       DateTime.now.pipe(
         Effect.flatMap((now) =>
           attempt("cursor.put", () => {
-            upsert.run(
-              cursorKey(ref),
-              ref.harness,
-              ref.path,
-              entry.mtimeMs,
-              entry.size,
-              entry.cursor === null ? null : encodeCursor(entry.cursor),
-              entry.lastEventId,
-              DateTime.formatIso(now)
-            );
+            write(ref, entry, DateTime.formatIso(now));
+          })
+        )
+      ),
+    putIfCurrent: (ref, expected, next) =>
+      DateTime.now.pipe(
+        Effect.flatMap((now) =>
+          attempt("cursor.put-if-current", () => {
+            db.exec("BEGIN IMMEDIATE");
+
+            try {
+              const matches = sameStoredCursor(current(ref), expected);
+
+              if (matches) {
+                write(ref, next, DateTime.formatIso(now));
+              }
+
+              db.exec("COMMIT");
+
+              return matches;
+            } catch (error) {
+              db.exec("ROLLBACK");
+
+              throw error;
+            }
           })
         )
       ),
@@ -132,6 +190,13 @@ const memoryCursors = (
     Ref.get(state).pipe(Effect.map((map) => map.get(cursorKey(ref)) ?? null)),
   put: (ref, entry) =>
     Ref.update(state, (map) => new Map(map).set(cursorKey(ref), entry)),
+  putIfCurrent: (ref, expected, next) =>
+    Ref.modify(state, (map) => {
+      const key = cursorKey(ref);
+      const matches = sameStoredCursor(map.get(key) ?? null, expected);
+
+      return [matches, matches ? new Map(map).set(key, next) : map];
+    }),
 });
 
 export const openHarnessCursors = (
@@ -145,7 +210,7 @@ export const openHarnessCursors = (
           opened.close();
         })
     ),
-    sqliteCursors
+    sqliteHarnessCursors
   );
 
 export class HarnessCursors extends Context.Service<

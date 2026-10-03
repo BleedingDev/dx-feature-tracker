@@ -1,0 +1,41 @@
+{
+  "schema": "dft.agent-system.plan-validation.v1",
+  "checkedAt": "2026-10-02",
+  "baselineCommit": "eddcedb29c3900a1e5e365dc3999bf6f7fdcfd7b",
+  "graphId": "dft-agent-system-v1",
+  "selection": "manifest.json",
+  "selectionHash": "d4fca878d3f5",
+  "planCount": 9,
+  "edgeCount": 11,
+  "ready": [
+    "dft-agent-s00-contracts"
+  ],
+  "ownership": {
+    "unexpectedOverlaps": 0,
+    "sequentialIntegrationPaths": 13,
+    "baton": [
+      "R00",
+      "S05"
+    ]
+  },
+  "errors": [],
+  "warnings": [],
+  "implementationStatus": "executing",
+  "scope": "Plan structure/dependencies only; runtime gates are tracked separately in execution.json and phase receipts.",
+  "checker": "plan-graph/scripts/plan_graph.py validate --strict --format json with all nine exact --plan paths and eleven explicit --depends edges; latest exit0/errors0/warnings0",
+  "baselineFence": {
+    "argv": [
+      "pnpm",
+      "exec",
+      "turbo",
+      "run",
+      "check",
+      "test",
+      "build"
+    ],
+    "exit": 0,
+    "successfulTasks": 18,
+    "cachedTasks": 12,
+    "scope": "Historical baseline fence for the initial documentation revision. It does not validate the agent implementation; current execution and release receipts are separate."
+  }
+}
